@@ -2,6 +2,7 @@
   {
     "id": "wood_guard",
     "name": "林间傀儡",
+    "primary_element": "wood",
     "stats": {
       "hp": 85,
       "attack": 17,
@@ -16,6 +17,7 @@
   {
     "id": "moon_wolf",
     "name": "月影狼王",
+    "primary_element": "water",
     "stats": {
       "hp": 290,
       "attack": 62,
@@ -29,6 +31,7 @@
   {
     "id": "thunder_dragon",
     "name": "雷泽蛟灵",
+    "primary_element": "thunder",
     "stats": {
       "hp": 1000,
       "attack": 165,
@@ -43,6 +46,7 @@
   {
     "id": "ancient_guard",
     "name": "古殿守卫",
+    "primary_element": "metal",
     "stats": {
       "hp": 340,
       "attack": 26,
@@ -57,6 +61,7 @@
   {
     "id": "abyss_guard",
     "name": "深渊魔将",
+    "primary_element": "fire",
     "stats": {
       "hp": 1900,
       "attack": 140,
@@ -66,5 +71,13 @@
     "elements": [
       "fire"
     ]
+  },
+  {
+    "id": "ice_guard", "name": "寒晶守灵", "primary_element": "ice", "elements": ["ice"],
+    "stats": {"hp": 300, "attack": 60, "defense": 27, "speed": 28}
+  },
+  {
+    "id": "venom_guard", "name": "腐沼毒灵", "primary_element": "poison", "elements": ["poison", "wood"],
+    "stats": {"hp": 280, "attack": 63, "defense": 22, "speed": 35}
   }
 ]

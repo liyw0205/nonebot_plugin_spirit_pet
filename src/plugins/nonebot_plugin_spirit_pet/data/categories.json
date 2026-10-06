@@ -18,5 +18,25 @@
     "id": "shell",
     "name": "甲族",
     "description": "玄甲护体，防御深厚。"
+  },
+  {
+    "id": "flora",
+    "name": "植族",
+    "description": "草木化灵，擅长生息与汲取。"
+  },
+  {
+    "id": "insect",
+    "name": "虫族",
+    "description": "微躯凝聚异力，擅长奇袭与异术。"
+  },
+  {
+    "id": "serpent",
+    "name": "蛇族",
+    "description": "长身潜行，毒息缠斗各有所长。"
+  },
+  {
+    "id": "spirit",
+    "name": "灵族",
+    "description": "山川精魄凝形，不拘血肉之身。"
   }
 ]

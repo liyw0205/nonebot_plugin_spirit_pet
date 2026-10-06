@@ -3,6 +3,7 @@ from ..domain.models import GameError, Reply
 from ..utils.time import beijing_day
 from .combat import fight
 from .loadout import combatant
+from .mastery import award_mastery
 
 
 def _available(ctx: Context, first: str, second: str):
@@ -74,10 +75,11 @@ def accept(ctx: Context, arg: str) -> Reply:
     ]
     if duel["mode"] == "pvp":
         players = [ctx.player(first), ctx.player(second)]
-        for player, pet in zip(players, pets):
+        for side, (player, pet) in enumerate(zip(players, pets)):
             player.last_pvp = ctx.now
             pet.energy -= ctx.content.rules.pvp_energy
             ctx.repo.invalidate_ready(player.user_id)
+            lines.extend(award_mastery(ctx, player.user_id, battle.skill_uses[side].get(pet.pet_id, {})))
         pair = tuple(sorted((first, second)))
         ctx.repo.conn.execute(
             "INSERT INTO pvp_pairs VALUES (?, ?, ?) ON CONFLICT(first_id, second_id) "

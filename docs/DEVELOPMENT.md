@@ -17,21 +17,25 @@ src/plugins/nonebot_plugin_spirit_pet/
   application/context.py       单次事务上下文
   application/game.py          调度、事务、保存
   domain/content.py            Pydantic 静态内容模型
-  domain/battle_content.py     类别、元素、装备、技能与道号词库模型
+  domain/battle_content.py     元素、天赋、装备、技能及成长阶梯模型
   domain/state.py              Player、Pet 运行模型
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
   content/validation.py        装备、技能、元素与内容可用性验证
   gameplay/pets.py             领养、召唤、列表、切换、改名
+  gameplay/hatching.py         灵卵孵化与名册容量检查
   gameplay/identity.py         唯一道号生成、显示、修改
   gameplay/cultivation.py      修炼、大小境界突破、血脉进化
   gameplay/economy.py          签到、背包、商店、消耗品
   gameplay/quests.py           每日任务与领奖
   gameplay/rewards.py          共用奖励结算
   gameplay/combat.py           属性计算与限回合战斗
+  gameplay/talents.py          天赋触发与单场护盾、毒伤效果
   gameplay/compatibility.py    类别、元素、境界适用性检查
   gameplay/equipment.py        穿戴、卸装、槽位与图鉴
+  gameplay/forging.py          装备强化与强化件库存保留
   gameplay/skills.py           秘笈学习、携带与卸下
+  gameplay/mastery.py          熟练度结算、升级与满级处理
   gameplay/loadout.py          将装备与技能组装到战斗单位
   gameplay/adventure.py        奇遇、单人/组队 PVE 结算
   gameplay/duels.py            论剑、切磋、邀请与应战
@@ -43,6 +47,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   utils/arguments.py          复用的名称解析和数量验证
   utils/time.py               UTC+8 日期和冷却计算
   utils/energy.py             精力恢复与上限
+  utils/elements.py           元素祖先展开与继承门槛判断
   utils/randomness.py         可注入随机源的加权抽取
   data/*.json                 静态宠物、境界、血脉、物品、怪物和奖励
 tests/                         单元、并发、适配器契约和真实 WS 测试
@@ -71,7 +76,9 @@ docs/                          安装、接入、玩法和开发文档
 - `players`：原始用户 ID、唯一道号、共享灵石、出战宠物、日期、玩家级冷却与论剑积分。道号用 SQLite UNIQUE COLLATE NOCASE 约束，生成和改名均处于写事务内。
 - `pets`：每只宠物独立的种族 ID、名字、大境界、层数、血脉、修为、亲密、精力及恢复时间。
 - `inventory`：道具 ID 与数量，没有专门的“灵粮镜像”字段。
-- `equipment/learned_skills`：每只宠物的槽位物品与学习/携带状态，装备不同时计入库存。
+- `equipment`：每只宠物的槽位物品与强化等级，装备不同时计入库存。
+- `unequipped_equipment`：玩家背包中 +1 及以上的装备，按物品、强化等级计数；+0 仍使用普通 inventory。卸装和重新穿戴不清空强化，不重复计数。
+- `learned_skills`：每只宠物的学习/携带状态、技能等级与当前级剩余熟练度。
 - `quest_progress`：当前任务日的进度及领取状态；刷新按玩家的 `quest_day` 处理。
 - `teams/team_members`：队长、成员、已同意出征的宠物编号。
 - `duels`：待处理邀请及失效时间；应战后删除。
@@ -93,20 +100,23 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 5，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
 ## 战斗规则
 
 当前是自定义回合制规则，不依赖已有桌游或游戏规则体系：
 
-- 属性来自种族基础值乘以境界、层数、血脉、亲密倍率，再加装备固定属性，修为余额不直接增加攻击。
+- 属性来自种族基础值乘以境界、层数、血脉、亲密倍率，再加装备各自强化后的固定属性，修为余额不直接增加攻击。
 - `loadout.combatant` 对装备和技能再次校验类别、全部所需元素与最低境界；拒绝不兼容内容，不静默跳过坏数据。
-- 已携带技能依固定顺序轮换，元素倍率为 1.25/0.8/1.0，治疗技能回复自身，满血时普攻。技能轮次属于单场内存状态，不是 JSON 时间字段。
+- `Fighter.primary_element` 显式从宠物/敌人定义传入，不能取 elements[0]。普攻使用主属性，伤害技能使用技能元素，防守仅看目标主属性；分支递归继承五行关系，倍率只算一次，1.25/0.8/1.0。无属性技能按中性处理。
+- 已携带技能依固定顺序轮换，系数乘数据库等级对应的威力倍率。治疗技能回复自身，满血时普攻，不记治疗技能施放。技能轮次属于单场内存状态，不是 JSON 时间字段。
+- `talents` 负责开场护盾、行动前毒伤/恢复、进攻增益、闪避和命中后触发。毒和反击不递归触发天赋或技能熟练度。效果状态在每场新建 Fighter 时重置。
 - 每场从满气血开始；气血只在本场存在，结算消耗精力，不持久化战斗气血。
 - 速度决定行动顺序，同速时随机决定先后，目标从存活对手中抽取。伤害至少为 1，有 90%-110% 浮动。
 - 最多 40 回合，超时视作平局；不发 PVE 胜利奖励，不转移论剑积分。
 - PVP 双方确认才结算；每对玩家每日最多结算一次积分，切磋不消耗精力或发放经济奖励。
 - 组队用同一战斗函数，每位参战成员胜利后获得一份各自抽取的奖励，不分摊掉落。
+- `Battle.skill_uses` 按左右阵营、pet_id、skill_id 统计真实施放。PVE（含败退/平局）与积分 PVP 在原事务内调用 `mastery.award_mastery`，切磋不调用。不得根据战报文本或回合数猜测使用次数。
 
 参数内容可在 JSON 中调整；更换算法需同时改 `combat.py` 和测试，不把战斗分支硬塞进适配器。
 
@@ -125,7 +135,7 @@ docs/                          安装、接入、玩法和开发文档
 
 Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/myenv/bin/python`，不要求新建环境，不要求 NapCat 或真实 QQ 凭证。测试全部使用临时数据库。
 
-测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、材料、事务回滚、并发、重复消息、组队准备、论剑应战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
+测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、主属性/分支继承、天赋效果、技能成长、强化保留、灵卵容量、事务回滚、并发、重复消息、组队准备、论剑应战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
 
 GitHub Actions 使用 Linux/Windows 和 Python 3.10/3.13。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
 

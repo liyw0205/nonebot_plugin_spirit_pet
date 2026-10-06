@@ -1,0 +1,7 @@
+[
+  {"level": 1, "required_proficiency": 20, "power_multiplier": 1.0},
+  {"level": 2, "required_proficiency": 50, "power_multiplier": 1.12},
+  {"level": 3, "required_proficiency": 100, "power_multiplier": 1.25},
+  {"level": 4, "required_proficiency": 180, "power_multiplier": 1.4},
+  {"level": 5, "required_proficiency": null, "power_multiplier": 1.6}
+]

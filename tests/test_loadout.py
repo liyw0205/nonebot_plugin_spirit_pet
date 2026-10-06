@@ -144,9 +144,9 @@ def test_learned_skill_reaches_real_pve_combat(game, play):
 def test_elemental_matchups_and_healing_are_active(game):
     service = game[0]
     elements = service.content.elements
-    assert effectiveness("fire", ("metal",), elements) == 1.25
-    assert effectiveness("fire", ("water",), elements) == 0.8
-    assert effectiveness("fire", ("water", "metal"), elements) == 1
+    assert effectiveness("fire", "metal", elements) == 1.25
+    assert effectiveness("fire", "water", elements) == 0.8
+    assert effectiveness(None, "water", elements) == 1
     skill = service.content.skills["wood_heal"]
     base = service.content.species["qingluan"].stats
     healer = Fighter.create("healer", base, ("wood",), (skill,))

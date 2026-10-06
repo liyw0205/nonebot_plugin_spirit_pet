@@ -37,6 +37,9 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠领养 青鸾") == ("adopt", "青鸾")
     assert handlers._parse("/灵宠购买 灵粮 3") == ("buy", "灵粮 3")
     assert handlers._parse("灵宠图鉴") == ("catalog", "")
+    assert handlers._parse("灵宠图鉴 2") == ("catalog", "2")
+    assert handlers._parse("灵宠图鉴 青鸾") == ("catalog", "青鸾")
+    assert handlers._parse("灵宠强化 灵器") == ("enhance", "灵器")
     assert handlers._parse("灵宠签到后的聊天") is None
     assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")
     assert handlers._parse("我的道号") == ("identity", "")

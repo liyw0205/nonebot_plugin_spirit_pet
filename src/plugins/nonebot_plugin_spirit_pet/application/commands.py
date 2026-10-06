@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..domain.models import Reply
-from ..gameplay import adventure, cultivation, duels, economy, equipment, identity, information, pets, quests, skills, teams
+from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills, teams
 from .context import Context
 
 
@@ -17,7 +17,7 @@ ACTIONS = {
     "identity": Command(identity.profile),
     "dao_name": Command(identity.rename, True),
     "status": Command(information.status),
-    "catalog": Command(information.catalog),
+    "catalog": Command(information.catalog, True),
     "rank": Command(information.rank),
     "pvp_rank": Command(information.pvp_rank),
     "adopt": Command(pets.adopt, True),
@@ -53,6 +53,7 @@ ACTIONS = {
     "equipment": Command(equipment.view, True),
     "equipment_catalog": Command(equipment.catalog),
     "unequip": Command(equipment.unequip, True),
+    "enhance": Command(forging.enhance, True),
     "skills": Command(skills.view),
     "skill_catalog": Command(skills.catalog),
     "learn": Command(skills.learn, True),
@@ -72,6 +73,7 @@ COMMANDS = {
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",
     "灵宠组队挑战": "team_challenge",
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
+    "灵宠强化": "enhance",
     "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠学习": "learn",
     "灵宠携带": "equip_skill", "灵宠卸技": "unequip_skill",
 }

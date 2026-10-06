@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import BaseModel, TypeAdapter
-from ..domain.battle_content import Category, DaoNames, Element, Equipment, Skill
+from ..domain.battle_content import (
+    Category, DaoNames, Element, Equipment, ForgeLevel, Skill, SkillLevel, Talent,
+)
 from .validation import validate_battle_content
 
 from ..domain.content import (
@@ -52,6 +54,9 @@ class Catalog:
     elements: dict[str, Element]
     equipment: dict[str, Equipment]
     skills: dict[str, Skill]
+    talents: dict[str, Talent]
+    skill_levels: dict[int, SkillLevel]
+    forge_levels: dict[int, ForgeLevel]
     dao_names: DaoNames
 
     @classmethod
@@ -72,6 +77,9 @@ class Catalog:
             elements=_index(directory / "elements.json", Element),
             equipment=_index(directory / "equipment.json", Equipment),
             skills=_index(directory / "skills.json", Skill),
+            talents=_index(directory / "talents.json", Talent),
+            skill_levels=_index(directory / "skill_levels.json", SkillLevel, "level"),
+            forge_levels=_index(directory / "forge_levels.json", ForgeLevel, "level"),
             dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
@@ -82,8 +90,10 @@ class Catalog:
             raise ValueError("layers must be exactly 1 through 10")
         if set(self.bloodlines) != set(range(len(self.bloodlines))):
             raise ValueError("bloodline levels must start at 0 and be contiguous")
-        if not any(species.starter for species in self.species.values()):
-            raise ValueError("at least one starter species is required")
+        if {species.id for species in self.species.values() if species.starter} != {
+            "qingluan", "xuanhu", "baize", "jiaolong",
+        }:
+            raise ValueError("starter species must be exactly qingluan, xuanhu, baize and jiaolong")
         for stages in (self.realms, tuple(self.layers[i] for i in range(1, 11))):
             if stages[-1].advancement is not None or any(s.advancement is None for s in stages[:-1]):
                 raise ValueError("only the final stage must have null advancement")
@@ -121,7 +131,40 @@ class Catalog:
             raise ValueError("standard pool and spirit_food are required")
         if self.items["spirit_food"].kind != "consumable":
             raise ValueError("spirit_food must be a consumable")
+        self._validate_progression()
         validate_battle_content(self)
+
+    def _validate_progression(self):
+        if set(self.skill_levels) != set(range(1, len(self.skill_levels) + 1)):
+            raise ValueError("skill levels must start at 1 and be contiguous")
+        if set(self.forge_levels) != set(range(11)):
+            raise ValueError("forge levels must be exactly 0 through 10")
+        skill_levels = [self.skill_levels[i] for i in sorted(self.skill_levels)]
+        forge_levels = [self.forge_levels[i] for i in sorted(self.forge_levels)]
+        if skill_levels[-1].required_proficiency is not None or any(
+            level.required_proficiency is None for level in skill_levels[:-1]
+        ):
+            raise ValueError("only the final skill level must have null required_proficiency")
+        if forge_levels[-1].upgrade_stones is not None or any(
+            level.upgrade_stones is None for level in forge_levels[:-1]
+        ):
+            raise ValueError("only the final forge level must have null upgrade_stones")
+        if forge_levels[-1].upgrade_items:
+            raise ValueError("final forge level cannot require upgrade items")
+        for level in forge_levels:
+            self._require(level.upgrade_items, self.items, "forge cost items")
+            if any(self.items[item].kind != "material" for item in level.upgrade_items):
+                raise ValueError("forge cost items must be materials")
+        for stages, multiplier in (
+            (skill_levels, "power_multiplier"), (forge_levels, "bonus_multiplier"),
+        ):
+            if getattr(stages[0], multiplier) != 1:
+                raise ValueError("initial progression multiplier must equal 1")
+            if any(
+                getattr(current, multiplier) <= getattr(previous, multiplier)
+                for previous, current in zip(stages, stages[1:])
+            ):
+                raise ValueError("progression multipliers must strictly increase")
 
     @staticmethod
     def _require(keys, targets, label):

@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.battle_content import Requirement
 from ..domain.models import GameError
 from ..domain.state import Pet
+from ..utils.elements import expand_elements
 
 
 def check_requirements(ctx: Context, pet: Pet, requirement: Requirement):
@@ -11,7 +12,7 @@ def check_requirements(ctx: Context, pet: Pet, requirement: Requirement):
         raise GameError(f"需要{ctx.content.realms[minimum].name}境界。")
     if requirement.categories and species.category not in requirement.categories:
         raise GameError("当前宠物类别不兼容。")
-    if not set(requirement.elements).issubset(species.elements):
+    if not set(requirement.elements).issubset(expand_elements(species.elements, ctx.content.elements)):
         names = "、".join(ctx.content.elements[key].name for key in requirement.elements)
         raise GameError(f"元素不兼容，需要同时具备：{names}。")
 

@@ -152,7 +152,7 @@ def test_foreign_pet_switch_and_nickname_validation(game, play):
     assert "小青" in play("rank").text()
 
 
-@pytest.mark.parametrize("version", [1, 2, 3, 99])
+@pytest.mark.parametrize("version", [1, 2, 3, 4, 99])
 def test_unreleased_old_or_future_schema_is_never_modified(tmp_path, version):
     store = Store(tmp_path / "old.db")
     sql(store, f"PRAGMA user_version={version}")

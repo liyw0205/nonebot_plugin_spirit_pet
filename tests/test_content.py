@@ -24,7 +24,10 @@ def edit(directory, filename, change):
 
 def test_default_content_is_complete():
     content = Catalog.load()
-    assert len(content.species) == 7
+    assert len(content.species) >= 20
+    assert {key for key, species in content.species.items() if species.starter} == {
+        "qingluan", "xuanhu", "baize", "jiaolong",
+    }
     assert set(content.layers) == set(range(1, 11))
     assert len(content.realms) == 7
     assert len(content.bloodlines) == 5

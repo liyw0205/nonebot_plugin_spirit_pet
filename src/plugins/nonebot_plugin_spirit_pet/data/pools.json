@@ -31,7 +31,27 @@
       {
         "species": "sanlinglu",
         "weight": 2
-      }
+      },
+      {"species": "chiyanhu", "weight": 12},
+      {"species": "rongyanjia", "weight": 8},
+      {"species": "lingxi", "weight": 14},
+      {"species": "hanying", "weight": 8},
+      {"species": "xuehu", "weight": 10},
+      {"species": "bingcan", "weight": 6},
+      {"species": "mohe", "weight": 10},
+      {"species": "tengling", "weight": 14},
+      {"species": "bizhu", "weight": 10},
+      {"species": "jinyu", "weight": 8},
+      {"species": "daotang", "weight": 10},
+      {"species": "tielin", "weight": 10},
+      {"species": "shanshi", "weight": 12},
+      {"species": "shiou", "weight": 10},
+      {"species": "fenghu", "weight": 12},
+      {"species": "leize", "weight": 6},
+      {"species": "leitingdiao", "weight": 6},
+      {"species": "duman", "weight": 10},
+      {"species": "molian", "weight": 8},
+      {"species": "mingdie", "weight": 8}
     ]
   }
 ]

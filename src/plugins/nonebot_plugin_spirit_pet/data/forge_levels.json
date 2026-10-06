@@ -1,0 +1,13 @@
+[
+  {"level": 0, "bonus_multiplier": 1.0, "upgrade_stones": 80, "upgrade_items": {"forge_ore": 1}},
+  {"level": 1, "bonus_multiplier": 1.2, "upgrade_stones": 120, "upgrade_items": {"forge_ore": 2}},
+  {"level": 2, "bonus_multiplier": 1.4, "upgrade_stones": 180, "upgrade_items": {"forge_ore": 3}},
+  {"level": 3, "bonus_multiplier": 1.6, "upgrade_stones": 260, "upgrade_items": {"forge_ore": 4}},
+  {"level": 4, "bonus_multiplier": 1.8, "upgrade_stones": 360, "upgrade_items": {"forge_ore": 5}},
+  {"level": 5, "bonus_multiplier": 2.0, "upgrade_stones": 480, "upgrade_items": {"forge_ore": 6}},
+  {"level": 6, "bonus_multiplier": 2.2, "upgrade_stones": 620, "upgrade_items": {"forge_ore": 7}},
+  {"level": 7, "bonus_multiplier": 2.4, "upgrade_stones": 780, "upgrade_items": {"forge_ore": 8}},
+  {"level": 8, "bonus_multiplier": 2.6, "upgrade_stones": 960, "upgrade_items": {"forge_ore": 9}},
+  {"level": 9, "bonus_multiplier": 2.8, "upgrade_stones": 1160, "upgrade_items": {"forge_ore": 10}},
+  {"level": 10, "bonus_multiplier": 3.0, "upgrade_stones": null, "upgrade_items": {}}
+]

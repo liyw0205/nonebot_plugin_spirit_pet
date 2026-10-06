@@ -160,5 +160,97 @@
     "kind": "skill_book",
     "price": 250,
     "skill_id": "windfire"
+  },
+  {
+    "id": "forge_ore", "name": "锻灵矿", "description": "装备强化材料，可从秘境和每日任务获得。",
+    "kind": "material", "price": 80
+  },
+  {
+    "id": "book_ice_lance", "name": "霜枪术诀", "description": "学习霜枪术所需，要求冰灵根。",
+    "kind": "skill_book", "price": 150, "skill_id": "ice_lance"
+  },
+  {
+    "id": "book_poison_cloud", "name": "蚀毒术诀", "description": "学习蚀毒术所需，要求毒灵根。",
+    "kind": "skill_book", "price": 150, "skill_id": "poison_cloud"
+  },
+  {
+    "id": "book_thunder_bolt", "name": "惊雷术诀", "description": "学习惊雷术所需，雷灵根不限族类。",
+    "kind": "skill_book", "price": 150, "skill_id": "thunder_bolt"
+  },
+  {
+    "id": "book_vine_lash", "name": "青藤鞭诀", "description": "学习青藤鞭所需，要求木灵根。",
+    "kind": "skill_book", "price": 150, "skill_id": "vine_lash"
+  },
+  {
+    "id": "book_frost_cocoon", "name": "霜茧回生诀", "description": "学习霜茧回生所需，限冰系虫族。",
+    "kind": "skill_book", "price": 180, "skill_id": "frost_cocoon"
+  },
+  {
+    "id": "book_serpent_bite", "name": "幽鳞毒牙诀", "description": "学习幽鳞毒牙所需，限毒系蛇族。",
+    "kind": "skill_book", "price": 180, "skill_id": "serpent_bite"
+  },
+  {
+    "id": "book_storm_dive", "name": "风雷贯空诀", "description": "学习风雷贯空所需，限凝气境风雷双系羽族。",
+    "kind": "skill_book", "price": 280, "skill_id": "storm_dive"
+  },
+  {
+    "id": "frost_beak", "name": "寒晶喙", "description": "冰系羽族武器，提升攻击与速度。",
+    "kind": "equipment", "price": 180, "equipment_id": "frost_beak"
+  },
+  {
+    "id": "silk_cocoon", "name": "灵丝甲", "description": "虫族护甲，提升气血与防御。",
+    "kind": "equipment", "price": 180, "equipment_id": "silk_cocoon"
+  },
+  {
+    "id": "poison_scale", "name": "幽鳞衣", "description": "毒系蛇族护甲，提升气血与防御。",
+    "kind": "equipment", "price": 180, "equipment_id": "poison_scale"
+  },
+  {
+    "id": "living_root", "name": "长生根", "description": "木系植族饰品，提升气血与攻击。",
+    "kind": "equipment", "price": 200, "equipment_id": "living_root"
+  },
+  {
+    "id": "thunder_horn", "name": "震雷角", "description": "雷系兽族武器，提升攻击与气血。",
+    "kind": "equipment", "price": 200, "equipment_id": "thunder_horn"
+  },
+  {
+    "id": "metal_scythe", "name": "金魄镰", "description": "金系虫族武器，专注提升攻击。",
+    "kind": "equipment", "price": 200, "equipment_id": "metal_scythe"
+  },
+  {
+    "id": "stone_core", "name": "山心石", "description": "土系灵族饰品，提升气血与防御。",
+    "kind": "equipment", "price": 200, "equipment_id": "stone_core"
+  },
+  {
+    "id": "water_prism", "name": "澄水珠", "description": "水系通用饰品，冰系灵宠也可使用。",
+    "kind": "equipment", "price": 160, "equipment_id": "water_prism"
+  },
+  {
+    "id": "poison_thorn", "name": "蚀灵刺", "description": "毒系通用武器，提升攻击与速度。",
+    "kind": "equipment", "price": 160, "equipment_id": "poison_thorn"
+  },
+  {
+    "id": "egg_tengling", "name": "青藤灵卵", "description": "青岚林秘境掉落，使用后获得一只青藤灵。",
+    "kind": "pet_egg", "species_id": "tengling"
+  },
+  {
+    "id": "egg_bingcan", "name": "玄冰灵卵", "description": "寒晶洞秘境掉落，使用后获得一只玄冰蚕。",
+    "kind": "pet_egg", "species_id": "bingcan"
+  },
+  {
+    "id": "egg_leitingdiao", "name": "霆光灵卵", "description": "雷泽秘境掉落，使用后获得一只霆光雕。",
+    "kind": "pet_egg", "species_id": "leitingdiao"
+  },
+  {
+    "id": "egg_shiou", "name": "岩心灵卵", "description": "上古灵殿组队秘境掉落，使用后获得一只岩心偶。",
+    "kind": "pet_egg", "species_id": "shiou"
+  },
+  {
+    "id": "egg_duman", "name": "幽毒灵卵", "description": "腐毒沼秘境掉落，使用后获得一只幽毒蟒。",
+    "kind": "pet_egg", "species_id": "duman"
+  },
+  {
+    "id": "egg_molian", "name": "蚀心灵卵", "description": "幽冥深渊组队秘境掉落，使用后获得一只蚀心莲。",
+    "kind": "pet_egg", "species_id": "molian"
   }
 ]

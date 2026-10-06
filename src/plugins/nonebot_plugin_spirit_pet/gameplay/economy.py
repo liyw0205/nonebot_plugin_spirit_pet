@@ -19,9 +19,15 @@ def sign(ctx: Context, arg: str) -> Reply:
 def bag(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
     inventory = ctx.repo.inventory(ctx.user_id)
+    reinforced = ctx.repo.conn.execute(
+        "SELECT item_id, enhancement, quantity FROM unequipped_equipment "
+        "WHERE user_id=? AND quantity>0 ORDER BY item_id, enhancement DESC", (ctx.user_id,),
+    ).fetchall()
     return Reply("乾坤袋", (
         f"灵石：{player.stones}",
         *(f"{ctx.content.items[key].name}：{value}" for key, value in inventory.items()),
+        *(f"{ctx.content.items[row['item_id']].name} +{row['enhancement']}：{row['quantity']}"
+          for row in reinforced),
     ), ("灵宠商店", "灵宠喂养", "灵宠进化"))
 
 
@@ -49,6 +55,10 @@ def buy(ctx: Context, arg: str) -> Reply:
 def use(ctx: Context, arg: str) -> Reply:
     name, amount = item_amount(arg)
     item = named(ctx.content.items, name)
+    if item.kind == "pet_egg":
+        from .hatching import hatch
+
+        return hatch(ctx, item, amount)
     if item.kind != "consumable":
         raise GameError("材料用于进化；破境丹用于突破；装备与秘笈请用灵宠装备、灵宠学习。")
     pet = ctx.pet()

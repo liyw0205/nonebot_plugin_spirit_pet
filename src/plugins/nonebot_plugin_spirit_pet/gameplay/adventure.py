@@ -4,6 +4,7 @@ from ..utils.arguments import named
 from ..utils.randomness import weighted_choice
 from .combat import Fighter, fight
 from .loadout import combatant
+from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
 
@@ -47,7 +48,11 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
         ctx.check_action(player, pet, "pve", dungeon.energy, ctx.config.spirit_pet_pve_cooldown)
     allies = [combatant(ctx, user_id) for user_id in user_ids]
     enemies = [
-        Fighter.create(ctx.content.enemies[key].name, ctx.content.enemies[key].stats, tuple(ctx.content.enemies[key].elements))
+        Fighter.create(
+            ctx.content.enemies[key].name, ctx.content.enemies[key].stats,
+            tuple(ctx.content.enemies[key].elements),
+            primary_element=ctx.content.enemies[key].primary_element,
+        )
         for key in dungeon.enemies
     ]
     battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
@@ -56,6 +61,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
         pet.energy -= dungeon.energy
         player.last_pve = ctx.now
         ctx.repo.invalidate_ready(player.user_id)
+        lines.extend(award_mastery(ctx, player.user_id, battle.skill_uses[0].get(pet.pet_id, {})))
         if battle.winner == 0:
             advance(ctx, "pve", player.user_id)
             lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, player.user_id)))

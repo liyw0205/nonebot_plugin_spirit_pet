@@ -55,6 +55,12 @@ def main():
                     (6, "灵宠切换 1", "灵宠出战"),
                     (7, "灵宠修炼", "吐纳修炼"),
                     (8, "灵宠突破", "小境界突破成功"),
+                    (10, "灵宠图鉴 毕方", "主属性：火 · 副属性：风"),
+                    (11, "灵宠图鉴 2", "万灵图鉴 2/"),
+                    (12, "我的灵宠", "天赋神通：岚羽清鸣"),
+                    (13, "灵宠购买 风刃术诀", "灵坊购得"),
+                    (14, "灵宠学习 风刃术", "领悟灵术"),
+                    (15, "灵宠技能", "1级 · 熟练度 0/20"),
                     (9, "灵宠挑战 青岚林", "秘境获胜"),
                     (9, "灵宠挑战 青岚林", "秘境获胜"),
                 ]:
@@ -71,10 +77,12 @@ def main():
                     ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
         with closing(sqlite3.connect(database)) as conn:
             user_id, stones = conn.execute("SELECT user_id, stones FROM players").fetchone()
-            assert user_id == "12345" and 230 <= stones <= 270
+            assert user_id == "12345" and 80 <= stones <= 120
             assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 2
             assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 65)
-        print("PASS: plugin load, WS authentication, summon, switch, cultivation, breakthrough, PVE and redelivery")
+            skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
+            assert skill and (skill[0] > 1 or skill[1] > 0)
+        print("PASS: plugin load, WS authentication, collection, primary elements, talents, skills, PVE and redelivery")
 
 
 if __name__ == "__main__":

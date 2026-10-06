@@ -1,8 +1,8 @@
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
-from .content import Definition, Identifier, Name, NonNegative
+from .content import Definition, Identifier, Name, NonNegative, Positive
 
 
 class Category(Definition):
@@ -14,7 +14,39 @@ class Category(Definition):
 class Element(Definition):
     id: Identifier
     name: Name
+    parent: Identifier | None = None
     strong_against: list[Identifier] = Field(default_factory=list)
+
+
+class Talent(Definition):
+    id: Identifier
+    name: Name
+    description: str
+    kind: Literal[
+        "fury", "first_strike", "lifesteal", "counter", "shield",
+        "regeneration", "execute", "evasion", "venom", "pierce",
+    ]
+    power: Annotated[float, Field(gt=0, le=1)]
+    element: Identifier | None = None
+
+    @model_validator(mode="after")
+    def check_element(self):
+        if self.element is not None and self.kind != "fury":
+            raise ValueError("only fury talents may require an element")
+        return self
+
+
+class SkillLevel(Definition):
+    level: Positive
+    required_proficiency: Positive | None
+    power_multiplier: Annotated[float, Field(ge=1, le=10)]
+
+
+class ForgeLevel(Definition):
+    level: Annotated[int, Field(ge=0, le=10)]
+    bonus_multiplier: Annotated[float, Field(ge=1, le=10)]
+    upgrade_stones: Positive | None
+    upgrade_items: dict[Identifier, Positive] = Field(default_factory=dict)
 
 
 class Bonuses(Definition):

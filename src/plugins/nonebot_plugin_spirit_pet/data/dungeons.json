@@ -17,6 +17,8 @@
         "maximum": 80
       },
       "items": {
+        "forge_ore": {"minimum": 1, "maximum": 2},
+        "egg_tengling": {"minimum": 0, "maximum": 1},
         "bloodline_essence": {
           "minimum": 1,
           "maximum": 1
@@ -42,6 +44,7 @@
         "maximum": 150
       },
       "items": {
+        "forge_ore": {"minimum": 2, "maximum": 3},
         "bloodline_essence": {
           "minimum": 1,
           "maximum": 2
@@ -67,6 +70,8 @@
         "maximum": 280
       },
       "items": {
+        "forge_ore": {"minimum": 3, "maximum": 5},
+        "egg_leitingdiao": {"minimum": 0, "maximum": 1},
         "bloodline_essence": {
           "minimum": 2,
           "maximum": 3
@@ -93,6 +98,8 @@
         "maximum": 130
       },
       "items": {
+        "forge_ore": {"minimum": 2, "maximum": 4},
+        "egg_shiou": {"minimum": 0, "maximum": 1},
         "bloodline_essence": {
           "minimum": 1,
           "maximum": 2
@@ -119,10 +126,36 @@
         "maximum": 350
       },
       "items": {
+        "forge_ore": {"minimum": 4, "maximum": 6},
+        "egg_molian": {"minimum": 0, "maximum": 1},
         "bloodline_essence": {
           "minimum": 3,
           "maximum": 4
         }
+      }
+    }
+  },
+  {
+    "id": "frost_cavern", "name": "寒晶洞", "min_realm": "ningqi",
+    "enemies": ["ice_guard"], "energy": 25,
+    "reward": {
+      "exp": {"minimum": 100, "maximum": 150}, "stones": {"minimum": 110, "maximum": 160},
+      "items": {
+        "forge_ore": {"minimum": 2, "maximum": 3},
+        "bloodline_essence": {"minimum": 1, "maximum": 2},
+        "egg_bingcan": {"minimum": 0, "maximum": 1}
+      }
+    }
+  },
+  {
+    "id": "venom_mire", "name": "腐毒沼", "min_realm": "ningqi",
+    "enemies": ["venom_guard"], "energy": 25,
+    "reward": {
+      "exp": {"minimum": 100, "maximum": 150}, "stones": {"minimum": 110, "maximum": 160},
+      "items": {
+        "forge_ore": {"minimum": 2, "maximum": 3},
+        "bloodline_essence": {"minimum": 1, "maximum": 2},
+        "egg_duman": {"minimum": 0, "maximum": 1}
       }
     }
   }

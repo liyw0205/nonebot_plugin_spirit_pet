@@ -28,5 +28,6 @@
   "pvp_energy": 20,
   "pvp_rating_delta": 20,
   "max_team_size": 3,
-  "max_skill_slots": 2
+  "max_skill_slots": 2,
+  "skill_proficiency_per_use": 5
 }

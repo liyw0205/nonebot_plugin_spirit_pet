@@ -33,12 +33,22 @@ CREATE TABLE equipment (
     pet_id INTEGER NOT NULL REFERENCES pets(pet_id),
     slot TEXT NOT NULL CHECK (slot IN ('weapon', 'armor', 'charm')),
     item_id TEXT NOT NULL,
+    enhancement INTEGER NOT NULL DEFAULT 0 CHECK(enhancement >= 0),
     PRIMARY KEY(pet_id, slot)
+);
+CREATE TABLE unequipped_equipment (
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL,
+    enhancement INTEGER NOT NULL CHECK(enhancement > 0),
+    quantity INTEGER NOT NULL CHECK(quantity >= 0),
+    PRIMARY KEY(user_id, item_id, enhancement)
 );
 CREATE TABLE learned_skills (
     pet_id INTEGER NOT NULL REFERENCES pets(pet_id),
     skill_id TEXT NOT NULL,
     equipped INTEGER NOT NULL CHECK (equipped IN (0, 1)),
+    level INTEGER NOT NULL DEFAULT 1 CHECK(level >= 1),
+    proficiency INTEGER NOT NULL DEFAULT 0 CHECK(proficiency >= 0),
     PRIMARY KEY(pet_id, skill_id)
 );
 CREATE TABLE inventory (

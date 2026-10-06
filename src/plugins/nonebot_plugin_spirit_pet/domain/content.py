@@ -28,6 +28,8 @@ class Species(Definition):
     stats: Stats
     category: Identifier
     elements: list[Identifier] = Field(min_length=1, max_length=4)
+    primary_element: Identifier
+    talent: Identifier
     initial_affinity: Annotated[int, Field(ge=0, le=100)] = 0
     training_bonus: Annotated[float, Field(ge=0, le=1)] = 0
 
@@ -43,11 +45,12 @@ class Item(Definition):
     id: Identifier
     name: Name
     description: str
-    kind: Literal["consumable", "breakthrough", "material", "equipment", "skill_book"]
+    kind: Literal["consumable", "breakthrough", "material", "equipment", "skill_book", "pet_egg"]
     price: Positive | None = None
     effects: Effects = Effects()
     equipment_id: Identifier | None = None
     skill_id: Identifier | None = None
+    species_id: Identifier | None = None
 
     @model_validator(mode="after")
     def check_effects(self):
@@ -57,12 +60,14 @@ class Item(Definition):
             raise ValueError("consumable requires recovery effects only")
         if self.kind == "breakthrough" and (recovery or not effects.breakthrough_bonus):
             raise ValueError("breakthrough item requires a bonus only")
-        if self.kind in {"material", "equipment", "skill_book"} and (recovery or effects.breakthrough_bonus):
+        if self.kind in {"material", "equipment", "skill_book", "pet_egg"} and (recovery or effects.breakthrough_bonus):
             raise ValueError("non-consumable item cannot have consumable effects")
         if (self.equipment_id is not None) != (self.kind == "equipment"):
             raise ValueError("only equipment items require equipment_id")
         if (self.skill_id is not None) != (self.kind == "skill_book"):
             raise ValueError("only skill books require skill_id")
+        if (self.species_id is not None) != (self.kind == "pet_egg"):
+            raise ValueError("only pet eggs require species_id")
         return self
 
 
@@ -122,6 +127,7 @@ class Enemy(Definition):
     name: Name
     stats: Stats
     elements: list[Identifier] = Field(min_length=1, max_length=4)
+    primary_element: Identifier
 
 
 class Dungeon(Definition):
@@ -165,3 +171,4 @@ class Rules(Definition):
     pvp_rating_delta: Positive
     max_team_size: Annotated[int, Field(ge=2, le=5)]
     max_skill_slots: Annotated[int, Field(ge=1, le=4)]
+    skill_proficiency_per_use: Positive = 5

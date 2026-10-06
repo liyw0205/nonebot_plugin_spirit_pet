@@ -80,6 +80,7 @@
         "maximum": 60
       },
       "items": {
+        "forge_ore": {"minimum": 2, "maximum": 2},
         "bloodline_essence": {
           "minimum": 1,
           "maximum": 1

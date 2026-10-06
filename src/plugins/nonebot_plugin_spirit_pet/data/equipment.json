@@ -76,5 +76,50 @@
       "defense": 2,
       "speed": 2
     }
+  },
+  {
+    "id": "frost_beak", "name": "寒晶喙", "slot": "weapon",
+    "requirements": {"elements": ["ice"], "categories": ["avian"], "min_realm": "qiling"},
+    "bonuses": {"attack": 7, "speed": 4}
+  },
+  {
+    "id": "silk_cocoon", "name": "灵丝甲", "slot": "armor",
+    "requirements": {"elements": [], "categories": ["insect"], "min_realm": "qiling"},
+    "bonuses": {"hp": 35, "defense": 6}
+  },
+  {
+    "id": "poison_scale", "name": "幽鳞衣", "slot": "armor",
+    "requirements": {"elements": ["poison"], "categories": ["serpent"], "min_realm": "qiling"},
+    "bonuses": {"hp": 25, "defense": 7}
+  },
+  {
+    "id": "living_root", "name": "长生根", "slot": "charm",
+    "requirements": {"elements": ["wood"], "categories": ["flora"], "min_realm": "qiling"},
+    "bonuses": {"hp": 45, "attack": 3}
+  },
+  {
+    "id": "thunder_horn", "name": "震雷角", "slot": "weapon",
+    "requirements": {"elements": ["thunder"], "categories": ["beast"], "min_realm": "qiling"},
+    "bonuses": {"attack": 9, "hp": 10}
+  },
+  {
+    "id": "metal_scythe", "name": "金魄镰", "slot": "weapon",
+    "requirements": {"elements": ["metal"], "categories": ["insect"], "min_realm": "qiling"},
+    "bonuses": {"attack": 10}
+  },
+  {
+    "id": "stone_core", "name": "山心石", "slot": "charm",
+    "requirements": {"elements": ["earth"], "categories": ["spirit"], "min_realm": "qiling"},
+    "bonuses": {"hp": 40, "defense": 5}
+  },
+  {
+    "id": "water_prism", "name": "澄水珠", "slot": "charm",
+    "requirements": {"elements": ["water"], "categories": [], "min_realm": "qiling"},
+    "bonuses": {"hp": 20, "attack": 4, "defense": 2}
+  },
+  {
+    "id": "poison_thorn", "name": "蚀灵刺", "slot": "weapon",
+    "requirements": {"elements": ["poison"], "categories": [], "min_realm": "qiling"},
+    "bonuses": {"attack": 6, "speed": 5}
   }
 ]

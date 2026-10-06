@@ -143,5 +143,40 @@
     "kind": "damage",
     "coefficient": 1.8,
     "book_item": "book_windfire"
+  },
+  {
+    "id": "ice_lance", "name": "霜枪术", "description": "凝水成冰，冰灵根方能学习，造成冰系伤害。",
+    "element": "ice", "requirements": {"elements": ["ice"], "categories": [], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.4, "book_item": "book_ice_lance"
+  },
+  {
+    "id": "poison_cloud", "name": "蚀毒术", "description": "毒雾凝成冲击，造成毒系直接伤害，不额外附加持续毒。",
+    "element": "poison", "requirements": {"elements": ["poison"], "categories": [], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.35, "book_item": "book_poison_cloud"
+  },
+  {
+    "id": "thunder_bolt", "name": "惊雷术", "description": "引雷灵落击，不限宠物族类，造成雷系伤害。",
+    "element": "thunder", "requirements": {"elements": ["thunder"], "categories": [], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.4, "book_item": "book_thunder_bolt"
+  },
+  {
+    "id": "vine_lash", "name": "青藤鞭", "description": "木灵化藤鞭，造成木系伤害。",
+    "element": "wood", "requirements": {"elements": ["wood"], "categories": [], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.3, "book_item": "book_vine_lash"
+  },
+  {
+    "id": "frost_cocoon", "name": "霜茧回生", "description": "冰系虫族收拢灵丝，恢复自身气血。",
+    "element": "ice", "requirements": {"elements": ["ice"], "categories": ["insect"], "min_realm": "qiling"},
+    "kind": "heal", "coefficient": 0.25, "book_item": "book_frost_cocoon"
+  },
+  {
+    "id": "serpent_bite", "name": "幽鳞毒牙", "description": "蛇族凝聚毒灵于獠牙，造成毒系伤害。",
+    "element": "poison", "requirements": {"elements": ["poison"], "categories": ["serpent"], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.5, "book_item": "book_serpent_bite"
+  },
+  {
+    "id": "storm_dive", "name": "风雷贯空", "description": "风雷双系羽族疾掠破空，造成雷系伤害。",
+    "element": "thunder", "requirements": {"elements": ["thunder", "wind"], "categories": ["avian"], "min_realm": "ningqi"},
+    "kind": "damage", "coefficient": 1.85, "book_item": "book_storm_dive"
   }
 ]

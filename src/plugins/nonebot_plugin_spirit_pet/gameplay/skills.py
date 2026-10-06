@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named
 from .compatibility import check_requirements, requirement_text
+from .mastery import progress, progress_text
 
 
 def learned(ctx: Context, pet_id: int) -> dict[str, int]:
@@ -13,8 +14,10 @@ def learned(ctx: Context, pet_id: int) -> dict[str, int]:
 def view(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
     skills = learned(ctx, pet.pet_id)
+    mastery = progress(ctx, pet.pet_id)
     lines = tuple(
-        f"{ctx.content.skills[key].name} · {'已携带' if active else '未携带'}"
+        f"{ctx.content.skills[key].name} · {progress_text(ctx, *mastery[key])}"
+        f" · {'已携带' if active else '未携带'}"
         for key, active in skills.items()
     ) or ("尚未学习灵术。",)
     return Reply(f"{pet.name}的技能", (*lines, f"携带上限：{ctx.content.rules.max_skill_slots} 个。"),
@@ -38,7 +41,10 @@ def learn(ctx: Context, arg: str) -> Reply:
         raise GameError("该宠物已经学会此技能，不会重复消耗秘笈。")
     ctx.repo.consume_item(ctx.user_id, skill.book_item, 1)
     active = int(sum(current.values()) < ctx.content.rules.max_skill_slots)
-    ctx.repo.conn.execute("INSERT INTO learned_skills VALUES (?, ?, ?)", (pet.pet_id, skill.id, active))
+    ctx.repo.conn.execute(
+        "INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, ?, ?)",
+        (pet.pet_id, skill.id, active),
+    )
     ctx.repo.invalidate_ready(ctx.user_id)
     return Reply("领悟灵术", (
         f"{pet.name}学会了{skill.name}，消耗 {ctx.content.items[skill.book_item].name} 1 本。",

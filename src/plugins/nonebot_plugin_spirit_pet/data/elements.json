@@ -1,51 +1,11 @@
 [
-  {
-    "id": "wind",
-    "name": "风",
-    "strong_against": [
-      "earth"
-    ]
-  },
-  {
-    "id": "fire",
-    "name": "火",
-    "strong_against": [
-      "metal"
-    ]
-  },
-  {
-    "id": "wood",
-    "name": "木",
-    "strong_against": [
-      "earth"
-    ]
-  },
-  {
-    "id": "water",
-    "name": "水",
-    "strong_against": [
-      "fire"
-    ]
-  },
-  {
-    "id": "thunder",
-    "name": "雷",
-    "strong_against": [
-      "water"
-    ]
-  },
-  {
-    "id": "earth",
-    "name": "土",
-    "strong_against": [
-      "water"
-    ]
-  },
-  {
-    "id": "metal",
-    "name": "金",
-    "strong_against": [
-      "wood"
-    ]
-  }
+  {"id": "metal", "name": "金", "parent": null, "strong_against": ["wood"]},
+  {"id": "wood", "name": "木", "parent": null, "strong_against": ["earth"]},
+  {"id": "water", "name": "水", "parent": null, "strong_against": ["fire"]},
+  {"id": "fire", "name": "火", "parent": null, "strong_against": ["metal"]},
+  {"id": "earth", "name": "土", "parent": null, "strong_against": ["water"]},
+  {"id": "ice", "name": "冰", "parent": "water", "strong_against": []},
+  {"id": "wind", "name": "风", "parent": null, "strong_against": ["earth"]},
+  {"id": "thunder", "name": "雷", "parent": null, "strong_against": ["water"]},
+  {"id": "poison", "name": "毒", "parent": null, "strong_against": ["wood"]}
 ]

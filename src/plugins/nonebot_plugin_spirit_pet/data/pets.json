@@ -2,7 +2,7 @@
   {
     "id": "qingluan",
     "name": "青鸾",
-    "description": "风木灵根，振羽引岚，善于吐纳。",
+    "description": "主风副木的羽族，振羽御风，吐纳成长快，适合风刃与回春双修。",
     "starter": true,
     "stats": {
       "hp": 120,
@@ -13,6 +13,8 @@
     "initial_affinity": 0,
     "training_bonus": 0.1,
     "category": "avian",
+    "primary_element": "wind",
+    "talent": "mist_feathers",
     "elements": [
       "wind",
       "wood"
@@ -21,7 +23,7 @@
   {
     "id": "xuanhu",
     "name": "玄狐",
-    "description": "月火灵根，身法轻灵，灵契亲近。",
+    "description": "纯火兽族，身法快而体魄薄，擅长第一击突袭，初始灵契更亲近。",
     "starter": true,
     "stats": {
       "hp": 100,
@@ -32,6 +34,8 @@
     "initial_affinity": 10,
     "training_bonus": 0.05,
     "category": "beast",
+    "primary_element": "fire",
+    "talent": "moonfire_ambush",
     "elements": [
       "fire"
     ]
@@ -39,7 +43,7 @@
   {
     "id": "baize",
     "name": "白泽",
-    "description": "先天灵根，护体灵息深厚。",
+    "description": "主金副土的兽族，气血与护体见长，先天屏障抵挡开场爆发。",
     "starter": true,
     "stats": {
       "hp": 150,
@@ -50,6 +54,8 @@
     "initial_affinity": 5,
     "training_bonus": 0,
     "category": "beast",
+    "primary_element": "metal",
+    "talent": "sage_barrier",
     "elements": [
       "metal",
       "earth"
@@ -58,7 +64,7 @@
   {
     "id": "jiaolong",
     "name": "蛟龙",
-    "description": "水雷灵根，攻势凌厉，待劫化龙。",
+    "description": "主水副雷的龙族，利爪无视部分防御，可修龙族吐息，适合攻坚。",
     "starter": true,
     "stats": {
       "hp": 130,
@@ -69,6 +75,8 @@
     "initial_affinity": 0,
     "training_bonus": 0,
     "category": "dragon",
+    "primary_element": "water",
+    "talent": "flood_dragon_claw",
     "elements": [
       "water",
       "thunder"
@@ -77,7 +85,7 @@
   {
     "id": "bifang",
     "name": "毕方",
-    "description": "离火灵根，赤焰破障，召唤限定。",
+    "description": "主火副风的羽族，牺牲防御追求火系爆发，可修风火复合灵术。",
     "starter": false,
     "stats": {
       "hp": 110,
@@ -88,6 +96,8 @@
     "initial_affinity": 0,
     "training_bonus": 0.15,
     "category": "avian",
+    "primary_element": "fire",
+    "talent": "blazing_plume",
     "elements": [
       "wind",
       "fire"
@@ -96,7 +106,7 @@
   {
     "id": "xuanwu",
     "name": "玄武",
-    "description": "玄水灵根，负山镇海，召唤限定。",
+    "description": "主水副土的甲族，厚甲低速，借敌人攻势回震，适合持久缠斗。",
     "starter": false,
     "stats": {
       "hp": 190,
@@ -107,6 +117,8 @@
     "initial_affinity": 0,
     "training_bonus": 0.05,
     "category": "shell",
+    "primary_element": "water",
+    "talent": "tidal_rebound",
     "elements": [
       "water",
       "earth"
@@ -115,7 +127,7 @@
   {
     "id": "sanlinglu",
     "name": "三灵鹿",
-    "description": "风火木三系共生，可修复合灵术，召唤限定。",
+    "description": "主木兼风火的兽族，三系术法选择丰富，生生不息弥补正面强攻不足。",
     "starter": false,
     "stats": {
       "hp": 125,
@@ -126,10 +138,152 @@
     "initial_affinity": 5,
     "training_bonus": 0.08,
     "category": "beast",
+    "primary_element": "wood",
+    "talent": "verdant_cycle",
     "elements": [
       "wind",
       "fire",
       "wood"
     ]
+  },
+  {
+    "id": "chiyanhu", "name": "赤焰虎",
+    "description": "火系猛兽，强攻追猎残血目标，速度不及玄狐，气血更足。",
+    "starter": false, "category": "beast", "elements": ["fire"], "primary_element": "fire",
+    "stats": {"hp": 145, "attack": 32, "defense": 10, "speed": 19},
+    "initial_affinity": 0, "training_bonus": 0.02, "talent": "ember_execution"
+  },
+  {
+    "id": "rongyanjia", "name": "熔岩甲",
+    "description": "主火副土的甲族，熔壳厚重行动迟缓，受击时喷发熔流反击。",
+    "starter": false, "category": "shell", "elements": ["fire", "earth"], "primary_element": "fire",
+    "stats": {"hp": 175, "attack": 25, "defense": 20, "speed": 8},
+    "initial_affinity": 0, "training_bonus": 0, "talent": "magma_recoil"
+  },
+  {
+    "id": "lingxi", "name": "灵汐獭",
+    "description": "纯水兽族，水息护养自身，攻击平稳而续航持久，适合水术与通用治疗。",
+    "starter": false, "category": "beast", "elements": ["water"], "primary_element": "water",
+    "stats": {"hp": 145, "attack": 23, "defense": 12, "speed": 20},
+    "initial_affinity": 12, "training_bonus": 0.04, "talent": "flowing_breath"
+  },
+  {
+    "id": "hanying", "name": "寒翎鹰",
+    "description": "主冰副风的羽族，锐喙抢攻，体魄偏弱；冰灵根兼容水术而水灵根不能反学冰术。",
+    "starter": false, "category": "avian", "elements": ["ice", "wind"], "primary_element": "ice",
+    "stats": {"hp": 100, "attack": 31, "defense": 8, "speed": 34},
+    "initial_affinity": 0, "training_bonus": 0.08, "talent": "frost_dive"
+  },
+  {
+    "id": "xuehu", "name": "雪影狐",
+    "description": "纯冰兽族，以雪影扰乱来袭，攻击温和而闪避灵巧，可兼修冰水两系术法。",
+    "starter": false, "category": "beast", "elements": ["ice"], "primary_element": "ice",
+    "stats": {"hp": 115, "attack": 25, "defense": 9, "speed": 31},
+    "initial_affinity": 8, "training_bonus": 0.09, "talent": "snow_mirage"
+  },
+  {
+    "id": "bingcan", "name": "玄冰蚕",
+    "description": "冰系虫族，玄茧抵挡开场冲击，气血高而动作慢，可使用虫族专属护具。",
+    "starter": false, "category": "insect", "elements": ["ice"], "primary_element": "ice",
+    "stats": {"hp": 170, "attack": 21, "defense": 17, "speed": 9},
+    "initial_affinity": 3, "training_bonus": 0.12, "talent": "ice_cocoon"
+  },
+  {
+    "id": "mohe", "name": "墨潮鹤",
+    "description": "主水副风的羽族，借潮刃汲取敌方气血，速度与续航兼顾而护甲较薄。",
+    "starter": false, "category": "avian", "elements": ["water", "wind"], "primary_element": "water",
+    "stats": {"hp": 120, "attack": 27, "defense": 7, "speed": 29},
+    "initial_affinity": 0, "training_bonus": 0.06, "talent": "ink_tide_drain"
+  },
+  {
+    "id": "tengling", "name": "青藤灵",
+    "description": "木系植族，藤蔓汲取生机，身形迟缓但耐久充足，擅长搭配回春术。",
+    "starter": false, "category": "flora", "elements": ["wood"], "primary_element": "wood",
+    "stats": {"hp": 165, "attack": 24, "defense": 14, "speed": 10},
+    "initial_affinity": 4, "training_bonus": 0.1, "talent": "root_drain"
+  },
+  {
+    "id": "bizhu", "name": "碧竹蛇",
+    "description": "主木副毒的蛇族，细鳞脆弱，依靠持续毒息压制厚血目标。",
+    "starter": false, "category": "serpent", "elements": ["wood", "poison"], "primary_element": "wood",
+    "stats": {"hp": 110, "attack": 25, "defense": 7, "speed": 28},
+    "initial_affinity": 0, "training_bonus": 0.05, "talent": "bamboo_venom"
+  },
+  {
+    "id": "jinyu", "name": "金羽隼",
+    "description": "主金副风的羽族，羽锋破甲，擅长对付防御高的灵宠，薄甲不耐反击。",
+    "starter": false, "category": "avian", "elements": ["metal", "wind"], "primary_element": "metal",
+    "stats": {"hp": 105, "attack": 30, "defense": 8, "speed": 33},
+    "initial_affinity": 0, "training_bonus": 0.03, "talent": "golden_pinions"
+  },
+  {
+    "id": "daotang", "name": "刃甲螳",
+    "description": "纯金虫族，镰臂第一击凌厉，身板脆弱，适合速攻武器。",
+    "starter": false, "category": "insect", "elements": ["metal"], "primary_element": "metal",
+    "stats": {"hp": 90, "attack": 36, "defense": 9, "speed": 30},
+    "initial_affinity": 0, "training_bonus": 0, "talent": "crescent_ambush"
+  },
+  {
+    "id": "tielin", "name": "铁鳞穿山甲",
+    "description": "主金副土的甲族，护甲极厚，鳞片回震克制连续强攻，速度与攻击偏低。",
+    "starter": false, "category": "shell", "elements": ["metal", "earth"], "primary_element": "metal",
+    "stats": {"hp": 170, "attack": 21, "defense": 24, "speed": 8},
+    "initial_affinity": 6, "training_bonus": 0.02, "talent": "iron_scale_rebound"
+  },
+  {
+    "id": "shanshi", "name": "负山狮",
+    "description": "纯土兽族，力大势沉，直接攻击稳定增伤，难以追上轻灵羽族。",
+    "starter": false, "category": "beast", "elements": ["earth"], "primary_element": "earth",
+    "stats": {"hp": 165, "attack": 30, "defense": 13, "speed": 12},
+    "initial_affinity": 0, "training_bonus": 0.04, "talent": "mountain_force"
+  },
+  {
+    "id": "shiou", "name": "岩心偶",
+    "description": "土系灵族，岩心凝成护盾，攻击与速度有限，适合稳守磨耗。",
+    "starter": false, "category": "spirit", "elements": ["earth"], "primary_element": "earth",
+    "stats": {"hp": 185, "attack": 20, "defense": 19, "speed": 7},
+    "initial_affinity": 0, "training_bonus": 0.14, "talent": "stoneheart_ward"
+  },
+  {
+    "id": "fenghu", "name": "逐风猞猁",
+    "description": "纯风兽族，速度出众，伏身抢下首次重击，持续输出不及高攻灵宠。",
+    "starter": false, "category": "beast", "elements": ["wind"], "primary_element": "wind",
+    "stats": {"hp": 110, "attack": 26, "defense": 9, "speed": 37},
+    "initial_affinity": 2, "training_bonus": 0.07, "talent": "gale_pounce"
+  },
+  {
+    "id": "leize", "name": "雷泽夔",
+    "description": "主雷副水的兽族，雷系威能强盛，体魄坚实但行动缓慢，不能修龙族吐息。",
+    "starter": false, "category": "beast", "elements": ["thunder", "water"], "primary_element": "thunder",
+    "stats": {"hp": 160, "attack": 29, "defense": 14, "speed": 13},
+    "initial_affinity": 0, "training_bonus": 0.01, "talent": "storm_resonance"
+  },
+  {
+    "id": "leitingdiao", "name": "霆光雕",
+    "description": "主雷副风的羽族，掠空追击虚弱目标，速度与攻击兼备但难抗重击。",
+    "starter": false, "category": "avian", "elements": ["thunder", "wind"], "primary_element": "thunder",
+    "stats": {"hp": 105, "attack": 31, "defense": 7, "speed": 35},
+    "initial_affinity": 0, "training_bonus": 0.03, "talent": "thunder_hunt"
+  },
+  {
+    "id": "duman", "name": "幽毒蟒",
+    "description": "纯毒蛇族，体魄粗壮，以慢毒拖垮敌手，速度较慢且直接伤害有限。",
+    "starter": false, "category": "serpent", "elements": ["poison"], "primary_element": "poison",
+    "stats": {"hp": 160, "attack": 22, "defense": 12, "speed": 14},
+    "initial_affinity": 0, "training_bonus": 0.02, "talent": "abyssal_venom"
+  },
+  {
+    "id": "molian", "name": "蚀心莲",
+    "description": "主毒副木的植族，花蕊汲取敌人生机，可兼修回春，动作迟缓。",
+    "starter": false, "category": "flora", "elements": ["poison", "wood"], "primary_element": "poison",
+    "stats": {"hp": 150, "attack": 27, "defense": 11, "speed": 11},
+    "initial_affinity": 0, "training_bonus": 0.11, "talent": "heart_eating_bloom"
+  },
+  {
+    "id": "mingdie", "name": "冥粉蝶",
+    "description": "主毒副风的虫族，鳞粉扰乱准头，轻盈脆弱，可搭配毒术与风刃。",
+    "starter": false, "category": "insect", "elements": ["poison", "wind"], "primary_element": "poison",
+    "stats": {"hp": 90, "attack": 24, "defense": 6, "speed": 38},
+    "initial_affinity": 0, "training_bonus": 0.13, "talent": "phantom_dust"
   }
 ]
