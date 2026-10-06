@@ -11,6 +11,8 @@ from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.application.game import Game
 from nonebot_plugin_spirit_pet.storage.database import Store
 
+from .support import sql
+
 
 def onebot_event(text="灵宠帮助", message_id=1):
     return GroupMessageEvent.model_validate({
@@ -52,6 +54,20 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠装备 青岚翎") == ("equipment", "青岚翎")
     assert handlers._parse("灵宠学习 风刃术") == ("learn", "风刃术")
     assert handlers._parse("灵宠身份") is None
+    for command, action, arg in (
+        ("灵宠入队", "team_join", "青云"),
+        ("灵宠邀请", "team_invite", "赤霄"),
+        ("灵宠队务", "team_requests", "分页 2"),
+        ("灵宠队伍", "team_status", "赤霄"),
+        ("灵宠队伍同意", "team_accept", "赤霄"),
+        ("灵宠队伍拒绝", "team_reject", "赤霄"),
+        ("灵宠队伍撤回", "team_withdraw", "青云"),
+        ("灵宠踢人", "team_kick", "赤霄"),
+        ("灵宠转让", "team_transfer", "赤霄"),
+    ):
+        assert handlers._parse(f"/{command} {arg}") == (action, arg)
+        assert handlers._parse(f"{command}之后聊天") is None
+    assert handlers._parse("灵宠解散") == ("team_disband", "")
 
 
 def test_real_adapter_events_share_ids_not_account_bindings(tmp_path, monkeypatch):
@@ -84,3 +100,34 @@ def test_real_qq_group_and_c2c_event_contracts():
         assert event.get_user_id() == "12345"
         assert event.get_plaintext() == "灵宠帮助"
     assert nonebot.get_driver().config.driver == "~fastapi+~httpx+~websockets"
+
+
+def test_team_approval_uses_shared_identity_across_real_adapter_events(tmp_path, monkeypatch):
+    store = Store(tmp_path / "teams.db")
+    store.initialize()
+    monkeypatch.setattr(handlers, "game", Game(store, Config()))
+    ob = SimpleNamespace(self_id="9000", adapter=SimpleNamespace(get_name=lambda: "OneBot V11"), send=AsyncMock())
+    qq = SimpleNamespace(self_id="app", adapter=SimpleNamespace(get_name=lambda: "QQ"), send=AsyncMock())
+
+    async def run():
+        await handlers._run(ob, onebot_event(message_id=101), "灵宠领养 青鸾")
+        await handlers._run(qq, qq_event("member-openid", message_id="102"), "灵宠领养 玄狐")
+        await handlers._run(ob, onebot_event(message_id=103), "灵宠道号 青云")
+        await handlers._run(qq, qq_event("member-openid", message_id="104"), "灵宠道号 赤霄")
+        await handlers._run(ob, onebot_event(message_id=105), "灵宠组队")
+        await handlers._run(qq, qq_event("member-openid", message_id="106"), "灵宠入队 青云")
+        assert len(sql(store, "SELECT * FROM team_members")) == 1
+        await handlers._run(qq, qq_event("member-openid", message_id="107"), "灵宠队伍同意 青云")
+        assert len(sql(store, "SELECT * FROM team_members")) == 1
+        assert len(sql(store, "SELECT * FROM team_requests")) == 1
+        event = qq_event("12345", group=False, message_id="108")
+        await handlers._run(qq, event, "灵宠队伍同意 赤霄")
+        reply = str(qq.send.call_args.args[1])
+        assert "加入队伍" in reply and "青云" in reply and "赤霄" in reply
+        assert "12345" not in reply and "member-openid" not in reply
+        await handlers._run(qq, event, "灵宠队伍同意 赤霄")
+        assert str(qq.send.call_args.args[1]) == reply
+        assert {row["user_id"] for row in sql(store, "SELECT * FROM team_members")} == {"12345", "member-openid"}
+        assert not sql(store, "SELECT * FROM team_requests")
+
+    asyncio.run(run())

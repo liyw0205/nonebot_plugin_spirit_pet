@@ -89,6 +89,7 @@ def test_join_team_by_leader_name_and_hide_internal_ids(game, play):
     leader_name = player(game[1])["dao_name"]
     play("team_create")
     play("team_join", leader_name, user="u2")
+    play("team_accept", player(game[1], "u2")["dao_name"])
     text = play("team_status").text()
     assert leader_name in text and player(game[1], "u2")["dao_name"] in text
     assert "u1" not in text and "u2" not in text

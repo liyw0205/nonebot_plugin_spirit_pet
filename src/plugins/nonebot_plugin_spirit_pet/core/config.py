@@ -12,6 +12,8 @@ class Config(BaseModel):
     spirit_pet_pve_cooldown: int = Field(default=600, ge=1)
     spirit_pet_pvp_cooldown: int = Field(default=900, ge=1)
     spirit_pet_invitation_ttl: int = Field(default=300, ge=1)
+    spirit_pet_team_request_ttl: int = Field(default=600, ge=1)
+    spirit_pet_team_request_limit: int = Field(default=10, ge=1, le=100)
     spirit_pet_max_pets: int = Field(default=50, ge=1, le=200)
     spirit_pet_qq_mode: Literal["text", "native", "template"] = "text"
     spirit_pet_qq_template_id: str = ""

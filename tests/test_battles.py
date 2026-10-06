@@ -19,7 +19,8 @@ def setup_team(game, play):
     sql(game[1], "UPDATE pets SET layer=5")
     play("team_create")
     team_id = sql(game[1], "SELECT team_id FROM teams")[0]["team_id"]
-    play("team_join", str(team_id), user="u2")
+    play("team_join", "青云", user="u2")
+    play("team_accept", "赤霄")
     return team_id
 
 
@@ -140,7 +141,7 @@ def test_team_requires_two_members_all_ready_and_leader(game, play):
         assert items(game[1], user)["bloodline_essence"] == 1
         assert player(game[1], user)["last_pve"] is not None
     assert not any(row["ready_pet_id"] for row in sql(game[1], "SELECT * FROM team_members"))
-    assert f"小队 {team_id}" in play("team_status").title
+    assert "青云" in play("team_status").title
 
 
 def test_team_failure_rolls_back_every_member(game, play):
@@ -169,10 +170,12 @@ def test_team_capacity_leave_disband_and_concurrent_last_slot(game, play):
     team_id = setup_team(game, play)
     for user in ("u3", "u4"):
         play("adopt", user=user)
+        play("team_join", "青云", user=user)
 
     def join(user):
         try:
-            game[0].execute(user, "team_join", str(team_id), f"join-{user}", 1_800_000_000)
+            game[0].execute("u1", "team_accept", player(game[1], user)["dao_name"],
+                            f"accept-{user}", 1_800_000_000)
             return True
         except GameError:
             return False
@@ -181,7 +184,9 @@ def test_team_capacity_leave_disband_and_concurrent_last_slot(game, play):
         assert sum(pool.map(join, ("u3", "u4"))) == 1
     play("team_leave", user="u2")
     assert len(sql(game[1], "SELECT * FROM team_members")) == 2
-    play("team_leave")
+    with pytest.raises(GameError, match="队长"):
+        play("team_leave")
+    play("team_disband")
     assert not sql(game[1], "SELECT * FROM team_members")
     assert not sql(game[1], "SELECT * FROM teams")
 

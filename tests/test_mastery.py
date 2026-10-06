@@ -10,7 +10,7 @@ from nonebot_plugin_spirit_pet.gameplay.combat import fight
 from nonebot_plugin_spirit_pet.gameplay.mastery import award_mastery
 from nonebot_plugin_spirit_pet.storage.repository import Repository
 
-from .support import sql
+from .support import player, sql
 
 
 def prepare(game, play, user="u1", species="青鸾", skill_name="风刃术"):
@@ -206,8 +206,8 @@ def test_team_distributes_mastery_by_pet_without_crossing_skill_accounts(game, p
     prepare(game, play)
     prepare(game, play, "u2", "玄狐", "赤焰术")
     play("team_create")
-    team_id = sql(game[1], "SELECT team_id FROM teams")[0]["team_id"]
-    play("team_join", str(team_id), user="u2")
+    play("team_join", player(game[1])["dao_name"], user="u2")
+    play("team_accept", player(game[1], "u2")["dao_name"])
     play("team_ready")
     play("team_ready", user="u2")
     battles = capture_pve(monkeypatch, 1)

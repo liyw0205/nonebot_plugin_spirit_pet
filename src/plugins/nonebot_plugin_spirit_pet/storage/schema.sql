@@ -75,6 +75,19 @@ CREATE TABLE team_members (
     ready_pet_id INTEGER REFERENCES pets(pet_id)
 );
 CREATE INDEX team_roster ON team_members(team_id);
+CREATE TABLE team_requests (
+    team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
+    candidate_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('apply', 'invite')),
+    initiator_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+    PRIMARY KEY(team_id, candidate_id),
+    CHECK ((kind='apply' AND initiator_id=candidate_id)
+        OR (kind='invite' AND initiator_id!=candidate_id))
+);
+CREATE INDEX team_request_candidate ON team_requests(candidate_id, expires_at);
+CREATE INDEX team_request_expiry ON team_requests(expires_at);
 CREATE TABLE duels (
     duel_id INTEGER PRIMARY KEY AUTOINCREMENT,
     challenger_id TEXT NOT NULL REFERENCES players(user_id),

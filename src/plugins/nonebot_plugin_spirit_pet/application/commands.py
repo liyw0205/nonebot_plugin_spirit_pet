@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..domain.models import Reply
-from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills, teams
+from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import crafting, lineage
+from ..gameplay.teams import management, party, requests
 from .context import Context
 
 
@@ -46,13 +47,21 @@ ACTIONS = {
     "spar": Command(duels.spar, True),
     "accept": Command(duels.accept),
     "reject": Command(duels.reject),
-    "team_create": Command(teams.create),
-    "team_join": Command(teams.join, True),
-    "team_status": Command(teams.status),
-    "team_ready": Command(teams.ready),
-    "team_unready": Command(teams.unready),
-    "team_leave": Command(teams.leave),
-    "team_challenge": Command(teams.challenge, True),
+    "team_create": Command(party.create),
+    "team_join": Command(requests.join, True),
+    "team_invite": Command(requests.invite, True),
+    "team_requests": Command(requests.inbox, True),
+    "team_accept": Command(requests.accept, True),
+    "team_reject": Command(requests.reject, True),
+    "team_withdraw": Command(requests.withdraw, True),
+    "team_status": Command(party.status, True),
+    "team_ready": Command(party.ready),
+    "team_unready": Command(party.unready),
+    "team_leave": Command(management.leave),
+    "team_kick": Command(management.kick, True),
+    "team_transfer": Command(management.transfer, True),
+    "team_disband": Command(management.disband),
+    "team_challenge": Command(party.challenge, True),
     "equipment": Command(equipment.view, True),
     "equipment_catalog": Command(equipment.catalog, True),
     "unequip": Command(equipment.unequip, True),
@@ -78,6 +87,9 @@ COMMANDS = {
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",
     "灵宠组队挑战": "team_challenge",
+    "灵宠邀请": "team_invite", "灵宠队务": "team_requests",
+    "灵宠队伍同意": "team_accept", "灵宠队伍拒绝": "team_reject", "灵宠队伍撤回": "team_withdraw",
+    "灵宠踢人": "team_kick", "灵宠转让": "team_transfer", "灵宠解散": "team_disband",
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
     "灵宠强化": "enhance",
     "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",

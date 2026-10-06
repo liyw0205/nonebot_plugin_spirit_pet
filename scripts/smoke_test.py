@@ -47,6 +47,22 @@ def main():
                 assert exc.code == 1008
             headers = {"X-Self-ID": "9000", "Authorization": "Bearer smoke-test-only"}
             with client.websocket_connect("/onebot/v11/ws", headers=headers) as ws:
+                def exchange(user_id, message_id, command, expected):
+                    ws.send_json({
+                        "time": 1800000000, "self_id": 9000, "post_type": "message",
+                        "message_type": "group", "sub_type": "normal", "message_id": message_id,
+                        "group_id": 8000, "user_id": user_id, "message": command, "raw_message": command,
+                        "font": 0, "sender": {"user_id": user_id, "nickname": "tester"},
+                    })
+                    request = ws.receive_json()
+                    assert request["action"] == "send_msg", request
+                    text = "".join(segment["data"].get("text", "") for segment in request["params"]["message"])
+                    assert expected in text, text
+                    if message_id in responses:
+                        assert text == responses[message_id]
+                    responses[message_id] = text
+                    ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
+
                 for message_id, command, expected in [
                     (1, "灵宠领养 青鸾", "灵契初成"),
                     (2, "灵宠签到", "灵石 +200"),
@@ -72,28 +88,37 @@ def main():
                     (19, "灵宠分解 青岚翎 +0 1", "回收 锻灵矿 1"),
                     (20, "灵宠血脉 青鸾", "凌风鸾脉"),
                 ]:
-                    ws.send_json({
-                        "time": 1800000000, "self_id": 9000, "post_type": "message",
-                        "message_type": "group", "sub_type": "normal", "message_id": message_id,
-                        "group_id": 8000, "user_id": 12345, "message": command, "raw_message": command,
-                        "font": 0, "sender": {"user_id": 12345, "nickname": "tester"},
-                    })
-                    request = ws.receive_json()
-                    assert request["action"] == "send_msg", request
-                    text = "".join(segment["data"].get("text", "") for segment in request["params"]["message"])
-                    assert expected in text, text
-                    if message_id in responses:
-                        assert text == responses[message_id]
-                    responses[message_id] = text
-                    ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
+                    exchange(12345, message_id, command, expected)
                     if message_id == 18:
                         with closing(sqlite3.connect(database)) as conn:
                             before_salvage = conn.execute(
                                 "SELECT p.stones, i.quantity FROM players p JOIN inventory i USING(user_id) "
                                 "WHERE p.user_id='12345' AND i.item_id='forge_ore'"
                             ).fetchone()
+                for user_id, message_id, command, expected in [
+                    (12345, 21, "灵宠道号 青云道友", "道号已定"),
+                    (67890, 22, "灵宠领养 玄狐", "灵契初成"),
+                    (67890, 23, "灵宠道号 归元道友", "道号已定"),
+                    (12345, 24, "灵宠组队", "灵契小队"),
+                    (67890, 25, "灵宠入队 青云道友", "入队申请已提交"),
+                    (67890, 26, "灵宠队伍同意 青云道友", "只能由队长审批"),
+                    (12345, 27, "灵宠队务 归元道友", "队务详情"),
+                    (12345, 28, "灵宠队伍同意 归元道友", "加入队伍"),
+                    (12345, 28, "灵宠队伍同意 归元道友", "加入队伍"),
+                    (67890, 29, "灵宠准备", "出征准备"),
+                    (12345, 30, "灵宠准备", "出征准备"),
+                    (12345, 31, "灵宠转让 归元道友", "队长交接"),
+                    (12345, 32, "灵宠队伍", "未准备"),
+                    (12345, 33, "灵宠解散", "仅队长"),
+                    (67890, 34, "灵宠踢人 青云道友", "移出队伍"),
+                    (67890, 35, "灵宠邀请 青云道友", "队伍邀请已发起"),
+                    (12345, 36, "灵宠队伍同意 归元道友", "加入队伍"),
+                    (67890, 37, "灵宠解散", "小队解散"),
+                ]:
+                    exchange(user_id, message_id, command, expected)
+                    assert "12345" not in responses[message_id] and "67890" not in responses[message_id]
         with closing(sqlite3.connect(database)) as conn:
-            user_id, stones = conn.execute("SELECT user_id, stones FROM players").fetchone()
+            user_id, stones = conn.execute("SELECT user_id, stones FROM players WHERE user_id='12345'").fetchone()
             assert user_id == "12345" and 100 <= stones <= 140
             assert before_salvage is not None and stones == before_salvage[0]
             assert conn.execute(
@@ -102,11 +127,15 @@ def main():
             assert conn.execute(
                 "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='wind_feather'"
             ).fetchone()[0] == 0
-            assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 2
+            assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 3
             assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 65)
+            assert conn.execute("SELECT energy FROM pets WHERE user_id='67890'").fetchone()[0] == 100
+            assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
+            for table in ("teams", "team_members", "team_requests"):
+                assert conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
             skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
             assert skill and (skill[0] > 1 or skill[1] > 0)
-        print("PASS: plugin load, WS authentication, collection, skills, PVE, workshop, crafting, salvage, lineages and redelivery")
+        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, team consent, management and redelivery")
 
 
 if __name__ == "__main__":

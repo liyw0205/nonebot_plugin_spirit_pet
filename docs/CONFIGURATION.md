@@ -15,6 +15,8 @@
 | SPIRIT_PET_PVE_COOLDOWN | `600` | 单人和组队 PVE 共享冷却，按玩家记录 |
 | SPIRIT_PET_PVP_COOLDOWN | `900` | 论剑冷却秒数，双方各自结算 |
 | SPIRIT_PET_INVITATION_TTL | `300` | 论剑/切磋邀请有效秒数 |
+| SPIRIT_PET_TEAM_REQUEST_TTL | `600` | 入队申请与队伍邀请有效秒数，最少 1；到期立即不能审批 |
+| SPIRIT_PET_TEAM_REQUEST_LIMIT | `10` | 每支队伍、每名候选人各自的待处理请求总上限，范围 1-100；只计未过期记录 |
 | SPIRIT_PET_MAX_PETS | `50` | 每名玩家宠物上限，范围 1-200 |
 | SPIRIT_PET_QQ_MODE | `text` | `text` / `native` / `template` |
 | SPIRIT_PET_QQ_TEMPLATE_ID | 空 | `template` 必填，QQ 审核通过的模板 ID |

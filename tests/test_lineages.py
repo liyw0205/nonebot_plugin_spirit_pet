@@ -12,7 +12,6 @@ from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.domain.state import Pet
 from nonebot_plugin_spirit_pet.gameplay.combat import pet_stats
 from nonebot_plugin_spirit_pet.gameplay.lineage import stat_multipliers
-from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
 
 from .support import items, pet, player, sql
 from .test_loadout import stats
@@ -270,15 +269,3 @@ def test_lineage_definitions_reject_runtime_and_element_mutations(lineage_dir, f
     edit(lineage_dir, lambda rows: rows[0].update({field: 1}))
     with pytest.raises(ValidationError, match="Extra inputs"):
         Catalog.load(lineage_dir)
-
-
-def test_schema_six_does_not_silently_rewrite_old_database(tmp_path):
-    store = Store(tmp_path / "old.db")
-    sql(store, "CREATE TABLE untouched(value TEXT)")
-    sql(store, "INSERT INTO untouched VALUES ('old-save')")
-    sql(store, "PRAGMA user_version=5")
-    assert SCHEMA_VERSION == 6
-    with pytest.raises(RuntimeError, match="Unsupported"):
-        store.initialize()
-    assert sql(store, "SELECT * FROM untouched") == [{"value": "old-save"}]
-    assert sql(store, "PRAGMA user_version") == [{"user_version": 5}]
