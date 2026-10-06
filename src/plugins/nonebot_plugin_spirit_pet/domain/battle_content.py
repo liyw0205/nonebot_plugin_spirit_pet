@@ -70,15 +70,57 @@ class Equipment(Definition):
     bonuses: Bonuses
 
 
+class SkillEffect(Definition):
+    kind: Literal["stun", "weaken", "ward", "empower", "cleanse", "dispel"]
+    target: Literal["self", "ally", "enemy"]
+    power: Annotated[float, Field(ge=0, le=0.8)] = 0
+    duration: Annotated[int, Field(ge=0, le=3)] = 0
+
+    @model_validator(mode="after")
+    def check_effect(self):
+        hostile = self.kind in {"stun", "weaken", "dispel"}
+        if hostile != (self.target == "enemy"):
+            raise ValueError("effect target does not match its beneficial or hostile kind")
+        if self.kind == "stun":
+            if self.power or self.duration != 1:
+                raise ValueError("stun must skip exactly one action without a power value")
+        elif self.kind in {"cleanse", "dispel"}:
+            if self.power or self.duration:
+                raise ValueError("instant removal effects cannot have power or duration")
+        elif self.power <= 0 or self.duration <= 0:
+            raise ValueError("temporary effects require positive power and action duration")
+        return self
+
+
 class Skill(Definition):
     id: Identifier
     name: Name
     description: str
     element: Identifier | None
     requirements: Requirement
-    kind: Literal["damage", "heal"]
-    coefficient: Annotated[float, Field(gt=0, le=3)]
+    kind: Literal["damage", "heal", "utility"]
+    coefficient: Annotated[float, Field(ge=0, le=3)]
     book_item: Identifier
+    effects: list[SkillEffect] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def check_skill(self):
+        if self.kind == "utility":
+            if self.coefficient or not self.effects:
+                raise ValueError("utility skills require effects and a zero coefficient")
+        elif self.coefficient <= 0:
+            raise ValueError("damage and healing skills require a positive coefficient")
+        keys = [(effect.kind, effect.target) for effect in self.effects]
+        if len(set(keys)) != len(keys):
+            raise ValueError("duplicate skill effects")
+        hostile = {effect.target == "enemy" for effect in self.effects}
+        if len(hostile) > 1:
+            raise ValueError("one skill cannot mix beneficial and hostile effects")
+        if self.kind == "damage" and False in hostile:
+            raise ValueError("damage skills may only carry hostile effects")
+        if self.kind == "heal" and True in hostile:
+            raise ValueError("healing skills may only carry beneficial effects")
+        return self
 
 
 class DaoNames(Definition):

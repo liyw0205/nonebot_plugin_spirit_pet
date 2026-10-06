@@ -27,6 +27,8 @@
 | talents.json | 种族天赋的名称、效果类型、强度与可选元素限制 |
 | skill_levels.json | 技能等级、升到下一级消耗的熟练度、威力倍率 |
 | forge_levels.json | +0 至 +10 强化倍率与下一级灵石、材料成本 |
+| lineages.json | 各种族两条血脉分支、最低血脉、选择成本与四维成长倍率 |
+| recipes.json | 每件装备的打造灵石/材料、基础分解回收、强化材料回收比例 |
 
 除 `rules.json`、`dao_names.json` 为对象外，其余文件均为对象数组。不要往这些文件写 `created_at`、`last_train`、`sign_day`、`expires_at`、`timestamp`、`cooldown`、玩家 ID 或库存数量。
 
@@ -141,7 +143,7 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 这份 requirements 表示：必须同时有风、火，类别属于羽族或兽族，并达到凝气。elements 空数组为不限制元素，categories 空数组为不限制类别。三灵鹿同时拥有风、火、木，可以通过此元素门槛；只有火的玄狐不可以。至少要存在一种兼容宠物，否则目录校验失败。
 
-技能 kind 为 damage 或 heal；coefficient 为攻击倍率或最大气血恢复比例，治疗比例不得超过 1。技能的 element 非空时，必须出现在自己的 requirements.elements 中，不能把水技能标成“火宠也可学”。通用技能的 element 为 null。book_item 与 items 中 skill_id 必须互相引用。
+技能 kind 为 damage、heal 或 utility；前两者 coefficient 为正的攻击倍率或最大气血恢复比例，治疗比例不得超过 1。utility 的 coefficient 必须为 0，且必须有 effects。技能的 element 非空时，必须由 requirements.elements 或其祖先覆盖，不能把水技能标成“火宠也可学”。通用技能的 element 为 null。book_item 与 items 中 skill_id 必须互相引用。
 
 装备 slot 为 weapon/armor/charm，对应灵器/护甲/饰品。bonuses 是 hp/attack/defense/speed 的非负固定增量，叠加在成长倍率计算之后，不随使用次数递增。穿戴与卸装使用 SQLite 库存事务，不修改 JSON。
 
@@ -154,3 +156,27 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 学习、携带、穿戴以及构建战斗单位时均执行适用条件检查。只在图鉴显示限制但实际战斗不检查，或者只限制学习却允许借其他宠物携带，都是不允许的实现。
 
 道号前缀和后缀各一至四个汉字，生成后由数据库唯一约束保证不重复；组合耗尽时添加不超过四位的数字。生成规则不使用用户 ID，改名不改变存档归属。
+
+## 主动效果
+
+`Skill.effects` 最多三项，每项包含 kind、target、power、duration。duration 是受影响单位的后续行动次数，**不是时间戳、秒数冷却或运行中的剩余次数**。剩余次数只在 `Fighter.effects` 内存中维护。
+
+- stun：敌方目标，power=0、duration=1。跳过一次行动并给予短暂免控。
+- weaken/empower/ward：power 为 (0, 0.8]，duration 为 1-3 次；弱化针对敌方，增益/护盾针对 self 或 ally。
+- cleanse/dispel：即时移除，power=0、duration=0。净化针对己方，驱散针对敌方。
+- 同一技能不能混合敌我效果，不允许重复 kind/target。damage 只附敌方效果，heal 只附己方效果。
+- 技能等级放大伤害、治疗、护盾量，不放大控制次数、弱化比例、攻击增益比例或免控次数。
+
+示例：冰系伤害附带一次控制：
+
+```json
+{"kind": "stun", "target": "enemy", "power": 0, "duration": 1}
+```
+
+## 血脉分支与工艺
+
+`lineages.json` 由 `domain/lineage_content.py` 定义。每个种族至少两条分支，species_id 必须存在，min_bloodline 至少为 1 且引用现有血脉。四维 stat_multipliers 各自限定 0.5-2，同种族的分支不能使用完全相同的四维；至少一项必须提升。cost 是必成选择成本，不含概率；道具成本必须引用材料。运行时只在 pets.lineage_id 保存选中的分支，不修改种族 ID。
+
+`recipes.json` 由 `domain/crafting_content.py` 定义。每件 equipment 物品恰有一个配方，item_id/name 指向并对应物品；stones 为正，materials 与 salvage_materials 仅允许材料。材料必须有商店、初始资源或正数量奖励等非分解来源。enhancement_refund_percent 为 0-50 的整数百分比，不是概率。
+
+分解回收通过 `salvage_yield` 统一计算：基础回收加每种累计升级材料投入乘回收百分比，按单件向下取整。校验遍历 +0 至 +10，要求每种材料回收不超过投入、整体严格损耗；有商店价格的回收不得比直接购买装备再分解更便宜。新增装备必须同时补配方，不能只在商店与装备图鉴出现而无法维护工艺链。

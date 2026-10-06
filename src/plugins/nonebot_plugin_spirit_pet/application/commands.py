@@ -3,6 +3,7 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills, teams
+from ..gameplay import crafting, lineage
 from .context import Context
 
 
@@ -27,15 +28,17 @@ ACTIONS = {
     "rename": Command(pets.rename, True),
     "sign": Command(economy.sign),
     "bag": Command(economy.bag),
-    "shop": Command(economy.shop),
+    "shop": Command(economy.shop, True),
     "buy": Command(economy.buy, True),
     "use": Command(economy.use, True),
     "feed": Command(economy.feed),
     "train": Command(cultivation.train),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve),
+    "lineage_catalog": Command(lineage.catalog, True),
+    "lineage_choose": Command(lineage.choose, True),
     "explore": Command(adventure.explore),
-    "dungeons": Command(adventure.dungeons),
+    "dungeons": Command(adventure.dungeons, True),
     "challenge": Command(adventure.challenge, True),
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
@@ -51,11 +54,14 @@ ACTIONS = {
     "team_leave": Command(teams.leave),
     "team_challenge": Command(teams.challenge, True),
     "equipment": Command(equipment.view, True),
-    "equipment_catalog": Command(equipment.catalog),
+    "equipment_catalog": Command(equipment.catalog, True),
     "unequip": Command(equipment.unequip, True),
     "enhance": Command(forging.enhance, True),
+    "recipe_catalog": Command(crafting.catalog, True),
+    "craft": Command(crafting.craft, True),
+    "salvage": Command(crafting.salvage, True),
     "skills": Command(skills.view),
-    "skill_catalog": Command(skills.catalog),
+    "skill_catalog": Command(skills.catalog, True),
     "learn": Command(skills.learn, True),
     "equip_skill": Command(skills.equip, True),
     "unequip_skill": Command(skills.unequip, True),
@@ -74,6 +80,8 @@ COMMANDS = {
     "灵宠组队挑战": "team_challenge",
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
     "灵宠强化": "enhance",
+    "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",
+    "灵宠工坊": "recipe_catalog", "灵宠打造": "craft", "灵宠分解": "salvage",
     "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠学习": "learn",
     "灵宠携带": "equip_skill", "灵宠卸技": "unequip_skill",
 }

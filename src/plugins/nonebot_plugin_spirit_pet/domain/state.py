@@ -29,3 +29,4 @@ class Pet:
     affinity: int
     energy: int
     energy_updated: int
+    lineage_id: str | None = None

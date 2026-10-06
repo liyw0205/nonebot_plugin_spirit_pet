@@ -3,6 +3,7 @@ from ..domain.content import Species
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named, quantity
 from .loadout import combatant
+from .lineage import describe_multipliers
 
 
 def element_line(ctx: Context, species: Species) -> str:
@@ -14,10 +15,12 @@ def help_game(ctx: Context, arg: str) -> Reply:
     return Reply("灵宠仙途", (
         "结契：灵宠领养 青鸾 / 灵宠召唤 1 / 灵宠列表 / 灵宠切换 编号 / 灵宠使用 灵卵名称",
         "成长：我的灵宠 / 灵宠签到 / 灵宠喂养 / 灵宠修炼 / 灵宠突破 / 灵宠进化",
+        "血脉：灵宠血脉 / 灵宠分支 分支名",
         "道具：灵宠背包 / 灵宠商店 / 灵宠购买 灵粮 3 / 灵宠使用 回元丹 1",
         "秘境：灵宠历练 / 灵宠秘境 / 灵宠挑战 青岚林 / 灵宠任务 / 灵宠领奖 任务名",
         "对战：灵宠论剑 道号 / 灵宠切磋 道号 / 灵宠应战 / 灵宠拒战",
         "灵物：灵宠装备 / 灵宠装备 青岚翎 / 灵宠强化 灵器 / 灵宠卸装 灵器 / 灵宠装备图鉴",
+        "工坊：灵宠工坊 / 灵宠打造 青岚翎 / 灵宠分解 青岚翎 +0 1",
         "灵术：灵宠技能 / 灵宠技能图鉴 / 灵宠学习 风刃术 / 灵宠携带 风刃术 / 灵宠卸技 风刃术",
         "组队：灵宠组队 / 灵宠入队 队长道号 / 灵宠队伍 / 灵宠准备 / 灵宠取消准备",
         "出征：灵宠组队挑战 上古灵殿 / 灵宠退队",
@@ -39,6 +42,9 @@ def status(ctx: Context, arg: str) -> Reply:
         if cost else "已达当前最高境界十层。"
     )
     bloodline = ctx.content.bloodlines[pet.bloodline]
+    branch = ctx.content.lineages.get(pet.lineage_id)
+    branch_line = (f"分支：{branch.name} · {describe_multipliers(branch.stat_multipliers)}"
+                   if branch else "血脉分支：尚未选择")
     evolution = bloodline.evolution
     evolve_line = "已达当前最高血脉。" if evolution is None else (
         f"进化：{evolution.exp} 修为、{evolution.stones} 灵石、"
@@ -50,6 +56,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"类别：{ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
         f"天赋神通：{talent.name} · {talent.description}",
         f"境界：{ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉：{bloodline.name}",
+        branch_line,
         f"修为：{pet.exp} · 灵石：{player.stones}",
         f"精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
         f"气血：{stats.hp} · 攻击：{stats.attack} · 防御：{stats.defense} · 速度：{stats.speed}",

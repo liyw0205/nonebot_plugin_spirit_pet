@@ -158,5 +158,77 @@
         "egg_duman": {"minimum": 0, "maximum": 1}
       }
     }
+  },
+  {
+    "id": "tide_palace", "name": "潮生宫", "min_realm": "ningqi", "team": true,
+    "enemies": ["tide_sentinel"], "energy": 30,
+    "reward": {
+      "exp": {"minimum": 160, "maximum": 230}, "stones": {"minimum": 150, "maximum": 210},
+      "items": {"forge_ore": {"minimum": 3, "maximum": 4}, "bloodline_essence": {"minimum": 2, "maximum": 3}}
+    }
+  },
+  {
+    "id": "ember_peak", "name": "焚天峰", "min_realm": "jindan",
+    "enemies": ["ember_wraith"], "energy": 35,
+    "reward": {
+      "exp": {"minimum": 400, "maximum": 600}, "stones": {"minimum": 280, "maximum": 400},
+      "items": {"forge_ore": {"minimum": 4, "maximum": 6}, "bloodline_essence": {"minimum": 3, "maximum": 4}}
+    }
+  },
+  {
+    "id": "jade_vault", "name": "玄玉天阙", "min_realm": "jindan", "team": true,
+    "enemies": ["jade_warden"], "energy": 40,
+    "reward": {
+      "exp": {"minimum": 520, "maximum": 720}, "stones": {"minimum": 350, "maximum": 470},
+      "items": {"forge_ore": {"minimum": 5, "maximum": 7}, "bloodline_essence": {"minimum": 4, "maximum": 5}}
+    }
+  },
+  {
+    "id": "frost_abyss", "name": "万载霜渊", "min_realm": "yuanying",
+    "enemies": ["frost_monarch"], "energy": 40,
+    "reward": {
+      "exp": {"minimum": 600, "maximum": 850}, "stones": {"minimum": 400, "maximum": 550},
+      "items": {"forge_ore": {"minimum": 5, "maximum": 7}, "bloodline_essence": {"minimum": 4, "maximum": 5}}
+    }
+  },
+  {
+    "id": "ancient_grove", "name": "万木归墟", "min_realm": "yuanying", "team": true,
+    "enemies": ["wood_colossus"], "energy": 45,
+    "reward": {
+      "exp": {"minimum": 750, "maximum": 1000}, "stones": {"minimum": 480, "maximum": 640},
+      "items": {"forge_ore": {"minimum": 6, "maximum": 8}, "bloodline_essence": {"minimum": 5, "maximum": 6}}
+    }
+  },
+  {
+    "id": "void_sanctum", "name": "太虚剑境", "min_realm": "huashen",
+    "enemies": ["void_blade"], "energy": 45,
+    "reward": {
+      "exp": {"minimum": 850, "maximum": 1150}, "stones": {"minimum": 550, "maximum": 730},
+      "items": {"forge_ore": {"minimum": 6, "maximum": 8}, "bloodline_essence": {"minimum": 5, "maximum": 6}}
+    }
+  },
+  {
+    "id": "nether_court", "name": "冥帝幽庭", "min_realm": "huashen", "team": true,
+    "enemies": ["nether_emperor"], "energy": 50,
+    "reward": {
+      "exp": {"minimum": 1000, "maximum": 1350}, "stones": {"minimum": 640, "maximum": 840},
+      "items": {"forge_ore": {"minimum": 7, "maximum": 9}, "bloodline_essence": {"minimum": 6, "maximum": 7}}
+    }
+  },
+  {
+    "id": "tribulation_sky", "name": "九霄劫海", "min_realm": "dujie",
+    "enemies": ["tribulation_avatar"], "energy": 50,
+    "reward": {
+      "exp": {"minimum": 1100, "maximum": 1500}, "stones": {"minimum": 700, "maximum": 920},
+      "items": {"forge_ore": {"minimum": 7, "maximum": 9}, "bloodline_essence": {"minimum": 6, "maximum": 7}}
+    }
+  },
+  {
+    "id": "heaven_gate", "name": "太上天门", "min_realm": "dujie", "team": true,
+    "enemies": ["sky_gate_guard"], "energy": 55,
+    "reward": {
+      "exp": {"minimum": 1300, "maximum": 1750}, "stones": {"minimum": 820, "maximum": 1080},
+      "items": {"forge_ore": {"minimum": 8, "maximum": 10}, "bloodline_essence": {"minimum": 7, "maximum": 8}}
+    }
   }
 ]

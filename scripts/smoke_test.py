@@ -37,6 +37,8 @@ def main():
         plugins = nonebot.load_from_toml("pyproject.toml")
         assert {plugin.name for plugin in plugins} == {"nonebot_plugin_spirit_pet"}
 
+        responses = {}
+        before_salvage = None
         with TestClient(nonebot.get_asgi()) as client:
             try:
                 with client.websocket_connect("/onebot/v11/ws", headers={"X-Self-ID": "9000"}):
@@ -63,6 +65,12 @@ def main():
                     (15, "灵宠技能", "1级 · 熟练度 0/20"),
                     (9, "灵宠挑战 青岚林", "秘境获胜"),
                     (9, "灵宠挑战 青岚林", "秘境获胜"),
+                    (16, "灵宠领奖 斩破迷障", "灵石 +60"),
+                    (17, "灵宠工坊 青岚翎", "打造一件 +0：40 灵石、锻灵矿 2"),
+                    (18, "灵宠打造 青岚翎", "青岚翎 +0 获得 1 件"),
+                    (19, "灵宠分解 青岚翎 +0 1", "回收 锻灵矿 1"),
+                    (19, "灵宠分解 青岚翎 +0 1", "回收 锻灵矿 1"),
+                    (20, "灵宠血脉 青鸾", "凌风鸾脉"),
                 ]:
                     ws.send_json({
                         "time": 1800000000, "self_id": 9000, "post_type": "message",
@@ -74,15 +82,31 @@ def main():
                     assert request["action"] == "send_msg", request
                     text = "".join(segment["data"].get("text", "") for segment in request["params"]["message"])
                     assert expected in text, text
+                    if message_id in responses:
+                        assert text == responses[message_id]
+                    responses[message_id] = text
                     ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
+                    if message_id == 18:
+                        with closing(sqlite3.connect(database)) as conn:
+                            before_salvage = conn.execute(
+                                "SELECT p.stones, i.quantity FROM players p JOIN inventory i USING(user_id) "
+                                "WHERE p.user_id='12345' AND i.item_id='forge_ore'"
+                            ).fetchone()
         with closing(sqlite3.connect(database)) as conn:
             user_id, stones = conn.execute("SELECT user_id, stones FROM players").fetchone()
-            assert user_id == "12345" and 80 <= stones <= 120
+            assert user_id == "12345" and 100 <= stones <= 140
+            assert before_salvage is not None and stones == before_salvage[0]
+            assert conn.execute(
+                "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='forge_ore'"
+            ).fetchone()[0] == before_salvage[1] + 1
+            assert conn.execute(
+                "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='wind_feather'"
+            ).fetchone()[0] == 0
             assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 2
             assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 65)
             skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
             assert skill and (skill[0] > 1 or skill[1] > 0)
-        print("PASS: plugin load, WS authentication, collection, primary elements, talents, skills, PVE and redelivery")
+        print("PASS: plugin load, WS authentication, collection, skills, PVE, workshop, crafting, salvage, lineages and redelivery")
 
 
 if __name__ == "__main__":

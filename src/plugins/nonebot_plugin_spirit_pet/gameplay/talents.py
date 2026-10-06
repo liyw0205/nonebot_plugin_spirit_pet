@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..utils.elements import element_ancestors
+from . import effects
 
 if TYPE_CHECKING:
     from ..domain.battle_content import Element
@@ -62,8 +63,10 @@ def evades(unit: Fighter, rng) -> bool:
 
 
 def receive_damage(unit: Fighter, amount: int) -> tuple[int, int]:
-    absorbed = min(unit.shield, amount)
-    unit.shield -= absorbed
+    temporary = effects.absorb_ward(unit, amount)
+    permanent = min(unit.shield, amount - temporary)
+    absorbed = temporary + permanent
+    unit.shield -= permanent
     lost = min(unit.hp, amount - absorbed)
     unit.hp -= lost
     return lost, absorbed
@@ -86,7 +89,7 @@ def after_hit(unit: Fighter, target: Fighter, damage: int) -> tuple[str, ...]:
         events.append(f"{unit.name}以天赋{talent.name}附毒，每次 {target.poison_damage}，持续三次行动。")
     retaliation = target.talent
     if target.hp > 0 and retaliation and retaliation.kind == "counter":
-        amount = max(1, int(target.stats.attack * retaliation.power) - unit.stats.defense // 2)
+        amount = max(1, int(effects.attack(target) * retaliation.power) - unit.stats.defense // 2)
         lost, absorbed = receive_damage(unit, amount)
         blocked = f"，护盾吸收 {absorbed}" if absorbed else ""
         events.append(f"{target.name}以天赋{retaliation.name}反击 {unit.name}，造成 {lost} 伤害{blocked}。")

@@ -34,6 +34,18 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     assert message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0].action.data == "/我的灵宠"
 
 
+def test_enhancement_arguments_survive_blue_links_and_keyboard():
+    command = "灵宠分解 青岚翎 +2 1"
+    reply = Reply("灵物工坊", (), (command,))
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    markdown = message["markdown"][0].data["markdown"].content
+    assert "%2B2%201" in markdown
+    button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert button.action.data == "/" + command
+    link = inline_command(command, command)
+    assert parse_qs(urlparse(link.split("](")[1][:-1]).query)["command"] == ["/" + command]
+
+
 def test_qq_text_mode_needs_no_rich_message_permission():
     pytest.importorskip("nonebot.adapters.qq")
     reply = Reply("灵宠仙途", ("欢迎道友",))

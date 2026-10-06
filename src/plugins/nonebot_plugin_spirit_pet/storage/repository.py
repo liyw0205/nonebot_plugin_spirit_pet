@@ -82,7 +82,7 @@ class Repository:
     def save(self) -> None:
         for pet in self.pets.values():
             self.conn.execute(
-                "UPDATE pets SET name=:name, realm=:realm, layer=:layer, bloodline=:bloodline, "
+                "UPDATE pets SET name=:name, realm=:realm, layer=:layer, bloodline=:bloodline, lineage_id=:lineage_id, "
                 "exp=:exp, affinity=:affinity, energy=:energy, energy_updated=:energy_updated "
                 "WHERE pet_id=:pet_id AND user_id=:user_id", asdict(pet),
             )

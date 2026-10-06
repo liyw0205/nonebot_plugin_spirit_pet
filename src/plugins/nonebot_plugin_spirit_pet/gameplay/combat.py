@@ -5,7 +5,9 @@ from ..domain.content import Stats
 from ..domain.battle_content import Element, Skill, Talent
 from ..domain.state import Pet
 from ..utils.elements import element_ancestors
-from . import talents
+from . import effects, talents
+from .effects import EffectState
+from .lineage import stat_multipliers
 
 
 def pet_stats(pet: Pet, content: Catalog) -> Stats:
@@ -16,7 +18,8 @@ def pet_stats(pet: Pet, content: Catalog) -> Stats:
         * (1 + pet.affinity / 1000)
     )
     base = content.species[pet.species_id].stats
-    return Stats(**{key: max(1, int(value * multiplier)) for key, value in base.model_dump().items()})
+    growth = stat_multipliers(pet, content).model_dump()
+    return Stats(**{key: max(1, int(value * multiplier * growth[key])) for key, value in base.model_dump().items()})
 
 
 @dataclass
@@ -36,6 +39,8 @@ class Fighter:
     shield: int = 0
     poison_damage: int = 0
     poison_turns: int = 0
+    effects: EffectState = field(default_factory=EffectState)
+    turns: int = 0
 
     @classmethod
     def create(
@@ -75,45 +80,62 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
             targets = [enemy for enemy in teams[1 - side] if enemy.hp > 0]
             if not targets:
                 return _result(side, round_number, teams, log)
+            unit.turns += 1
             _record(log, *talents.before_action(unit))
-            if unit.hp <= 0:
-                if not any(ally.hp > 0 for ally in teams[side]):
-                    return _result(1 - side, round_number, teams, log)
-                continue
-            skill = unit.skills[unit.actions % len(unit.skills)] if unit.skills else None
-            unit.actions += 1
-            if skill and skill.kind == "heal" and unit.hp < unit.stats.hp:
-                power = skill.coefficient * unit.skill_multipliers.get(skill.id, 1)
-                healing = min(unit.stats.hp - unit.hp, max(1, int(unit.stats.hp * power)))
-                unit.hp += healing
-                _cast(unit, skill)
-                _record(log, f"{unit.name}施展{skill.name}，恢复 {healing} 气血。")
-                continue
-            target = targets[rng.randint(0, len(targets) - 1)]
-            offensive = skill is not None and skill.kind == "damage"
-            power = skill.coefficient * unit.skill_multipliers.get(skill.id, 1) if offensive else 1
-            element = skill.element if offensive else unit.primary_element
-            factor = effectiveness(element, target.primary_element, definitions)
-            bonus, defense, talent_name = talents.attack_modifiers(unit, target, element, definitions)
-            unit.attacks += 1
-            if offensive:
-                _cast(unit, skill)
-            if talents.evades(target, rng):
-                _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的攻击。")
-                continue
-            amount = max(1, int(unit.stats.attack * rng.randint(90, 110) / 100 * power * factor * bonus) - defense)
-            damage, absorbed = talents.receive_damage(target, amount)
-            move = f"施展{skill.name}攻击" if offensive else "攻击"
-            details = f"，天赋{talent_name}" if talent_name else ""
-            details += "，属性克制" if factor > 1 else ("，属性受克" if factor < 1 else "")
-            details += f"，护盾吸收 {absorbed}" if absorbed else ""
-            _record(log, f"{unit.name}{move}{target.name}，造成 {damage} 伤害{details}。")
-            _record(log, *talents.after_hit(unit, target, damage))
+            if unit.hp > 0:
+                if effects.skip_action(unit):
+                    _record(log, f"{unit.name}受控无法行动，随后获得一次行动的免控。")
+                else:
+                    _act(unit, teams[side], targets, rng, definitions, log)
+            effects.finish_action(unit)
             if not any(enemy.hp > 0 for enemy in teams[1 - side]):
                 return _result(side, round_number, teams, log)
             if not any(ally.hp > 0 for ally in teams[side]):
                 return _result(1 - side, round_number, teams, log)
     return _result(-1, 40, teams, log)
+
+
+def _act(unit, allies, targets, rng, definitions, log):
+    skill = unit.skills[unit.actions % len(unit.skills)] if unit.skills else None
+    unit.actions += 1
+    multiplier = unit.skill_multipliers.get(skill.id, 1) if skill else 1
+    target = effects.enemy_target(skill, targets, multiplier, rng)
+    planned = effects.plan(unit, skill, target, allies) if skill else ()
+    if skill and skill.kind in {"heal", "utility"}:
+        healing = (
+            min(unit.stats.hp - unit.hp, max(1, int(unit.stats.hp * skill.coefficient * multiplier)))
+            if skill.kind == "heal" else 0
+        )
+        if healing or planned:
+            _cast(unit, skill)
+            if any(effect.target == "enemy" for effect in skill.effects) and talents.evades(target, rng):
+                _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的{skill.name}。")
+                return
+            unit.hp += healing
+            detail = f"，恢复 {healing} 气血" if healing else ""
+            _record(log, f"{unit.name}施展{skill.name}{detail}。", *effects.apply(unit, skill, planned))
+            return
+        skill = None
+    power = skill.coefficient * multiplier if skill else 1
+    element = skill.element if skill else unit.primary_element
+    factor = effectiveness(element, target.primary_element, definitions)
+    bonus, defense, talent_name = talents.attack_modifiers(unit, target, element, definitions)
+    unit.attacks += 1
+    if skill:
+        _cast(unit, skill)
+    if talents.evades(target, rng):
+        _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的攻击。")
+        return
+    amount = max(1, int(effects.attack(unit) * rng.randint(90, 110) / 100 * power * factor * bonus) - defense)
+    damage, absorbed = talents.receive_damage(target, amount)
+    move = f"施展{skill.name}攻击" if skill else "攻击"
+    details = f"，天赋{talent_name}" if talent_name else ""
+    details += "，属性克制" if factor > 1 else ("，属性受克" if factor < 1 else "")
+    details += f"，护盾吸收 {absorbed}" if absorbed else ""
+    _record(log, f"{unit.name}{move}{target.name}，造成 {damage} 伤害{details}。")
+    _record(log, *talents.after_hit(unit, target, damage))
+    if skill:
+        _record(log, *effects.apply(unit, skill, planned))
 
 
 def effectiveness(element: str | None, target: str | None, definitions: dict[str, Element]) -> float:

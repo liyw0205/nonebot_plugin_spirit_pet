@@ -79,5 +79,41 @@
   {
     "id": "venom_guard", "name": "腐沼毒灵", "primary_element": "poison", "elements": ["poison", "wood"],
     "stats": {"hp": 280, "attack": 63, "defense": 22, "speed": 35}
+  },
+  {
+    "id": "tide_sentinel", "name": "潮宫镇守", "primary_element": "water", "elements": ["water", "earth"],
+    "stats": {"hp": 850, "attack": 70, "defense": 30, "speed": 35}
+  },
+  {
+    "id": "ember_wraith", "name": "焚天炎灵", "primary_element": "fire", "elements": ["fire"],
+    "stats": {"hp": 2100, "attack": 240, "defense": 120, "speed": 140}
+  },
+  {
+    "id": "jade_warden", "name": "玄玉镇灵", "primary_element": "earth", "elements": ["earth", "metal"],
+    "stats": {"hp": 3800, "attack": 250, "defense": 150, "speed": 120}
+  },
+  {
+    "id": "frost_monarch", "name": "霜渊君主", "primary_element": "ice", "elements": ["ice"],
+    "stats": {"hp": 4500, "attack": 450, "defense": 240, "speed": 260}
+  },
+  {
+    "id": "wood_colossus", "name": "古木法相", "primary_element": "wood", "elements": ["wood", "earth"],
+    "stats": {"hp": 7800, "attack": 490, "defense": 270, "speed": 220}
+  },
+  {
+    "id": "void_blade", "name": "太虚剑魄", "primary_element": "metal", "elements": ["metal", "wind"],
+    "stats": {"hp": 7400, "attack": 800, "defense": 450, "speed": 560}
+  },
+  {
+    "id": "nether_emperor", "name": "幽冥帝影", "primary_element": "poison", "elements": ["poison", "fire"],
+    "stats": {"hp": 13000, "attack": 850, "defense": 480, "speed": 520}
+  },
+  {
+    "id": "tribulation_avatar", "name": "九霄劫灵", "primary_element": "thunder", "elements": ["thunder", "wind"],
+    "stats": {"hp": 12500, "attack": 1300, "defense": 700, "speed": 1000}
+  },
+  {
+    "id": "sky_gate_guard", "name": "天门守望", "primary_element": "earth", "elements": ["earth", "thunder"],
+    "stats": {"hp": 22000, "attack": 1350, "defense": 750, "speed": 900}
   }
 ]

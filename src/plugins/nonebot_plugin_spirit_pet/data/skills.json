@@ -178,5 +178,41 @@
     "id": "storm_dive", "name": "风雷贯空", "description": "风雷双系羽族疾掠破空，造成雷系伤害。",
     "element": "thunder", "requirements": {"elements": ["thunder", "wind"], "categories": ["avian"], "min_realm": "ningqi"},
     "kind": "damage", "coefficient": 1.85, "book_item": "book_storm_dive"
+  },
+  {
+    "id": "ice_seal", "name": "霜封术", "description": "造成冰系伤害，命中后令目标跳过一次行动；控制结束后至少一次完整行动免控，护盾不抵御控制。",
+    "element": "ice", "requirements": {"elements": ["ice"], "categories": [], "min_realm": "ningqi"},
+    "kind": "damage", "coefficient": 1.05, "book_item": "book_ice_seal",
+    "effects": [{"kind": "stun", "target": "enemy", "duration": 1}]
+  },
+  {
+    "id": "poison_sapping", "name": "蚀力毒咒", "description": "造成毒系伤害，命中后使目标攻击降低25%，持续两次目标行动；同类取较强效果并刷新，不叠加。",
+    "element": "poison", "requirements": {"elements": ["poison"], "categories": [], "min_realm": "qiling"},
+    "kind": "damage", "coefficient": 1.1, "book_item": "book_poison_sapping",
+    "effects": [{"kind": "weaken", "target": "enemy", "power": 0.25, "duration": 2}]
+  },
+  {
+    "id": "earthen_ward", "name": "岩灵护障", "description": "为自身凝聚最大气血22%的临时护盾，持续两次后续行动；同类取较强效果并刷新，不叠加，可被驱散。",
+    "element": "earth", "requirements": {"elements": ["earth"], "categories": [], "min_realm": "qiling"},
+    "kind": "utility", "coefficient": 0.0, "book_item": "book_earthen_ward",
+    "effects": [{"kind": "ward", "target": "self", "power": 0.22, "duration": 2}]
+  },
+  {
+    "id": "pure_breath", "name": "清心灵息", "description": "恢复自身气血，并净化存活队友或自身的毒、虚弱和控制；优先受控者，其次负面较多者，已受控者不能自行施法。",
+    "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "qiling"},
+    "kind": "heal", "coefficient": 0.12, "book_item": "book_pure_breath",
+    "effects": [{"kind": "cleanse", "target": "ally"}]
+  },
+  {
+    "id": "spirit_dispel", "name": "破障术", "description": "驱散一个敌人的全部护盾及临时攻击增益；无可驱散目标时改用普通攻击，可被闪避。",
+    "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "ningqi"},
+    "kind": "utility", "coefficient": 0.0, "book_item": "book_spirit_dispel",
+    "effects": [{"kind": "dispel", "target": "enemy"}]
+  },
+  {
+    "id": "battle_chant", "name": "战意灵歌", "description": "使可强化的存活队友中基础攻击最高者攻击提高20%，持续两次后续行动；包含自身，同类不叠加，可被驱散。",
+    "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "ningqi"},
+    "kind": "utility", "coefficient": 0.0, "book_item": "book_battle_chant",
+    "effects": [{"kind": "empower", "target": "ally", "power": 0.2, "duration": 2}]
   }
 ]

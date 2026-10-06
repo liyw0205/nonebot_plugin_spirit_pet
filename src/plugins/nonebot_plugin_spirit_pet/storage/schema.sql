@@ -21,6 +21,7 @@ CREATE TABLE pets (
     realm INTEGER NOT NULL DEFAULT 0 CHECK (realm >= 0),
     layer INTEGER NOT NULL DEFAULT 1 CHECK (layer BETWEEN 1 AND 10),
     bloodline INTEGER NOT NULL DEFAULT 0 CHECK (bloodline >= 0),
+    lineage_id TEXT,
     exp INTEGER NOT NULL DEFAULT 0 CHECK (exp >= 0),
     affinity INTEGER NOT NULL DEFAULT 0 CHECK (affinity BETWEEN 0 AND 100),
     energy INTEGER NOT NULL DEFAULT 100 CHECK (energy BETWEEN 0 AND 100),

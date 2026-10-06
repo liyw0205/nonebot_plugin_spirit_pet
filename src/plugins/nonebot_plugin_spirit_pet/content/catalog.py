@@ -7,6 +7,10 @@ from ..domain.battle_content import (
     Category, DaoNames, Element, Equipment, ForgeLevel, Skill, SkillLevel, Talent,
 )
 from .validation import validate_battle_content
+from .crafting_validation import validate_crafting_content
+from .lineage_validation import validate_lineages
+from ..domain.crafting_content import Recipe
+from ..domain.lineage_content import Lineage
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -57,6 +61,8 @@ class Catalog:
     talents: dict[str, Talent]
     skill_levels: dict[int, SkillLevel]
     forge_levels: dict[int, ForgeLevel]
+    recipes: dict[str, Recipe]
+    lineages: dict[str, Lineage]
     dao_names: DaoNames
 
     @classmethod
@@ -80,6 +86,8 @@ class Catalog:
             talents=_index(directory / "talents.json", Talent),
             skill_levels=_index(directory / "skill_levels.json", SkillLevel, "level"),
             forge_levels=_index(directory / "forge_levels.json", ForgeLevel, "level"),
+            recipes=_index(directory / "recipes.json", Recipe),
+            lineages=_index(directory / "lineages.json", Lineage),
             dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
@@ -133,6 +141,8 @@ class Catalog:
             raise ValueError("spirit_food must be a consumable")
         self._validate_progression()
         validate_battle_content(self)
+        validate_crafting_content(self)
+        validate_lineages(self)
 
     def _validate_progression(self):
         if set(self.skill_levels) != set(range(1, len(self.skill_levels) + 1)):

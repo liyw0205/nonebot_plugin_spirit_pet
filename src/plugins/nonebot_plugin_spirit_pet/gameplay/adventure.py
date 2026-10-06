@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.models import GameError, Reply
-from ..utils.arguments import named
+from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .combat import Fighter, fight
 from .loadout import combatant
@@ -23,12 +23,43 @@ def explore(ctx: Context, arg: str) -> Reply:
 
 
 def dungeons(ctx: Context, arg: str) -> Reply:
-    return Reply("山海秘境", tuple(
+    if arg and not arg.isdecimal():
+        dungeon = named(ctx.content.dungeons, arg)
+        reward = dungeon.reward
+        realm = next(realm.name for realm in ctx.content.realms if realm.id == dungeon.min_realm)
+        command = "灵宠组队挑战" if dungeon.team else "灵宠挑战"
+        return Reply(dungeon.name, (
+            f"{'组队' if dungeon.team else '单人'} · {realm}起 · 每只灵宠精力 {dungeon.energy}",
+            *(f"{ctx.content.enemies[key].name} · 主属性："
+              f"{ctx.content.elements[ctx.content.enemies[key].primary_element].name}"
+              f" · 气血 {ctx.content.enemies[key].stats.hp} 攻击 {ctx.content.enemies[key].stats.attack}"
+              f" 防御 {ctx.content.enemies[key].stats.defense} 速度 {ctx.content.enemies[key].stats.speed}"
+              for key in dungeon.enemies),
+            f"胜利：修为 {reward.exp.minimum}-{reward.exp.maximum}"
+            f" · 灵石 {reward.stones.minimum}-{reward.stones.maximum}",
+            *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
+              for key, bounds in reward.items.items()),
+        ), (f"{command} {dungeon.name}", "我的灵宠", "灵宠秘境"))
+    entries = sorted(ctx.content.dungeons.values(), key=lambda dungeon: (
+        next(index for index, realm in enumerate(ctx.content.realms) if realm.id == dungeon.min_realm),
+        dungeon.team, dungeon.id,
+    ))
+    page = quantity(arg or "1", 999)
+    pages = (len(entries) + 4) // 5
+    if page > pages:
+        raise GameError(f"山海秘境共 {pages} 页。")
+    selected = entries[(page - 1) * 5:page * 5]
+    commands = [f"灵宠秘境 {dungeon.name}" for dungeon in selected]
+    if page > 1:
+        commands.append(f"灵宠秘境 {page - 1}")
+    if page < pages:
+        commands.append(f"灵宠秘境 {page + 1}")
+    return Reply(f"山海秘境 {page}/{pages}", tuple(
         f"{dungeon.name}：{'组队' if dungeon.team else '单人'}"
         f" · {next(r.name for r in ctx.content.realms if r.id == dungeon.min_realm)}起"
         f" · 精力 {dungeon.energy}"
-        for dungeon in ctx.content.dungeons.values()
-    ), ("灵宠挑战 青岚林", "灵宠队伍", "灵宠组队"))
+        for dungeon in selected
+    ), tuple(commands))
 
 
 def challenge(ctx: Context, arg: str) -> Reply:

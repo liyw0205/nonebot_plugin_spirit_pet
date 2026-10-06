@@ -252,5 +252,29 @@
   {
     "id": "egg_molian", "name": "蚀心灵卵", "description": "幽冥深渊组队秘境掉落，使用后获得一只蚀心莲。",
     "kind": "pet_egg", "species_id": "molian"
+  },
+  {
+    "id": "book_ice_seal", "name": "霜封术诀", "description": "学习霜封术所需，限凝气境冰系灵宠。",
+    "kind": "skill_book", "price": 220, "skill_id": "ice_seal"
+  },
+  {
+    "id": "book_poison_sapping", "name": "蚀力毒咒诀", "description": "学习蚀力毒咒所需，要求毒灵根。",
+    "kind": "skill_book", "price": 200, "skill_id": "poison_sapping"
+  },
+  {
+    "id": "book_earthen_ward", "name": "岩灵护障诀", "description": "学习岩灵护障所需，要求土灵根。",
+    "kind": "skill_book", "price": 180, "skill_id": "earthen_ward"
+  },
+  {
+    "id": "book_pure_breath", "name": "清心灵息诀", "description": "学习清心灵息所需，通用恢复与队友净化灵术。",
+    "kind": "skill_book", "price": 180, "skill_id": "pure_breath"
+  },
+  {
+    "id": "book_spirit_dispel", "name": "破障术诀", "description": "学习破障术所需，凝气境通用驱散灵术。",
+    "kind": "skill_book", "price": 220, "skill_id": "spirit_dispel"
+  },
+  {
+    "id": "book_battle_chant", "name": "战意灵歌诀", "description": "学习战意灵歌所需，凝气境通用增益灵术。",
+    "kind": "skill_book", "price": 220, "skill_id": "battle_chant"
   }
 ]

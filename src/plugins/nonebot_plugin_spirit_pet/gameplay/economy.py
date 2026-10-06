@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..utils.arguments import item_amount, named
 from ..utils.energy import add_energy
+from ..utils.pagination import paginate
 from ..utils.time import beijing_day
 from .quests import advance
 from .rewards import grant
@@ -32,10 +33,23 @@ def bag(ctx: Context, arg: str) -> Reply:
 
 
 def shop(ctx: Context, arg: str) -> Reply:
-    return Reply("山海灵坊", tuple(
+    available = {key: item for key, item in ctx.content.items.items() if item.price is not None}
+    if arg and not arg.isdecimal():
+        item = named(available, arg)
+        commands = [f"灵宠购买 {item.name}"]
+        if item.kind == "equipment":
+            gear = ctx.content.equipment[item.equipment_id]
+            commands.extend((f"灵宠装备图鉴 {gear.name}", f"灵宠工坊 {item.name}"))
+        elif item.kind == "skill_book":
+            commands.append(f"灵宠技能图鉴 {ctx.content.skills[item.skill_id].name}")
+        return Reply(f"山海灵坊 · {item.name}", (
+            f"售价：{item.price} 灵石。", item.description,
+        ), (*commands, "灵宠商店", "灵宠背包"))
+    page = paginate(available.values(), arg, "山海灵坊", "灵宠商店")
+    return Reply(f"山海灵坊 {page.number}/{page.total}", tuple(
         f"{item.name}：{item.price} 灵石 · {item.description}"
-        for item in ctx.content.items.values() if item.price is not None
-    ), ("灵宠购买 灵粮 3", "灵宠购买 回元丹 1", "灵宠背包"))
+        for item in page.entries
+    ), (*(f"灵宠商店 {item.name}" for item in page.entries), *page.navigation, "灵宠背包"))
 
 
 def buy(ctx: Context, arg: str) -> Reply:

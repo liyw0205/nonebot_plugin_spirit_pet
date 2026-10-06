@@ -10,7 +10,7 @@ from ..domain.models import Reply
 
 
 def inline_command(label: str, command: str, prefix: str = "/") -> str:
-    if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9 /]+", label):
+    if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9 /+]+", label):
         raise ValueError("invalid button label")
     if any(char in command for char in "\r\n\\[]()"):
         raise ValueError("invalid button command")

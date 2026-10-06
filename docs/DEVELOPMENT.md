@@ -18,22 +18,30 @@ src/plugins/nonebot_plugin_spirit_pet/
   application/game.py          调度、事务、保存
   domain/content.py            Pydantic 静态内容模型
   domain/battle_content.py     元素、天赋、装备、技能及成长阶梯模型
+  domain/lineage_content.py    种族血脉分支与四维倍率模型
+  domain/crafting_content.py   打造配方与纯函数分解回收公式
   domain/state.py              Player、Pet 运行模型
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
   content/validation.py        装备、技能、元素与内容可用性验证
+  content/lineage_validation.py 种族分支、成本与成长取舍校验
+  content/crafting_validation.py 配方完整性、材料来源与资源损耗校验
   gameplay/pets.py             领养、召唤、列表、切换、改名
   gameplay/hatching.py         灵卵孵化与名册容量检查
   gameplay/identity.py         唯一道号生成、显示、修改
   gameplay/cultivation.py      修炼、大小境界突破、血脉进化
+  gameplay/lineage.py          种族分支展示、选择和基础成长倍率
   gameplay/economy.py          签到、背包、商店、消耗品
   gameplay/quests.py           每日任务与领奖
   gameplay/rewards.py          共用奖励结算
   gameplay/combat.py           属性计算与限回合战斗
   gameplay/talents.py          天赋触发与单场护盾、毒伤效果
+  gameplay/effects.py          主动控制、弱化、增益、净化、驱散和持续次数
   gameplay/compatibility.py    类别、元素、境界适用性检查
   gameplay/equipment.py        穿戴、卸装、槽位与图鉴
   gameplay/forging.py          装备强化与强化件库存保留
+  gameplay/equipment_inventory.py 同等级装备库存取用与返还
+  gameplay/crafting.py         配方、打造、分解与回收预览
   gameplay/skills.py           秘笈学习、携带与卸下
   gameplay/mastery.py          熟练度结算、升级与满级处理
   gameplay/loadout.py          将装备与技能组装到战斗单位
@@ -48,10 +56,14 @@ src/plugins/nonebot_plugin_spirit_pet/
   utils/time.py               UTC+8 日期和冷却计算
   utils/energy.py             精力恢复与上限
   utils/elements.py           元素祖先展开与继承门槛判断
+  utils/pagination.py         只读内容分页、页码校验与导航
   utils/randomness.py         可注入随机源的加权抽取
   data/*.json                 静态宠物、境界、血脉、物品、怪物和奖励
 tests/                         单元、并发、适配器契约和真实 WS 测试
 scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
+scripts/balance_report.py      固定种子仿真入口，只使用临时数据库
+scripts/balance_specials.py    血脉分支与六类主动效果的独立专项仿真
+scripts/balance/               场景矩阵、实际战斗、单位时间收益与验收
 docs/                          安装、接入、玩法和开发文档
 ```
 
@@ -74,7 +86,7 @@ docs/                          安装、接入、玩法和开发文档
 ## 数据边界
 
 - `players`：原始用户 ID、唯一道号、共享灵石、出战宠物、日期、玩家级冷却与论剑积分。道号用 SQLite UNIQUE COLLATE NOCASE 约束，生成和改名均处于写事务内。
-- `pets`：每只宠物独立的种族 ID、名字、大境界、层数、血脉、修为、亲密、精力及恢复时间。
+- `pets`：每只宠物独立的种族 ID、名字、大境界、层数、血脉、选定的 lineage_id、修为、亲密、精力及恢复时间。分支不改 species_id。
 - `inventory`：道具 ID 与数量，没有专门的“灵粮镜像”字段。
 - `equipment`：每只宠物的槽位物品与强化等级，装备不同时计入库存。
 - `unequipped_equipment`：玩家背包中 +1 及以上的装备，按物品、强化等级计数；+0 仍使用普通 inventory。卸装和重新穿戴不清空强化，不重复计数。
@@ -100,17 +112,19 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 5，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 6，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
 ## 战斗规则
 
 当前是自定义回合制规则，不依赖已有桌游或游戏规则体系：
 
-- 属性来自种族基础值乘以境界、层数、血脉、亲密倍率，再加装备各自强化后的固定属性，修为余额不直接增加攻击。
+- 属性来自种族基础值乘以境界、层数、血脉、亲密、分支各属性倍率，再加装备各自强化后的固定属性，修为余额不直接增加攻击。血脉分支引用错误或不属于该种族时明确拒绝，不能悄悄返回默认倍率。
 - `loadout.combatant` 对装备和技能再次校验类别、全部所需元素与最低境界；拒绝不兼容内容，不静默跳过坏数据。
 - `Fighter.primary_element` 显式从宠物/敌人定义传入，不能取 elements[0]。普攻使用主属性，伤害技能使用技能元素，防守仅看目标主属性；分支递归继承五行关系，倍率只算一次，1.25/0.8/1.0。无属性技能按中性处理。
-- 已携带技能依固定顺序轮换，系数乘数据库等级对应的威力倍率。治疗技能回复自身，满血时普攻，不记治疗技能施放。技能轮次属于单场内存状态，不是 JSON 时间字段。
+- 已携带技能依固定顺序轮换，系数乘数据库等级对应的威力倍率。治疗技能回复自身；满血但仍有有效净化等附加效果时可以施放，否则回退普攻且不记技能施放。技能轮次属于单场内存状态，不是 JSON 时间字段。
 - `talents` 负责开场护盾、行动前毒伤/恢复、进攻增益、闪避和命中后触发。毒和反击不递归触发天赋或技能熟练度。效果状态在每场新建 Fighter 时重置。
+- `effects` 负责明确的控制/增益状态与行动计数：先处理行动前毒伤和天赋，再检查受控，随后施法或普攻，最后推进效果期限和免控。规划目标后才检查效用，避免随机探测目标与实际目标不一致。`actions` 只统计真正行动并推动技能轮换，`turns` 包含受控跳过的行动机会。
+- 同类效果取较强值、较长剩余次数并刷新，不叠加；自身刚施加的持续效果从后续行动才计期。护盾先消耗临时层再消耗天赋层。有效驱散和净化计技能施放，无目标则回退普攻；持续效果、反击和天赋不记技能施放。
 - 每场从满气血开始；气血只在本场存在，结算消耗精力，不持久化战斗气血。
 - 速度决定行动顺序，同速时随机决定先后，目标从存活对手中抽取。伤害至少为 1，有 90%-110% 浮动。
 - 最多 40 回合，超时视作平局；不发 PVE 胜利奖励，不转移论剑积分。
@@ -130,6 +144,8 @@ docs/                          安装、接入、玩法和开发文档
 .venv/bin/python -m pip install -r requirements.txt 'pytest>=8,<10'
 .venv/bin/python -m pytest -q
 .venv/bin/python scripts/smoke_test.py
+.venv/bin/python scripts/balance_report.py --runs 100 --seed 20261007 --check
+.venv/bin/python scripts/balance_specials.py --runs 100 --seed 20261007 --check
 .venv/bin/python -m compileall -q src tests scripts bot.py
 ```
 
@@ -138,6 +154,10 @@ Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/my
 测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、主属性/分支继承、天赋效果、技能成长、强化保留、灵卵容量、事务回滚、并发、重复消息、组队准备、论剑应战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
 
 GitHub Actions 使用 Linux/Windows 和 Python 3.10/3.13。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
+
+固定种子矩阵的场景、准备程度、收益口径和留存结果见 [数值验收](BALANCE.md)。日常 pytest 含每个准备阵容 10 次的快速门禁；内容、公式、主动技能变更后另跑完整 100 次并审阅差异。脚本不得连接或修改 `SPIRIT_PET_DB`，仿真只使用临时数据库、生产 `loadout.combatant` 和真实 `fight`。
+
+基础矩阵不包含血脉分支或辅助配装；专项脚本另外验证全部分支和主动效果，并保留未胜利的对照结果。效果观测器仅在单进程专项范围内临时包装 `effects.apply`，统计实际状态变化，退出或异常时恢复原函数；它不是机器人运行时组件，不应在运行中的服务进程里调用。
 
 ## 配置来源
 

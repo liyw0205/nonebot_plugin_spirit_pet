@@ -1,7 +1,9 @@
 from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named
+from ..utils.pagination import paginate
 from .compatibility import check_requirements, requirement_text
+from .equipment_inventory import highest_enhancement, put, take
 
 SLOTS = {"weapon": "灵器", "armor": "护甲", "charm": "饰品"}
 
@@ -27,38 +29,6 @@ def selected_slot(ctx: Context, pet_id: int, arg: str) -> str:
     if slot not in items:
         raise GameError("该位置没有装备，请填写灵器、护甲、饰品或已装备名称。")
     return slot
-
-
-def _stored_enhancement(ctx: Context, item_id: str) -> int:
-    row = ctx.repo.conn.execute(
-        "SELECT MAX(enhancement) AS enhancement FROM unequipped_equipment "
-        "WHERE user_id=? AND item_id=? AND quantity>0", (ctx.user_id, item_id),
-    ).fetchone()
-    return row["enhancement"] or 0
-
-
-def _take_item(ctx: Context, item_id: str, enhancement: int) -> None:
-    if not enhancement:
-        ctx.repo.consume_item(ctx.user_id, item_id, 1)
-        return
-    updated = ctx.repo.conn.execute(
-        "UPDATE unequipped_equipment SET quantity=quantity-1 "
-        "WHERE user_id=? AND item_id=? AND enhancement=? AND quantity>0",
-        (ctx.user_id, item_id, enhancement),
-    )
-    if updated.rowcount != 1:
-        raise GameError("道具数量不足。")
-
-
-def _return_item(ctx: Context, item_id: str, enhancement: int) -> None:
-    if not enhancement:
-        ctx.repo.add_item(ctx.user_id, item_id, 1)
-        return
-    ctx.repo.conn.execute(
-        "INSERT INTO unequipped_equipment(user_id, item_id, enhancement, quantity) VALUES (?, ?, ?, 1) "
-        "ON CONFLICT(user_id, item_id, enhancement) DO UPDATE SET quantity=quantity+1",
-        (ctx.user_id, item_id, enhancement),
-    )
 
 
 def view(ctx: Context, arg: str) -> Reply:
@@ -91,12 +61,25 @@ def view(ctx: Context, arg: str) -> Reply:
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
-    return Reply("灵物图鉴", tuple(
+    if arg and not arg.isdecimal():
+        gear = named(ctx.content.equipment, arg)
+        item = next(item for item in ctx.content.items.values() if item.equipment_id == gear.id)
+        commands = [f"灵宠工坊 {item.name}", f"灵宠装备 {item.name}"]
+        if item.price is not None:
+            commands.insert(0, f"灵宠购买 {item.name}")
+        return Reply(f"灵物图鉴 · {gear.name}", (
+            f"部位：{SLOTS[gear.slot]}。", f"适用：{requirement_text(ctx, gear.requirements)}。",
+            f"基础加成：气血 +{gear.bonuses.hp} 攻击 +{gear.bonuses.attack}"
+            f" 防御 +{gear.bonuses.defense} 速度 +{gear.bonuses.speed}。",
+            f"灵坊售价：{item.price} 灵石。" if item.price is not None else "不在灵坊出售。",
+        ), (*commands, "灵宠装备图鉴", "灵宠装备"))
+    page = paginate(ctx.content.equipment.values(), arg, "灵物图鉴", "灵宠装备图鉴")
+    return Reply(f"灵物图鉴 {page.number}/{page.total}", tuple(
         f"{gear.name} · {SLOTS[gear.slot]} · {requirement_text(ctx, gear.requirements)}"
         f" · 气血 +{gear.bonuses.hp} 攻击 +{gear.bonuses.attack}"
         f" 防御 +{gear.bonuses.defense} 速度 +{gear.bonuses.speed}"
-        for gear in ctx.content.equipment.values()
-    ), ("灵宠商店", "灵宠装备"))
+        for gear in page.entries
+    ), (*(f"灵宠装备图鉴 {gear.name}" for gear in page.entries), *page.navigation, "灵宠装备"))
 
 
 def equip(ctx: Context, arg: str) -> Reply:
@@ -107,12 +90,12 @@ def equip(ctx: Context, arg: str) -> Reply:
     gear = ctx.content.equipment[item.equipment_id]
     check_requirements(ctx, pet, gear.requirements)
     current = loadout(ctx, pet.pet_id).get(gear.slot)
-    enhancement = _stored_enhancement(ctx, item.id)
+    enhancement = highest_enhancement(ctx, item.id)
     if current and current[0] == item.id and enhancement <= current[1]:
         raise GameError("该灵物已经装备。")
-    _take_item(ctx, item.id, enhancement)
+    take(ctx, item.id, enhancement)
     if current:
-        _return_item(ctx, *current)
+        put(ctx, *current)
     ctx.repo.conn.execute(
         "INSERT INTO equipment(pet_id, slot, item_id, enhancement) VALUES (?, ?, ?, ?) "
         "ON CONFLICT(pet_id, slot) DO UPDATE SET item_id=excluded.item_id, enhancement=excluded.enhancement",
@@ -130,6 +113,6 @@ def unequip(ctx: Context, arg: str) -> Reply:
     slot = selected_slot(ctx, pet.pet_id, arg)
     item_id, enhancement = loadout(ctx, pet.pet_id)[slot]
     ctx.repo.conn.execute("DELETE FROM equipment WHERE pet_id=? AND slot=?", (pet.pet_id, slot))
-    _return_item(ctx, item_id, enhancement)
+    put(ctx, item_id, enhancement)
     ctx.repo.invalidate_ready(ctx.user_id)
     return Reply("卸下灵物", (f"{ctx.content.items[item_id].name} +{enhancement}已返回背包。",))

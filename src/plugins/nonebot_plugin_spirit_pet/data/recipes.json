@@ -1,0 +1,72 @@
+[
+  {
+    "id": "wind_feather", "name": "青岚翎", "item_id": "wind_feather",
+    "stones": 40, "materials": {"forge_ore": 2},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "fire_fang", "name": "赤焰牙", "item_id": "fire_fang",
+    "stones": 40, "materials": {"forge_ore": 2},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "dragon_scale", "name": "龙鳞甲", "item_id": "dragon_scale",
+    "stones": 30, "materials": {"forge_ore": 2, "bloodline_essence": 1},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "earth_shell", "name": "玄岩甲", "item_id": "earth_shell",
+    "stones": 40, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "spirit_bell", "name": "灵心铃", "item_id": "spirit_bell",
+    "stones": 30, "materials": {"forge_ore": 2},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "frost_beak", "name": "寒晶喙", "item_id": "frost_beak",
+    "stones": 50, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "silk_cocoon", "name": "灵丝甲", "item_id": "silk_cocoon",
+    "stones": 30, "materials": {"forge_ore": 2, "bloodline_essence": 1},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "poison_scale", "name": "幽鳞衣", "item_id": "poison_scale",
+    "stones": 40, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "living_root", "name": "长生根", "item_id": "living_root",
+    "stones": 40, "materials": {"forge_ore": 2, "bloodline_essence": 1},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "thunder_horn", "name": "震雷角", "item_id": "thunder_horn",
+    "stones": 60, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "metal_scythe", "name": "金魄镰", "item_id": "metal_scythe",
+    "stones": 60, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "stone_core", "name": "山心石", "item_id": "stone_core",
+    "stones": 50, "materials": {"forge_ore": 3},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "water_prism", "name": "澄水珠", "item_id": "water_prism",
+    "stones": 40, "materials": {"forge_ore": 2},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  },
+  {
+    "id": "poison_thorn", "name": "蚀灵刺", "item_id": "poison_thorn",
+    "stones": 40, "materials": {"forge_ore": 2},
+    "salvage_materials": {"forge_ore": 1}, "enhancement_refund_percent": 50
+  }
+]

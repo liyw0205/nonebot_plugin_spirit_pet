@@ -1,0 +1,326 @@
+[
+  {
+    "id": "qingluan_lingfeng", "name": "凌风鸾脉", "species_id": "qingluan",
+    "description": "灵羽逐风，强化速度与风刃攻势，羽体防护略减。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.02, "attack": 1.1, "defense": 0.9, "speed": 1.2}
+  },
+  {
+    "id": "qingluan_qingmu", "name": "青木鸾脉", "species_id": "qingluan",
+    "description": "木灵温养羽身，侧重气血防御，以少许攻速换取回春续航。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.18, "attack": 0.98, "defense": 1.15, "speed": 0.95}
+  },
+  {
+    "id": "xuanhu_yeyan", "name": "夜焰狐脉", "species_id": "xuanhu",
+    "description": "月火凝于利爪，强化抢攻，牺牲气血与防御。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.95, "attack": 1.2, "defense": 0.9, "speed": 1.15}
+  },
+  {
+    "id": "xuanhu_huoxue", "name": "温焰狐脉", "species_id": "xuanhu",
+    "description": "温焰护体，提升耐久与稳定攻势，身法略缓。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.15, "attack": 1.08, "defense": 1.12, "speed": 0.95}
+  },
+  {
+    "id": "baize_jinjue", "name": "金阙泽脉", "species_id": "baize",
+    "description": "先天金息转守为攻，攻击成长突出，部分护甲化为锋芒。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.05, "attack": 1.18, "defense": 0.92, "speed": 1.05}
+  },
+  {
+    "id": "baize_shouque", "name": "守阙泽脉", "species_id": "baize",
+    "description": "护世灵息厚积，气血与防御并进，攻击速度相应收敛。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.2, "attack": 0.95, "defense": 1.2, "speed": 0.9}
+  },
+  {
+    "id": "jiaolong_canglan", "name": "沧澜蛟脉", "species_id": "jiaolong",
+    "description": "深潭蓄势，气血与鳞甲渐厚，放缓身法换取正面压制。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.18, "attack": 1.1, "defense": 1.08, "speed": 0.9}
+  },
+  {
+    "id": "jiaolong_jingtao", "name": "惊涛蛟脉", "species_id": "jiaolong",
+    "description": "激流凝爪，以轻鳞换取攻击速度，发挥裂甲神通。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.96, "attack": 1.23, "defense": 0.9, "speed": 1.13}
+  },
+  {
+    "id": "bifang_liaotian", "name": "燎天方脉", "species_id": "bifang",
+    "description": "离火冲霄，极重爆发，薄羽难以承受连续重击。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.9, "attack": 1.26, "defense": 0.88, "speed": 1.15}
+  },
+  {
+    "id": "bifang_yuyang", "name": "御阳方脉", "species_id": "bifang",
+    "description": "阳火内敛，补强气血防御，保留火势但不再追逐极速。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.16, "attack": 1.1, "defense": 1.08, "speed": 0.92}
+  },
+  {
+    "id": "xuanwu_fuhai", "name": "负海玄脉", "species_id": "xuanwu",
+    "description": "厚甲负海，耐久更深，舍弃进攻速度以承接强敌。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.25, "attack": 0.92, "defense": 1.2, "speed": 0.85}
+  },
+  {
+    "id": "xuanwu_xuanchao", "name": "玄潮武脉", "species_id": "xuanwu",
+    "description": "潮力贯甲，着重攻击成长，强化反震，速度略降。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.08, "attack": 1.2, "defense": 1.1, "speed": 0.93}
+  },
+  {
+    "id": "sanlinglu_muxin", "name": "木心鹿脉", "species_id": "sanlinglu",
+    "description": "木息为本，气血防御滋长，牺牲少许攻势增强生息。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.2, "attack": 0.94, "defense": 1.14, "speed": 1.03}
+  },
+  {
+    "id": "sanlinglu_sanyao", "name": "三曜鹿脉", "species_id": "sanlinglu",
+    "description": "三灵并运，侧重术法攻势与身法，护体能力略弱。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.03, "attack": 1.18, "defense": 0.9, "speed": 1.15}
+  },
+  {
+    "id": "chiyanhu_liepo", "name": "烈魄虎脉", "species_id": "chiyanhu",
+    "description": "烈魄凝牙，攻击成长大增，以较薄防御换取追猎威力。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.03, "attack": 1.25, "defense": 0.88, "speed": 1.07}
+  },
+  {
+    "id": "chiyanhu_yanyue", "name": "炎岳虎脉", "species_id": "chiyanhu",
+    "description": "炎躯稳如山岳，耐久增长，放慢追击脚步。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.2, "attack": 1.05, "defense": 1.12, "speed": 0.9}
+  },
+  {
+    "id": "rongyanjia_rongxin", "name": "熔心甲脉", "species_id": "rongyanjia",
+    "description": "熔心蓄热，提升气血与喷涌反击的攻势，行动更缓。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.16, "attack": 1.18, "defense": 1.02, "speed": 0.87}
+  },
+  {
+    "id": "rongyanjia_yanzang", "name": "岩藏甲脉", "species_id": "rongyanjia",
+    "description": "熔壳凝岩，专注守御，气血防御厚重而攻击迟滞。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.23, "attack": 0.9, "defense": 1.25, "speed": 0.86}
+  },
+  {
+    "id": "lingxi_chaosheng", "name": "潮生獭脉", "species_id": "lingxi",
+    "description": "潮息养身，以温和攻势换取厚血续航，水中身法略进。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.22, "attack": 0.96, "defense": 1.1, "speed": 1.02}
+  },
+  {
+    "id": "lingxi_liubo", "name": "流波獭脉", "species_id": "lingxi",
+    "description": "追波轻跃，以防御换取攻速，灵活抢占先手。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.02, "attack": 1.14, "defense": 0.94, "speed": 1.18}
+  },
+  {
+    "id": "hanying_liekong", "name": "裂空鹰脉", "species_id": "hanying",
+    "description": "冰羽变薄，极重先手俯冲，气血防御相应减弱。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.93, "attack": 1.18, "defense": 0.88, "speed": 1.25}
+  },
+  {
+    "id": "hanying_hanshuang", "name": "寒霜鹰脉", "species_id": "hanying",
+    "description": "寒晶淬喙，提升持续战力与耐久，飞掠速度略缓。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.12, "attack": 1.15, "defense": 1.1, "speed": 0.91}
+  },
+  {
+    "id": "xuehu_huanying", "name": "幻影雪脉", "species_id": "xuehu",
+    "description": "雪影轻身，速度显著增长，护甲稍弱而冰术攻势更灵动。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.03, "attack": 1.09, "defense": 0.9, "speed": 1.24}
+  },
+  {
+    "id": "xuehu_shouxue", "name": "守雪狐脉", "species_id": "xuehu",
+    "description": "雪绒积灵，增强耐久，以轻缓身法抵御漏过幻影的攻击。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.2, "attack": 1.02, "defense": 1.16, "speed": 0.94}
+  },
+  {
+    "id": "bingcan_hanjian", "name": "寒茧蚕脉", "species_id": "bingcan",
+    "description": "厚茧蓄生，增强气血与护体，冰息攻速趋缓。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.26, "attack": 0.9, "defense": 1.18, "speed": 0.88}
+  },
+  {
+    "id": "bingcan_bingsi", "name": "冰丝蚕脉", "species_id": "bingcan",
+    "description": "冰丝凝锐，强化攻击与动作，削减部分茧甲。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.04, "attack": 1.22, "defense": 0.91, "speed": 1.13}
+  },
+  {
+    "id": "mohe_molang", "name": "墨浪鹤脉", "species_id": "mohe",
+    "description": "潮刃蓄势，提升汲灵攻势与气血，牺牲部分速度和护甲。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.12, "attack": 1.23, "defense": 0.9, "speed": 0.98}
+  },
+  {
+    "id": "mohe_tingfeng", "name": "听风鹤脉", "species_id": "mohe",
+    "description": "长羽御风，速度与护体并进，直接攻击更为温和。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.06, "attack": 0.97, "defense": 1.14, "speed": 1.2}
+  },
+  {
+    "id": "tengling_kuangen", "name": "狂根藤脉", "species_id": "tengling",
+    "description": "藤根主动掠取生机，提升攻击速度，枝甲稍薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.07, "attack": 1.21, "defense": 0.9, "speed": 1.1}
+  },
+  {
+    "id": "tengling_panmu", "name": "盘木藤脉", "species_id": "tengling",
+    "description": "老藤盘根，气血防御显著成长，以迟缓攻势维持缠斗。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.23, "attack": 0.94, "defense": 1.19, "speed": 0.9}
+  },
+  {
+    "id": "bizhu_yeyin", "name": "叶隐蛇脉", "species_id": "bizhu",
+    "description": "竹叶遮身，强化身法与耐久，减轻攻击以延续缠斗。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.15, "attack": 0.95, "defense": 1.07, "speed": 1.18}
+  },
+  {
+    "id": "bizhu_biren", "name": "碧刃蛇脉", "species_id": "bizhu",
+    "description": "碧鳞淬牙，强化直接攻击与速度，身躯防护随之削薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.96, "attack": 1.24, "defense": 0.92, "speed": 1.12}
+  },
+  {
+    "id": "jinyu_pojin", "name": "破金隼脉", "species_id": "jinyu",
+    "description": "金羽化锋，专注破甲强攻，羽身变薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.94, "attack": 1.25, "defense": 0.9, "speed": 1.1}
+  },
+  {
+    "id": "jinyu_jingyu", "name": "靖羽隼脉", "species_id": "jinyu",
+    "description": "羽甲相连，补足气血防御，飞速略缓而攻势更稳。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.18, "attack": 1.07, "defense": 1.13, "speed": 0.93}
+  },
+  {
+    "id": "daotang_duanyue", "name": "断月螳脉", "species_id": "daotang",
+    "description": "双镰极锐，首次强攻更重，气血防御为之让步。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.91, "attack": 1.28, "defense": 0.87, "speed": 1.12}
+  },
+  {
+    "id": "daotang_lianjia", "name": "敛甲螳脉", "species_id": "daotang",
+    "description": "镰甲内敛，补强原本脆弱的身躯，牺牲部分极速。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.22, "attack": 1.04, "defense": 1.16, "speed": 0.9}
+  },
+  {
+    "id": "tielin_zhenshan", "name": "镇山鳞脉", "species_id": "tielin",
+    "description": "铁鳞叠嶂，进一步强化守御，行动攻势更缓。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.18, "attack": 0.91, "defense": 1.28, "speed": 0.84}
+  },
+  {
+    "id": "tielin_fanfeng", "name": "返锋鳞脉", "species_id": "tielin",
+    "description": "鳞锋外展，强化反击所需攻击，护甲稍减但动作轻快。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.08, "attack": 1.24, "defense": 0.92, "speed": 1.07}
+  },
+  {
+    "id": "shanshi_hanyue", "name": "撼岳狮脉", "species_id": "shanshi",
+    "description": "山力贯掌，攻击气血增长，舍弃部分防护与速度。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.14, "attack": 1.24, "defense": 0.93, "speed": 0.9}
+  },
+  {
+    "id": "shanshi_fengling", "name": "封岭狮脉", "species_id": "shanshi",
+    "description": "山脊护身，以温和攻势换取气血防御，略补沉重身法。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.18, "attack": 0.95, "defense": 1.18, "speed": 1.02}
+  },
+  {
+    "id": "shiou_yanxin", "name": "岩心偶脉", "species_id": "shiou",
+    "description": "岩心凝实，气血显著成长，维持厚盾而收敛攻势。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.28, "attack": 0.9, "defense": 1.16, "speed": 0.87}
+  },
+  {
+    "id": "shiou_xingyue", "name": "行岳偶脉", "species_id": "shiou",
+    "description": "岩躯关窍疏通，攻击速度提升，护体岩层变薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.06, "attack": 1.16, "defense": 0.92, "speed": 1.22}
+  },
+  {
+    "id": "fenghu_zhufeng", "name": "逐风猞脉", "species_id": "fenghu",
+    "description": "风脉贯足，追求抢攻极速，体魄与防护更轻。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.96, "attack": 1.14, "defense": 0.9, "speed": 1.25}
+  },
+  {
+    "id": "fenghu_linying", "name": "林影猞脉", "species_id": "fenghu",
+    "description": "藏风于躯，气血攻击更扎实，首击之后也能久战。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.19, "attack": 1.1, "defense": 1.08, "speed": 0.92}
+  },
+  {
+    "id": "leize_zhengu", "name": "震鼓夔脉", "species_id": "leize",
+    "description": "雷鼓震荡，攻击与气血并进，防护速度略减。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.13, "attack": 1.23, "defense": 0.95, "speed": 0.91}
+  },
+  {
+    "id": "leize_cangze", "name": "沧泽夔脉", "species_id": "leize",
+    "description": "深泽润体，强化血防与身法，以稍弱攻势换取持续雷击。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.17, "attack": 0.96, "defense": 1.15, "speed": 1.04}
+  },
+  {
+    "id": "leitingdiao_jilei", "name": "极雷雕脉", "species_id": "leitingdiao",
+    "description": "雷羽极锐，强化追猎攻速，气血与护甲更薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 0.92, "attack": 1.24, "defense": 0.89, "speed": 1.16}
+  },
+  {
+    "id": "leitingdiao_tingwei", "name": "霆卫雕脉", "species_id": "leitingdiao",
+    "description": "霆光绕羽，补强耐久，以平稳飞行等待终猎时机。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.2, "attack": 1.06, "defense": 1.12, "speed": 0.94}
+  },
+  {
+    "id": "duman_youlin", "name": "幽鳞蟒脉", "species_id": "duman",
+    "description": "幽鳞厚实，强化血防拖延战局，毒牙直接攻势稍弱。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.21, "attack": 0.92, "defense": 1.21, "speed": 0.91}
+  },
+  {
+    "id": "duman_qianying", "name": "潜影蟒脉", "species_id": "duman",
+    "description": "蟒躯轻化，补强攻击速度，以薄鳞换取更快施毒机会。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.04, "attack": 1.17, "defense": 0.91, "speed": 1.19}
+  },
+  {
+    "id": "molian_shixin", "name": "蚀心莲脉", "species_id": "molian",
+    "description": "花蕊淬锋，直接攻击增强，汲取更多气血但花瓣更薄。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.05, "attack": 1.24, "defense": 0.9, "speed": 1.06}
+  },
+  {
+    "id": "molian_shengye", "name": "生叶莲脉", "species_id": "molian",
+    "description": "莲叶生生，气血防御扎实，以温和缓慢的攻势延续治疗。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.24, "attack": 0.94, "defense": 1.17, "speed": 0.9}
+  },
+  {
+    "id": "mingdie_huansha", "name": "幻纱蝶脉", "species_id": "mingdie",
+    "description": "幻纱轻盈，速度突出，略补气血与防御而牺牲攻击。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.09, "attack": 0.95, "defense": 1.08, "speed": 1.22}
+  },
+  {
+    "id": "mingdie_mingchen", "name": "冥尘蝶脉", "species_id": "mingdie",
+    "description": "冥尘凝刃，增强毒术攻势与气血，飞速护甲略有取舍。", "min_bloodline": 1,
+    "cost": {"exp": 200, "stones": 300, "items": {"bloodline_essence": 3}},
+    "stat_multipliers": {"hp": 1.16, "attack": 1.2, "defense": 0.92, "speed": 0.95}
+  }
+]
