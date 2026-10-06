@@ -41,7 +41,7 @@ def main():
         excluded = {"party", "opponents", "effect_activations", "left_units", "right_units"}
         fields = [key for key in report["scenarios"][0] if key not in excluded]
         with args.csv.open("w", encoding="utf-8", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
+            writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore", lineterminator="\n")
             writer.writeheader()
             writer.writerows(report["scenarios"])
     covered = report["coverage"]

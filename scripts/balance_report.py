@@ -41,7 +41,7 @@ def main():
         args.csv.parent.mkdir(parents=True, exist_ok=True)
         fields = [key for key in report["scenarios"][0] if key not in {"party", "units"}]
         with args.csv.open("w", encoding="utf-8", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
+            writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore", lineterminator="\n")
             writer.writeheader()
             writer.writerows(report["scenarios"])
     print(f"{report['scenario_count']} scenarios, {report['battle_count']} battles; {len(report['issues'])} issues")
