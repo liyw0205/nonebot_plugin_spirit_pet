@@ -5,9 +5,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from nonebot_plugin_spirit_pet.config import Config
-from nonebot_plugin_spirit_pet.messaging import _qq_segments, inline_command, qq_keyboard, send_reply
-from nonebot_plugin_spirit_pet.models import Reply
+from nonebot_plugin_spirit_pet.core.config import Config
+from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, inline_command, qq_keyboard, send_reply
+from nonebot_plugin_spirit_pet.domain.models import Reply
 
 
 def test_qq_blue_link_uses_an_encoded_command_with_no_accidental_execution():

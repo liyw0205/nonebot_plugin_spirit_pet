@@ -1,0 +1,32 @@
+{
+  "starter_stones": 100,
+  "starter_items": {
+    "spirit_food": 3
+  },
+  "daily_reward": {
+    "exp": {
+      "minimum": 0,
+      "maximum": 0
+    },
+    "stones": {
+      "minimum": 200,
+      "maximum": 200
+    },
+    "items": {
+      "spirit_food": {
+        "minimum": 3,
+        "maximum": 3
+      }
+    }
+  },
+  "training_exp": {
+    "minimum": 30,
+    "maximum": 50
+  },
+  "training_energy": 15,
+  "explore_energy": 25,
+  "pvp_energy": 20,
+  "pvp_rating_delta": 20,
+  "max_team_size": 3,
+  "max_skill_slots": 2
+}

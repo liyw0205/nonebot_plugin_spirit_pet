@@ -6,10 +6,10 @@ import nonebot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.adapters.qq.event import C2CMessageCreateEvent, GroupAtMessageCreateEvent
 
-from nonebot_plugin_spirit_pet import handlers
-from nonebot_plugin_spirit_pet.config import Config
-from nonebot_plugin_spirit_pet.service import Game
-from nonebot_plugin_spirit_pet.storage import Store
+from nonebot_plugin_spirit_pet.adapters import handlers
+from nonebot_plugin_spirit_pet.core.config import Config
+from nonebot_plugin_spirit_pet.application.game import Game
+from nonebot_plugin_spirit_pet.storage.database import Store
 
 
 def onebot_event(text="灵宠帮助", message_id=1):
@@ -38,6 +38,11 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("/灵宠购买 灵粮 3") == ("buy", "灵粮 3")
     assert handlers._parse("灵宠图鉴") == ("catalog", "")
     assert handlers._parse("灵宠签到后的聊天") is None
+    assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")
+    assert handlers._parse("我的道号") == ("identity", "")
+    assert handlers._parse("灵宠装备 青岚翎") == ("equipment", "青岚翎")
+    assert handlers._parse("灵宠学习 风刃术") == ("learn", "风刃术")
+    assert handlers._parse("灵宠身份") is None
 
 
 def test_real_adapter_events_share_ids_not_account_bindings(tmp_path, monkeypatch):

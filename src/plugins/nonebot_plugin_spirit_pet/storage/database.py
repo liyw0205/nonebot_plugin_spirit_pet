@@ -5,33 +5,10 @@ from contextlib import closing
 from dataclasses import asdict
 from pathlib import Path
 
-from .models import Reply
+from ..domain.models import Reply
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS players (
-    user_id TEXT PRIMARY KEY,
-    pet_name TEXT NOT NULL,
-    species TEXT NOT NULL,
-    realm INTEGER NOT NULL DEFAULT 0 CHECK (realm BETWEEN 0 AND 6),
-    exp INTEGER NOT NULL DEFAULT 0 CHECK (exp >= 0),
-    stones INTEGER NOT NULL DEFAULT 100 CHECK (stones >= 0),
-    food INTEGER NOT NULL DEFAULT 3 CHECK (food >= 0),
-    affinity INTEGER NOT NULL DEFAULT 0 CHECK (affinity BETWEEN 0 AND 100),
-    energy INTEGER NOT NULL DEFAULT 100 CHECK (energy BETWEEN 0 AND 100),
-    energy_updated INTEGER NOT NULL,
-    sign_day TEXT NOT NULL DEFAULT '',
-    last_train INTEGER,
-    last_explore INTEGER
-);
-CREATE INDEX IF NOT EXISTS players_rank ON players(realm DESC, exp DESC, user_id);
-CREATE TABLE IF NOT EXISTS operations (
-    operation_id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    reply TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS operations_age ON operations(created_at);
-"""
+SCHEMA_VERSION = 4
+SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
 class Store:
@@ -47,25 +24,45 @@ class Store:
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as conn:
-            version = conn.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1):
-                raise RuntimeError(f"Unsupported spirit pet schema version: {version}")
             conn.execute("PRAGMA journal_mode=WAL")
-            conn.executescript("BEGIN IMMEDIATE;\n" + SCHEMA + "\nPRAGMA user_version=1;\nCOMMIT;")
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                tables = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                ).fetchall()
+                if version == SCHEMA_VERSION:
+                    conn.commit()
+                    return
+                if version != 0 or tables:
+                    raise RuntimeError(
+                        f"Unsupported spirit pet schema version: {version}. "
+                        "Unreleased schema changed; back up the old database and use a new SPIRIT_PET_DB path."
+                    )
+                # Execute individual complete SQL statements without executescript's implicit COMMIT.
+                statement = ""
+                for line in SCHEMA_PATH.read_text(encoding="utf-8").splitlines(keepends=True):
+                    statement += line
+                    if sqlite3.complete_statement(statement):
+                        conn.execute(statement)
+                        statement = ""
+                if statement.strip():
+                    raise RuntimeError("Incomplete schema SQL")
+                conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                conn.commit()
+            except BaseException:
+                conn.rollback()
+                raise
 
     def transact(
-        self,
-        user_id: str,
-        operation_id: str,
-        now: int,
+        self, user_id: str, operation_id: str, now: int,
         action: Callable[[sqlite3.Connection], Reply],
     ) -> Reply:
         with closing(self.connect()) as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 cached = conn.execute(
-                    "SELECT user_id, reply FROM operations WHERE operation_id=?",
-                    (operation_id,),
+                    "SELECT user_id, reply FROM operations WHERE operation_id=?", (operation_id,),
                 ).fetchone()
                 if cached:
                     if cached["user_id"] != user_id:

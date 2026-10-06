@@ -1,0 +1,129 @@
+[
+  {
+    "id": "forest",
+    "name": "青岚林",
+    "min_realm": "qiling",
+    "enemies": [
+      "wood_guard"
+    ],
+    "energy": 20,
+    "reward": {
+      "exp": {
+        "minimum": 35,
+        "maximum": 60
+      },
+      "stones": {
+        "minimum": 40,
+        "maximum": 80
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "moon",
+    "name": "月影谷",
+    "min_realm": "ningqi",
+    "enemies": [
+      "moon_wolf"
+    ],
+    "energy": 25,
+    "reward": {
+      "exp": {
+        "minimum": 100,
+        "maximum": 150
+      },
+      "stones": {
+        "minimum": 100,
+        "maximum": 150
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "thunder",
+    "name": "雷泽",
+    "min_realm": "zhuji",
+    "enemies": [
+      "thunder_dragon"
+    ],
+    "energy": 30,
+    "reward": {
+      "exp": {
+        "minimum": 250,
+        "maximum": 350
+      },
+      "stones": {
+        "minimum": 180,
+        "maximum": 280
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "temple",
+    "name": "上古灵殿",
+    "min_realm": "qiling",
+    "enemies": [
+      "ancient_guard"
+    ],
+    "energy": 30,
+    "team": true,
+    "reward": {
+      "exp": {
+        "minimum": 70,
+        "maximum": 100
+      },
+      "stones": {
+        "minimum": 90,
+        "maximum": 130
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "abyss",
+    "name": "幽冥深渊",
+    "min_realm": "zhuji",
+    "enemies": [
+      "abyss_guard"
+    ],
+    "energy": 35,
+    "team": true,
+    "reward": {
+      "exp": {
+        "minimum": 300,
+        "maximum": 450
+      },
+      "stones": {
+        "minimum": 250,
+        "maximum": 350
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 3,
+          "maximum": 4
+        }
+      }
+    }
+  }
+]

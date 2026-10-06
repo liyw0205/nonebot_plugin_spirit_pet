@@ -1,0 +1,37 @@
+[
+  {
+    "id": "standard",
+    "name": "山海灵契",
+    "stones": 100,
+    "entries": [
+      {
+        "species": "qingluan",
+        "weight": 29
+      },
+      {
+        "species": "xuanhu",
+        "weight": 24
+      },
+      {
+        "species": "baize",
+        "weight": 20
+      },
+      {
+        "species": "jiaolong",
+        "weight": 15
+      },
+      {
+        "species": "bifang",
+        "weight": 7
+      },
+      {
+        "species": "xuanwu",
+        "weight": 3
+      },
+      {
+        "species": "sanlinglu",
+        "weight": 2
+      }
+    ]
+  }
+]

@@ -1,0 +1,70 @@
+[
+  {
+    "id": "wood_guard",
+    "name": "林间傀儡",
+    "stats": {
+      "hp": 85,
+      "attack": 17,
+      "defense": 5,
+      "speed": 12
+    },
+    "elements": [
+      "wood",
+      "earth"
+    ]
+  },
+  {
+    "id": "moon_wolf",
+    "name": "月影狼王",
+    "stats": {
+      "hp": 290,
+      "attack": 62,
+      "defense": 24,
+      "speed": 38
+    },
+    "elements": [
+      "water"
+    ]
+  },
+  {
+    "id": "thunder_dragon",
+    "name": "雷泽蛟灵",
+    "stats": {
+      "hp": 1000,
+      "attack": 165,
+      "defense": 75,
+      "speed": 65
+    },
+    "elements": [
+      "water",
+      "thunder"
+    ]
+  },
+  {
+    "id": "ancient_guard",
+    "name": "古殿守卫",
+    "stats": {
+      "hp": 340,
+      "attack": 26,
+      "defense": 12,
+      "speed": 15
+    },
+    "elements": [
+      "metal",
+      "earth"
+    ]
+  },
+  {
+    "id": "abyss_guard",
+    "name": "深渊魔将",
+    "stats": {
+      "hp": 1900,
+      "attack": 140,
+      "defense": 70,
+      "speed": 45
+    },
+    "elements": [
+      "fire"
+    ]
+  }
+]

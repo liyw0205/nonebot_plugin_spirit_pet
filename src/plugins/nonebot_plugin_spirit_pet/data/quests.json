@@ -1,0 +1,90 @@
+[
+  {
+    "id": "train_once",
+    "name": "吐纳一周天",
+    "event": "train",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "explore_once",
+    "name": "行走山海",
+    "event": "explore",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "feed_once",
+    "name": "温养灵契",
+    "event": "feed",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "items": {
+        "energy_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "pve_once",
+    "name": "斩破迷障",
+    "event": "pve",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 20,
+        "maximum": 20
+      },
+      "stones": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  }
+]

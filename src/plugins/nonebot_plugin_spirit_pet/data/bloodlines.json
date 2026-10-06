@@ -1,0 +1,60 @@
+[
+  {
+    "level": 0,
+    "name": "凡血",
+    "multiplier": 1,
+    "evolution": {
+      "exp": 100,
+      "stones": 200,
+      "chance": 1,
+      "items": {
+        "bloodline_essence": 3
+      }
+    }
+  },
+  {
+    "level": 1,
+    "name": "灵血",
+    "multiplier": 1.25,
+    "evolution": {
+      "exp": 200,
+      "stones": 400,
+      "chance": 1,
+      "items": {
+        "bloodline_essence": 6
+      }
+    }
+  },
+  {
+    "level": 2,
+    "name": "玄血",
+    "multiplier": 1.5,
+    "evolution": {
+      "exp": 300,
+      "stones": 600,
+      "chance": 1,
+      "items": {
+        "bloodline_essence": 9
+      }
+    }
+  },
+  {
+    "level": 3,
+    "name": "真血",
+    "multiplier": 1.75,
+    "evolution": {
+      "exp": 400,
+      "stones": 800,
+      "chance": 1,
+      "items": {
+        "bloodline_essence": 12
+      }
+    }
+  },
+  {
+    "level": 4,
+    "name": "仙血",
+    "multiplier": 2,
+    "evolution": null
+  }
+]

@@ -50,6 +50,13 @@ def main():
                     (2, "灵宠签到", "灵石 +200"),
                     (2, "灵宠签到", "灵石 +200"),
                     (3, "我的灵宠", "灵石：300"),
+                    (4, "灵宠列表", "灵宠名册"),
+                    (5, "灵宠召唤 1", "山海召唤"),
+                    (6, "灵宠切换 1", "灵宠出战"),
+                    (7, "灵宠修炼", "吐纳修炼"),
+                    (8, "灵宠突破", "小境界突破成功"),
+                    (9, "灵宠挑战 青岚林", "秘境获胜"),
+                    (9, "灵宠挑战 青岚林", "秘境获胜"),
                 ]:
                     ws.send_json({
                         "time": 1800000000, "self_id": 9000, "post_type": "message",
@@ -63,8 +70,11 @@ def main():
                     assert expected in text, text
                     ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
         with closing(sqlite3.connect(database)) as conn:
-            assert conn.execute("SELECT user_id, stones FROM players").fetchone() == ("12345", 300)
-        print("PASS: plugin load, startup, WS authentication, command dispatch, rewards and redelivery")
+            user_id, stones = conn.execute("SELECT user_id, stones FROM players").fetchone()
+            assert user_id == "12345" and 230 <= stones <= 270
+            assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 2
+            assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 65)
+        print("PASS: plugin load, WS authentication, summon, switch, cultivation, breakthrough, PVE and redelivery")
 
 
 if __name__ == "__main__":

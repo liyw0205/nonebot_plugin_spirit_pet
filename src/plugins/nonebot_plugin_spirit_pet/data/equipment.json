@@ -1,0 +1,80 @@
+[
+  {
+    "id": "wind_feather",
+    "name": "青岚翎",
+    "slot": "weapon",
+    "requirements": {
+      "elements": [
+        "wind"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "bonuses": {
+      "attack": 6,
+      "speed": 5
+    }
+  },
+  {
+    "id": "fire_fang",
+    "name": "赤焰牙",
+    "slot": "weapon",
+    "requirements": {
+      "elements": [
+        "fire"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "bonuses": {
+      "attack": 8
+    }
+  },
+  {
+    "id": "dragon_scale",
+    "name": "龙鳞甲",
+    "slot": "armor",
+    "requirements": {
+      "elements": [],
+      "categories": [
+        "dragon"
+      ],
+      "min_realm": "qiling"
+    },
+    "bonuses": {
+      "hp": 30,
+      "defense": 5
+    }
+  },
+  {
+    "id": "earth_shell",
+    "name": "玄岩甲",
+    "slot": "armor",
+    "requirements": {
+      "elements": [
+        "earth"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "bonuses": {
+      "hp": 40,
+      "defense": 8
+    }
+  },
+  {
+    "id": "spirit_bell",
+    "name": "灵心铃",
+    "slot": "charm",
+    "requirements": {
+      "elements": [],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "bonuses": {
+      "hp": 15,
+      "defense": 2,
+      "speed": 2
+    }
+  }
+]

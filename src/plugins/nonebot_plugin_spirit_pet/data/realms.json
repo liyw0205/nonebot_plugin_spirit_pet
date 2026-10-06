@@ -1,0 +1,74 @@
+[
+  {
+    "id": "qiling",
+    "name": "启灵",
+    "multiplier": 1,
+    "advancement": {
+      "exp": 100,
+      "stones": 50,
+      "chance": 0.9,
+      "items": {}
+    }
+  },
+  {
+    "id": "ningqi",
+    "name": "凝气",
+    "multiplier": 2,
+    "advancement": {
+      "exp": 400,
+      "stones": 100,
+      "chance": 0.8300000000000001,
+      "items": {}
+    }
+  },
+  {
+    "id": "zhuji",
+    "name": "筑基",
+    "multiplier": 4,
+    "advancement": {
+      "exp": 900,
+      "stones": 150,
+      "chance": 0.76,
+      "items": {}
+    }
+  },
+  {
+    "id": "jindan",
+    "name": "金丹",
+    "multiplier": 7,
+    "advancement": {
+      "exp": 1600,
+      "stones": 200,
+      "chance": 0.69,
+      "items": {}
+    }
+  },
+  {
+    "id": "yuanying",
+    "name": "元婴",
+    "multiplier": 11,
+    "advancement": {
+      "exp": 2500,
+      "stones": 250,
+      "chance": 0.62,
+      "items": {}
+    }
+  },
+  {
+    "id": "huashen",
+    "name": "化神",
+    "multiplier": 16,
+    "advancement": {
+      "exp": 3600,
+      "stones": 300,
+      "chance": 0.55,
+      "items": {}
+    }
+  },
+  {
+    "id": "dujie",
+    "name": "渡劫",
+    "multiplier": 24,
+    "advancement": null
+  }
+]

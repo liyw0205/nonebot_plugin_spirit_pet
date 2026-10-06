@@ -1,0 +1,1 @@
+"""Spirit pet storage package."""

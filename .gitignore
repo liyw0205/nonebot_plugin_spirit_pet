@@ -12,7 +12,7 @@ build/
 .env.*
 !.env.example
 !*.env.example
-data/
+/data/
 *.db
 *.db-shm
 *.db-wal

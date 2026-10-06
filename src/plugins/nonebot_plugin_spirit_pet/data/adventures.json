@@ -1,0 +1,86 @@
+[
+  {
+    "id": "spring",
+    "text": "踏入青岚秘境，在古树下寻得一处灵泉。",
+    "weight": 30,
+    "reward": {
+      "exp": {
+        "minimum": 15,
+        "maximum": 40
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 90
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 0,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "mountain",
+    "text": "越过断云山，帮助守山人修复了一座古阵。",
+    "weight": 25,
+    "reward": {
+      "exp": {
+        "minimum": 20,
+        "maximum": 50
+      },
+      "stones": {
+        "minimum": 40,
+        "maximum": 110
+      },
+      "items": {
+        "energy_pill": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "valley",
+    "text": "夜探星落谷，循着流光采回几株灵草。",
+    "weight": 25,
+    "reward": {
+      "exp": {
+        "minimum": 15,
+        "maximum": 45
+      },
+      "stones": {
+        "minimum": 20,
+        "maximum": 100
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "cave",
+    "text": "误入上古洞府，凭借心神感应走出了幻阵。",
+    "weight": 20,
+    "reward": {
+      "exp": {
+        "minimum": 30,
+        "maximum": 70
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 120
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+]

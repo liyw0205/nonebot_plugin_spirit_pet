@@ -9,6 +9,10 @@ class Config(BaseModel):
     spirit_pet_train_cooldown: int = Field(default=300, ge=1)
     spirit_pet_explore_cooldown: int = Field(default=900, ge=1)
     spirit_pet_energy_interval: int = Field(default=300, ge=1)
+    spirit_pet_pve_cooldown: int = Field(default=600, ge=1)
+    spirit_pet_pvp_cooldown: int = Field(default=900, ge=1)
+    spirit_pet_invitation_ttl: int = Field(default=300, ge=1)
+    spirit_pet_max_pets: int = Field(default=50, ge=1, le=200)
     spirit_pet_qq_mode: Literal["text", "native", "template"] = "text"
     spirit_pet_qq_template_id: str = ""
     spirit_pet_qq_template_param: str = "content"

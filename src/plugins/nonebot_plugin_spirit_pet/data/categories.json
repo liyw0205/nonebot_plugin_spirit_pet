@@ -1,0 +1,22 @@
+[
+  {
+    "id": "avian",
+    "name": "羽族",
+    "description": "飞禽灵兽，轻灵迅疾。"
+  },
+  {
+    "id": "beast",
+    "name": "兽族",
+    "description": "山林走兽，各有所长。"
+  },
+  {
+    "id": "dragon",
+    "name": "龙族",
+    "description": "鳞身御灵，可修龙族专属吐息。"
+  },
+  {
+    "id": "shell",
+    "name": "甲族",
+    "description": "玄甲护体，防御深厚。"
+  }
+]

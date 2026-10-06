@@ -1,0 +1,135 @@
+[
+  {
+    "id": "qingluan",
+    "name": "青鸾",
+    "description": "风木灵根，振羽引岚，善于吐纳。",
+    "starter": true,
+    "stats": {
+      "hp": 120,
+      "attack": 24,
+      "defense": 10,
+      "speed": 22
+    },
+    "initial_affinity": 0,
+    "training_bonus": 0.1,
+    "category": "avian",
+    "elements": [
+      "wind",
+      "wood"
+    ]
+  },
+  {
+    "id": "xuanhu",
+    "name": "玄狐",
+    "description": "月火灵根，身法轻灵，灵契亲近。",
+    "starter": true,
+    "stats": {
+      "hp": 100,
+      "attack": 25,
+      "defense": 8,
+      "speed": 30
+    },
+    "initial_affinity": 10,
+    "training_bonus": 0.05,
+    "category": "beast",
+    "elements": [
+      "fire"
+    ]
+  },
+  {
+    "id": "baize",
+    "name": "白泽",
+    "description": "先天灵根，护体灵息深厚。",
+    "starter": true,
+    "stats": {
+      "hp": 150,
+      "attack": 22,
+      "defense": 14,
+      "speed": 16
+    },
+    "initial_affinity": 5,
+    "training_bonus": 0,
+    "category": "beast",
+    "elements": [
+      "metal",
+      "earth"
+    ]
+  },
+  {
+    "id": "jiaolong",
+    "name": "蛟龙",
+    "description": "水雷灵根，攻势凌厉，待劫化龙。",
+    "starter": true,
+    "stats": {
+      "hp": 130,
+      "attack": 30,
+      "defense": 9,
+      "speed": 18
+    },
+    "initial_affinity": 0,
+    "training_bonus": 0,
+    "category": "dragon",
+    "elements": [
+      "water",
+      "thunder"
+    ]
+  },
+  {
+    "id": "bifang",
+    "name": "毕方",
+    "description": "离火灵根，赤焰破障，召唤限定。",
+    "starter": false,
+    "stats": {
+      "hp": 110,
+      "attack": 34,
+      "defense": 7,
+      "speed": 26
+    },
+    "initial_affinity": 0,
+    "training_bonus": 0.15,
+    "category": "avian",
+    "elements": [
+      "wind",
+      "fire"
+    ]
+  },
+  {
+    "id": "xuanwu",
+    "name": "玄武",
+    "description": "玄水灵根，负山镇海，召唤限定。",
+    "starter": false,
+    "stats": {
+      "hp": 190,
+      "attack": 22,
+      "defense": 18,
+      "speed": 10
+    },
+    "initial_affinity": 0,
+    "training_bonus": 0.05,
+    "category": "shell",
+    "elements": [
+      "water",
+      "earth"
+    ]
+  },
+  {
+    "id": "sanlinglu",
+    "name": "三灵鹿",
+    "description": "风火木三系共生，可修复合灵术，召唤限定。",
+    "starter": false,
+    "stats": {
+      "hp": 125,
+      "attack": 27,
+      "defense": 11,
+      "speed": 25
+    },
+    "initial_affinity": 5,
+    "training_bonus": 0.08,
+    "category": "beast",
+    "elements": [
+      "wind",
+      "fire",
+      "wood"
+    ]
+  }
+]

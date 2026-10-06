@@ -5,8 +5,8 @@ from urllib.parse import quote
 from nonebot.adapters import Bot, Event
 from nonebot.log import logger
 
-from .config import Config
-from .models import Reply
+from ..core.config import Config
+from ..domain.models import Reply
 
 
 def inline_command(label: str, command: str, prefix: str = "/") -> str:

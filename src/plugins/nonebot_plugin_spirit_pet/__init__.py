@@ -1,6 +1,6 @@
 from nonebot.plugin import PluginMetadata
 
-from .config import Config
+from .core.config import Config
 
 __plugin_meta__ = PluginMetadata(
     name="灵宠",
@@ -12,4 +12,4 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11", "~qq"},
 )
 
-from . import handlers as handlers  # noqa: E402
+from .adapters import handlers as handlers  # noqa: E402

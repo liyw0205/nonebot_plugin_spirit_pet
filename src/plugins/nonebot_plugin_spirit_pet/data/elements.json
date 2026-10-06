@@ -1,0 +1,51 @@
+[
+  {
+    "id": "wind",
+    "name": "风",
+    "strong_against": [
+      "earth"
+    ]
+  },
+  {
+    "id": "fire",
+    "name": "火",
+    "strong_against": [
+      "metal"
+    ]
+  },
+  {
+    "id": "wood",
+    "name": "木",
+    "strong_against": [
+      "earth"
+    ]
+  },
+  {
+    "id": "water",
+    "name": "水",
+    "strong_against": [
+      "fire"
+    ]
+  },
+  {
+    "id": "thunder",
+    "name": "雷",
+    "strong_against": [
+      "water"
+    ]
+  },
+  {
+    "id": "earth",
+    "name": "土",
+    "strong_against": [
+      "water"
+    ]
+  },
+  {
+    "id": "metal",
+    "name": "金",
+    "strong_against": [
+      "wood"
+    ]
+  }
+]

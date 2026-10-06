@@ -1,0 +1,97 @@
+[
+  {
+    "level": 1,
+    "multiplier": 1,
+    "advancement": {
+      "exp": 30,
+      "stones": 10,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 2,
+    "multiplier": 1.12,
+    "advancement": {
+      "exp": 60,
+      "stones": 20,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 3,
+    "multiplier": 1.24,
+    "advancement": {
+      "exp": 90,
+      "stones": 30,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 4,
+    "multiplier": 1.3599999999999999,
+    "advancement": {
+      "exp": 120,
+      "stones": 40,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 5,
+    "multiplier": 1.48,
+    "advancement": {
+      "exp": 150,
+      "stones": 50,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 6,
+    "multiplier": 1.6,
+    "advancement": {
+      "exp": 180,
+      "stones": 60,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 7,
+    "multiplier": 1.72,
+    "advancement": {
+      "exp": 210,
+      "stones": 70,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 8,
+    "multiplier": 1.8399999999999999,
+    "advancement": {
+      "exp": 240,
+      "stones": 80,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 9,
+    "multiplier": 1.96,
+    "advancement": {
+      "exp": 270,
+      "stones": 90,
+      "chance": 1,
+      "items": {}
+    }
+  },
+  {
+    "level": 10,
+    "multiplier": 2.08,
+    "advancement": null
+  }
+]

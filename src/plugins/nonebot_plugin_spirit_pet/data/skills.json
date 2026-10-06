@@ -1,0 +1,147 @@
+[
+  {
+    "id": "wind_slash",
+    "name": "风刃术",
+    "description": "迅疾风刃，造成风系伤害。",
+    "element": "wind",
+    "requirements": {
+      "elements": [
+        "wind"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.35,
+    "book_item": "book_wind_slash"
+  },
+  {
+    "id": "fireball",
+    "name": "赤焰术",
+    "description": "凝聚赤焰，造成火系伤害。",
+    "element": "fire",
+    "requirements": {
+      "elements": [
+        "fire"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.4,
+    "book_item": "book_fireball"
+  },
+  {
+    "id": "water_arrow",
+    "name": "水箭术",
+    "description": "聚水成箭，造成水系伤害。",
+    "element": "water",
+    "requirements": {
+      "elements": [
+        "water"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.35,
+    "book_item": "book_water_arrow"
+  },
+  {
+    "id": "wood_heal",
+    "name": "青木回春",
+    "description": "以木灵之气恢复自身气血。",
+    "element": "wood",
+    "requirements": {
+      "elements": [
+        "wood"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "heal",
+    "coefficient": 0.22,
+    "book_item": "book_wood_heal"
+  },
+  {
+    "id": "thunder_roar",
+    "name": "雷霆吐息",
+    "description": "龙族雷霆吐息，造成雷系伤害。",
+    "element": "thunder",
+    "requirements": {
+      "elements": [
+        "thunder"
+      ],
+      "categories": [
+        "dragon"
+      ],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.5,
+    "book_item": "book_thunder_roar"
+  },
+  {
+    "id": "metal_edge",
+    "name": "金锋术",
+    "description": "金灵破甲，造成金系伤害。",
+    "element": "metal",
+    "requirements": {
+      "elements": [
+        "metal"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.35,
+    "book_item": "book_metal_edge"
+  },
+  {
+    "id": "earth_crush",
+    "name": "碎岩术",
+    "description": "驱动岩石，造成土系伤害。",
+    "element": "earth",
+    "requirements": {
+      "elements": [
+        "earth"
+      ],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "damage",
+    "coefficient": 1.35,
+    "book_item": "book_earth_crush"
+  },
+  {
+    "id": "meditation",
+    "name": "凝神术",
+    "description": "通用灵术，凝神恢复自身气血。",
+    "element": null,
+    "requirements": {
+      "elements": [],
+      "categories": [],
+      "min_realm": "qiling"
+    },
+    "kind": "heal",
+    "coefficient": 0.15,
+    "book_item": "book_meditation"
+  },
+  {
+    "id": "windfire",
+    "name": "风火燎原",
+    "description": "同时具备风火灵根方可施展。",
+    "element": "fire",
+    "requirements": {
+      "elements": [
+        "wind",
+        "fire"
+      ],
+      "categories": [],
+      "min_realm": "ningqi"
+    },
+    "kind": "damage",
+    "coefficient": 1.8,
+    "book_item": "book_windfire"
+  }
+]

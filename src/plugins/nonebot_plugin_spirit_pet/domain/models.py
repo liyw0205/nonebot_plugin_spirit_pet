@@ -12,4 +12,4 @@ class Reply:
 
 
 class GameError(Exception):
-    """Expected game-rule rejection; never partially commits a mutation."""
+    """可预期的玩法拒绝；由事务层回滚，不发送堆栈。"""

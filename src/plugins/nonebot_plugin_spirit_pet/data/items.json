@@ -1,0 +1,164 @@
+[
+  {
+    "id": "spirit_food",
+    "name": "灵粮",
+    "description": "精力 +20，修为 +10，亲密 +5。",
+    "kind": "consumable",
+    "price": 20,
+    "effects": {
+      "energy": 20,
+      "exp": 10,
+      "affinity": 5
+    }
+  },
+  {
+    "id": "energy_pill",
+    "name": "回元丹",
+    "description": "精力 +50；精力已满时不可使用。",
+    "kind": "consumable",
+    "price": 80,
+    "effects": {
+      "energy": 50
+    }
+  },
+  {
+    "id": "exp_pill",
+    "name": "蕴灵丹",
+    "description": "修为 +100。",
+    "kind": "consumable",
+    "price": 180,
+    "effects": {
+      "exp": 100
+    }
+  },
+  {
+    "id": "breakthrough_pill",
+    "name": "破境丹",
+    "description": "突破时指定使用，成功率提高 10 个百分点。",
+    "kind": "breakthrough",
+    "price": 180,
+    "effects": {
+      "breakthrough_bonus": 0.1
+    }
+  },
+  {
+    "id": "bloodline_essence",
+    "name": "血脉精华",
+    "description": "进化材料，可从秘境与组队挑战获得。",
+    "kind": "material",
+    "price": 260,
+    "effects": {}
+  },
+  {
+    "id": "wind_feather",
+    "name": "青岚翎",
+    "description": "装备灵物，适用条件见灵宠装备图鉴。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "wind_feather"
+  },
+  {
+    "id": "fire_fang",
+    "name": "赤焰牙",
+    "description": "装备灵物，适用条件见灵宠装备图鉴。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "fire_fang"
+  },
+  {
+    "id": "dragon_scale",
+    "name": "龙鳞甲",
+    "description": "装备灵物，适用条件见灵宠装备图鉴。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "dragon_scale"
+  },
+  {
+    "id": "earth_shell",
+    "name": "玄岩甲",
+    "description": "装备灵物，适用条件见灵宠装备图鉴。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "earth_shell"
+  },
+  {
+    "id": "spirit_bell",
+    "name": "灵心铃",
+    "description": "装备灵物，适用条件见灵宠装备图鉴。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "spirit_bell"
+  },
+  {
+    "id": "book_wind_slash",
+    "name": "风刃术诀",
+    "description": "学习风刃术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "wind_slash"
+  },
+  {
+    "id": "book_fireball",
+    "name": "赤焰术诀",
+    "description": "学习赤焰术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "fireball"
+  },
+  {
+    "id": "book_water_arrow",
+    "name": "水箭术诀",
+    "description": "学习水箭术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "water_arrow"
+  },
+  {
+    "id": "book_wood_heal",
+    "name": "青木回春诀",
+    "description": "学习青木回春所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "wood_heal"
+  },
+  {
+    "id": "book_thunder_roar",
+    "name": "雷霆吐息诀",
+    "description": "学习雷霆吐息所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "thunder_roar"
+  },
+  {
+    "id": "book_metal_edge",
+    "name": "金锋术诀",
+    "description": "学习金锋术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "metal_edge"
+  },
+  {
+    "id": "book_earth_crush",
+    "name": "碎岩术诀",
+    "description": "学习碎岩术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "earth_crush"
+  },
+  {
+    "id": "book_meditation",
+    "name": "凝神术诀",
+    "description": "学习凝神术所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "meditation"
+  },
+  {
+    "id": "book_windfire",
+    "name": "风火燎原诀",
+    "description": "学习风火燎原所需，适用条件见灵宠技能图鉴。",
+    "kind": "skill_book",
+    "price": 250,
+    "skill_id": "windfire"
+  }
+]

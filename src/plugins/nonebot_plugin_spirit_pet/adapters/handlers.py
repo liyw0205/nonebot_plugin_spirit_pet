@@ -7,11 +7,12 @@ from nonebot.log import logger
 from nonebot.params import EventMessage
 from nonebot.rule import Rule
 
-from .config import Config
+from ..core.config import Config
 from .messaging import send_reply
-from .models import GameError
-from .service import COMMANDS, Game
-from .storage import Store
+from ..domain.models import GameError
+from ..application.commands import COMMANDS
+from ..application.game import Game
+from ..storage.database import Store
 
 config = get_plugin_config(Config)
 store = Store(config.spirit_pet_db.expanduser())
@@ -91,4 +92,3 @@ async def _run(bot: Bot, event: Event, text: str) -> None:
 @command_matcher.handle()
 async def handle_command(bot: Bot, event: Event, message=EventMessage()) -> None:
     await _run(bot, event, _plain_text(event, message))
-

@@ -1,80 +1,139 @@
-# 开发路径
+# 开发指南
 
-## 当前交付边界
+本项目尚未发布稳定版。允许直接重构内部 API、目录和数据模型，不为未发布代码保留兼容导出、旧字段镜像或自动迁移分支。数据库不匹配时拒绝启动，不能静默重建或清空用户文件。
 
-首版 0.1.0 是独立的 NoneBot 文字游戏，不依赖修仙参考插件。发布方式是 Git 源码部署，不是假设存在的 PyPI 包。目标是先跑通「领养 → 签到 → 喂养/修炼/历练 → 突破 → 排行榜」闭环，再扩充内容。
+开发计划见 [开发路线](ROADMAP.md)，数据字段见 [静态内容规范](CONTENT.md)，玩家操作见 [玩法说明](GAMEPLAY.md)。
 
-用户约定：两个适配器共用同一个数据库，玩家键为 `str(event.get_user_id())`。不添加平台或 bot 前缀，不做账号绑定、OpenID 转 QQ 号或跨平台身份猜测。同名宠物也不是同一玩家。
-
-## 目录与依赖方向
+## 目录与依赖
 
 ```text
-bot.py -> NoneBot adapters + pyproject.toml
+bot.py                         NoneBot 启动、双适配器注册
 src/plugins/nonebot_plugin_spirit_pet/
-  __init__.py   插件元数据、入口
-  config.py     环境变量和输入验证
-  handlers.py   消息识别、取真实发送者 ID、交付结果
-  service.py    玩法规则和资源变更
-  storage.py    SQLite 表、事务、事件幂等
-  models.py     Reply 与 GameError
-  catalog.py    灵宠图鉴、境界、奇遇文本
-  messaging.py OneBot 文本 / QQ 原生与模板 Markdown、键盘、蓝字
-tests/          玩法、适配器契约、并发和真实 ASGI/WS 测试
-scripts/smoke_test.py  不依赖外部客户端的协议冒烟测试
+  __init__.py                  仅插件元数据与入口
+  core/config.py               环境变量，运行节奏与消息配置
+  adapters/handlers.py         指令识别、真实身份、事件去重键
+  adapters/messaging.py        OneBot 文本 / QQ Markdown、按钮、蓝字
+  application/commands.py      命令和动作注册
+  application/context.py       单次事务上下文
+  application/game.py          调度、事务、保存
+  domain/content.py            Pydantic 静态内容模型
+  domain/battle_content.py     类别、元素、装备、技能与道号词库模型
+  domain/state.py              Player、Pet 运行模型
+  domain/models.py             Reply、GameError
+  content/catalog.py           JSON 加载、唯一性和引用验证
+  content/validation.py        装备、技能、元素与内容可用性验证
+  gameplay/pets.py             领养、召唤、列表、切换、改名
+  gameplay/identity.py         唯一道号生成、显示、修改
+  gameplay/cultivation.py      修炼、大小境界突破、血脉进化
+  gameplay/economy.py          签到、背包、商店、消耗品
+  gameplay/quests.py           每日任务与领奖
+  gameplay/rewards.py          共用奖励结算
+  gameplay/combat.py           属性计算与限回合战斗
+  gameplay/compatibility.py    类别、元素、境界适用性检查
+  gameplay/equipment.py        穿戴、卸装、槽位与图鉴
+  gameplay/skills.py           秘笈学习、携带与卸下
+  gameplay/loadout.py          将装备与技能组装到战斗单位
+  gameplay/adventure.py        奇遇、单人/组队 PVE 结算
+  gameplay/duels.py            论剑、切磋、邀请与应战
+  gameplay/teams.py            队伍、准备、出征
+  gameplay/information.py      帮助、面板、图鉴、排行榜
+  storage/schema.sql          运行数据表
+  storage/database.py         SQLite 连接、初始化、事务、幂等
+  storage/repository.py        事务内对象缓存与 SQL 操作
+  utils/arguments.py          复用的名称解析和数量验证
+  utils/time.py               UTC+8 日期和冷却计算
+  utils/energy.py             精力恢复与上限
+  utils/randomness.py         可注入随机源的加权抽取
+  data/*.json                 静态宠物、境界、血脉、物品、怪物和奖励
+tests/                         单元、并发、适配器契约和真实 WS 测试
+scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
+docs/                          安装、接入、玩法和开发文档
 ```
 
-消息层不改玩家数据；玩法层不调用机器人 API。数据库事务内完成状态变更与结果缓存，提交后才发送消息。同步 SQLite 操作由 `asyncio.to_thread` 执行，避免在 NoneBot 事件循环中直接等待数据库锁。
+消息层不改玩家数据；玩法层不调用机器人 API。目录按职责分类，不建立把所有函数重新导出到根目录的门面。公共函数只在存在实际复用时进入 `utils/`，业务奖励和战斗规则仍归 `gameplay/`。
 
-## 已完成的基础阶段
+## 一次指令的路径
 
-| 阶段 | 实现 | 验收依据 |
-| --- | --- | --- |
-| 运行骨架 | 参考脚本的 TOML 格式、双适配器注册、本地插件发现 | 实际 NoneBot 成功加载且仅加载目标插件 |
-| 数据层 | players、operations、schema version、WAL、参数化 SQL | 重启可恢复、并发领养只成功一次、异常不部分扣费 |
-| 玩法闭环 | 16 个入口/别名及其核心规则 | 正常流程、资源不足、冷却、跨日、封顶测试 |
-| 适配器 | OneBot 文本、QQ 群/C2C 事件、Markdown/键盘/蓝字 | 官方适配器模型构造及发送参数契约测试 |
-| 部署 | 三系统教程、反向 WS、官方 WS/Webhook 配置 | ASGI/WS 往返、鉴权、奖励落库和消息重投测试 |
+1. `handlers._parse` 匹配完整指令，取 `str(event.get_user_id())`。
+2. 用适配器名、bot ID、会话 ID、消息 ID 构造事件键，仅用于去重，不参与玩家身份。
+3. `asyncio.to_thread` 执行 `Game.execute`，避免 SQLite 阻塞事件循环。
+4. `Store.transact` 开启 `BEGIN IMMEDIATE`。已有结果直接返回，否则建立 `Repository` 和 `Context`。
+5. 命令函数只使用这一份事务连接。玩家/宠物对象按 ID 缓存在 Repository，库存、队伍等 SQL 也使用同一连接。
+6. `repo.save()` 保存对象，结果与幂等记录一同提交。任何异常均回滚。
+7. 提交后发送消息。QQ 拒绝富消息时可退回纯文本，但不得再次执行业务。
 
-## 后续实施顺序
+不要在玩法函数中 `store.connect()`、`commit()`、`asyncio.sleep()` 或调用外部 API。尤其不要在同一事务中创建第二个 SQLite 写连接，也不要一边改缓存对象，一边对其同一字段执行 SQL 增量更新，避免锁等待或覆盖奖励。
 
-### 0.2：成长与差异化
+成功结果保留约七天，后续请求清理过期记录。超过保留窗口的古老重投不保证去重；业务拒绝不缓存，玩家修正条件后可重试。消息发送不承诺 exactly-once。
 
-1. 在 `catalog.py` 增加种族成长曲线，另建可验证的数据文件；禁止把不同种族收益散落在消息处理器。
-2. 增加灵根、资质、技能和突破保底。为每项写出资源来源、消耗上限、概率和失败后状态。
-3. 以显式版本迁移添加字段。先备份并在存档副本上验证，再开放到正式服。
-4. 验收：旧 0.1 存档升级无丢失；不同种族的成长结果可用固定随机源复现；消息重投不增加收益。
+## 数据边界
 
-### 0.3：秘境与长期玩法
+- `players`：原始用户 ID、唯一道号、共享灵石、出战宠物、日期、玩家级冷却与论剑积分。道号用 SQLite UNIQUE COLLATE NOCASE 约束，生成和改名均处于写事务内。
+- `pets`：每只宠物独立的种族 ID、名字、大境界、层数、血脉、修为、亲密、精力及恢复时间。
+- `inventory`：道具 ID 与数量，没有专门的“灵粮镜像”字段。
+- `equipment/learned_skills`：每只宠物的槽位物品与学习/携带状态，装备不同时计入库存。
+- `quest_progress`：当前任务日的进度及领取状态；刷新按玩家的 `quest_day` 处理。
+- `teams/team_members`：队长、成员、已同意出征的宠物编号。
+- `duels`：待处理邀请及失效时间；应战后删除。
+- `pvp_pairs`：同一对玩家最后一次论剑积分结算日。
+- `operations`：事件来源去重键、玩家和完整结果。
 
-1. 装备、掉落表、秘境难度和每日任务先设计物品唯一键、库存表与奖励事务，再写指令。
-2. 长时历练记录 `started_at`/`finish_at`，玩家回来领取时结算，避免依赖内存计时器。
-3. 所有领取动作持久化操作键，重复领取、重启、时钟回退均须有测试。
-4. 验收：离线收益封顶、掉落分布可模拟、失败不吞道具、全服排名可分页。
+玩家 ID 不加适配器、bot 或群号前缀。不存在绑定和合并接口。玩家界面只显示道号，交互按道号查找内部 ID；不要把原始 ID 插进 Reply、按钮或蓝字。改道号后邀请和队伍仍按内部 ID 关联，不会转移到复用旧道号的人。
 
-### 0.4：运营与正式发布
+修炼、历练、PVE、PVP 冷却在玩家上，换宠不能绕过。精力在宠物上；未出战宠物的恢复于再次访问时按时间差计算。队伍战斗对所有成员检查条件后才扣费，任何一人不满足则整场回滚。
 
-1. 管理员配置与玩家指令分离，调整经济参数要记录审计事件，不直接提供任意 SQL 指令。
-2. 明确停服备份、迁移、回滚和公告流程；多机部署先迁移服务端数据库，不共享网络盘上的 SQLite。
-3. 通过 QQ 真机权限验收后发布适配矩阵。PyPI 发布时另补包构建元数据，不把 NoneBot 项目配置误当成现成的可安装 Python 分发包。
-4. 验收：Linux/Windows CI 通过、Termux 运行回归通过、双适配器测试完整、发行标签与部署版本对应。
+## 添加一个玩法
 
-## 数据与运维约束
+以新增“采药”为例：
 
-- `players.user_id` 唯一；全服榜直接按境界、修为排序，同境界修为相同按 ID 确定稳定次序；不展示用户 ID。
-- 幂等键包括适配器、bot ID、会话 ID 和消息 ID，仅用于区分事件来源，不参与玩家身份。
-- `operations` 保存成功结果约七天并在后续请求中清理。超出保留期的旧事件不保证去重；消息送达本身不保证 exactly-once。
-- SQLite `BEGIN IMMEDIATE` 串行化写入，适合同机小型群游戏。两台机器各有一份数据库不会自动同步。
-- 签到使用固定 UTC+8，不依赖 Linux/Windows/Android 时区。修炼 300 秒、历练 900 秒，精力默认每 300 秒恢复 1。
-- 发消息前已提交的游戏结果不会因 QQ 发消息失败而回滚。玩家可用新的「我的灵宠」查询最终状态。
-- 停 bot 后备份 `.env` 与整个 `data/spirit_pet/`，不要提交配置中的凭据。数据库版本不受支持时拒绝启动，不自动降级。
+1. 静态掉落写入对应 JSON，涉及新结构时先在 `domain/content.py` 定义模型，在 Catalog 校验其物品引用。新冷却秒数放 `core/config.py` 和 `.env.example`。
+2. 在合适的 `gameplay/` 模块编写 `def gather(ctx: Context, arg: str) -> Reply`。先校验条件，再通过同一 Repository 修改资源；预期拒绝抛 `GameError`。
+3. 如果消费精力或改变战斗能力，调用 `ctx.repo.invalidate_ready(user_id)`，不要沿用旧的组队准备。
+4. 在 `application/commands.py` 为 ACTIONS 注册函数，COMMANDS 注册中文入口。仅确实接受参数时设置 `arguments=True`。
+5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
+6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-## 参考出处
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
-核对参考仓库提交 `97f43acba8dd185111d998c48d4e1cf5a069b117`：
+## 战斗规则
 
-- `scripts/install.sh` 的项目 TOML 生成段。
-- `scripts/install_termux.sh` 的 `write_pyproject()`。
-- `docs/adapter_compat.md` 的跨适配器消息边界。
-- `xiuxian_utils/message_markdown.py` 所用 QQ 蓝字协议形式。
+当前是自定义回合制规则，不依赖已有桌游或游戏规则体系：
 
-本项目沿用 NoneBot 项目配置结构，不复制参考插件业务代码。Python 最低版本设为 3.10，新增明确的 Pydantic 2 约束，对应本项目实际语法及配置 API，而不是机械照搬旧版本声明。
+- 属性来自种族基础值乘以境界、层数、血脉、亲密倍率，再加装备固定属性，修为余额不直接增加攻击。
+- `loadout.combatant` 对装备和技能再次校验类别、全部所需元素与最低境界；拒绝不兼容内容，不静默跳过坏数据。
+- 已携带技能依固定顺序轮换，元素倍率为 1.25/0.8/1.0，治疗技能回复自身，满血时普攻。技能轮次属于单场内存状态，不是 JSON 时间字段。
+- 每场从满气血开始；气血只在本场存在，结算消耗精力，不持久化战斗气血。
+- 速度决定行动顺序，同速时随机决定先后，目标从存活对手中抽取。伤害至少为 1，有 90%-110% 浮动。
+- 最多 40 回合，超时视作平局；不发 PVE 胜利奖励，不转移论剑积分。
+- PVP 双方确认才结算；每对玩家每日最多结算一次积分，切磋不消耗精力或发放经济奖励。
+- 组队用同一战斗函数，每位参战成员胜利后获得一份各自抽取的奖励，不分摊掉落。
+
+参数内容可在 JSON 中调整；更换算法需同时改 `combat.py` 和测试，不把战斗分支硬塞进适配器。
+
+## 分支约定
+
+`develop` 用于日常开发和提交，`main` 接收验证通过的版本。本轮以同一通过测试的提交建立两个分支；后续功能先提交 develop，再通过审查/测试合入 main。提交不包含 .env、玩家库或本地虚拟环境，不强制推送覆盖已有提交。
+
+## 验证
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt 'pytest>=8,<10'
+.venv/bin/python -m pytest -q
+.venv/bin/python scripts/smoke_test.py
+.venv/bin/python -m compileall -q src tests scripts bot.py
+```
+
+Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/myenv/bin/python`，不要求新建环境，不要求 NapCat 或真实 QQ 凭证。测试全部使用临时数据库。
+
+测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、材料、事务回滚、并发、重复消息、组队准备、论剑应战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
+
+GitHub Actions 使用 Linux/Windows 和 Python 3.10/3.13。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
+
+## 配置来源
+
+`pyproject.toml` 保留参考仓库安装脚本生成的 NoneBot 运行项目布局，不猜测 PyPI 包模板：
+
+- 参考提交：`97f43acba8dd185111d998c48d4e1cf5a069b117`。
+- `scripts/install.sh` 的 TOML 生成段与 `scripts/install_termux.sh` 的 `write_pyproject()`。
+- `[project]`、`[tool.nonebot]`、适配器配置表及 `plugin_dirs = ["src/plugins"]`。
+- Python 最低 3.10、Pydantic 2 对应本项目实际 API；打包发布前另做分发配置与静态资源包含测试。
