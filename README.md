@@ -34,10 +34,10 @@
 
 ## 安装与接入
 
-提供 Linux、Windows PowerShell 和 Termux 一键安装入口，固定 `nb-cli==1.5.0`，自动配置虚拟环境、驱动与双适配器。GitHub 下载先检测五个来源再选择可用快源，保留已有配置和存档。
+提供 Linux/Termux Bash 与 Windows PowerShell 一键安装入口。安装脚本从零准备 Python 环境、安装 `nb-cli==1.5.0` 和项目依赖，并使用 `nb run` 启动；安装、卸载与 `xiupet` 管理命令由 shell 实现。源码下载会检查多个 HTTPS 来源并保留已有配置和存档。
 
 - 完整仓库：Linux `bash scripts/install.sh install`，Termux `bash scripts/install_termux.sh install`，Windows `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 install`。
-- 管理已安装实例：`xiupet start|stop|restart|status|logs|update-deps|uninstall`。卸载会先停止进程并删除安装目录，非交互环境请显式追加 `--yes`。
+- 管理已安装实例：`xiupet start|stop|restart|status|logs|update|update-deps|uninstall`。卸载会先停止进程并删除安装目录，非交互环境请显式追加 `--yes`。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
 - [Linux / Windows / Termux 安装教程](docs/INSTALLATION.md)

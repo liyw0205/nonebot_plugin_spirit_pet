@@ -7,7 +7,10 @@
 ## 目录与依赖
 
 ```text
-scripts/xiupet.py              后台进程管理与日志命令
+scripts/install.sh             Linux / Termux 安装、更新与卸载
+scripts/install.ps1            Windows PowerShell 安装、更新与卸载
+scripts/xiupet.sh              Linux / Termux 后台进程管理
+scripts/xiupet.ps1             Windows 后台进程管理
 src/plugins/nonebot_plugin_spirit_pet/
   __init__.py                  仅插件元数据与入口
   core/config.py               环境变量，运行节奏与消息配置
