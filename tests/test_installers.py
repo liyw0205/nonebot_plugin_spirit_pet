@@ -216,6 +216,38 @@ def test_git_update_refuses_local_changes_and_detached_head(tmp_path):
         bootstrap.update_checkout(tmp_path, runner=lambda *args, **kwargs: next(outputs))
 
 
+def test_git_update_pulls_real_fast_forward_from_upstream(tmp_path):
+    git = shutil.which("git")
+    if not git:
+        pytest.skip("git unavailable")
+
+    remote = tmp_path / "remote.git"
+    seed = tmp_path / "seed"
+    checkout = tmp_path / "checkout"
+
+    def git_run(*args, cwd=None):
+        subprocess.run([git, *args], cwd=cwd, check=True, capture_output=True, text=True)
+
+    git_run("init", "--bare", str(remote))
+    seed.mkdir()
+    git_run("init", "-b", "develop", cwd=seed)
+    git_run("config", "user.email", "installer-test@example.invalid", cwd=seed)
+    git_run("config", "user.name", "Installer Test", cwd=seed)
+    (seed / "version.txt").write_text("one\n", encoding="utf-8")
+    git_run("add", "version.txt", cwd=seed)
+    git_run("commit", "-m", "initial", cwd=seed)
+    git_run("remote", "add", "origin", str(remote), cwd=seed)
+    git_run("push", "-u", "origin", "develop", cwd=seed)
+    git_run("clone", "--branch", "develop", str(remote), str(checkout))
+
+    (seed / "version.txt").write_text("two\n", encoding="utf-8")
+    git_run("commit", "-am", "advance", cwd=seed)
+    git_run("push", cwd=seed)
+
+    bootstrap.update_checkout(checkout)
+    assert (checkout / "version.txt").read_text(encoding="utf-8") == "two\n"
+
+
 def test_bootstrap_sequence_creates_venv_then_pins_nb_cli_then_runs_setup(project, tmp_path, monkeypatch):
     commands = []
     monkeypatch.setattr(bootstrap, "run", lambda command, **kwargs: commands.append([str(part) for part in command]))

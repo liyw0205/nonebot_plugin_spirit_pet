@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import os
 from pathlib import Path
 import shutil
@@ -11,6 +12,8 @@ import signal
 import subprocess
 import sys
 import time
+
+_IS_WINDOWS = os.name == "nt"
 
 
 def _project() -> Path:
@@ -158,6 +161,28 @@ def stop(project: Path) -> int:
     return 0
 
 
+def _schedule_windows_removal(project: Path, shortcut: Path | None) -> None:
+    def literal(path: Path) -> str:
+        return "'" + str(path).replace("'", "''") + "'"
+
+    script = [
+        "Start-Sleep -Seconds 2",
+        f"Remove-Item -LiteralPath {literal(project)} -Recurse -Force -ErrorAction Stop",
+    ]
+    if shortcut is not None:
+        script.append(f"Remove-Item -LiteralPath {literal(shortcut)} -Force -ErrorAction SilentlyContinue")
+    encoded = base64.b64encode("\n".join(script).encode("utf-16le")).decode("ascii")
+    subprocess.Popen(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        close_fds=True,
+        creationflags=(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+                       | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)),
+    )
+
+
 def uninstall(project: Path, yes: bool) -> int:
     if (project / ".git").exists() and not yes:
         print("Refusing to delete a Git checkout; use --yes or the installer with an explicit --directory.", file=sys.stderr)
@@ -177,6 +202,10 @@ def uninstall(project: Path, yes: bool) -> int:
         shortcut = Path(command_file.read_text(encoding="utf-8").strip())
     except (FileNotFoundError, OSError, UnicodeError):
         pass
+    if _IS_WINDOWS:
+        _schedule_windows_removal(project, shortcut)
+        print(f"Uninstall scheduled for {project}; its running Python process will exit before removal.")
+        return 0
     os.chdir(Path.home())
     shutil.rmtree(project)
     if shortcut and shortcut.name in {"xiupet", "xiupet.cmd", "xiupet.ps1"}:
