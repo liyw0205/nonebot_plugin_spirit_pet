@@ -16,7 +16,6 @@ import time
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 REPOSITORY = "liyw0205/nonebot_plugin_spirit_pet"
-# Mirrors verified in xiuxian_2_pmv/scripts/install.sh at 97f43acba8dd.
 SOURCES = (
     ("GitHub", ""),
     ("gh-proxy.com", "https://gh-proxy.com/"),
@@ -28,9 +27,11 @@ MAX_DOWNLOAD = 20 * 1024 * 1024
 MAX_EXPANDED = 100 * 1024 * 1024
 WINDOWS_DEVICES = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 REQUIRED = (
-    "pyproject.toml", "bot.py", ".env.example", "requirements.txt",
+    "pyproject.toml", ".env.example", "requirements.txt",
     "src/plugins/nonebot_plugin_spirit_pet/__init__.py", "scripts/installer/setup.py",
+    "scripts/xiupet.py",
 )
+ACTION_CHOICES = ("install", "uninstall", "reinstall", "update", "update-deps")
 
 
 class HTTPSOnlyRedirect(HTTPRedirectHandler):
@@ -144,12 +145,68 @@ def prepare_project(source, target):
         raise RuntimeError(f"Refusing to overwrite nonempty unrecognized directory: {target}")
     target.mkdir(parents=True, exist_ok=True)
     # Copy source only: root runtime data, credentials, git internals and venvs stay out.
-    for name in ("bot.py", "pyproject.toml", "requirements.txt", ".env.example", "README.md", "LICENSE", "src", "scripts", "docs"):
+    for name in ("pyproject.toml", "requirements.txt", ".env.example", "README.md", "LICENSE", "src", "scripts", "docs"):
         origin, destination = source / name, target / name
         if origin.is_dir():
             shutil.copytree(origin, destination, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         elif origin.is_file():
             shutil.copy2(origin, destination)
+
+
+def update_project(source, target):
+    """Refresh tracked application files without touching local state."""
+    if source == target:
+        return
+    target.mkdir(parents=True, exist_ok=True)
+    for name in ("pyproject.toml", "requirements.txt", ".env.example", "README.md", "LICENSE", "src", "scripts", "docs"):
+        origin, destination = source / name, target / name
+        if origin.is_dir():
+            shutil.copytree(
+                origin, destination, dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+        elif origin.is_file():
+            shutil.copy2(origin, destination)
+
+
+def project_directory(local, requested):
+    if requested:
+        return requested.expanduser().resolve()
+    return (local if is_project(local) else Path.home() / "spirit-pet").expanduser().resolve()
+
+
+def uninstall_project(target, *, yes=False):
+    """Stop and remove only an installation explicitly identified by the user."""
+    target = target.expanduser().resolve()
+    if not is_project(target):
+        raise RuntimeError(f"Not a Spirit Pet installation: {target}")
+    marker = target / ".xiupet-install"
+    # A marker prevents an unqualified command from deleting a source checkout.
+    if not marker.is_file() and not yes:
+        raise RuntimeError("Refusing to remove an unmarked source checkout; pass --yes with --directory to confirm")
+    if (target / ".git").exists() and not yes:
+        raise RuntimeError("Refusing to delete a Git checkout; pass --yes with --directory to confirm")
+    if not yes:
+        if not sys.stdin.isatty():
+            raise RuntimeError("Uninstall is destructive; rerun with --yes in a non-interactive shell")
+        answer = input(f"Remove {target}, its virtual environment and generated xiupet command? [y/N] ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Uninstall cancelled.")
+            return
+    manager = target / "scripts" / "xiupet.py"
+    if manager.is_file():
+        subprocess.run([sys.executable, str(manager), "stop"], cwd=target, check=False)
+    command_path = target / ".xiupet-command"
+    if command_path.is_file():
+        try:
+            shortcut = Path(command_path.read_text(encoding="utf-8").strip()).expanduser()
+            if shortcut.name in {"xiupet", "xiupet.cmd", "xiupet.ps1"} and shortcut.is_file():
+                shortcut.unlink()
+        except (OSError, UnicodeError):
+            pass
+    os.chdir(Path.home())
+    shutil.rmtree(target)
+    print(f"Uninstalled Spirit Pet from {target}")
 
 
 def run(command, **kwargs):
@@ -158,7 +215,8 @@ def run(command, **kwargs):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Install Spirit Pet without overwriting .env or game data.")
+    parser = argparse.ArgumentParser(description="Install and manage the Spirit Pet source project.")
+    parser.add_argument("action", nargs="?", choices=ACTION_CHOICES, default="install")
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--venv", type=Path, help="Explicit existing/new venv; default: project/.venv")
     parser.add_argument("--branch", choices=("main", "develop"), default=os.environ.get("SPIRIT_PET_BRANCH", "main"))
@@ -172,19 +230,33 @@ def main(argv=None):
     if args.branch not in {"main", "develop"} or not 1 <= args.port <= 65535:
         parser.error("Invalid branch or port")
     local = Path(__file__).resolve().parents[1]
-    target = (args.directory or (local if is_project(local) else Path.home() / "spirit-pet")).expanduser().resolve()
+    target = project_directory(local, args.directory)
+    if args.action == "uninstall":
+        uninstall_project(target, yes=args.yes)
+        return
     with tempfile.TemporaryDirectory(prefix="spirit-pet-install-") as temporary:
-        if is_project(target):
-            source = target
+        # An installed archive has no Git remote of its own. In update mode,
+        # fetch a fresh validated archive instead of silently copying itself.
+        if args.action == "update" and target == local and not (local / ".git").is_dir():
+            source = download_source(args.branch, Path(temporary))
         elif is_project(local):
             source = local
+        elif is_project(target):
+            source = target
         else:
             source = download_source(args.branch, Path(temporary))
-        prepare_project(source, target)
+        if args.action == "update":
+            update_project(source, target)
+        else:
+            prepare_project(source, target)
         if not is_project(target):
             raise RuntimeError("Incomplete project; no environment changes were made")
         venv = (args.venv or target / ".venv").expanduser().absolute()
         python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        if args.action == "reinstall" and venv.exists():
+            if not (venv / "pyvenv.cfg").is_file():
+                raise RuntimeError(f"Not a usable virtual environment; refusing to replace: {venv}")
+            shutil.rmtree(venv)
         if venv.exists():
             if not (venv / "pyvenv.cfg").is_file() or not python.is_file():
                 raise RuntimeError(f"Not a usable virtual environment; refusing to replace: {venv}")
@@ -198,7 +270,7 @@ def main(argv=None):
         run([python, "-m", "pip", "install", "--disable-pip-version-check", "--no-input", "nb-cli==1.5.0"])
         command = [python, target / "scripts/installer/setup.py", "--directory", target,
                    "--host", args.host, "--port", str(args.port)]
-        if args.no_start:
+        if args.no_start or args.action in {"update", "update-deps", "reinstall"}:
             command.append("--no-start")
         if args.yes:
             command.append("--yes")

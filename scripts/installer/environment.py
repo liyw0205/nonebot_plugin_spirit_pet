@@ -72,10 +72,7 @@ def configure(directory: Path, host: str, port: int, unattended=False):
 
 
 def show_start(directory):
-    python = sys.executable
     print(f"Project: {directory}")
-    if os.name == "nt":
-        print(f"Restart from the project directory: & \"{python}\" bot.py")
-    else:
-        print(f"Restart from the project directory: \"{python}\" bot.py")
+    print("Start or manage the bot with: xiupet start")
+    print("Foreground start from the project directory: nb run")
     print("Connection guide: docs/CONNECTIONS.md. NapCat is optional; QQBot needs its own credentials.")

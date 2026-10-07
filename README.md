@@ -2,7 +2,7 @@
 
 灵宠修仙、山海玄幻题材的 NoneBot2 文字宠物游戏。支持 **OneBot V11** 与 **QQ 官方机器人**，QQ 可使用 Markdown、指令按钮和蓝字，OneBot 使用纯文本。
 
-当前为未发布稳定版的源码开发项目，尚未发布 PyPI 安装包。
+当前为源码项目，使用 GitHub 一键脚本安装完整机器人项目。
 
 ## 游戏内容
 
@@ -36,7 +36,8 @@
 
 提供 Linux、Windows PowerShell 和 Termux 一键安装入口，固定 `nb-cli==1.5.0`，自动配置虚拟环境、驱动与双适配器。GitHub 下载先检测五个来源再选择可用快源，保留已有配置和存档。
 
-- 完整仓库：Linux `bash scripts/install.sh`，Termux `bash scripts/install_termux.sh`，Windows `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1`。
+- 完整仓库：Linux `bash scripts/install.sh install`，Termux `bash scripts/install_termux.sh install`，Windows `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 install`。
+- 管理已安装实例：`xiupet start|stop|restart|status|logs|update-deps|uninstall`。卸载会先停止进程并删除安装目录，非交互环境请显式追加 `--yes`。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
 - [Linux / Windows / Termux 安装教程](docs/INSTALLATION.md)
@@ -51,6 +52,6 @@ NapCat 只是可选的 OneBot V11 实现，不是插件或反向 WS 的必要依
 
 [变更记录](CHANGELOG.md) · [开发指南](docs/DEVELOPMENT.md) · [静态内容规范](docs/CONTENT.md) · [开发路线](docs/ROADMAP.md)
 
-## 参考与许可
+## 许可
 
-参考 [nonebot_plugin_xiuxian_2_pmv](https://github.com/liyw0205/nonebot_plugin_xiuxian_2_pmv) 的双适配器接入及安装脚本配置布局，不复制其业务代码。本项目采用 [MIT License](LICENSE)。
+本项目采用 [MIT License](LICENSE)。

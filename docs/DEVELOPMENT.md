@@ -7,7 +7,7 @@
 ## 目录与依赖
 
 ```text
-bot.py                         NoneBot 启动、双适配器注册
+scripts/xiupet.py              后台进程管理与日志命令
 src/plugins/nonebot_plugin_spirit_pet/
   __init__.py                  仅插件元数据与入口
   core/config.py               环境变量，运行节奏与消息配置
@@ -134,19 +134,6 @@ docs/                          安装、接入、玩法和开发文档
 
 升级前可用 `scripts/database_admin.py` 通过 SQLite Online Backup API 生成一致快照，并检查完整性与外键。备份和恢复都只能写入不存在的目标路径；恢复不会修改当前数据库或迁移 schema。具体操作和版本配对规则见 [配置与升级回滚](CONFIGURATION.md#升级与回滚)。
 
-## Python 分发包
-
-仓库保留独立 PEP 517/setuptools 配置，以便未来需要时验证插件分发；它不是当前用户安装方式。普通用户推荐用 [一键安装脚本](INSTALLATION.md)，它从 GitHub 安装完整机器人项目，不要求 PyPI。若开发者需要检查可选分发产物，可手动构建：
-
-```bash
-python -m pip install build twine
-python -m build
-python scripts/verify_distribution.py dist/nonebot_plugin_spirit_pet-*.whl
-python -m twine check dist/*
-```
-
-这些命令只验证可选插件分发的元数据和静态资源，不参与一键安装，也不代表已经发布到 PyPI。当前 CI 只负责跨平台功能测试、安装脚本冒烟和真实 WS 流程。
-
 ## 赛季与镜像
 
 - `arena.common.current_season` 用 UTC+8 自然月创建严格规则快照，关闭旧季，并以所有赛季的 `MAX(observed_at)` 拒绝时钟倒退。停机跨月只在实际访问月份建季，不补造空月份；新季不修改旧季积分或玩家冷却。
@@ -215,7 +202,7 @@ python -m twine check dist/*
 .venv/bin/python scripts/smoke_test.py
 .venv/bin/python scripts/balance_report.py --runs 100 --seed 20261007 --check
 .venv/bin/python scripts/balance_specials.py --runs 100 --seed 20261007 --check
-.venv/bin/python -m compileall -q src tests scripts bot.py
+.venv/bin/python -m compileall -q src tests scripts
 ```
 
 Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/myenv/bin/python`，不要求新建环境，不要求 NapCat 或真实 QQ 凭证。测试全部使用临时数据库。
@@ -230,9 +217,4 @@ GitHub Actions 使用 Linux/Windows 和 Python 3.10/3.13 跑完整回归，另�
 
 ## 配置来源
 
-`pyproject.toml` 保留参考仓库安装脚本生成的 NoneBot 运行项目布局，不猜测 PyPI 包模板：
-
-- 参考提交：`97f43acba8dd185111d998c48d4e1cf5a069b117`。
-- `scripts/install.sh` 的 TOML 生成段与 `scripts/install_termux.sh` 的 `write_pyproject()`。
-- `[project]`、`[tool.nonebot]`、适配器配置表及 `plugin_dirs = ["src/plugins"]`。
-- Python 最低 3.10、Pydantic 2 对应本项目实际 API；打包发布前另做分发配置与静态资源包含测试。
+`pyproject.toml` 是 NoneBot 运行项目配置，声明插件目录、驱动和适配器。Python 最低 3.10，运行依赖由一键安装器在项目虚拟环境中准备。

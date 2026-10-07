@@ -1,5 +1,6 @@
 [CmdletBinding()]
 param(
+    [ValidateSet('install', 'uninstall', 'reinstall', 'update', 'update-deps')][string]$Action = 'install',
     [string]$Directory,
     [string]$Venv,
     [ValidateSet('main', 'develop')][string]$Branch = $(if ($env:SPIRIT_PET_BRANCH) { $env:SPIRIT_PET_BRANCH } else { 'main' }),
@@ -54,6 +55,9 @@ function Install-Python {
 
 $Python = Find-Python
 if (-not $Python) {
+    if ($Action -eq 'uninstall') {
+        throw 'Uninstall requires an existing Python >=3.10 installation; no system packages were changed.'
+    }
     if ($SkipSystem) {
         throw 'No usable Python was found and -SkipSystem was specified. Install Python >=3.10,<4.0, then rerun.'
     }
@@ -66,15 +70,21 @@ if (-not $Python) {
     $Python = Find-Python
     if (-not $Python) { throw 'Python installation completed but no usable Python was found.' }
 }
-$Arguments = @('--branch', $Branch, '--host', $ListenHost, '--port', "$Port")
+$Arguments = @($Action, '--branch', $Branch, '--host', $ListenHost, '--port', "$Port")
 if ($Directory) { $Arguments += @('--directory', $Directory) }
 if ($Venv) { $Arguments += @('--venv', $Venv) }
 if ($Yes) { $Arguments += '--yes' }
 if ($NoStart) { $Arguments += '--no-start' }
+$PreviousSkipSystem = $env:SPIRIT_PET_SKIP_SYSTEM
+if ($SkipSystem) { $env:SPIRIT_PET_SKIP_SYSTEM = '1' }
 $Bootstrap = Join-Path $PSScriptRoot 'install_bootstrap.py'
 if (Test-Path -LiteralPath $Bootstrap -PathType Leaf) {
-    & $Python $Bootstrap @Arguments
-    exit $LASTEXITCODE
+    try {
+        & $Python $Bootstrap @Arguments
+        exit $LASTEXITCODE
+    } finally {
+        $env:SPIRIT_PET_SKIP_SYSTEM = $PreviousSkipSystem
+    }
 }
 
 $Temporary = Join-Path ([IO.Path]::GetTempPath()) ('spirit-pet-' + [Guid]::NewGuid().ToString('N'))

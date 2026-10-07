@@ -3,10 +3,42 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
-    printf 'Usage: bash install.sh [--directory PATH] [--venv PATH] [--branch main|develop] [--host IP] [--port PORT] [--yes] [--no-start]\n'
+    printf 'Usage: bash install.sh [install|uninstall|reinstall|update|update-deps] [options]\n'
+    printf 'Options: --directory PATH --venv PATH --branch main|develop --host IP --port PORT --yes --no-start\n'
     printf 'Python/curl: auto-install where supported. SPIRIT_PET_SKIP_SYSTEM=1 disables system package installation.\n'
     exit 0
 fi
+for ARG in "$@"; do
+    if [[ "$ARG" == --help || "$ARG" == -h ]]; then
+        printf 'Usage: bash install.sh [install|uninstall|reinstall|update|update-deps] [options]\n'
+        printf 'Options: --directory PATH --venv PATH --branch main|develop --host IP --port PORT --yes --no-start\n'
+        exit 0
+    fi
+done
+ACTION=install
+ACTION_SET=0
+SKIP_NEXT=0
+for ARG in "$@"; do
+    if [[ "$SKIP_NEXT" == 1 ]]; then
+        SKIP_NEXT=0
+        continue
+    fi
+    if [[ "$ARG" == --directory || "$ARG" == --venv || "$ARG" == --branch || "$ARG" == --host || "$ARG" == --port ]]; then
+        SKIP_NEXT=1
+        continue
+    fi
+    [[ "$ARG" == *=* ]] && continue
+    case "$ARG" in
+        install|uninstall|reinstall|update|update-deps)
+            if [[ "$ACTION_SET" == 1 ]]; then
+                printf 'Only one action may be specified (install, uninstall, reinstall, update or update-deps).\n' >&2
+                exit 2
+            fi
+            ACTION=$ARG
+            ACTION_SET=1
+            ;;
+    esac
+done
 BRANCH=${SPIRIT_PET_BRANCH:-main}
 ARGS=("$@")
 for ((ARG=0; ARG<${#ARGS[@]}; ARG++)); do
@@ -38,7 +70,22 @@ find_python() {
 PYTHON=$(find_python || true)
 NEEDS_REMOTE_BOOTSTRAP=1
 [[ -f "$SCRIPT_DIR/install_bootstrap.py" ]] && NEEDS_REMOTE_BOOTSTRAP=0
-if [[ ${SPIRIT_PET_SKIP_SYSTEM:-0} != 1 ]]; then
+# Uninstall only needs the local bootstrap and must never install system
+# packages merely to remove a project.
+if [[ "$ACTION" == uninstall ]]; then
+    if [[ -z "$PYTHON" ]]; then
+        printf 'Uninstall requires Python >=3.10 with venv support so the local cleanup can run.\n' >&2
+        exit 1
+    fi
+    if [[ -f "$SCRIPT_DIR/install_bootstrap.py" ]]; then
+        exec "$PYTHON" "$SCRIPT_DIR/install_bootstrap.py" "$@"
+    fi
+    command -v curl >/dev/null || {
+        printf 'Standalone uninstall requires curl to download the cleanup bootstrap.\n' >&2
+        exit 1
+    }
+fi
+if [[ "$ACTION" != uninstall && ${SPIRIT_PET_SKIP_SYSTEM:-0} != 1 ]]; then
     if [[ ${SPIRIT_PET_PLATFORM:-} == termux || ${PREFIX:-} == /data/data/com.termux/files/usr ]]; then
         command -v pkg >/dev/null || { printf 'Termux pkg is required.\n' >&2; exit 1; }
         pkg install -y python clang rust make pkg-config openssl libffi curl

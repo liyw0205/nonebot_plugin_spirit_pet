@@ -40,7 +40,7 @@ README 仅介绍仓库；这里记录实施顺序与验收口径，不把计划�
 ## 稳定发布前
 
 1. 待用真实 QQ AppID 与客户端验收普通消息、Markdown、键盘、蓝字及权限降级；自动化事件测试不能替代平台权限和真机呈现确认。
-2. GitHub Actions 用 Linux/Windows、Python 3.10/3.13 回归游戏与适配器，并在隔离目录验证一键安装和 WS 冒烟；Linux 缺 Python 的包管理器自举路径另由隔离 shell 测试验证。需在当前迭代提交上取得远程成功结果，并在真实 Termux 环境回归。工作流是质量门禁，不是用户安装方式，也不要求构建或上传 PyPI 包。
+2. GitHub Actions 用 Linux/Windows、Python 3.10/3.13 回归游戏与适配器，并在隔离目录验证一键安装、`xiupet` 管理命令和 WS 冒烟；Linux 缺 Python 的包管理器自举路径另由隔离 shell 测试验证。工作流只负责质量门禁。
 3. 首个公开版本候选冻结 schema 11：接受全新空库与 schema 11，拒绝 schema 1-10、未来版本及未版本化非空库且不修改原文件；不迁移未发布开发库，旧库备份保留并给新版本配置新路径。未来若要携带已发布存档升级，须先提供独立迁移和回滚验证。SQLite Online Backup API 的备份/验证/非覆盖恢复工具已用完整 schema 11 临时库演练，包含已存在目标保护。
-4. GitHub 一键脚本从校验过的源码归档安装完整机器人项目，不依赖 PyPI。PEP 517 配置仅为未来可能的插件分发保留，不是该安装路径的前置条件或当前发布门槛；当前未上传 PyPI，版本 `0.1.0` 仍是开发候选。
-5. 默认发布路径为 GitHub 源码与 Linux/Windows/Termux 安装入口。完成远端 CI、Termux 与 QQ 验收后再冻结版本、创建正式标签并发布说明；只有决定支持“已有 NoneBot 项目通过 pip 安装插件”时，才另行安排 PyPI 上传和 NoneBot 索引提交。发行说明需明确 Python 支持范围、schema 11 的拒绝旧库策略、双适配器原始 ID 边界及 QQ/Termux 的实测限制。
+4. GitHub 一键脚本从校验过的源码归档安装完整机器人项目，生成 `xiupet` 管理命令并使用 `nb run` 启动，不依赖外部插件包索引。
+5. 默认发布路径为 GitHub 源码与 Linux/Windows/Termux 安装入口。完成远端 CI、Termux 与 QQ 验收后再冻结版本、创建正式标签并发布说明；发行说明需明确 Python 支持范围、schema 11 的拒绝旧库策略、双适配器原始 ID 边界及 QQ/Termux 的实测限制。

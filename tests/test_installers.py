@@ -97,7 +97,7 @@ def test_no_valid_source_fails_instead_of_using_html(tmp_path, capsys):
 @pytest.mark.parametrize("name", [
     "../outside", "/absolute", "project-main/../../escape", "project-main/a\\b", "project-main/C:drive",
     "project-main/.. /outside", "project-main/a.", "project-main/NUL.txt", "project-main/CoM1",
-    "project-main/a?/b", "project-main/./bot.py", "project-main//bot.py",
+    "project-main/a?/b", "project-main/./scripts/xiupet.py", "project-main//scripts/xiupet.py",
 ])
 def test_archive_rejects_unsafe_paths(name):
     with pytest.raises(ValueError, match="unsafe"):
@@ -117,9 +117,9 @@ def test_archive_rejects_incomplete_duplicate_and_multiroot_content():
     with pytest.raises(ValueError, match="missing"):
         bootstrap.validate_archive(archive_bytes(omit=["pyproject.toml"]))
     with pytest.raises(ValueError, match="duplicate"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/bot.py")]))
+        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/scripts/xiupet.py")]))
     with pytest.raises(ValueError, match="duplicate"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/BOT.py")]))
+        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/SCRIPTS/xiupet.py")]))
     with pytest.raises(ValueError, match="one repository root"):
         bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("other/file")]))
 
@@ -172,9 +172,9 @@ def test_source_copy_excludes_credentials_runtime_data_and_venv(project, tmp_pat
 
 
 def test_existing_project_and_nonproject_directories_are_not_overwritten(project, tmp_path):
-    original = (project / "bot.py").read_bytes()
+    original = (project / "pyproject.toml").read_bytes()
     bootstrap.prepare_project(tmp_path / "unused", project)
-    assert (project / "bot.py").read_bytes() == original
+    assert (project / "pyproject.toml").read_bytes() == original
     unrelated = tmp_path / "personal"
     unrelated.mkdir()
     (unrelated / "notes.txt").write_text("keep", encoding="utf-8")
@@ -336,20 +336,21 @@ def test_no_start_finishes_after_dependency_and_environment_configuration(projec
     calls = []
     monkeypatch.setattr(setup, "install_dependencies", lambda path: calls.append("dependencies"))
     monkeypatch.setattr(setup, "configure", lambda *args: calls.append("environment"))
+    monkeypatch.setattr(setup, "install_xiupet_command", lambda *args: calls.append("command"))
     monkeypatch.setattr(setup, "show_start", lambda path: calls.append("instructions"))
     monkeypatch.setattr(setup.subprocess, "run", lambda *args, **kwargs: calls.append("start"))
     setup.main(["--directory", str(project), "--no-start"])
-    assert calls == ["dependencies", "environment", "instructions"]
+    assert calls == ["dependencies", "environment", "command", "instructions"]
     calls.clear()
     setup.main(["--directory", str(project)])
-    assert calls == ["dependencies", "environment", "instructions", "start"]
+    assert calls == ["dependencies", "environment", "command", "instructions", "start"]
 
 
 def test_windows_restart_instruction_is_executable_with_spaces(project, monkeypatch, capsys):
-    monkeypatch.setattr(environment.os, "name", "nt")
-    monkeypatch.setattr(environment.sys, "executable", str(project / "venv with spaces" / "Scripts" / "python.exe"))
     environment.show_start(project)
-    assert '& "' in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "xiupet start" in output
+    assert "nb run" in output
 
 
 @pytest.mark.parametrize("name", ["install.sh", "install_termux.sh"])

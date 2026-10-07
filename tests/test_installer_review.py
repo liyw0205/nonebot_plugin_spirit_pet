@@ -108,11 +108,11 @@ def test_existing_venv_and_runtime_files_are_kept_while_selected_python_is_used(
 
 
 def test_windows_restart_instruction_uses_powershell_call_operator(monkeypatch, capsys):
-    python = r"C:\Users\Demo User\Spirit Pet\.venv\Scripts\python.exe"
     monkeypatch.setattr(environment, "os", SimpleNamespace(name="nt"))
-    monkeypatch.setattr(environment, "sys", SimpleNamespace(executable=python))
     environment.show_start(r"C:\Users\Demo User\Spirit Pet")
-    assert f'& "{python}" bot.py' in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "xiupet start" in output
+    assert "nb run" in output
 
 
 def test_linux_with_python_but_without_curl_attempts_supported_package_install(tmp_path):

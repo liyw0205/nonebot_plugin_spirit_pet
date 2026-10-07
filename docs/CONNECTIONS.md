@@ -2,7 +2,7 @@
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 
-一键安装默认最后以前台方式启动；用了 `--no-start` / `-NoStart` 时，在项目目录用 `.venv/bin/python bot.py`（Linux/Termux）或 `.venv\Scripts\python.exe bot.py`（Windows）启动。自定义虚拟环境时换成对应 Python 路径。
+一键安装默认最后以前台方式启动；用了 `--no-start` / `-NoStart` 时，在项目目录执行 `nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
 
 安装器首次生成的 `.env` 已含随机 `ONEBOT_V11_ACCESS_TOKEN`，填写 OneBot 客户端时使用文件中的真实值，不必重新生成。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
 
