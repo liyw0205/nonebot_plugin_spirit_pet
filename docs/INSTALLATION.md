@@ -19,7 +19,7 @@ bash install-spirit-pet.sh --directory "$HOME/spirit-pet"
 
 可先用文本编辑器检查下载的脚本。首次获取入口需要能访问 GitHub；也可在浏览器下载入口，或使用下文列出的已核验上游代理前缀。脚本执行后的引导器与项目源码下载都会检测五个来源，不将 HTTP 200 的 HTML 页面当作成功。
 
-Debian/Ubuntu 缺少 Python/venv 时自动通过 `apt-get` 安装必要包，非 root 用户需要 `sudo`；Fedora 系使用 `dnf`，RHEL 系使用 `yum`，Alpine 使用 `apk`。不会执行系统全量升级或安装后台服务。不支持的发行版、Python 低于 3.10 时，请先安装合适的 Python。已准备好系统依赖时可跳过系统包步骤：
+无需预先安装 Python。入口会先检查 Python 3.10+、`venv` 和 `ensurepip`；缺少或版本不符时，在 Debian/Ubuntu 使用 `apt-get`，Fedora 系使用 `dnf`，RHEL 系使用 `yum`，Alpine 使用 `apk`，openSUSE 使用 `zypper`，Arch 使用 `pacman` 安装运行依赖。macOS 可通过已安装的 Homebrew 准备依赖。Linux 包管理器安装需要 root 或 `sudo`；不会执行系统全量升级或安装后台服务。若发行版仓库没有 Python 3.10+，或系统没有受支持的包管理器，脚本会停止并提示手动安装。独立入口下载还需要 `curl`；完整源码目录内运行时不必联网下载引导器。已准备好系统依赖时可跳过系统包步骤：
 
 ```bash
 SPIRIT_PET_SKIP_SYSTEM=1 SPIRIT_PET_PYTHON=python3.12 \
@@ -52,7 +52,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\install.ps1" -NoS
 
 ## Termux 一键安装
 
-使用仍受维护的 Termux 版本。在 Termux 中准备下载工具并运行同一个自动识别平台的入口：
+使用仍受维护的 Termux 版本。首次下载入口需要 `curl`；Python、venv 和依赖编译工具由入口自动通过 `pkg` 准备：
 
 ```bash
 pkg update

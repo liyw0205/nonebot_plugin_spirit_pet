@@ -386,7 +386,8 @@ def test_shell_installs_curl_with_python_when_linux_bootstrap_needs_it():
 
 
 def test_shell_bootstraps_missing_python_with_apt(tmp_path):
-    if os.name == "nt" or not shutil.which("bash"):
+    bash = shutil.which("bash")
+    if os.name == "nt" or not bash:
         pytest.skip("bash unavailable")
     marker = tmp_path / "python-installed"
     log = tmp_path / "apt.log"
@@ -411,14 +412,19 @@ def test_shell_bootstraps_missing_python_with_apt(tmp_path):
     python.chmod(0o755)
     apt.chmod(0o755)
     fake_id.chmod(0o755)
+    for name in ("dirname", "touch"):
+        executable = shutil.which(name)
+        if not executable:
+            pytest.skip(f"{name} unavailable")
+        (bindir / name).symlink_to(executable)
     env = {
         **os.environ,
-        "PATH": f"{bindir}:/usr/bin:/bin",
+        "PATH": str(bindir),
         "SPIRIT_PET_SKIP_SYSTEM": "0",
         "SPIRIT_PET_PLATFORM": "",
     }
     result = subprocess.run(
-        ["bash", str(ROOT / "scripts/install.sh"), "--yes", "--no-start"],
+        [bash, str(ROOT / "scripts/install.sh"), "--yes", "--no-start"],
         capture_output=True,
         text=True,
         env=env,

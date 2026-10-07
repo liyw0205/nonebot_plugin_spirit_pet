@@ -145,3 +145,51 @@ def test_linux_with_python_but_without_curl_attempts_supported_package_install(t
     assert trace.is_file(), result.stderr
     assert "curl" in trace.read_text(encoding="utf-8")
     assert result.returncode == 31
+
+
+def test_linux_without_python_installs_it_before_running_python_bootstrap(tmp_path):
+    if os.name == "nt":
+        pytest.skip("POSIX shell tools require a POSIX environment")
+    bash, shell, dirname, cp, chmod = (shutil.which(name) for name in ("bash", "sh", "dirname", "cp", "chmod"))
+    if not all((bash, shell, dirname, cp, chmod)):
+        pytest.skip("POSIX shell tools unavailable")
+    binary = tmp_path / "isolated tools"
+    binary.mkdir()
+    trace = tmp_path / "installer calls"
+    fake_python = tmp_path / "python3 template"
+    fake_python.write_text(
+        f'#!{shell}\nprintf "python %s\\n" "$*" >> "$SPIRIT_PET_REVIEW_TRACE"\nexit 0\n',
+        encoding="utf-8",
+    )
+    programs = {
+        "id": "printf '0\\n'\n",
+        "apt-get": (
+            'printf "apt %s\\n" "$*" >> "$SPIRIT_PET_REVIEW_TRACE"\n'
+            'if [ "$1" = update ]; then exit 0; fi\n'
+            'cp "$SPIRIT_PET_REVIEW_PYTHON" "$SPIRIT_PET_REVIEW_BINARY/python3"\n'
+            'chmod +x "$SPIRIT_PET_REVIEW_BINARY/python3"\n'
+        ),
+    }
+    for name, body in programs.items():
+        path = binary / name
+        path.write_text(f"#!{shell}\n{body}", encoding="utf-8")
+        path.chmod(0o700)
+    (binary / "dirname").symlink_to(dirname)
+    (binary / "cp").symlink_to(cp)
+    (binary / "chmod").symlink_to(chmod)
+    script_dir = tmp_path / "installer"
+    script_dir.mkdir()
+    shutil.copy2(ROOT / "scripts/install.sh", script_dir / "install.sh")
+    shutil.copy2(ROOT / "scripts/install_bootstrap.py", script_dir / "install_bootstrap.py")
+    result = subprocess.run([bash, str(script_dir / "install.sh"), "--no-start"], capture_output=True, text=True,
+                            timeout=10, env={
+        **os.environ, "PATH": str(binary), "PREFIX": "/usr", "SPIRIT_PET_PLATFORM": "linux",
+        "SPIRIT_PET_SKIP_SYSTEM": "0", "SPIRIT_PET_BRANCH": "main",
+        "SPIRIT_PET_REVIEW_TRACE": str(trace), "SPIRIT_PET_REVIEW_BINARY": str(binary),
+        "SPIRIT_PET_REVIEW_PYTHON": str(fake_python),
+    })
+    assert result.returncode == 0, result.stderr
+    calls = trace.read_text(encoding="utf-8")
+    assert "apt update" in calls
+    assert "python3 python3-venv python3-pip curl ca-certificates" in calls
+    assert f"python {script_dir / 'install_bootstrap.py'} --no-start" in calls
