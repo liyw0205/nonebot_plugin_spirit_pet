@@ -4,7 +4,7 @@ from typing import Callable
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import crafting, expeditions, lineage, pve_stages
-from ..gameplay import achievements
+from ..gameplay import achievements, resonance
 from ..gameplay import battle_records
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
@@ -53,6 +53,7 @@ ACTIONS = {
     "achievements": Command(achievements.achievements, True),
     "achievement_claim": Command(achievements.claim, True),
     "collection": Command(achievements.collection, True),
+    "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
@@ -105,6 +106,7 @@ COMMANDS = {
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",
+    "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
     "灵宠论剑": "pvp", "灵宠切磋": "spar",

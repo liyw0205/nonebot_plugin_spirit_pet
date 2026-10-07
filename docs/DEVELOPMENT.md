@@ -25,6 +25,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   domain/expedition_state.py   出发时抽取的严格运行奖励快照
   domain/stage_content.py      章节关卡静态定义
   domain/achievement_content.py 成就指标、目标与固定奖励定义
+  domain/resonance_content.py  双种族组合与属性倍率定义
   domain/state.py              Player、Pet 运行模型
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
@@ -42,6 +43,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/rewards.py          共用奖励结算
   gameplay/pve_stages.py       线性关卡进度与首通奖励
   gameplay/achievements.py    收集图鉴、成就进度与一次性领奖
+  gameplay/resonance.py       共鸣目录、启用成本与状态切换
   gameplay/combat.py           属性计算与限回合战斗
   gameplay/talents.py          天赋触发与单场护盾、毒伤效果
   gameplay/effects.py          主动控制、弱化、增益、净化、驱散和持续次数
@@ -70,7 +72,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   utils/elements.py           元素祖先展开与继承门槛判断
   utils/pagination.py         只读内容分页、页码校验与导航
   utils/randomness.py         可注入随机源的加权抽取
-  data/*.json                 静态宠物、境界、血脉、关卡、成就、物品、怪物和奖励
+  data/*.json                 静态宠物、境界、血脉、关卡、成就、共鸣、物品、怪物和奖励
 tests/                         单元、并发、适配器契约和真实 WS 测试
 scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
 scripts/database_admin.py      SQLite 在线备份、完整性验证与非覆盖恢复
@@ -131,7 +133,7 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 11，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 12，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
 升级前可用 `scripts/database_admin.py` 通过 SQLite Online Backup API 生成一致快照，并检查完整性与外键。备份和恢复都只能写入不存在的目标路径；恢复不会修改当前数据库或迁移 schema。具体操作和版本配对规则见 [配置与升级回滚](CONFIGURATION.md#升级与回滚)。
 
@@ -208,7 +210,7 @@ docs/                          安装、接入、玩法和开发文档
 
 Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/myenv/bin/python`，不要求新建环境，不要求 NapCat 或真实 QQ 凭证。测试全部使用临时数据库。
 
-测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、主属性/分支继承、天赋效果、技能成长、强化保留、灵卵容量、事务回滚、并发、重复消息、组队准备、直接镜像对战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
+测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、共鸣成本与战斗加成、主属性/分支继承、天赋效果、技能成长、强化保留、灵卵容量、事务回滚、并发、重复消息、组队准备、直接镜像对战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
 
 一键安装脚本的无 Python 自举、隔离安装/卸载与 `xiupet` 启停由本地测试覆盖。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
 

@@ -78,6 +78,11 @@ class Cost(Definition):
     items: dict[Identifier, Positive] = Field(default_factory=dict)
 
 
+class ResourceCost(Definition):
+    stones: NonNegative
+    items: dict[Identifier, Positive] = Field(default_factory=dict)
+
+
 class Realm(Definition):
     id: Identifier
     name: Name
@@ -170,3 +175,4 @@ class Rules(Definition):
     max_team_size: Annotated[int, Field(ge=2, le=5)]
     max_skill_slots: Annotated[int, Field(ge=1, le=4)]
     skill_proficiency_per_use: Positive = 5
+    resonance_cost: ResourceCost

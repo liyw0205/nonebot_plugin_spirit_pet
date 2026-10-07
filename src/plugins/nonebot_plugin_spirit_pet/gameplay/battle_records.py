@@ -59,6 +59,7 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
         "stats": fighter.stats.model_dump(),
         "skills": [],
         "equipment": [],
+        "resonance": fighter.resonance_name,
     }
     if fighter.pet_id is None:
         return member
@@ -164,7 +165,8 @@ def _member_text(member: dict) -> str:
     ) or "无"
     realm = member.get("realm_name")
     realm_text = f" · {realm}{member.get('layer')}层 · {member.get('bloodline_name')}" if realm else ""
-    return (f"{dao}的{member.get('pet_name', '未知灵宠')}{realm_text} · 主属性 {element} · "
+    resonance = f" · 共鸣 {member['resonance']}" if member.get("resonance") else ""
+    return (f"{dao}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance} · 主属性 {element} · "
             f"技能 {skills} · 装备 {equipment}")
 
 

@@ -12,6 +12,11 @@ CREATE TABLE players (
     FOREIGN KEY(user_id, active_pet_id) REFERENCES pets(user_id, pet_id)
         DEFERRABLE INITIALLY DEFERRED
 );
+CREATE TABLE player_resonance (
+    user_id TEXT PRIMARY KEY REFERENCES players(user_id) ON DELETE CASCADE,
+    resonance_id TEXT NOT NULL CHECK(length(resonance_id)>0),
+    activated_at INTEGER NOT NULL
+);
 CREATE TABLE pets (
     pet_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL REFERENCES players(user_id),

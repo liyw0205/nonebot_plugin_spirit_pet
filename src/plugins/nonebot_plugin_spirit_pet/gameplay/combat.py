@@ -41,16 +41,18 @@ class Fighter:
     poison_turns: int = 0
     effects: EffectState = field(default_factory=EffectState)
     turns: int = 0
+    resonance_name: str | None = None
 
     @classmethod
     def create(
         cls, name: str, stats: Stats, elements=(), skills=(), *, primary_element=None,
-        pet_id=None, talent=None, skill_multipliers=None,
+        pet_id=None, talent=None, skill_multipliers=None, resonance_name=None,
     ):
         return cls(
             name, stats, stats.hp, tuple(elements), tuple(skills),
             primary_element=primary_element,
             pet_id=pet_id, talent=talent, skill_multipliers=dict(skill_multipliers or {}),
+            resonance_name=resonance_name,
         )
 
 

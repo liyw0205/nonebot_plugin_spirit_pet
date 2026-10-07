@@ -31,6 +31,7 @@ def help_game(ctx: Context, arg: str) -> Reply:
         "派遣：灵宠委托 / 灵宠派遣 名称 / 灵宠行程 / 灵宠归来 行程号 / 灵宠召回 行程号",
         "其他：灵宠改名 名字 / 我的道号 / 灵宠道号 新道号 / 灵宠图鉴 / 灵宠排行",
         "收集与战报：灵宠收集 [页] / 灵宠成就 [页] / 灵宠成就领奖 成就名 / 灵宠战报 [页]",
+        "共鸣：灵宠共鸣 / 灵宠共鸣 查看 名称 / 灵宠共鸣 激活 名称 / 灵宠共鸣 停用",
     ), ("灵宠领养 青鸾", "我的灵宠", "灵宠秘境", "灵宠任务"))
 
 
@@ -43,7 +44,16 @@ def status(ctx: Context, arg: str) -> Reply:
         state = "外出中" if ctx.now < expedition["finishes_at"] else "已完成，待领取"
         activity = (f"行程：{expedition['task_name']} · {state}。",)
         commands = ("灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
-    stats = combatant(ctx).stats
+    fighter = combatant(ctx)
+    stats = fighter.stats
+    selected_resonance = ctx.repo.player_resonance(player.user_id)
+    resonance = (
+        ctx.content.resonances.get(selected_resonance["resonance_id"])
+        if selected_resonance is not None else None
+    )
+    resonance_status = fighter.resonance_name or (
+        f"{resonance.name}（当前出战灵宠不匹配）" if resonance else "无"
+    )
     species = ctx.content.species[pet.species_id]
     talent = ctx.content.talents[species.talent]
     major = pet.layer == 10
@@ -74,6 +84,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"修为：{pet.exp} · 灵石：{player.stones}",
         f"精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
         f"气血：{stats.hp} · 攻击：{stats.attack} · 防御：{stats.defense} · 速度：{stats.speed}",
+        f"战斗共鸣：{resonance_status}",
         breakthrough, evolve_line,
     ), commands)
 

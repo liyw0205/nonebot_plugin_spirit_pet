@@ -18,6 +18,15 @@ def combatant(ctx: Context, user_id: str | None = None, *, recover_energy: bool 
         pet = ctx.repo.pet(active_pet_id)
     species = ctx.content.species[pet.species_id]
     stats = pet_stats(pet, ctx.content).model_dump()
+    resonance_name = None
+    resonance = ctx.repo.player_resonance(ctx.player(user_id).user_id)
+    if resonance is not None:
+        definition = ctx.content.resonances.get(resonance["resonance_id"])
+        if definition is not None and pet.species_id in definition.required_species:
+            for key, rate in definition.bonuses.model_dump().items():
+                if rate:
+                    stats[key] = int(stats[key] * (1 + rate) + 0.5)
+            resonance_name = definition.name
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():
         item = ctx.content.items[item_id]
         gear = ctx.content.equipment[item.equipment_id]
@@ -39,4 +48,5 @@ def combatant(ctx: Context, user_id: str | None = None, *, recover_energy: bool 
         name, Stats(**stats), tuple(species.elements), tuple(selected),
         primary_element=species.primary_element, pet_id=pet.pet_id,
         talent=ctx.content.talents[species.talent], skill_multipliers=skill_multipliers,
+        resonance_name=resonance_name,
     )

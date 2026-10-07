@@ -180,10 +180,9 @@ def test_cached_operation_id_cannot_be_reused_by_another_player(game, play):
     ]
 
 
-def test_help_lists_collection_achievement_and_battle_report_commands(play):
-    reply = play("help")
-    assert any("灵宠收集" in line and "灵宠成就领奖" in line and "灵宠战报" in line
-               for line in reply.lines)
+def test_help_lists_collection_achievement_resonance_and_battle_report_commands(play):
+    text = play("help").text()
+    assert all(command in text for command in ("灵宠收集", "灵宠成就领奖", "灵宠共鸣", "灵宠战报"))
 
 
 def test_unexpected_failure_rolls_back_inventory_player_pet_and_cache(game, play, monkeypatch):

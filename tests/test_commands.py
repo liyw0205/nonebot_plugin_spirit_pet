@@ -54,6 +54,8 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠收集 2") == ("collection", "2")
     assert handlers._parse("灵宠成就 3") == ("achievements", "3")
     assert handlers._parse("灵宠成就领奖 初结灵契") == ("achievement_claim", "初结灵契")
+    assert handlers._parse("灵宠共鸣") == ("resonance", "")
+    assert handlers._parse("灵宠共鸣 激活 青岚双翼") == ("resonance", "激活 青岚双翼")
     assert handlers._parse("灵宠战报 2") == ("battle_reports", "2")
     assert handlers._parse("灵宠签到后的聊天") is None
     assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")

@@ -1,0 +1,100 @@
+[
+  {
+    "id": "wind_wings",
+    "name": "青岚双翼",
+    "description": "风木与冰风彼此引动，身法更为轻灵。",
+    "required_species": ["qingluan", "hanying"],
+    "bonuses": {"hp": 0, "attack": 0.03, "defense": 0, "speed": 0.05}
+  },
+  {
+    "id": "fox_moon",
+    "name": "月狐照影",
+    "description": "火灵与冰灵相映，攻守间留有转圜。",
+    "required_species": ["xuanhu", "xuehu"],
+    "bonuses": {"hp": 0, "attack": 0.05, "defense": 0, "speed": 0.03}
+  },
+  {
+    "id": "metal_soul",
+    "name": "金魄交鸣",
+    "description": "金灵相照，锋锐中自有守势。",
+    "required_species": ["baize", "daotang"],
+    "bonuses": {"hp": 0, "attack": 0.03, "defense": 0.04, "speed": 0}
+  },
+  {
+    "id": "dragon_tide",
+    "name": "龙汐同潮",
+    "description": "龙息与潮汐共振，气血绵长。",
+    "required_species": ["jiaolong", "lingxi"],
+    "bonuses": {"hp": 0.05, "attack": 0.03, "defense": 0, "speed": 0}
+  },
+  {
+    "id": "ember_earth",
+    "name": "炎羽地火",
+    "description": "离火升腾、地脉承焰，攻势沉稳有力。",
+    "required_species": ["bifang", "rongyanjia"],
+    "bonuses": {"hp": 0.02, "attack": 0.06, "defense": 0, "speed": 0}
+  },
+  {
+    "id": "tortoise_mountain",
+    "name": "玄甲镇岳",
+    "description": "水土同守，厚甲之下气血充盈。",
+    "required_species": ["xuanwu", "tielin"],
+    "bonuses": {"hp": 0.05, "attack": 0, "defense": 0.04, "speed": 0}
+  },
+  {
+    "id": "wooden_roots",
+    "name": "林鹿同根",
+    "description": "草木灵息相连，身法与气血俱得滋养。",
+    "required_species": ["sanlinglu", "tengling"],
+    "bonuses": {"hp": 0.04, "attack": 0, "defense": 0, "speed": 0.04}
+  },
+  {
+    "id": "beast_chase",
+    "name": "猛兽逐风",
+    "description": "山林猛兽逐风而行，出手迅捷。",
+    "required_species": ["chiyanhu", "fenghu"],
+    "bonuses": {"hp": 0, "attack": 0.04, "defense": 0, "speed": 0.04}
+  },
+  {
+    "id": "ice_tide",
+    "name": "冰潮回响",
+    "description": "寒冰与水潮交叠，守势愈发严密。",
+    "required_species": ["bingcan", "mohe"],
+    "bonuses": {"hp": 0.04, "attack": 0, "defense": 0.04, "speed": 0}
+  },
+  {
+    "id": "bamboo_serpent",
+    "name": "幽篁蛇影",
+    "description": "竹影藏毒，攻守转换无声。",
+    "required_species": ["bizhu", "duman"],
+    "bonuses": {"hp": 0, "attack": 0.04, "defense": 0.04, "speed": 0}
+  },
+  {
+    "id": "gold_thunder",
+    "name": "金雷振翅",
+    "description": "金锋借雷鸣之势，迅疾破敌。",
+    "required_species": ["jinyu", "leitingdiao"],
+    "bonuses": {"hp": 0, "attack": 0.03, "defense": 0, "speed": 0.05}
+  },
+  {
+    "id": "mountain_guardians",
+    "name": "山灵负岳",
+    "description": "厚土灵息层层相承，护体如岳。",
+    "required_species": ["shanshi", "shiou"],
+    "bonuses": {"hp": 0.05, "attack": 0, "defense": 0.04, "speed": 0}
+  },
+  {
+    "id": "thunder_venom",
+    "name": "雷毒相激",
+    "description": "雷霆催化木毒，攻势凌厉。",
+    "required_species": ["leize", "molian"],
+    "bonuses": {"hp": 0, "attack": 0.06, "defense": 0, "speed": 0.02}
+  },
+  {
+    "id": "ghostwing",
+    "name": "蝶引幽风",
+    "description": "幽蝶循风穿行，守中带变。",
+    "required_species": ["duman", "mingdie"],
+    "bonuses": {"hp": 0, "attack": 0, "defense": 0.02, "speed": 0.05}
+  }
+]

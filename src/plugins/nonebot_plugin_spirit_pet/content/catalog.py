@@ -15,6 +15,7 @@ from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.stage_content import Stage
 from ..domain.lineage_content import Lineage
+from ..domain.resonance_content import Resonance
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -71,6 +72,7 @@ class Catalog:
     expeditions: dict[str, Expedition]
     stages: dict[str, Stage]
     achievements: dict[str, Achievement]
+    resonances: dict[str, Resonance]
     dao_names: DaoNames
 
     @classmethod
@@ -100,6 +102,7 @@ class Catalog:
             expeditions=_index(directory / "expeditions.json", Expedition),
             stages=_index(directory / "stages.json", Stage),
             achievements=_index(directory / "achievements.json", Achievement),
+            resonances=_index(directory / "resonances.json", Resonance),
             dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
@@ -128,6 +131,9 @@ class Catalog:
             if cost:
                 self._require(cost.items, self.items, "cost items")
         self._require(self.rules.starter_items, self.items, "starter items")
+        self._require(self.rules.resonance_cost.items, self.items, "resonance cost items")
+        if any(self.items[key].kind != "material" for key in self.rules.resonance_cost.items):
+            raise ValueError("resonance costs must be materials")
         for reward in (
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
@@ -160,6 +166,7 @@ class Catalog:
             raise ValueError("spirit_food must be a consumable")
         self._validate_progression()
         validate_battle_content(self)
+        self._validate_resonances()
         validate_crafting_content(self)
         validate_lineages(self)
         self._validate_achievements()
@@ -256,6 +263,19 @@ class Catalog:
             maximum = maxima.get(entry.metric)
             if maximum is not None and entry.target > maximum:
                 raise ValueError(f"achievement target exceeds available {entry.metric}")
+
+    def _validate_resonances(self):
+        covered = set()
+        pairs = set()
+        for resonance in self.resonances.values():
+            self._require(resonance.required_species, self.species, "resonance species")
+            pair = frozenset(resonance.required_species)
+            if pair in pairs:
+                raise ValueError("duplicate resonance species pair")
+            pairs.add(pair)
+            covered.update(pair)
+        if covered != set(self.species):
+            raise ValueError("every species must appear in at least one resonance")
 
     @staticmethod
     def _require(keys, targets, label):

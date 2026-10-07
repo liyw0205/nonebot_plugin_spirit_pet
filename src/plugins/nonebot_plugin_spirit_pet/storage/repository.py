@@ -62,6 +62,22 @@ class Repository:
             (user_id,),
         ))
 
+    def player_resonance(self, user_id: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT resonance_id, activated_at FROM player_resonance WHERE user_id=?", (user_id,),
+        ).fetchone()
+
+    def set_player_resonance(self, user_id: str, resonance_id: str, activated_at: int) -> None:
+        self.conn.execute(
+            "INSERT INTO player_resonance(user_id, resonance_id, activated_at) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET resonance_id=excluded.resonance_id, "
+            "activated_at=excluded.activated_at",
+            (user_id, resonance_id, activated_at),
+        )
+
+    def clear_player_resonance(self, user_id: str) -> None:
+        self.conn.execute("DELETE FROM player_resonance WHERE user_id=?", (user_id,))
+
     def add_item(self, user_id: str, item_id: str, amount: int) -> None:
         if amount < 0:
             raise ValueError("item amount cannot be negative")
