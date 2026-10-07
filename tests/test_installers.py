@@ -16,7 +16,7 @@ def source_project(tmp_path):
     (project / "src/plugins/nonebot_plugin_spirit_pet").mkdir(parents=True)
     for name in ("pyproject.toml", "requirements.txt", ".env.example", "LICENSE"):
         shutil.copy2(ROOT / name, project / name)
-    for name in ("install.sh", "xiupet.sh", "install.ps1", "xiupet.ps1"):
+    for name in ("install.sh", "xiupet.sh"):
         shutil.copy2(ROOT / "scripts" / name, project / "scripts" / name)
     shutil.copy2(
         ROOT / "src/plugins/nonebot_plugin_spirit_pet/__init__.py",
@@ -51,7 +51,7 @@ def fake_python(tmp_path):
 def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
-    for name in ("install.sh", "install_termux.sh", "xiupet.sh"):
+    for name in ("install.sh", "xiupet.sh"):
         result = subprocess.run(["bash", "-n", str(ROOT / "scripts" / name)], capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
@@ -195,33 +195,12 @@ def test_linux_management_command_uses_nb_and_can_start_stop_status(source_proje
     assert not (source_project / ".xiupet/pid").exists()
 
 
-def test_installers_are_native_and_contain_no_inline_python_code():
+def test_installer_and_management_command_are_bash_and_use_nb_cli():
     shell_installer = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
-    installer = (ROOT / "scripts/install.ps1").read_text(encoding="utf-8")
-    manager = (ROOT / "scripts/xiupet.ps1").read_text(encoding="utf-8")
+    manager = (ROOT / "scripts/xiupet.sh").read_text(encoding="utf-8")
     assert " -c " not in shell_installer
-    assert "install_bootstrap.py" not in installer
-    assert "Python content validated" not in installer
-    assert " -c " not in installer
-    assert "Scripts/nb.exe" in installer and "run" in installer
-    assert "Start-Process" in manager and "taskkill.exe" in manager
-    assert "xiupet.py" not in manager
-
-
-def test_powershell_entrypoints_parse_when_powershell_is_available():
-    shell = shutil.which("pwsh") or shutil.which("powershell")
-    if not shell:
-        pytest.skip("PowerShell unavailable")
-    for path in (ROOT / "scripts/install.ps1", ROOT / "scripts/xiupet.ps1"):
-        command = (
-            "$errors=$null; $tokens=$null; "
-            "[System.Management.Automation.Language.Parser]::ParseFile($env:SPIRIT_PET_TEST_SCRIPT, "
-            "[ref]$tokens, [ref]$errors) | Out-Null; "
-            "if ($errors) { $errors | Out-String | Write-Error; exit 1 }"
-        )
-        result = subprocess.run(
-            [shell, "-NoProfile", "-NonInteractive", "-Command", command],
-            capture_output=True, text=True,
-            env={**os.environ, "SPIRIT_PET_TEST_SCRIPT": str(path)},
-        )
-        assert result.returncode == 0, result.stderr
+    assert '"$PYTHON" -m venv' in shell_installer
+    assert '"$PIP_IN_VENV" install' in shell_installer
+    assert '"$VENV/bin/nb" run' in shell_installer
+    assert "python3" not in manager
+    assert '"$NB" run' in manager

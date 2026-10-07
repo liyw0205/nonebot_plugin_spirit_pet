@@ -8,9 +8,7 @@
 
 ```text
 scripts/install.sh             Linux / Termux 安装、更新与卸载
-scripts/install.ps1            Windows PowerShell 安装、更新与卸载
 scripts/xiupet.sh              Linux / Termux 后台进程管理
-scripts/xiupet.ps1             Windows 后台进程管理
 src/plugins/nonebot_plugin_spirit_pet/
   __init__.py                  仅插件元数据与入口
   core/config.py               环境变量，运行节奏与消息配置
@@ -212,7 +210,7 @@ Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/my
 
 测试覆盖静态目录校验、同 ID 数据共享、十层成长、血脉、主属性/分支继承、天赋效果、技能成长、强化保留、灵卵容量、事务回滚、并发、重复消息、组队准备、直接镜像对战与适配器构造。真实 ASGI 测试会连接 `/onebot/v11/ws`，验证鉴权和收发，不只调用业务函数。
 
-GitHub Actions 使用 Linux/Windows 和 Python 3.10/3.13 跑完整回归，另在 Python 3.12 的两个系统运行一键安装入口，在含空格的新目录建立环境，再用安装出的 Python 执行真实 WS 冒烟。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
+一键安装脚本的无 Python 自举、隔离安装/卸载与 `xiupet` 启停由本地测试覆盖。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
 
 固定种子矩阵的场景、准备程度、收益口径和留存结果见 [数值验收](BALANCE.md)。日常 pytest 含每个准备阵容 10 次的快速门禁；内容、公式、主动技能变更后另跑完整 100 次并审阅差异。脚本不得连接或修改 `SPIRIT_PET_DB`，仿真只使用临时数据库、生产 `loadout.combatant` 和真实 `fight`。
 
