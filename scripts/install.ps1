@@ -42,15 +42,13 @@ function Find-Python {
     $Candidates = @()
     if ($env:SPIRIT_PET_PYTHON) { $Candidates += $env:SPIRIT_PET_PYTHON }
     $Candidates += @('python', (Join-Path $env:LOCALAPPDATA 'Programs/Python/Python312/python.exe'))
-    if (Get-Command py -ErrorAction SilentlyContinue) {
-        $Found = & py -3 -c 'import sys; print(sys.executable)' 2>$null
-        if ($LASTEXITCODE -eq 0 -and $Found) { $Candidates += $Found }
-    }
     foreach ($Candidate in $Candidates) {
         $Command = Get-Command $Candidate -ErrorAction SilentlyContinue
         if (-not $Command) { continue }
-        & $Command.Source -c 'import sys,venv,ensurepip; sys.exit(not ((3,10)<=sys.version_info[:2]<(4,0)))' 2>$null
-        if ($LASTEXITCODE -eq 0) { return $Command.Source }
+        $Version = & $Command.Source --version 2>$null
+        if ($LASTEXITCODE -eq 0 -and $Version -match '^Python\s+(\d+)\.(\d+)(?:\.\d+)?$') {
+            if ([int]$Matches[1] -eq 3 -and [int]$Matches[2] -ge 10) { return $Command.Source }
+        }
     }
     return $null
 }
@@ -318,6 +316,7 @@ elseif (Test-Path -LiteralPath (Join-Path $Target '.xiupet-venv')) { $Environmen
 else { $Environment = Join-Path $Target '.venv' }
 $Environment = [IO.Path]::GetFullPath($Environment)
 $VenvPython = Join-Path $Environment 'Scripts/python.exe'
+$VenvPip = Join-Path $Environment 'Scripts/pip.exe'
 if ($Action -eq 'reinstall' -and (Test-Path -LiteralPath $Environment)) {
     if (-not (Test-Path -LiteralPath (Join-Path $Environment 'pyvenv.cfg')) -or -not (Test-Path -LiteralPath $VenvPython)) {
         throw "Refusing to replace an invalid environment: $Environment"
@@ -333,16 +332,15 @@ if (Test-Path -LiteralPath $Environment) {
     & $Python -m venv $Environment
     if ($LASTEXITCODE -ne 0) { throw 'Could not create the project virtual environment.' }
 }
-& $VenvPython -m pip install --disable-pip-version-check --no-input 'nb-cli==1.5.0'
+if (-not (Test-Path -LiteralPath $VenvPip)) { throw "pip is missing from the virtual environment: $Environment" }
+& $VenvPip install --disable-pip-version-check --no-input 'nb-cli==1.5.0'
 if ($LASTEXITCODE -ne 0) { throw 'Could not install NoneBot CLI.' }
-& $VenvPython -m pip install --disable-pip-version-check --no-input -r (Join-Path $Target 'requirements.txt')
+& $VenvPip install --disable-pip-version-check --no-input -r (Join-Path $Target 'requirements.txt')
 if ($LASTEXITCODE -ne 0) { throw 'Could not install project dependencies.' }
-& $VenvPython -m pip check
+& $VenvPip check
 if ($LASTEXITCODE -ne 0) { throw 'Dependency verification failed.' }
 & (Join-Path $Environment 'Scripts/nb.exe') --help | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'NoneBot CLI verification failed.' }
-& $VenvPython -c 'import nonebot, nonebot.adapters.onebot.v11, nonebot.adapters.qq; import nonebot.drivers.fastapi, nonebot.drivers.httpx, nonebot.drivers.websockets'
-if ($LASTEXITCODE -ne 0) { throw 'NoneBot adapters or drivers could not be imported.' }
 
 Set-EnvironmentFile $Target
 Install-Xiupet $Target $Environment

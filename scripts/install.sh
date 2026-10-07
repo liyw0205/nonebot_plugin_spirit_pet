@@ -79,19 +79,24 @@ else
 fi
 
 find_python() {
-    local candidate
+    local candidate version major minor
     if [[ -n ${SPIRIT_PET_PYTHON:-} ]]; then
         candidate=$SPIRIT_PET_PYTHON
-        if command -v "$candidate" >/dev/null 2>&1 \
-            && "$candidate" -c 'import sys,venv,ensurepip; assert (3,10) <= sys.version_info[:2] < (4,0)' >/dev/null 2>&1; then
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-        return 1
+        version=$("$candidate" --version 2>&1) || return 1
+        [[ $version =~ ^Python[[:space:]]+([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]] || return 1
+        major=${BASH_REMATCH[1]}
+        minor=${BASH_REMATCH[2]}
+        ((major == 3 && minor >= 10)) || return 1
+        printf '%s\n' "$candidate"
+        return 0
     fi
     for candidate in python3 python3.13 python3.12 python3.11 python3.10; do
-        if command -v "$candidate" >/dev/null 2>&1 \
-            && "$candidate" -c 'import sys,venv,ensurepip; assert (3,10) <= sys.version_info[:2] < (4,0)' >/dev/null 2>&1; then
+        command -v "$candidate" >/dev/null 2>&1 || continue
+        version=$("$candidate" --version 2>&1) || continue
+        [[ $version =~ ^Python[[:space:]]+([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]] || continue
+        major=${BASH_REMATCH[1]}
+        minor=${BASH_REMATCH[2]}
+        if ((major == 3 && minor >= 10)); then
             command -v "$candidate"
             return 0
         fi
@@ -322,6 +327,7 @@ else
     VENV="$TARGET/.venv"
 fi
 PYTHON_IN_VENV="$VENV/bin/python"
+PIP_IN_VENV="$VENV/bin/pip"
 if [[ $ACTION == reinstall && -e $VENV ]]; then
     [[ -f $VENV/pyvenv.cfg && -x $PYTHON_IN_VENV ]] || fail "Refusing to replace an invalid environment: $VENV"
     rm -rf -- "$VENV"
@@ -331,17 +337,17 @@ if [[ -e $VENV ]]; then
 else
     mkdir -p -- "$(dirname -- "$VENV")"
     if [[ ${PREFIX:-} == /data/data/com.termux/files/usr ]]; then
-        "$PYTHON" -m venv --system-site-packages "$VENV"
+        "$PYTHON" -m venv --system-site-packages "$VENV" || fail 'Could not create the virtual environment; install Python venv support and retry.'
     else
-        "$PYTHON" -m venv "$VENV"
+        "$PYTHON" -m venv "$VENV" || fail 'Could not create the virtual environment; install Python venv support and retry.'
     fi
 fi
 
-"$PYTHON_IN_VENV" -m pip install --disable-pip-version-check --no-input 'nb-cli==1.5.0'
-"$PYTHON_IN_VENV" -m pip install --disable-pip-version-check --no-input -r "$TARGET/requirements.txt"
-"$PYTHON_IN_VENV" -m pip check
+[[ -x $PIP_IN_VENV ]] || fail "pip is missing from the virtual environment: $VENV"
+"$PIP_IN_VENV" install --disable-pip-version-check --no-input 'nb-cli==1.5.0'
+"$PIP_IN_VENV" install --disable-pip-version-check --no-input -r "$TARGET/requirements.txt"
+"$PIP_IN_VENV" check
 "$VENV/bin/nb" --help >/dev/null
-"$PYTHON_IN_VENV" -c 'import nonebot, nonebot.adapters.onebot.v11, nonebot.adapters.qq; import nonebot.drivers.fastapi, nonebot.drivers.httpx, nonebot.drivers.websockets'
 
 if [[ ! -e $TARGET/.env ]]; then
     cp -- "$TARGET/.env.example" "$TARGET/.env"

@@ -32,12 +32,14 @@ def fake_python(tmp_path):
     nb.chmod(0o755)
     binary.write_text(
         "#!/bin/sh\n"
-        "if [ \"$1\" = -c ] && [ -n \"${SPIRIT_PET_TEST_PYTHON_MARKER:-}\" ] && [ ! -f \"$SPIRIT_PET_TEST_PYTHON_MARKER\" ]; then exit 1; fi\n"
+        "if [ \"$1\" = --version ] && [ -n \"${SPIRIT_PET_TEST_PYTHON_MARKER:-}\" ] && [ ! -f \"$SPIRIT_PET_TEST_PYTHON_MARKER\" ]; then exit 1; fi\n"
+        "if [ \"$1\" = --version ]; then printf 'Python 3.12.0\\n'; exit 0; fi\n"
         "if [ \"$1\" = -m ] && [ \"$2\" = venv ]; then\n"
         "  mkdir -p \"$3/bin\"\n"
         "  printf 'home = fake\\n' > \"$3/pyvenv.cfg\"\n"
         "  cp \"$SPIRIT_PET_TEST_PYTHON\" \"$3/bin/python\"\n"
         "  cp \"$SPIRIT_PET_TEST_NB\" \"$3/bin/nb\"\n"
+        "  cp \"$SPIRIT_PET_TEST_NB\" \"$3/bin/pip\"\n"
         "fi\n"
         "exit 0\n",
         encoding="utf-8",
@@ -193,11 +195,14 @@ def test_linux_management_command_uses_nb_and_can_start_stop_status(source_proje
     assert not (source_project / ".xiupet/pid").exists()
 
 
-def test_powershell_entrypoints_are_native_and_contain_no_python_bootstrap():
+def test_installers_are_native_and_contain_no_inline_python_code():
+    shell_installer = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     installer = (ROOT / "scripts/install.ps1").read_text(encoding="utf-8")
     manager = (ROOT / "scripts/xiupet.ps1").read_text(encoding="utf-8")
+    assert " -c " not in shell_installer
     assert "install_bootstrap.py" not in installer
     assert "Python content validated" not in installer
+    assert " -c " not in installer
     assert "Scripts/nb.exe" in installer and "run" in installer
     assert "Start-Process" in manager and "taskkill.exe" in manager
     assert "xiupet.py" not in manager
