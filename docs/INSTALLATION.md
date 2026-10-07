@@ -19,7 +19,7 @@ bash install-spirit-pet.sh --directory "$HOME/spirit-pet"
 
 可先用文本编辑器检查下载的脚本。首次获取入口需要能访问 GitHub；也可在浏览器下载入口，或使用下文列出的已核验上游代理前缀。脚本执行后的引导器与项目源码下载都会检测五个来源，不将 HTTP 200 的 HTML 页面当作成功。
 
-Debian/Ubuntu 缺少 Python/venv 时自动通过 `apt-get` 安装必要包，非 root 用户需要 `sudo`；Fedora 系使用 `dnf`。不会执行系统全量升级或安装后台服务。不支持的发行版、Python 低于 3.10 时，请先安装合适的 Python。已准备好系统依赖时可跳过系统包步骤：
+Debian/Ubuntu 缺少 Python/venv 时自动通过 `apt-get` 安装必要包，非 root 用户需要 `sudo`；Fedora 系使用 `dnf`，RHEL 系使用 `yum`，Alpine 使用 `apk`。不会执行系统全量升级或安装后台服务。不支持的发行版、Python 低于 3.10 时，请先安装合适的 Python。已准备好系统依赖时可跳过系统包步骤：
 
 ```bash
 SPIRIT_PET_SKIP_SYSTEM=1 SPIRIT_PET_PYTHON=python3.12 \
@@ -40,7 +40,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-spirit-pet.ps1" `
   -Directory "$HOME\spirit-pet"
 ```
 
-这里只对当前 PowerShell 进程放行脚本，不更改系统执行策略。无需运行虚拟环境的 `Activate.ps1`。若没有可用 Python，脚本尝试通过 `winget` 安装用户范围的 Python 3.12；没有 `winget` 时会停止并提示从 python.org 安装，重新打开终端后重试。已有 Python 可通过 `$env:SPIRIT_PET_PYTHON` 指定完整可执行文件路径。
+这里只对当前 PowerShell 进程放行脚本，不更改系统执行策略。无需运行虚拟环境的 `Activate.ps1`。若没有可用 Python，脚本先尝试 `winget`；不可用或失败时，从 python.org 下载 Python 3.12.10 用户安装器，验证 Python Software Foundation 的 Authenticode 签名后安装。整个过程不要求管理员权限。已有 Python 可通过 `$env:SPIRIT_PET_PYTHON` 指定完整可执行文件路径。
 
 已有完整仓库时运行：
 

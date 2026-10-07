@@ -3,7 +3,9 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
-from ..gameplay import crafting, expeditions, lineage
+from ..gameplay import crafting, expeditions, lineage, pve_stages
+from ..gameplay import achievements
+from ..gameplay import battle_records
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
 from .context import Context
@@ -46,6 +48,12 @@ ACTIONS = {
     "explore": Command(adventure.explore),
     "dungeons": Command(adventure.dungeons, True),
     "challenge": Command(adventure.challenge, True),
+    "stage_catalog": Command(pve_stages.catalog, True),
+    "stage_challenge": Command(pve_stages.challenge, True),
+    "achievements": Command(achievements.achievements, True),
+    "achievement_claim": Command(achievements.claim, True),
+    "collection": Command(achievements.collection, True),
+    "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
     "expedition_catalog": Command(expeditions.catalog, True),
@@ -55,6 +63,7 @@ ACTIONS = {
     "expedition_cancel": Command(expeditions.cancel, True),
     "pvp": Command(battles.pvp, True),
     "spar": Command(battles.spar, True),
+    "battle_reports": Command(battle_records.reports, True),
     "team_create": Command(party.create),
     "team_join": Command(requests.join, True),
     "team_invite": Command(requests.invite, True),
@@ -93,9 +102,13 @@ COMMANDS = {
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠修炼": "train",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
+    "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
+    "灵宠组队关卡": "team_stage_challenge",
+    "灵宠成就": "achievements", "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
     "灵宠论剑": "pvp", "灵宠切磋": "spar",
+    "灵宠战报": "battle_reports",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",
     "灵宠组队挑战": "team_challenge",

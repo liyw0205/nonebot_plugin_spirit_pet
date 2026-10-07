@@ -30,16 +30,21 @@ def configure(directory: Path, host: str, port: int, unattended=False):
                 websocket = (input("QQ connection: 1=WebSocket, 2=Webhook [1]: ").strip() or "1")
                 if websocket not in {"1", "2"}:
                     raise RuntimeError("QQ connection choice must be 1 or 2")
-                values["QQ_BOTS"] = json.dumps([{
+                qq_bots = json.dumps([{
                     "id": app_id, "secret": secret,
                     "intent": {"c2c_group_at_messages": True}, "use_websocket": websocket == "1",
-                }], ensure_ascii=True)
+                }], ensure_ascii=True, separators=(",", ":"))
+                # Keep dotenv interpolation and comment markers out of secret values.
+                values["QQ_BOTS"] = qq_bots.replace("$", r"\u0024").replace("#", r"\u0023")
     # Finish all quoting and configuration before creating the destination.
     with tempfile.TemporaryDirectory(prefix=".spirit-pet-env-", dir=directory) as temporary:
         prepared = Path(temporary) / ".env"
         prepared.write_text((directory / ".env.example").read_text(encoding="utf-8"), encoding="utf-8")
         for key, value in values.items():
-            set_key(str(prepared), key, value, quote_mode="always")
+            set_key(
+                str(prepared), key, value,
+                quote_mode="never" if key == "QQ_BOTS" else "always",
+            )
         if os.name != "nt":
             prepared.chmod(0o600)
         try:

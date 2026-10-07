@@ -30,8 +30,12 @@ if [[ ${SPIRIT_PET_SKIP_SYSTEM:-0} != 1 ]]; then
             "${SUDO[@]}" apt-get install -y python3 python3-venv python3-pip curl ca-certificates
         elif command -v dnf >/dev/null; then
             "${SUDO[@]}" dnf install -y python3 python3-pip curl ca-certificates
+        elif command -v yum >/dev/null; then
+            "${SUDO[@]}" yum install -y python3 python3-pip python3-virtualenv curl ca-certificates
+        elif command -v apk >/dev/null; then
+            "${SUDO[@]}" apk add python3 py3-pip py3-virtualenv curl ca-certificates
         else
-            printf 'Install Python >=3.10 with venv/pip and curl, then rerun.\n' >&2
+            printf 'No supported package manager found. Install Python >=3.10 with venv/pip and curl, then rerun.\n' >&2
             exit 1
         fi
     fi

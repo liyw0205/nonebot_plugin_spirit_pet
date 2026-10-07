@@ -29,15 +29,42 @@ function Find-Python {
     return $null
 }
 
+function Install-Python {
+    $InstallerUrl = 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe'
+    $Temporary = Join-Path ([IO.Path]::GetTempPath()) ('spirit-pet-python-' + [Guid]::NewGuid().ToString('N'))
+    $Installer = Join-Path $Temporary 'python-installer.exe'
+    $Target = Join-Path $env:LOCALAPPDATA 'Programs\Python\Python312'
+    $null = New-Item -ItemType Directory -Path $Temporary
+    try {
+        Write-Host 'Downloading the official Python 3.12.10 installer from python.org...'
+        Invoke-WebRequest -UseBasicParsing -Uri $InstallerUrl -OutFile $Installer
+        $Signature = Get-AuthenticodeSignature -FilePath $Installer
+        if ($Signature.Status -ne 'Valid' -or $Signature.SignerCertificate.Subject -notmatch 'Python Software Foundation') {
+            throw 'The Python installer signature is invalid or is not from the Python Software Foundation.'
+        }
+        $Arguments = "/quiet InstallAllUsers=0 TargetDir=`"$Target`" PrependPath=0 Include_launcher=1 Include_pip=1 Include_test=0 Shortcuts=0"
+        $Process = Start-Process -FilePath $Installer -ArgumentList $Arguments -Wait -PassThru
+        if ($Process.ExitCode -notin @(0, 3010)) {
+            throw "Python installation failed with exit code $($Process.ExitCode)."
+        }
+    } finally {
+        Remove-Item -LiteralPath $Temporary -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 $Python = Find-Python
 if (-not $Python) {
-    if ($SkipSystem -or -not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        throw 'Install Python >=3.10,<4.0 from python.org, reopen PowerShell, then rerun.'
+    if ($SkipSystem) {
+        throw 'No usable Python was found and -SkipSystem was specified. Install Python >=3.10,<4.0, then rerun.'
     }
-    & winget install --id Python.Python.3.12 --exact --scope user --silent --accept-package-agreements --accept-source-agreements
-    if ($LASTEXITCODE -ne 0) { throw 'Python installation failed. No project files were changed.' }
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        & winget install --id Python.Python.3.12 --exact --scope user --silent --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -eq 0) { $Python = Find-Python }
+        else { Write-Host 'winget could not install Python; trying the signed python.org installer.' }
+    }
+    if (-not $Python) { Install-Python }
     $Python = Find-Python
-    if (-not $Python) { throw 'Python installed but not found. Reopen PowerShell and rerun.' }
+    if (-not $Python) { throw 'Python installation completed but no usable Python was found.' }
 }
 $Arguments = @('--branch', $Branch, '--host', $ListenHost, '--port', "$Port")
 if ($Directory) { $Arguments += @('--directory', $Directory) }

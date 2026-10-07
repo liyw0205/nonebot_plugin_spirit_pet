@@ -47,9 +47,24 @@ Docker/容器中的 `127.0.0.1` 指向容器本身，不一定是 NoneBot 所在
 
 ## 升级与回滚
 
-1. 停止 bot，记录当前 `git rev-parse HEAD`，备份 `.env` 和整个数据目录。
-2. 运行 `git pull --ff-only`，仅在需要时使用同一个虚拟环境更新 requirements。
-3. 当前未发布版不提供历史兼容层或自动迁移。若存档 schema 不匹配，会明确拒绝启动；保留旧库，配置新的数据库路径用于新版本测试。
-4. 回滚时同时使用对应版本的代码和数据库备份，不单独降级其中一项。重构不等于允许自动删除玩家数据。
+SQLite 备份使用 Online Backup API，可在 bot 运行时生成一致快照，不要只复制处于 WAL 模式的主 `.db` 文件。目标必须是新路径，工具不会覆盖已有文件：
+
+```bash
+python scripts/database_admin.py backup PATH/TO/spirit_pet.db PATH/TO/backups/pre-upgrade.db
+python scripts/database_admin.py verify PATH/TO/backups/pre-upgrade.db --schema-version 11
+```
+
+升级前记录当前 `git rev-parse HEAD`，备份 `.env` 与数据库并验证备份。首个公开版本候选使用 schema 11：全新空库与 schema 11 可用；schema 1-10、未来版本和未版本化的非空库会被拒绝，原文件保持不变。未发布开发 schema 不自动迁移；若旧库不匹配，先备份并验证，再为新版本配置新的 `SPIRIT_PET_DB` 路径，保留旧库供旧代码使用。
+
+需要恢复时先停止 bot，恢复命令只写入新的数据库路径，然后验证结果，再将 `SPIRIT_PET_DB` 指向恢复副本：
+
+```bash
+python scripts/database_admin.py restore PATH/TO/backups/pre-upgrade.db PATH/TO/spirit_pet.restored.db
+python scripts/database_admin.py verify PATH/TO/spirit_pet.restored.db --schema-version 11
+```
+
+恢复旧 schema 备份时省略 `--schema-version` 可以检查 SQLite 完整性；当前代码仍会拒绝不匹配的旧 schema。回滚时同时使用与该 schema 对应的代码和数据库备份，不单独降级其中一项。保留原始数据库，确认恢复副本正常前不要更改或删除它。今后若已发布版本需要携带存档升级，必须先提供针对该来源 schema 的迁移工具和回滚验证；否则继续明确拒绝并保留原库。
+
+`backup` 和 `restore` 都不会替换目标，备份副本通过完整性和外键检查后才会发布。还原不会迁移 schema；遇到版本不匹配应回到匹配的代码版本，或为新版本另建数据库。重构不等于允许自动删除玩家数据。
 
 同一台主机的两个实例可以指向同一 SQLite 文件，但建议单个 NoneBot 进程注册两个适配器，避免重复接收、重复回复和额外数据库锁竞争。不支持网络文件系统共享数据库或异地文件实时同步。

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import BaseModel, TypeAdapter
+from ..domain.achievement_content import Achievement
 from ..domain.arena_content import ArenaRules
 from ..domain.battle_content import (
     Category, DaoNames, Element, Equipment, ForgeLevel, Skill, SkillLevel, Talent,
@@ -12,6 +13,7 @@ from .crafting_validation import validate_crafting_content
 from .lineage_validation import validate_lineages
 from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
+from ..domain.stage_content import Stage
 from ..domain.lineage_content import Lineage
 
 from ..domain.content import (
@@ -67,6 +69,8 @@ class Catalog:
     recipes: dict[str, Recipe]
     lineages: dict[str, Lineage]
     expeditions: dict[str, Expedition]
+    stages: dict[str, Stage]
+    achievements: dict[str, Achievement]
     dao_names: DaoNames
 
     @classmethod
@@ -94,6 +98,8 @@ class Catalog:
             recipes=_index(directory / "recipes.json", Recipe),
             lineages=_index(directory / "lineages.json", Lineage),
             expeditions=_index(directory / "expeditions.json", Expedition),
+            stages=_index(directory / "stages.json", Stage),
+            achievements=_index(directory / "achievements.json", Achievement),
             dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
@@ -139,6 +145,7 @@ class Catalog:
             self._require(dungeon.enemies, self.enemies, "dungeon enemies")
             if dungeon.energy > 100:
                 raise ValueError("dungeon energy exceeds capacity")
+        self._validate_stages(realm_ids)
         for energy in (self.rules.training_energy, self.rules.explore_energy):
             if energy > 100:
                 raise ValueError("action energy exceeds capacity")
@@ -155,6 +162,7 @@ class Catalog:
         validate_battle_content(self)
         validate_crafting_content(self)
         validate_lineages(self)
+        self._validate_achievements()
 
     def _validate_progression(self):
         if set(self.skill_levels) != set(range(1, len(self.skill_levels) + 1)):
@@ -187,6 +195,67 @@ class Catalog:
                 for previous, current in zip(stages, stages[1:])
             ):
                 raise ValueError("progression multipliers must strictly increase")
+
+    def _validate_stages(self, realm_ids):
+        if not self.stages:
+            raise ValueError("stages must not be empty")
+        ordered = sorted(self.stages.values(), key=lambda stage: stage.order)
+        if [stage.order for stage in ordered] != list(range(1, len(ordered) + 1)):
+            raise ValueError("stage orders must be contiguous starting at 1")
+        self._require([stage.min_realm for stage in ordered], realm_ids, "stage realm")
+        for stage in ordered:
+            self._require(stage.enemies, self.enemies, "stage enemies")
+            self._require(stage.reward.items, self.items, "stage reward items")
+            if stage.previous_id is not None:
+                self._require([stage.previous_id], self.stages, "stage prerequisite")
+            if stage.energy > 100:
+                raise ValueError("stage energy exceeds capacity")
+        for index, stage in enumerate(ordered):
+            expected = ordered[index - 1].id if index else None
+            if stage.previous_id != expected:
+                raise ValueError("stage previous_id must form the ordered chain")
+
+    def _validate_achievements(self):
+        required = {
+            "species_collected", "pets_owned", "max_realm", "max_layer", "max_bloodline",
+            "stage_clears", "pvp_wins", "pve_wins", "lineage_branches", "skills_learned",
+            "max_skill_level", "skill_level_sum",
+        }
+        present = {achievement.metric for achievement in self.achievements.values()}
+        if not required.issubset(present):
+            raise ValueError(f"missing achievement metrics: {sorted(required - present)}")
+        pairs = [(entry.metric, entry.target) for entry in self.achievements.values()]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("duplicate achievement metric target")
+        maxima = {
+            "species_collected": len(self.species),
+            "max_realm": len(self.realms),
+            "max_layer": len(self.realms) * 10,
+            "max_bloodline": max(self.bloodlines),
+            "stage_clears": len(self.stages),
+            "lineage_branches": len(self.lineages),
+            "skills_learned": len(self.skills),
+            "max_skill_level": len(self.skill_levels),
+            "skill_level_sum": len(self.skills) * len(self.skill_levels),
+        }
+        targets = {}
+        for entry in self.achievements.values():
+            targets.setdefault(entry.metric, set()).add(entry.target)
+        final_milestones = {
+            "species_collected", "max_realm", "max_layer", "max_bloodline",
+            "stage_clears", "max_skill_level",
+        }
+        for metric in final_milestones:
+            if maxima[metric] not in targets.get(metric, set()):
+                raise ValueError(f"missing final achievement milestone for {metric}")
+        expected_layers = set(range(10, maxima["max_layer"] + 1, 10))
+        if not expected_layers.issubset(targets.get("max_layer", set())):
+            raise ValueError("missing realm layer achievement milestone")
+        for entry in self.achievements.values():
+            self._require(entry.reward.items, self.items, "achievement reward items")
+            maximum = maxima.get(entry.metric)
+            if maximum is not None and entry.target > maximum:
+                raise ValueError(f"achievement target exceeds available {entry.metric}")
 
     @staticmethod
     def _require(keys, targets, label):

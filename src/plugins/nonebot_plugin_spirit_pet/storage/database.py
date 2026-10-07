@@ -5,9 +5,9 @@ from contextlib import closing
 from dataclasses import asdict
 from pathlib import Path
 
-from ..domain.models import Reply
+from ..domain.models import GameError, Reply
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 11
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -66,7 +66,7 @@ class Store:
                 ).fetchone()
                 if cached:
                     if cached["user_id"] != user_id:
-                        raise ValueError("operation ID reused by a different user")
+                        raise GameError("operation ID reused by a different user")
                     data = json.loads(cached["reply"])
                     result = Reply(data["title"], tuple(data["lines"]), tuple(data["commands"]))
                 else:

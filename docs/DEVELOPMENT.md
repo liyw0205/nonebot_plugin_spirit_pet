@@ -22,6 +22,8 @@ src/plugins/nonebot_plugin_spirit_pet/
   domain/crafting_content.py   打造配方与纯函数分解回收公式
   domain/expedition_content.py 离线委托的静态要求与奖励定义
   domain/expedition_state.py   出发时抽取的严格运行奖励快照
+  domain/stage_content.py      章节关卡静态定义
+  domain/achievement_content.py 成就指标、目标与固定奖励定义
   domain/state.py              Player、Pet 运行模型
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
@@ -37,6 +39,8 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/quests.py           每日任务与领奖
   gameplay/expeditions.py      离线委托、行程查询、原宠领奖与召回
   gameplay/rewards.py          共用奖励结算
+  gameplay/pve_stages.py       线性关卡进度与首通奖励
+  gameplay/achievements.py    收集图鉴、成就进度与一次性领奖
   gameplay/combat.py           属性计算与限回合战斗
   gameplay/talents.py          天赋触发与单场护盾、毒伤效果
   gameplay/effects.py          主动控制、弱化、增益、净化、驱散和持续次数
@@ -49,6 +53,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/mastery.py          熟练度结算、升级与满级处理
   gameplay/loadout.py          将装备与技能组装到战斗单位
   gameplay/adventure.py        奇遇、单人/组队 PVE 结算
+  gameplay/battle_records.py   战前快照、永久战斗记录、参与者授权与分页战报
   gameplay/arena/              镜像对战、赛季快照、积分、资格、SQL 匹配与领奖
   gameplay/teams/common.py     队伍成员、权限、容量与准备失效的共用事务操作
   gameplay/teams/party.py      建队、成员详情、准备与出征
@@ -64,9 +69,10 @@ src/plugins/nonebot_plugin_spirit_pet/
   utils/elements.py           元素祖先展开与继承门槛判断
   utils/pagination.py         只读内容分页、页码校验与导航
   utils/randomness.py         可注入随机源的加权抽取
-  data/*.json                 静态宠物、境界、血脉、物品、怪物和奖励
+  data/*.json                 静态宠物、境界、血脉、关卡、成就、物品、怪物和奖励
 tests/                         单元、并发、适配器契约和真实 WS 测试
 scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
+scripts/database_admin.py      SQLite 在线备份、完整性验证与非覆盖恢复
 scripts/balance_report.py      固定种子仿真入口，只使用临时数据库
 scripts/balance_specials.py    血脉分支与六类主动效果的独立专项仿真
 scripts/balance/               场景矩阵、实际战斗、单位时间收益与验收
@@ -87,7 +93,7 @@ docs/                          安装、接入、玩法和开发文档
 
 不要在玩法函数中 `store.connect()`、`commit()`、`asyncio.sleep()` 或调用外部 API。尤其不要在同一事务中创建第二个 SQLite 写连接，也不要一边改缓存对象，一边对其同一字段执行 SQL 增量更新，避免锁等待或覆盖奖励。
 
-通用成功结果保留约七天，后续请求清理过期记录。超过保留窗口的古老重投通常不保证去重；离线派遣永久保留来源消息键及终态，论剑结果保留唯一消息键和完整回复，赛季领奖保留复合唯一凭证。业务拒绝不缓存，玩家修正条件后可重试。消息发送不承诺 exactly-once。
+通用成功结果保留约七天，后续请求清理过期记录。战斗记录额外永久保留唯一消息键、参与者和完整 Reply，故同一战斗消息在通用缓存清除后仍会由事务入口原样重放且不会再次结算；离线派遣也永久保留来源消息键及终态，赛季领奖保留复合唯一凭证。业务拒绝不缓存，玩家修正条件后可重试。消息发送不承诺 exactly-once。
 
 ## 数据边界
 
@@ -103,6 +109,9 @@ docs/                          安装、接入、玩法和开发文档
 - `team_requests`：待处理申请/邀请，复合键为队伍与候选人，记录发起人、创建时间及失效时间。不是静态 JSON；解散级联清理，审批完成删除，入队删除该候选人所有请求。
 - `seasons/season_entries`：自然月边界、观测时间高水位、规则快照及实际参赛玩家的独立积分与胜负平。
 - `pvp_results`：挑战双方及原宠、胜者、日期、分差、结算时间、永久唯一消息键和当时的 Reply；用于配额、领奖统计和重投，不是逐回合完整战报。
+- `battle_records/battle_participants`：永久唯一操作键、发起人、战斗类型/胜方/回合/时间、战前阵容快照、完整战斗事件日志与 Reply；参与者表按原始用户 ID 授权查询。快照持有当时道号、宠物名、主属性、属性面板、技能等级/熟练度和装备强化，不引用当前玩家/宠物资料来重建历史。
+- `pve_stage_progress`：每名玩家每个静态关卡的首通时间与来源操作键；前置链来自 `data/stages.json`，不把玩家进度或运行时间写回内容文件。
+- `achievement_claims`：每名玩家每项成就的唯一领取凭证、永久操作键、领取时间、实际奖励快照与回复。成就进度从当前存档、关卡进度和永久战斗记录派生，不重复保存累计计数。
 - `season_claims`：每季每人唯一的领奖凭证、实际奖励快照与领取时间。
 - `operations`：事件来源去重键、玩家和完整结果。
 
@@ -121,7 +130,22 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 9，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 11，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+
+升级前可用 `scripts/database_admin.py` 通过 SQLite Online Backup API 生成一致快照，并检查完整性与外键。备份和恢复都只能写入不存在的目标路径；恢复不会修改当前数据库或迁移 schema。具体操作和版本配对规则见 [配置与升级回滚](CONFIGURATION.md#升级与回滚)。
+
+## Python 分发包
+
+仓库使用独立 PEP 517/setuptools 配置构建插件 wheel；`src/plugins/` 是包发现根目录，`data/*.json` 与 `storage/schema.sql` 是运行时资源，必须进入 wheel。构建和检查：
+
+```bash
+python -m pip install build twine
+python -m build
+python scripts/verify_distribution.py dist/nonebot_plugin_spirit_pet-*.whl
+python -m twine check dist/*
+```
+
+GitHub Actions 在 Linux 上构建 sdist 与 wheel、检查发行元数据和 wheel 资源，并分别隔离安装直接构建及从 sdist 重建的 wheel，加载 Catalog、初始化 SQLite。该构建配置不代表已经发布到 PyPI；正式发布前仍需冻结版本、核对索引资料并审阅发行说明。
 
 ## 赛季与镜像
 
@@ -130,6 +154,9 @@ docs/                          安装、接入、玩法和开发文档
 - `eligibility` 检查主动方闲置、恢复后精力、冷却、日挑战次数，并检查双方境界、分差和同对额度。`matching` 在 SQL 中按后者筛选镜像，再执行 LIMIT/OFFSET，不无界加载全服玩家。守方精力、冷却、主动挑战次数或外出占用均不影响被挑战。
 - `loadout.combatant(recover_energy=False)` 构建镜像但不触发被动精力恢复，防守方的宠物/玩家资源、冷却、技能熟练度与队伍准备保持不变。切磋双方都用此只读路径，无积分或经济收益；只有主动方须闲置。
 - `pvp_results.operation_id` 永久唯一。读取该键必须先验证挑战者身份；通用缓存清除后直接重放旧 Reply，不重新解析当时道号、不重新参战，也不将旧挑战记入新季。原宠组合外键保证参与者归属。
+- PVP、切磋、单人/组队秘境及逐关挑战应在 `fight` 前调用 `battle_records.capture_snapshot`，结算完成后于同一事务调用 `record_battle`。详情分页只能读取 `snapshot` 与 `battle_log`，不能用当前宠物、道号、技能或装备补算；`battle_participants` 用于严格过滤本人可见记录，离队不撤销既有战报读取权限。
+- 章节首通按 `(user_id, stage_id)` 唯一写入；组队战胜后只给首次通关成员发该关奖励，已经通关的队友可以助战。失败照常扣参战者精力与冷却，但不写进度。
+- `data/achievements.json` 只声明稳定 ID、目标、指标与静态奖励。`gameplay/achievements.py` 通过 SQLite 查询派生进度；`achievement_claims` 的玩家/成就主键和操作键唯一约束共同保证并发、跨缓存过期重投均只领奖一次。记录奖励/回复快照后再发放，必须和发奖处于同一事务。
 - 日总额只统计主动挑战，包含平局；同对日/季额度统计两个方向所有结果。领奖只统计主动非平局及其不同对手，镜像防守不增加有效场次。败方余额不足时转移其余额，不能产生负分或凭空增分。
 - 领奖按冻结规则及最终积分发一个档位，season_claims 与物品、灵石、回复同时提交；不访问当前宠物，因此不会给外出宠加修为。缺失快照所需物品时明确回滚，恢复定义后可重试。
 - 此防刷范围仅为原始玩家 ID 的频次与经济收益限制，不识别设备、关联账号或跨 ID 绑定；镜像不要求在线。QQ 赛季蓝字允许 YYYY-MM 中的连字符，所有回传仍走同一命令解析与事务检查；当前榜每页五人，挑战/翻页按钮总数不超过八个。

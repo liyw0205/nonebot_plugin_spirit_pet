@@ -147,6 +147,37 @@ CREATE TABLE pvp_results (
 );
 CREATE INDEX result_challenger ON pvp_results(season_id, challenger_id, day);
 CREATE INDEX result_target ON pvp_results(season_id, target_id, day);
+CREATE TABLE battle_records (
+    battle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    initiator_id TEXT NOT NULL REFERENCES players(user_id),
+    kind TEXT NOT NULL CHECK(kind IN ('pvp', 'spar', 'pve', 'pve_stage')),
+    battle_key TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL,
+    winner_side INTEGER NOT NULL CHECK(winner_side IN (-1, 0, 1)),
+    rounds INTEGER NOT NULL CHECK(rounds >= 0),
+    played_at INTEGER NOT NULL,
+    reply TEXT NOT NULL,
+    snapshot TEXT NOT NULL,
+    battle_log TEXT NOT NULL
+);
+CREATE INDEX battle_records_time ON battle_records(played_at DESC, battle_id DESC);
+CREATE TABLE battle_participants (
+    battle_id INTEGER NOT NULL REFERENCES battle_records(battle_id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    side INTEGER NOT NULL CHECK(side IN (0, 1)),
+    permission TEXT NOT NULL CHECK(permission IN ('participant', 'defender')),
+    PRIMARY KEY(battle_id, user_id)
+);
+CREATE INDEX battle_participant_history ON battle_participants(user_id, battle_id DESC);
+CREATE TABLE pve_stage_progress (
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    stage_id TEXT NOT NULL,
+    first_cleared_at INTEGER NOT NULL,
+    first_operation_id TEXT NOT NULL CHECK(length(first_operation_id)>0),
+    PRIMARY KEY(user_id, stage_id)
+);
+CREATE INDEX pve_stage_completion_order ON pve_stage_progress(stage_id, first_cleared_at, user_id);
 CREATE TABLE season_claims (
     season_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
@@ -155,6 +186,16 @@ CREATE TABLE season_claims (
     PRIMARY KEY(season_id, user_id),
     FOREIGN KEY(season_id, user_id) REFERENCES season_entries(season_id, user_id)
 );
+CREATE TABLE achievement_claims (
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    achievement_id TEXT NOT NULL,
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    claimed_at INTEGER NOT NULL,
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(user_id, achievement_id)
+);
+CREATE INDEX achievement_claim_history ON achievement_claims(user_id, claimed_at DESC);
 CREATE TABLE operations (
     operation_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,

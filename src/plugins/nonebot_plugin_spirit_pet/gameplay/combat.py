@@ -60,6 +60,17 @@ class Battle:
     rounds: int
     lines: tuple[str, ...]
     skill_uses: tuple[dict[int, dict[str, int]], dict[int, dict[str, int]]]
+    # Full event history is persisted in battle reports; old callers may still
+    # construct Battle with the original four positional fields.
+    history: tuple[str, ...] = ()
+
+
+class _BattleLog(list[str]):
+    """Keep a bounded display log and an unbounded (per encounter) history."""
+
+    def __init__(self):
+        super().__init__()
+        self.history: list[str] = []
 
 
 def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, Element] | None = None) -> Battle:
@@ -67,7 +78,7 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
     teams = (left, right)
     initiative = [(unit, side, rng.random()) for side, team in enumerate(teams) for unit in team]
     turns = sorted(initiative, key=lambda entry: (entry[0].stats.speed, entry[2]), reverse=True)
-    log = []
+    log = _BattleLog()
     definitions = elements or {}
     for unit, _, _ in turns:
         event = talents.initialize(unit)
@@ -153,6 +164,8 @@ def _cast(unit: Fighter, skill: Skill):
 
 
 def _record(log: list[str], *events: str):
+    if isinstance(log, _BattleLog):
+        log.history.extend(events)
     log.extend(events[:max(0, 6 - len(log))])
 
 
@@ -162,4 +175,5 @@ def _result(winner, rounds, teams, log):
         for side, team in enumerate(teams) for unit in team
     )
     uses = tuple({unit.pet_id: dict(unit.skill_uses) for unit in team if unit.pet_id is not None} for team in teams)
-    return Battle(winner, rounds, (*log, *remaining), uses)
+    history = tuple(getattr(log, "history", log)) + remaining
+    return Battle(winner, rounds, (*log, *remaining), uses, history)

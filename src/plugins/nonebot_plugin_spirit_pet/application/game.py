@@ -32,6 +32,12 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_battle = repo.battle_operation(operation_id, user_id)
+            if persistent_battle is not None:
+                return Reply(
+                    persistent_battle["title"], tuple(persistent_battle["lines"]),
+                    tuple(persistent_battle["commands"]),
+                )
             context = Context(repo, self.content, self.config, self.rng, user_id, timestamp, operation_id)
             result = command.handler(context, argument)
             repo.save()

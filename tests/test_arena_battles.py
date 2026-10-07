@@ -179,7 +179,7 @@ def test_cached_challenge_operation_cannot_be_reused_by_another_identity(game, p
     register(game, play)
     play("pvp", "道友01", user="private-0", now=NOW, op="owned-result")
     before = state(game[1])
-    with pytest.raises(ValueError, match="different user"):
+    with pytest.raises(GameError, match="different user"):
         play("pvp", "道友00", user="private-1", now=NOW, op="owned-result")
     assert state(game[1]) == before
 

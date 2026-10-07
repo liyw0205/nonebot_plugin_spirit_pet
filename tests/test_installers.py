@@ -311,7 +311,7 @@ def test_configuration_does_not_follow_dangling_symlink(project, tmp_path):
 
 def test_qq_credentials_roundtrip_without_terminal_disclosure(project, monkeypatch, capsys):
     answers = iter(["3", "12345", "2"])
-    secret = "quoted'\"secret\\value"
+    secret = "quoted'\"secret\\value ${HOME} #\n"
     monkeypatch.setattr(environment.sys.stdin, "isatty", lambda: True)
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
     monkeypatch.setattr(environment.getpass, "getpass", lambda _: secret)
@@ -381,6 +381,58 @@ def test_shell_installs_curl_with_python_when_linux_bootstrap_needs_it():
     text = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     assert "! command -v curl" in text
     assert "apt-get install -y python3 python3-venv python3-pip curl" in text
+    assert "yum install -y python3 python3-pip python3-virtualenv curl" in text
+    assert "apk add python3 py3-pip py3-virtualenv curl" in text
+
+
+def test_shell_bootstraps_missing_python_with_apt(tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    marker = tmp_path / "python-installed"
+    log = tmp_path / "apt.log"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    python = bindir / "python3"
+    python.write_text(
+        "#!/bin/sh\n"
+        f"test -f '{marker}' || exit 1\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    apt = bindir / "apt-get"
+    apt.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$*\" >> '{log}'\n"
+        f"touch '{marker}'\n",
+        encoding="utf-8",
+    )
+    fake_id = bindir / "id"
+    fake_id.write_text("#!/bin/sh\nprintf '0\\n'\n", encoding="utf-8")
+    python.chmod(0o755)
+    apt.chmod(0o755)
+    fake_id.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": f"{bindir}:/usr/bin:/bin",
+        "SPIRIT_PET_SKIP_SYSTEM": "0",
+        "SPIRIT_PET_PLATFORM": "",
+    }
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts/install.sh"), "--yes", "--no-start"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "python3 python3-venv python3-pip curl" in log.read_text(encoding="utf-8")
+
+
+def test_powershell_bootstraps_python_without_winget():
+    text = (ROOT / "scripts/install.ps1").read_text(encoding="utf-8")
+    assert "python-3.12.10-amd64.exe" in text
+    assert "Get-AuthenticodeSignature" in text
+    assert "Python Software Foundation" in text
+    assert "if (-not $Python) { Install-Python }" in text
 
 
 def test_powershell_entrypoint_has_valid_syntax():

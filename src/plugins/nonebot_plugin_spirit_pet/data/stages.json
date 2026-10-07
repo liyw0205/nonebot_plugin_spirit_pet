@@ -1,0 +1,98 @@
+[
+  {
+    "id": "stage_01",
+    "name": "青木试锋",
+    "description": "山门外的木灵傀儡，是初入仙途的第一道试锋。",
+    "order": 1,
+    "min_realm": "qiling",
+    "enemies": ["wood_guard"],
+    "energy": 15,
+    "reward": {"exp": {"minimum": 80, "maximum": 120}, "stones": {"minimum": 30, "maximum": 50}, "items": {"spirit_food": {"minimum": 1, "maximum": 2}}},
+    "team": false,
+    "previous_id": null
+  },
+  {
+    "id": "stage_02",
+    "name": "月影追猎",
+    "description": "穿过月影林，击败守护灵脉的狼王。",
+    "order": 2,
+    "min_realm": "ningqi",
+    "enemies": ["moon_wolf"],
+    "energy": 20,
+    "reward": {"exp": {"minimum": 140, "maximum": 200}, "stones": {"minimum": 50, "maximum": 80}, "items": {"wind_feather": {"minimum": 1, "maximum": 1}}},
+    "team": false,
+    "previous_id": "stage_01"
+  },
+  {
+    "id": "stage_03",
+    "name": "雷泽问心",
+    "description": "雷泽潮声震荡心神，唯有守住本心方能渡过。",
+    "order": 3,
+    "min_realm": "zhuji",
+    "enemies": ["thunder_dragon", "tide_sentinel"],
+    "energy": 25,
+    "reward": {"exp": {"minimum": 220, "maximum": 300}, "stones": {"minimum": 80, "maximum": 120}, "items": {"thunder_horn": {"minimum": 1, "maximum": 1}}},
+    "team": false,
+    "previous_id": "stage_02"
+  },
+  {
+    "id": "stage_04",
+    "name": "古殿同契",
+    "description": "古殿守卫结阵而立，需与同道并肩破阵。",
+    "order": 4,
+    "min_realm": "jindan",
+    "enemies": ["ancient_guard", "jade_warden"],
+    "energy": 30,
+    "reward": {"exp": {"minimum": 320, "maximum": 450}, "stones": {"minimum": 120, "maximum": 180}, "items": {"dragon_scale": {"minimum": 1, "maximum": 1}}},
+    "team": true,
+    "previous_id": "stage_03"
+  },
+  {
+    "id": "stage_05",
+    "name": "冰魄封关",
+    "description": "寒晶守灵封锁冰关，破阵可得冰脉机缘。",
+    "order": 5,
+    "min_realm": "yuanying",
+    "enemies": ["ice_guard", "frost_monarch"],
+    "energy": 35,
+    "reward": {"exp": {"minimum": 500, "maximum": 680}, "stones": {"minimum": 180, "maximum": 260}, "items": {"frost_beak": {"minimum": 1, "maximum": 2}}},
+    "team": false,
+    "previous_id": "stage_04"
+  },
+  {
+    "id": "stage_06",
+    "name": "幽沼蚀魂",
+    "description": "毒雾自幽沼深处升起，镇守者不会给闯入者第二次机会。",
+    "order": 6,
+    "min_realm": "huashen",
+    "enemies": ["venom_guard", "nether_emperor"],
+    "energy": 40,
+    "reward": {"exp": {"minimum": 700, "maximum": 900}, "stones": {"minimum": 260, "maximum": 360}, "items": {"poison_scale": {"minimum": 1, "maximum": 1}, "bloodline_essence": {"minimum": 1, "maximum": 1}}},
+    "team": false,
+    "previous_id": "stage_05"
+  },
+  {
+    "id": "stage_07",
+    "name": "太虚剑门",
+    "description": "太虚剑魄斩断退路，只有洞悉剑意才能登门。",
+    "order": 7,
+    "min_realm": "dujie",
+    "enemies": ["void_blade", "wood_colossus"],
+    "energy": 45,
+    "reward": {"exp": {"minimum": 950, "maximum": 1200}, "stones": {"minimum": 360, "maximum": 500}, "items": {"metal_scythe": {"minimum": 1, "maximum": 1}}},
+    "team": false,
+    "previous_id": "stage_06"
+  },
+  {
+    "id": "stage_08",
+    "name": "九霄天门",
+    "description": "九霄劫灵与天门守望联袂镇关，须集众人之力破劫登门。",
+    "order": 8,
+    "min_realm": "dujie",
+    "enemies": ["tribulation_avatar", "sky_gate_guard"],
+    "energy": 50,
+    "reward": {"exp": {"minimum": 1400, "maximum": 1800}, "stones": {"minimum": 500, "maximum": 700}, "items": {"thunder_horn": {"minimum": 1, "maximum": 2}, "dragon_scale": {"minimum": 1, "maximum": 1}}},
+    "team": true,
+    "previous_id": "stage_07"
+  }
+]

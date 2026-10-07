@@ -3,6 +3,7 @@ from ..domain.models import GameError, Reply
 from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .combat import Fighter, fight
+from .battle_records import capture_snapshot, record_battle
 from .loadout import combatant
 from .mastery import award_mastery
 from .quests import advance
@@ -86,6 +87,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
         )
         for key in dungeon.enemies
     ]
+    capture = capture_snapshot(ctx, (allies, enemies), (list(user_ids), []))
     battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
     lines = [f"{dungeon.name} · {battle.rounds} 回合", *battle.lines]
     for player, pet in zip(players, pets):
@@ -98,4 +100,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
             lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, player.user_id)))
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")
     title = "秘境获胜" if battle.winner == 0 else ("秘境平局" if battle.winner == -1 else "秘境败退")
-    return Reply(title, tuple(lines), ("我的灵宠", "灵宠任务", "灵宠喂养"))
+    reply = Reply(title, tuple(lines), ("灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养"))
+    record_battle(ctx, kind="pve", battle_key=dungeon.id, battle=battle,
+                  capture=capture, reply=reply)
+    return reply

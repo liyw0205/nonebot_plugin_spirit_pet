@@ -135,7 +135,7 @@ def test_real_qq_send_retains_message_id_and_increments_fallback_sequence():
     from nonebot.adapters.qq.exception import ActionFailed
     from nonebot.drivers import Response
 
-    bot = Bot(Adapter(nonebot.get_driver()), "app", BotInfo(id="app", secret="test-only"))
+    bot = Bot(Adapter(nonebot.get_driver()), "app", BotInfo(id="app", secret="test-only", token="test-token"))
     event = GroupAtMessageCreateEvent.model_validate({
         "id": "incoming", "content": "灵宠帮助", "timestamp": "2026-10-07T00:00:00+08:00",
         "group_id": "group", "group_openid": "group",

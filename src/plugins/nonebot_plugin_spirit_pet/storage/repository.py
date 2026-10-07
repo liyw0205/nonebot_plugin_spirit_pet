@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from dataclasses import asdict
 
@@ -83,6 +84,102 @@ class Repository:
 
     def invalidate_ready(self, user_id: str) -> None:
         self.conn.execute("UPDATE team_members SET ready_pet_id=NULL WHERE user_id=?", (user_id,))
+
+    def record_battle(
+        self, *, operation_id: str, initiator_id: str, kind: str, battle_key: str, title: str,
+        winner_side: int, rounds: int, played_at: int, reply: dict,
+        snapshot: dict, battle_log: tuple[str, ...], participants: list[dict],
+    ) -> int:
+        """Persist one immutable battle and its user visibility rows.
+
+        The operation ID makes retries idempotent even after the short-lived
+        operations reply cache has expired.  Snapshot and log are JSON values,
+        so later pet/dao-name changes cannot alter a historical report.
+        """
+        existing = self.conn.execute(
+            "SELECT battle_id FROM battle_records WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if existing is not None:
+            return int(existing["battle_id"])
+        cursor = self.conn.execute(
+            "INSERT INTO battle_records(operation_id, initiator_id, kind, battle_key, title, winner_side, rounds, played_at, "
+            "reply, snapshot, battle_log) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                operation_id, initiator_id, kind, battle_key, title, winner_side, rounds, played_at,
+                json.dumps(reply, ensure_ascii=False, separators=(",", ":")),
+                json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")),
+                json.dumps(list(battle_log), ensure_ascii=False, separators=(",", ":")),
+            ),
+        )
+        battle_id = int(cursor.lastrowid)
+        for participant in participants:
+            self.conn.execute(
+                "INSERT INTO battle_participants(battle_id, user_id, side, permission) VALUES (?, ?, ?, ?)",
+                (battle_id, participant["user_id"], participant["side"], participant["permission"]),
+            )
+        return battle_id
+
+    def battle_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT initiator_id, reply FROM battle_records WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["initiator_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def battle_history(self, user_id: str, *, limit: int = 5, offset: int = 0) -> list[sqlite3.Row]:
+        if type(limit) is not int or limit < 1 or limit > 100:
+            raise ValueError("battle history limit must be between 1 and 100")
+        if type(offset) is not int or offset < 0:
+            raise ValueError("battle history offset must be nonnegative")
+        return self.conn.execute(
+            "SELECT b.*, p.side, p.permission FROM battle_records b "
+            "JOIN battle_participants p ON p.battle_id=b.battle_id "
+            "WHERE p.user_id=? ORDER BY b.played_at DESC, b.battle_id DESC LIMIT ? OFFSET ?",
+            (user_id, limit, offset),
+        ).fetchall()
+
+    def battle_history_count(self, user_id: str) -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM battle_participants WHERE user_id=?", (user_id,),
+        ).fetchone()[0])
+
+    def battle_report(self, user_id: str, battle_id: int) -> sqlite3.Row | None:
+        """Return a report only when the requesting user participated in it."""
+        return self.conn.execute(
+            "SELECT b.*, p.side, p.permission FROM battle_records b "
+            "JOIN battle_participants p ON p.battle_id=b.battle_id "
+            "WHERE b.battle_id=? AND p.user_id=?", (battle_id, user_id),
+        ).fetchone()
+
+    def battle_participants(self, battle_id: int) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            "SELECT user_id, side, permission FROM battle_participants "
+            "WHERE battle_id=? ORDER BY side, user_id", (battle_id,),
+        ).fetchall()
+
+    def achievement_claim_by_operation(self, operation_id: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM achievement_claims WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+
+    def achievement_claim(self, user_id: str, achievement_id: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM achievement_claims WHERE user_id=? AND achievement_id=?",
+            (user_id, achievement_id),
+        ).fetchone()
+
+    def record_achievement_claim(
+        self, *, user_id: str, achievement_id: str, operation_id: str,
+        claimed_at: int, reward_snapshot: str, reply: str,
+    ) -> None:
+        self.conn.execute(
+            "INSERT INTO achievement_claims(user_id, achievement_id, operation_id, claimed_at, reward_snapshot, reply) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, achievement_id, operation_id, claimed_at, reward_snapshot, reply),
+        )
 
     def save(self) -> None:
         for pet in self.pets.values():

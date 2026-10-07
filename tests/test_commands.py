@@ -48,6 +48,13 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠血脉 青鸾") == ("lineage_catalog", "青鸾")
     assert handlers._parse("灵宠分支 分支名称") == ("lineage_choose", "分支名称")
     assert handlers._parse("灵宠秘境 九霄劫海") == ("dungeons", "九霄劫海")
+    assert handlers._parse("灵宠关卡 2") == ("stage_catalog", "2")
+    assert handlers._parse("灵宠挑战关卡 青木试锋") == ("stage_challenge", "青木试锋")
+    assert handlers._parse("灵宠组队关卡 4") == ("team_stage_challenge", "4")
+    assert handlers._parse("灵宠收集 2") == ("collection", "2")
+    assert handlers._parse("灵宠成就 3") == ("achievements", "3")
+    assert handlers._parse("灵宠成就领奖 初结灵契") == ("achievement_claim", "初结灵契")
+    assert handlers._parse("灵宠战报 2") == ("battle_reports", "2")
     assert handlers._parse("灵宠签到后的聊天") is None
     assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")
     assert handlers._parse("我的道号") == ("identity", "")
