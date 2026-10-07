@@ -354,14 +354,14 @@ def test_windows_restart_instruction_is_executable_with_spaces(project, monkeypa
 
 @pytest.mark.parametrize("name", ["install.sh", "install_termux.sh"])
 def test_shell_entrypoints_have_valid_syntax(name):
-    if not shutil.which("bash"):
+    if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
     result = subprocess.run(["bash", "-n", str(ROOT / "scripts" / name)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 
 def test_help_does_not_install_system_packages():
-    if not shutil.which("bash"):
+    if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
@@ -370,7 +370,7 @@ def test_help_does_not_install_system_packages():
 
 
 def test_shell_rejects_bad_branch_before_system_install():
-    if not shutil.which("bash"):
+    if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--branch", "dev"], capture_output=True, text=True)
     assert result.returncode == 1

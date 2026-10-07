@@ -116,6 +116,8 @@ def test_windows_restart_instruction_uses_powershell_call_operator(monkeypatch, 
 
 
 def test_linux_with_python_but_without_curl_attempts_supported_package_install(tmp_path):
+    if os.name == "nt":
+        pytest.skip("POSIX installer simulation requires a POSIX path environment")
     bash, shell, dirname = shutil.which("bash"), shutil.which("sh"), shutil.which("dirname")
     if not all((bash, shell, dirname)):
         pytest.skip("POSIX shell tools unavailable")
