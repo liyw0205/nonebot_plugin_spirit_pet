@@ -45,6 +45,8 @@ def install_xiupet_command(directory: Path, python: str | Path = sys.executable)
         content += f"export XIUPET_COMMAND_PATH={shlex.quote(str(shortcut))}\n"
         content += f"exec {shlex.quote(str(python))} {shlex.quote(str(directory / 'scripts/xiupet.py'))} \"$@\"\n"
     if shortcut.exists():
+        if shortcut.is_symlink():
+            raise RuntimeError(f"Refusing to overwrite a symlinked command: {shortcut}")
         existing = shortcut.read_text(encoding="utf-8", errors="replace")
         if existing != content and ("XIUPET_PROJECT" not in existing or "xiupet.py" not in existing):
             raise RuntimeError(f"Refusing to overwrite an existing command: {shortcut}")

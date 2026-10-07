@@ -171,7 +171,10 @@ def update_project(source, target):
 
 def project_directory(local, requested):
     if requested:
-        return requested.expanduser().resolve()
+        candidate = requested.expanduser()
+        if candidate.is_symlink():
+            raise RuntimeError(f"Refusing to operate through a symlinked installation path: {candidate}")
+        return candidate.resolve()
     return (local if is_project(local) else Path.home() / "spirit-pet").expanduser().resolve()
 
 

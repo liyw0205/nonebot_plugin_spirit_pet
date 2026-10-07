@@ -83,6 +83,18 @@ def test_fallback_copy_cannot_replace_configuration_created_by_another_process(i
     assert destination.read_bytes() == b"EXISTING_SECRET=keep-this-exactly\n"
 
 
+def test_installer_rejects_symlinked_target_directory(tmp_path):
+    target = tmp_path / "real installation"
+    target.mkdir()
+    link = tmp_path / "installation alias"
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks unavailable")
+    with pytest.raises(RuntimeError, match="symlinked installation path"):
+        bootstrap.project_directory(ROOT, link)
+
+
 def test_existing_venv_and_runtime_files_are_kept_while_selected_python_is_used(installation, tmp_path, monkeypatch):
     venv = tmp_path / "chosen environment with spaces"
     python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
