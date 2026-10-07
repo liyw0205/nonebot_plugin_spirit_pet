@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..domain.models import Reply
-from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills
+from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import crafting, expeditions, lineage
+from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -21,7 +22,11 @@ ACTIONS = {
     "status": Command(information.status),
     "catalog": Command(information.catalog, True),
     "rank": Command(information.rank),
-    "pvp_rank": Command(information.pvp_rank),
+    "pvp_rank": Command(seasons.rank, True),
+    "season": Command(seasons.status, True),
+    "season_rewards": Command(seasons.catalog, True),
+    "season_claim": Command(seasons.claim, True),
+    "match": Command(matching.candidates, True),
     "adopt": Command(pets.adopt, True),
     "summon": Command(pets.summon, True),
     "pet_list": Command(pets.pet_list, True),
@@ -48,10 +53,8 @@ ACTIONS = {
     "expedition_status": Command(expeditions.status, True),
     "expedition_claim": Command(expeditions.claim, True),
     "expedition_cancel": Command(expeditions.cancel, True),
-    "pvp": Command(duels.pvp, True),
-    "spar": Command(duels.spar, True),
-    "accept": Command(duels.accept),
-    "reject": Command(duels.reject),
+    "pvp": Command(battles.pvp, True),
+    "spar": Command(battles.spar, True),
     "team_create": Command(party.create),
     "team_join": Command(requests.join, True),
     "team_invite": Command(requests.invite, True),
@@ -83,6 +86,8 @@ ACTIONS = {
 COMMANDS = {
     "灵宠": "help", "灵宠帮助": "help", "我的道号": "identity", "灵宠道号": "dao_name", "我的灵宠": "status",
     "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠论剑榜": "pvp_rank",
+    "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季领奖": "season_claim",
+    "灵宠匹配": "match",
     "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
     "灵宠改名": "rename", "灵宠签到": "sign", "灵宠背包": "bag", "灵宠商店": "shop",
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠修炼": "train",
@@ -90,7 +95,7 @@ COMMANDS = {
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
-    "灵宠论剑": "pvp", "灵宠切磋": "spar", "灵宠应战": "accept", "灵宠拒战": "reject",
+    "灵宠论剑": "pvp", "灵宠切磋": "spar",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",
     "灵宠组队挑战": "team_challenge",

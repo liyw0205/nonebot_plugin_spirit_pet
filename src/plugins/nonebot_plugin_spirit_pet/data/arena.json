@@ -1,0 +1,35 @@
+{
+  "initial_rating": 1000,
+  "min_realm": "ningqi",
+  "max_rating_gap": 200,
+  "daily_matches": 5,
+  "pair_daily_matches": 1,
+  "pair_season_matches": 3,
+  "reward_matches": 10,
+  "reward_opponents": 4,
+  "rating_delta": 20,
+  "energy": 20,
+  "tiers": [
+    {
+      "id": "qingyun",
+      "name": "青云",
+      "minimum_rating": 0,
+      "stones": 300,
+      "items": {"forge_ore": 3}
+    },
+    {
+      "id": "lingxiao",
+      "name": "凌霄",
+      "minimum_rating": 1050,
+      "stones": 600,
+      "items": {"forge_ore": 6, "bloodline_essence": 2}
+    },
+    {
+      "id": "tianque",
+      "name": "天阙",
+      "minimum_rating": 1150,
+      "stones": 1000,
+      "items": {"forge_ore": 10, "bloodline_essence": 4}
+    }
+  ]
+}

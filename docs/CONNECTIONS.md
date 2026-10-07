@@ -2,6 +2,10 @@
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 
+一键安装默认最后以前台方式启动；用了 `--no-start` / `-NoStart` 时，在项目目录用 `.venv/bin/python bot.py`（Linux/Termux）或 `.venv\Scripts\python.exe bot.py`（Windows）启动。自定义虚拟环境时换成对应 Python 路径。
+
+安装器首次生成的 `.env` 已含随机 `ONEBOT_V11_ACCESS_TOKEN`，填写 OneBot 客户端时使用文件中的真实值，不必重新生成。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
+
 ## 连接 OneBot V11 / NapCat 反向 WS
 
 这里的“反向 WebSocket”是 **OneBot V11 客户端连到 NoneBot WebSocket server**。NapCat 是常见但**可选**的一种 OneBot V11 客户端，不是插件、NoneBot 或协议接入的硬性依赖；其他兼容 OneBot V11 反向 WS 的实现使用相同地址即可。NoneBot 监听 `HOST:PORT/onebot/v11/ws`；**不要再**在 `.env` 配 `ONEBOT_V11_WS_URLS`，该项是另一个方向的正向连接配置。

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import BaseModel, TypeAdapter
+from ..domain.arena_content import ArenaRules
 from ..domain.battle_content import (
     Category, DaoNames, Element, Equipment, ForgeLevel, Skill, SkillLevel, Talent,
 )
@@ -55,6 +56,7 @@ class Catalog:
     quests: dict[str, Quest]
     pools: dict[str, Pool]
     rules: Rules
+    arena: ArenaRules
     categories: dict[str, Category]
     elements: dict[str, Element]
     equipment: dict[str, Equipment]
@@ -81,6 +83,7 @@ class Catalog:
             quests=_index(directory / "quests.json", Quest),
             pools=_index(directory / "pools.json", Pool),
             rules=Rules.model_validate(_read(directory / "rules.json")),
+            arena=ArenaRules.model_validate(_read(directory / "arena.json")),
             categories=_index(directory / "categories.json", Category),
             elements=_index(directory / "elements.json", Element),
             equipment=_index(directory / "equipment.json", Equipment),
@@ -126,6 +129,9 @@ class Catalog:
         ):
             self._require(reward.items, self.items, "reward items")
         realm_ids = {realm.id for realm in self.realms}
+        self._require([self.arena.min_realm], realm_ids, "arena realm")
+        for tier in self.arena.tiers:
+            self._require(tier.items, self.items, "arena tier reward items")
         for expedition in self.expeditions.values():
             self._require([expedition.min_realm], realm_ids, "expedition realm")
         for dungeon in self.dungeons.values():
@@ -133,7 +139,7 @@ class Catalog:
             self._require(dungeon.enemies, self.enemies, "dungeon enemies")
             if dungeon.energy > 100:
                 raise ValueError("dungeon energy exceeds capacity")
-        for energy in (self.rules.training_energy, self.rules.explore_energy, self.rules.pvp_energy):
+        for energy in (self.rules.training_energy, self.rules.explore_energy):
             if energy > 100:
                 raise ValueError("action energy exceeds capacity")
         for pool in self.pools.values():

@@ -9,7 +9,6 @@ CREATE TABLE players (
     last_explore INTEGER,
     last_pve INTEGER,
     last_pvp INTEGER,
-    rating INTEGER NOT NULL DEFAULT 1000 CHECK (rating >= 0),
     FOREIGN KEY(user_id, active_pet_id) REFERENCES pets(user_id, pet_id)
         DEFERRABLE INITIALLY DEFERRED
 );
@@ -109,21 +108,52 @@ CREATE TABLE team_requests (
 );
 CREATE INDEX team_request_candidate ON team_requests(candidate_id, expires_at);
 CREATE INDEX team_request_expiry ON team_requests(expires_at);
-CREATE TABLE duels (
-    duel_id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE seasons (
+    season_id TEXT PRIMARY KEY,
+    starts_at INTEGER NOT NULL,
+    ends_at INTEGER NOT NULL CHECK(ends_at>starts_at),
+    closed_at INTEGER CHECK(closed_at>=ends_at),
+    observed_at INTEGER NOT NULL CHECK(observed_at>=starts_at),
+    rules_snapshot TEXT NOT NULL
+);
+CREATE TABLE season_entries (
+    season_id TEXT NOT NULL REFERENCES seasons(season_id),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    rating INTEGER NOT NULL CHECK(rating>=0),
+    wins INTEGER NOT NULL DEFAULT 0 CHECK(wins>=0),
+    losses INTEGER NOT NULL DEFAULT 0 CHECK(losses>=0),
+    draws INTEGER NOT NULL DEFAULT 0 CHECK(draws>=0),
+    PRIMARY KEY(season_id, user_id)
+);
+CREATE INDEX season_ranking ON season_entries(season_id, rating DESC);
+CREATE TABLE pvp_results (
+    result_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id TEXT NOT NULL REFERENCES seasons(season_id),
     challenger_id TEXT NOT NULL REFERENCES players(user_id),
     target_id TEXT NOT NULL REFERENCES players(user_id),
-    mode TEXT NOT NULL CHECK (mode IN ('pvp', 'spar')),
-    expires_at INTEGER NOT NULL,
-    CHECK(challenger_id != target_id)
+    challenger_pet_id INTEGER NOT NULL,
+    target_pet_id INTEGER NOT NULL,
+    winner_id TEXT REFERENCES players(user_id),
+    day TEXT NOT NULL,
+    played_at INTEGER NOT NULL,
+    delta INTEGER NOT NULL CHECK(delta>=0),
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    reply TEXT NOT NULL,
+    CHECK(challenger_id!=target_id),
+    CHECK(winner_id IS NULL OR winner_id IN (challenger_id, target_id)),
+    CHECK(winner_id IS NOT NULL OR delta=0),
+    FOREIGN KEY(challenger_id, challenger_pet_id) REFERENCES pets(user_id, pet_id),
+    FOREIGN KEY(target_id, target_pet_id) REFERENCES pets(user_id, pet_id)
 );
-CREATE INDEX duel_challenger ON duels(challenger_id);
-CREATE INDEX duel_target ON duels(target_id);
-CREATE TABLE pvp_pairs (
-    first_id TEXT NOT NULL REFERENCES players(user_id),
-    second_id TEXT NOT NULL REFERENCES players(user_id),
-    last_day TEXT NOT NULL,
-    PRIMARY KEY(first_id, second_id)
+CREATE INDEX result_challenger ON pvp_results(season_id, challenger_id, day);
+CREATE INDEX result_target ON pvp_results(season_id, target_id, day);
+CREATE TABLE season_claims (
+    season_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    reward_snapshot TEXT NOT NULL,
+    claimed_at INTEGER NOT NULL,
+    PRIMARY KEY(season_id, user_id),
+    FOREIGN KEY(season_id, user_id) REFERENCES season_entries(season_id, user_id)
 );
 CREATE TABLE operations (
     operation_id TEXT PRIMARY KEY,

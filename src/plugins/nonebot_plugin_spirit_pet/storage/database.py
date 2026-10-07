@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..domain.models import Reply
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 

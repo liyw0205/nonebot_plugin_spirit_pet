@@ -167,8 +167,6 @@ class Rules(Definition):
     training_exp: Range
     training_energy: Positive
     explore_energy: Positive
-    pvp_energy: Positive
-    pvp_rating_delta: Positive
     max_team_size: Annotated[int, Field(ge=2, le=5)]
     max_skill_slots: Annotated[int, Field(ge=1, le=4)]
     skill_proficiency_per_use: Positive = 5

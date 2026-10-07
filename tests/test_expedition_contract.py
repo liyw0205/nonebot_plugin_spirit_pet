@@ -35,7 +35,8 @@ def journeys(store, user=OWNER):
 
 def world(store):
     return {table: sql(store, f"SELECT * FROM {table} ORDER BY 1") for table in (
-        "players", "pets", "inventory", "expeditions", "team_members", "duels", "quest_progress",
+        "players", "pets", "inventory", "expeditions", "team_members", "seasons", "season_entries",
+        "pvp_results", "quest_progress",
     )}
 
 
@@ -419,8 +420,8 @@ def test_departure_racing_battle_never_overspends_or_partially_charges(game, pla
     register(play, other=True)
     sql(game[1], "UPDATE pets SET layer=5")
     if battle == "pvp":
-        play("pvp", "月明", user=OWNER)
-        command = (OTHER, "accept", "", "racing-battle", NOW)
+        sql(game[1], "UPDATE pets SET realm=1")
+        command = (OWNER, "pvp", "月明", "racing-battle", NOW)
         cost, initial = 20, 40
     elif battle == "team":
         play("team_create", user=OWNER)
@@ -440,11 +441,37 @@ def test_departure_racing_battle_never_overspends_or_partially_charges(game, pla
     if isinstance(results[0], GameError):
         assert not journeys(game[1])
         assert pet(game[1], OWNER)["energy"] == initial - cost
-        if battle != "solo":
+        if battle == "team":
             assert pet(game[1], OTHER)["energy"] == 100 - cost
+        else:
+            assert (player(game[1], OTHER), pet(game[1], OTHER), items(game[1], OTHER)) == before_other
+        if battle == "pvp":
+            assert len(sql(game[1], "SELECT * FROM pvp_results")) == 1
     else:
         assert len(journeys(game[1])) == 1
         assert pet(game[1], OWNER)["energy"] == initial - 25
         assert (player(game[1], OTHER), pet(game[1], OTHER), items(game[1], OTHER)) == before_other
         assert player(game[1], OWNER)["last_pve"] is None
         assert player(game[1], OWNER)["last_pvp"] is None
+        assert not sql(game[1], "SELECT * FROM pvp_results")
+
+
+@pytest.mark.parametrize("battle", ["pvp", "spar"])
+def test_defender_departure_and_mirror_battle_both_succeed_without_double_charge(game, play, battle):
+    register(play, other=True)
+    sql(game[1], "UPDATE pets SET realm=1")
+    before_other = player(game[1], OTHER), pet(game[1], OTHER), items(game[1], OTHER)
+    results = race(game[0], [
+        (OTHER, "expedition_start", "采灵药", "defender-departure", NOW),
+        (OWNER, battle, "月明", "mirror-battle", NOW),
+    ])
+    assert all(not isinstance(result, GameError) for result in results)
+    assert results[1].title == ("论剑结算" if battle == "pvp" else "切磋结算")
+    assert player(game[1], OTHER) == before_other[0]
+    assert pet(game[1], OTHER) == {**before_other[1], "energy": before_other[1]["energy"] - 25}
+    assert items(game[1], OTHER) == before_other[2]
+    assert len(journeys(game[1], OTHER)) == 1 and not journeys(game[1], OWNER)
+    assert journeys(game[1], OTHER)[0]["state"] == "running"
+    assert pet(game[1], OWNER)["energy"] == (80 if battle == "pvp" else 100)
+    assert player(game[1], OWNER)["last_pvp"] == (NOW if battle == "pvp" else None)
+    assert len(sql(game[1], "SELECT * FROM pvp_results")) == int(battle == "pvp")

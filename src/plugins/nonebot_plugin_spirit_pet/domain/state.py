@@ -13,7 +13,6 @@ class Player:
     last_explore: int | None = None
     last_pve: int | None = None
     last_pvp: int | None = None
-    rating: int = 1000
 
 
 @dataclass

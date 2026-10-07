@@ -1,7 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 
 import pytest
 
+from nonebot_plugin_spirit_pet.domain.battle_content import DaoNames
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import player, sql
@@ -27,8 +29,7 @@ def test_name_collision_and_case_insensitive_uniqueness(game, play):
     with pytest.raises(GameError, match="已被使用"):
         play("dao_name", "cloud", user="u2")
     assert player(game[1], "u2")["dao_name"] == before
-    play("spar", "CLOUD", user="u2")
-    assert play("accept").title == "切磋结算"
+    assert play("spar", "CLOUD", user="u2").title == "切磋结算"
 
 
 def test_internal_ids_never_displayed_or_used_as_interaction_targets(game, play):
@@ -39,18 +40,21 @@ def test_internal_ids_never_displayed_or_used_as_interaction_targets(game, play)
     with pytest.raises(GameError, match="道号不存在"):
         play("spar", ids[1], user=ids[0])
     replies = [play(action, user=ids[0]) for action in ("status", "identity", "rank", "pvp_rank", "help")]
-    replies += [play("spar", target_name, user=ids[0]), play("accept", user=ids[1])]
-    assert all(not any(user in reply.text() for user in ids) for reply in replies)
+    replies.append(play("spar", target_name, user=ids[0]))
+    assert replies[-1].title == "切磋结算"
+    assert all(not any(user in reply.text() + " ".join(reply.commands) for user in ids) for reply in replies)
 
 
-def test_rename_does_not_redirect_a_pending_duel(game, play):
+def test_rename_changes_future_targets_but_not_completed_battle_replays(game, play):
     play("adopt")
     play("adopt", user="u2")
     old = player(game[1], "u2")["dao_name"]
-    play("spar", old)
+    original = play("spar", old, op="before-rename")
+    assert original.title == "切磋结算"
     play("dao_name", "听雨散人", user="u2")
-    assert "听雨散人" in play("accept", user="u2").text()
-    with pytest.raises(GameError):
+    assert play("spar", old, op="before-rename") == original
+    assert "听雨散人" in play("spar", "听雨散人").text()
+    with pytest.raises(GameError, match="道号不存在"):
         play("spar", old)
 
 
@@ -69,18 +73,19 @@ def test_concurrent_renames_to_same_name_one_wins(game, play):
         assert sum(pool.map(rename, ["u1", "u2"])) == 1
 
 
-def test_exhausted_base_name_pool_gets_unique_numeric_suffix(game, play):
-    from dataclasses import replace
-    from nonebot_plugin_spirit_pet.domain.battle_content import DaoNames
-
-    game[0].content = replace(game[0].content, dao_names=DaoNames(
-        prefixes=["青", "白"], suffixes=["云", "月"],
+def test_exhausted_candidate_pool_rolls_back_adoption_without_numeric_suffix(game, play):
+    game[0].content = replace(game[0].content, dao_names=DaoNames.model_construct(
+        fields={"first": ["青", "白"], "second": ["云", "月"]}, templates=[["first", "second"]],
     ))
-    for index in range(5):
+    for index in range(4):
         play("adopt", "青鸾", user=f"private-{index}")
     names = [row["dao_name"] for row in sql(game[1], "SELECT dao_name FROM players")]
-    assert len(set(names)) == 5
-    assert any(name[-4:].isdigit() for name in names)
+    assert set(names) == {"青云", "青月", "白云", "白月"}
+    before = {table: sql(game[1], f"SELECT * FROM {table} ORDER BY 1")
+              for table in ("players", "pets", "inventory", "operations")}
+    with pytest.raises(GameError, match="道号.*用尽"):
+        play("adopt", "青鸾", user="private-overflow")
+    assert {table: sql(game[1], f"SELECT * FROM {table} ORDER BY 1") for table in before} == before
 
 
 def test_join_team_by_leader_name_and_hide_internal_ids(game, play):

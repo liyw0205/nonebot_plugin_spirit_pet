@@ -1,5 +1,6 @@
 from ..application.context import Context
 from ..domain.content import Stats
+from ..domain.models import GameError
 from .combat import Fighter, pet_stats
 from .compatibility import check_requirements
 from .equipment import loadout
@@ -7,8 +8,14 @@ from .mastery import progress
 from .skills import learned
 
 
-def combatant(ctx: Context, user_id: str | None = None) -> Fighter:
-    pet = ctx.pet(user_id)
+def combatant(ctx: Context, user_id: str | None = None, *, recover_energy: bool = True) -> Fighter:
+    if recover_energy:
+        pet = ctx.pet(user_id)
+    else:
+        active_pet_id = ctx.player(user_id).active_pet_id
+        if active_pet_id is None:
+            raise GameError("尚未选择出战灵宠。")
+        pet = ctx.repo.pet(active_pet_id)
     species = ctx.content.species[pet.species_id]
     stats = pet_stats(pet, ctx.content).model_dump()
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():

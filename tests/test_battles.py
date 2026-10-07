@@ -14,6 +14,11 @@ def two_players(play):
     play("dao_name", "赤霄", user="u2")
 
 
+def ranked_players(game, play):
+    two_players(play)
+    sql(game[1], "UPDATE pets SET realm=1")
+
+
 def setup_team(game, play):
     two_players(play)
     sql(game[1], "UPDATE pets SET layer=5")
@@ -58,71 +63,54 @@ def test_exploration_and_pve_have_independent_cooldowns(game, play):
         play("explore")
 
 
-def test_pvp_needs_target_consent_and_resolves_once(game, play):
-    two_players(play)
-    play("pvp", "赤霄")
-    before = pet(game[1]), pet(game[1], "u2")
-    with pytest.raises(GameError, match="没有可应战"):
-        play("accept")
-    assert (pet(game[1]), pet(game[1], "u2")) == before
-    result = play("accept", user="u2", op="accept")
-    assert play("accept", user="u2", op="accept") == result
+def test_pvp_directly_resolves_and_only_charges_challenger_once(game, play):
+    ranked_players(game, play)
+    before = player(game[1], "u2"), pet(game[1], "u2")
+    result = play("pvp", "赤霄", op="ranked-once")
+    assert play("pvp", "赤霄", op="ranked-once") == result
     assert result.title == "论剑结算"
-    assert pet(game[1])["energy"] == pet(game[1], "u2")["energy"] == 80
-    assert sorted([player(game[1])["rating"], player(game[1], "u2")["rating"]]) == [980, 1020]
+    assert pet(game[1])["energy"] == 80
+    assert (player(game[1], "u2"), pet(game[1], "u2")) == before
+    assert sorted(row["rating"] for row in sql(game[1], "SELECT rating FROM season_entries")) == [980, 1020]
     assert player(game[1])["stones"] == player(game[1], "u2")["stones"] == 100
     with pytest.raises(GameError):
-        play("accept", user="u2")
+        play("pvp", "赤霄")
 
 
-def test_pvp_revalidates_resources_on_accept_and_preserves_invite(game, play):
-    two_players(play)
-    play("pvp", "赤霄")
+def test_pvp_validates_challenger_resources_before_settling(game, play):
+    ranked_players(game, play)
     sql(game[1], "UPDATE pets SET energy=0 WHERE user_id='u1'")
     with pytest.raises(GameError, match="精力不足"):
-        play("accept", user="u2")
+        play("pvp", "赤霄")
     assert pet(game[1], "u2")["energy"] == 100
-    assert len(sql(game[1], "SELECT * FROM duels")) == 1
-    play("reject", user="u2")
-    assert not sql(game[1], "SELECT * FROM duels")
+    assert not sql(game[1], "SELECT * FROM pvp_results")
 
 
-def test_self_unknown_expired_and_third_party_invitation(game, play):
+def test_self_unknown_and_instant_named_spar(game, play):
     two_players(play)
     play("adopt", user="u3")
     with pytest.raises(GameError, match="自己"):
         play("pvp", "青云")
     with pytest.raises(GameError, match="不存在"):
         play("pvp", "missing")
-    play("spar", "赤霄", now=1000)
-    with pytest.raises(GameError):
-        play("accept", user="u3", now=1000)
-    with pytest.raises(GameError, match="已有"):
-        play("spar", "赤霄", user="u3", now=1000)
-    with pytest.raises(GameError, match="过期"):
-        play("accept", user="u2", now=1300)
-    play("spar", "赤霄", now=1300)
-    play("reject", now=1300)
-    assert not sql(game[1], "SELECT * FROM duels")
+    assert play("spar", "赤霄").title == "切磋结算"
+    assert play("spar", "赤霄", user="u3").title == "切磋结算"
 
 
 def test_spar_has_no_resources_ratings_rewards_or_cooldown(game, play):
     two_players(play)
     before = [(player(game[1], user), pet(game[1], user), items(game[1], user)) for user in ("u1", "u2")]
-    play("spar", "赤霄")
-    assert play("accept", user="u2").title == "切磋结算"
+    assert play("spar", "赤霄").title == "切磋结算"
     after = [(player(game[1], user), pet(game[1], user), items(game[1], user)) for user in ("u1", "u2")]
     assert after == before
 
 
 def test_daily_pvp_pair_limit_is_symmetric(game, play):
-    two_players(play)
+    ranked_players(game, play)
     play("pvp", "赤霄")
-    play("accept", user="u2")
     with pytest.raises(GameError, match="今日已结算"):
         play("pvp", "青云", user="u2", now=1_800_001_000)
     play("spar", "青云", user="u2", now=1_800_001_000)
-    play("accept", now=1_800_001_000)
 
 
 def test_team_requires_two_members_all_ready_and_leader(game, play):
@@ -191,13 +179,12 @@ def test_team_capacity_leave_disband_and_concurrent_last_slot(game, play):
     assert not sql(game[1], "SELECT * FROM teams")
 
 
-def test_concurrent_accepts_only_charge_once(game, play):
-    two_players(play)
-    play("pvp", "赤霄")
+def test_concurrent_ranked_challenges_only_charge_once(game, play):
+    ranked_players(game, play)
 
     def accept(index):
         try:
-            game[0].execute("u2", "accept", "", f"accept-{index}", 1_800_000_000)
+            game[0].execute("u1", "pvp", "赤霄", f"ranked-{index}", 1_800_000_000)
             return True
         except GameError:
             return False
@@ -205,7 +192,7 @@ def test_concurrent_accepts_only_charge_once(game, play):
     with ThreadPoolExecutor(max_workers=4) as pool:
         assert sum(pool.map(accept, range(8))) == 1
     assert pet(game[1])["energy"] == 80
-    assert pet(game[1], "u2")["energy"] == 80
+    assert pet(game[1], "u2")["energy"] == 100
 
 
 def test_battle_is_bounded_and_does_not_persist_health(game):

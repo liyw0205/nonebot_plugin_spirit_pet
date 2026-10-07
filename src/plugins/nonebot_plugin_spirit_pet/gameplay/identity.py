@@ -3,29 +3,51 @@ import re
 from ..application.context import Context
 from ..domain.models import GameError, Reply
 
+NAME_RANDOM_ATTEMPTS = 16
+NAME_BATCH_SIZE = 128
+
 
 def random_name(ctx: Context) -> str:
     definitions = ctx.content.dao_names
-    names = [prefix + suffix for prefix in definitions.prefixes for suffix in definitions.suffixes]
-    start = ctx.rng.randint(0, len(names) - 1)
-    for offset in range(len(names)):
-        candidate = names[(start + offset) % len(names)]
-        if ctx.repo.player_by_name(candidate) is None:
+    capacity = definitions.capacity
+    attempted = set()
+    for _ in range(NAME_RANDOM_ATTEMPTS):
+        index = ctx.rng.randint(0, capacity - 1)
+        if index in attempted:
+            continue
+        attempted.add(index)
+        candidate = definitions.name_at(index)
+        if ctx.repo.conn.execute(
+            "SELECT 1 FROM players WHERE dao_name=? COLLATE NOCASE", (candidate,),
+        ).fetchone() is None:
             return candidate
-    base = names[start]
-    number = ctx.rng.randint(1000, 9999)
-    for offset in range(9000):
-        candidate = f"{base}{1000 + (number - 1000 + offset) % 9000}"
-        if ctx.repo.player_by_name(candidate) is None:
-            return candidate
-    raise GameError("暂未找到可用道号，请稍后再试。")
+
+    population = ctx.repo.conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
+    start = population % capacity
+    limit = min(population + 1, capacity)
+    # At most population names can be occupied; one more distinct probe must be free.
+    for offset in range(0, limit, NAME_BATCH_SIZE):
+        candidates = [
+            definitions.name_at((start + position) % capacity)
+            for position in range(offset, min(offset + NAME_BATCH_SIZE, limit))
+        ]
+        placeholders = ", ".join("?" for _ in candidates)
+        occupied = {
+            row[0].lower() for row in ctx.repo.conn.execute(
+                f"SELECT dao_name FROM players WHERE dao_name COLLATE NOCASE IN ({placeholders})", candidates,
+            )
+        }
+        for candidate in candidates:
+            if candidate.lower() not in occupied:
+                return candidate
+    raise GameError("随机道号已用尽，暂无可用道号，请联系管理员扩充词库。")
 
 
 def profile(ctx: Context, arg: str) -> Reply:
     player = ctx.repo.player(ctx.user_id)
     if player is None:
         return Reply("修士名帖", ("尚未结契，领养灵宠时会获得专属道号。",), ("灵宠领养 青鸾",))
-    return Reply("修士名帖", (f"道号：{player.dao_name}", f"论剑积分：{player.rating}"), ("我的灵宠", "灵宠论剑榜"))
+    return Reply("修士名帖", (f"道号：{player.dao_name}",), ("我的灵宠", "灵宠赛季", "灵宠论剑榜"))
 
 
 def rename(ctx: Context, arg: str) -> Reply:

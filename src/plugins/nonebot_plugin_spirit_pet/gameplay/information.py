@@ -18,7 +18,8 @@ def help_game(ctx: Context, arg: str) -> Reply:
         "血脉：灵宠血脉 / 灵宠分支 分支名",
         "道具：灵宠背包 / 灵宠商店 / 灵宠购买 灵粮 3 / 灵宠使用 回元丹 1",
         "秘境：灵宠历练 / 灵宠秘境 / 灵宠挑战 青岚林 / 灵宠任务 / 灵宠领奖 任务名",
-        "对战：灵宠论剑 道号 / 灵宠切磋 道号 / 灵宠应战 / 灵宠拒战",
+        "对战：灵宠论剑 / 灵宠论剑 道号 / 灵宠切磋 道号",
+        "赛季：灵宠赛季 / 灵宠匹配 / 灵宠论剑榜 / 灵宠赛季奖励 / 灵宠赛季领奖 赛季号",
         "灵物：灵宠装备 / 灵宠装备 青岚翎 / 灵宠强化 灵器 / 灵宠卸装 灵器 / 灵宠装备图鉴",
         "工坊：灵宠工坊 / 灵宠打造 青岚翎 / 灵宠分解 青岚翎 +0 1",
         "灵术：灵宠技能 / 灵宠技能图鉴 / 灵宠学习 风刃术 / 灵宠携带 风刃术 / 灵宠卸技 风刃术",
@@ -134,13 +135,3 @@ def rank(ctx: Context, arg: str) -> Reply:
         f"{index}. {row['dao_name']} · {row['name']} · {ctx.content.realms[row['realm']].name} {row['layer']}层"
         f" · 修为 {row['exp']}" for index, row in enumerate(rows, 1)
     ) or ("尚无灵宠入榜。",))
-
-
-def pvp_rank(ctx: Context, arg: str) -> Reply:
-    rows = ctx.repo.conn.execute(
-        "SELECT p.rating, p.dao_name, t.name FROM players p JOIN pets t ON t.pet_id=p.active_pet_id "
-        "ORDER BY p.rating DESC, p.user_id LIMIT 10"
-    ).fetchall()
-    return Reply("论剑榜", tuple(
-        f"{index}. {row['dao_name']} · {row['name']} · 积分 {row['rating']}" for index, row in enumerate(rows, 1)
-    ) or ("暂无玩家。",))

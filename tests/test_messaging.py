@@ -34,12 +34,16 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     assert message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0].action.data == "/我的灵宠"
 
 
-def test_enhancement_arguments_survive_blue_links_and_keyboard():
-    command = "灵宠分解 青岚翎 +2 1"
+@pytest.mark.parametrize("command,encoded", [
+    ("灵宠分解 青岚翎 +2 1", "%2B2%201"),
+    ("灵宠赛季领奖 2028-01", "2028-01"),
+    ("灵宠论剑榜 2028-01 分页 2", "2028-01%20"),
+])
+def test_structured_arguments_survive_blue_links_and_keyboard(command, encoded):
     reply = Reply("灵物工坊", (), (command,))
     _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
     markdown = message["markdown"][0].data["markdown"].content
-    assert "%2B2%201" in markdown
+    assert encoded in markdown
     button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
     assert button.action.data == "/" + command
     link = inline_command(command, command)

@@ -6,6 +6,7 @@ from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.domain.content import Stats
 from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.gameplay import adventure
+from nonebot_plugin_spirit_pet.gameplay.arena import battles as arena_battles
 from nonebot_plugin_spirit_pet.gameplay.combat import fight
 from nonebot_plugin_spirit_pet.gameplay.mastery import award_mastery
 from nonebot_plugin_spirit_pet.storage.repository import Repository
@@ -172,21 +173,38 @@ def test_pve_awards_once_while_friendly_spar_awards_nothing(game, play):
     prepare(game, play, "u2")
     play("dao_name", "对战道友", user="u2")
     before_other = skill(game, "u2")
-    play("spar", "对战道友")
-    play("accept", user="u2")
+    result = play("spar", "对战道友", op="friendly-mastery")
+    assert result.title == "切磋结算"
     assert skill(game) == after
     assert skill(game, "u2") == before_other
+    assert play("spar", "对战道友", op="friendly-mastery") == result
+    assert skill(game) == after and skill(game, "u2") == before_other
 
 
-def test_ranked_pvp_awards_both_players_once(game, play):
+def test_ranked_pvp_awards_only_active_challenger_once(game, play, monkeypatch):
     prepare(game, play)
     prepare(game, play, "u2")
+    sql(game[1], "UPDATE pets SET realm=1")
     play("dao_name", "对战道友", user="u2")
-    play("pvp", "对战道友")
-    battle = play("accept", user="u2", op="ranked-mastery")
+    captured = []
+
+    def observe(left, right, rng, elements):
+        battle = fight(left, right, rng, elements)
+        captured.append(battle)
+        return battle
+
+    monkeypatch.setattr(arena_battles, "fight", observe)
+    before_other = skill(game, "u2")
+    battle = play("pvp", "对战道友", op="ranked-mastery")
+    assert battle.title == "论剑结算"
     rows = [skill(game, user) for user in ("u1", "u2")]
-    assert all(total_proficiency(game, row) > 0 for row in rows)
-    assert play("accept", user="u2", op="ranked-mastery") == battle
+    attacker_casts = captured[0].skill_uses[0][rows[0]["pet_id"]]["wind_slash"]
+    defender_casts = captured[0].skill_uses[1][rows[1]["pet_id"]]["wind_slash"]
+    assert attacker_casts > 0 and defender_casts > 0
+    assert total_proficiency(game, rows[0]) == attacker_casts * game[0].content.rules.skill_proficiency_per_use
+    assert rows[1] == before_other
+    assert play("pvp", "对战道友", op="ranked-mastery") == battle
+    assert len(captured) == 1
     assert [skill(game, user) for user in ("u1", "u2")] == rows
 
 

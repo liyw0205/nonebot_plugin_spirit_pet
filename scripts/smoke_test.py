@@ -138,28 +138,65 @@ def main():
                     exchange(12345, 44, f"灵宠归来 {job_id}", "委托归来")
                     exchange(12345, 44, f"灵宠归来 {job_id}", "委托归来")
                     exchange(12345, 45, f"灵宠归来 {job_id}", "不能重复结算")
-        with closing(sqlite3.connect(database)) as conn:
-            user_id, stones = conn.execute("SELECT user_id, stones FROM players WHERE user_id='12345'").fetchone()
-            assert expedition_reward is not None
-            assert user_id == "12345" and 100 <= stones - expedition_reward['stones'] <= 140
-            assert before_salvage is not None and stones == before_salvage[0] + expedition_reward['stones']
-            assert conn.execute(
-                "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='forge_ore'"
-            ).fetchone()[0] == before_salvage[1] + 1
-            assert conn.execute(
-                "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='wind_feather'"
-            ).fetchone()[0] == 0
-            assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 3
-            assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 40)
-            assert conn.execute("SELECT exp FROM pets WHERE pet_id=1").fetchone()[0] == before_exp + expedition_reward['exp']
-            assert conn.execute("SELECT state FROM expeditions").fetchall() == [("claimed",)]
-            assert conn.execute("SELECT energy FROM pets WHERE user_id='67890'").fetchone()[0] == 100
-            assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
-            for table in ("teams", "team_members", "team_requests"):
-                assert conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
-            skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
-            assert skill and (skill[0] > 1 or skill[1] > 0)
-        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, teams, offline journeys and redelivery")
+                with closing(sqlite3.connect(database)) as conn:
+                    user_id, stones = conn.execute("SELECT user_id, stones FROM players WHERE user_id='12345'").fetchone()
+                    assert expedition_reward is not None
+                    assert user_id == "12345" and 100 <= stones - expedition_reward['stones'] <= 140
+                    assert before_salvage is not None and stones == before_salvage[0] + expedition_reward['stones']
+                    assert conn.execute(
+                        "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='forge_ore'"
+                    ).fetchone()[0] == before_salvage[1] + 1
+                    assert conn.execute(
+                        "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='wind_feather'"
+                    ).fetchone()[0] == 0
+                    assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 3
+                    assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 40)
+                    assert conn.execute("SELECT exp FROM pets WHERE pet_id=1").fetchone()[0] == before_exp + expedition_reward['exp']
+                    assert conn.execute("SELECT state FROM expeditions").fetchall() == [("claimed",)]
+                    assert conn.execute("SELECT energy FROM pets WHERE user_id='67890'").fetchone()[0] == 100
+                    assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
+                    for table in ("teams", "team_members", "team_requests"):
+                        assert conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
+                    skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
+                    assert skill and (skill[0] > 1 or skill[1] > 0)
+                    before_duel_items = conn.execute("SELECT * FROM inventory ORDER BY user_id, item_id").fetchall()
+                with patch(f"{plugin_package}.application.game.time.time", return_value=finishes_at):
+                    exchange(12345, 46, "灵宠切磋 归元道友", "切磋结算")
+                    exchange(12345, 46, "灵宠切磋 归元道友", "切磋结算")
+                    with closing(sqlite3.connect(database)) as conn:
+                        before_duel_energy = dict(conn.execute(
+                            "SELECT p.user_id, t.energy FROM players p JOIN pets t ON p.active_pet_id=t.pet_id"
+                        ))
+                        assert before_duel_energy == {"12345": 40, "67890": 100}
+                    exchange(67890, 47, "灵宠切磋 归元道友", "自己")
+                    exchange(12345, 48, "灵宠论剑 归元道友", "凝气")
+                    with closing(sqlite3.connect(database)) as conn:
+                        assert dict(conn.execute(
+                            "SELECT p.user_id, t.energy FROM players p JOIN pets t ON p.active_pet_id=t.pet_id"
+                        )) == before_duel_energy
+                        assert conn.execute("SELECT COUNT(*) FROM pvp_results").fetchone()[0] == 0
+                        conn.execute("UPDATE pets SET realm=1")
+                        conn.commit()
+                    exchange(12345, 49, "灵宠匹配", "论剑候选")
+                    with closing(sqlite3.connect(database)) as conn:
+                        assert conn.execute("SELECT energy FROM pets WHERE pet_id=1").fetchone()[0] == 52
+                    exchange(12345, 50, "灵宠论剑 归元道友", "论剑结算")
+                    exchange(12345, 50, "灵宠论剑 归元道友", "论剑结算")
+                    exchange(12345, 51, "灵宠论剑 归元道友", "调息")
+                    exchange(12345, 52, "灵宠赛季", "论剑赛季")
+                    exchange(67890, 53, "灵宠论剑", "论剑榜")
+                    for message_id in range(46, 54):
+                        assert "12345" not in responses[message_id] and "67890" not in responses[message_id]
+                with closing(sqlite3.connect(database)) as conn:
+                    assert conn.execute("SELECT COUNT(*) FROM pvp_results").fetchone()[0] == 1
+                    assert conn.execute("SELECT COUNT(*), SUM(rating) FROM season_entries").fetchone() == (2, 2000)
+                    assert conn.execute("SELECT energy FROM pets WHERE pet_id=1").fetchone()[0] == 32
+                    assert conn.execute("SELECT energy FROM pets WHERE user_id='67890'").fetchone()[0] == 100
+                    assert conn.execute("SELECT last_pvp FROM players WHERE user_id='67890'").fetchone()[0] is None
+                    assert conn.execute("SELECT stones FROM players WHERE user_id='12345'").fetchone()[0] == stones
+                    assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
+                    assert conn.execute("SELECT * FROM inventory ORDER BY user_id, item_id").fetchall() == before_duel_items
+        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons and redelivery")
 
 
 if __name__ == "__main__":

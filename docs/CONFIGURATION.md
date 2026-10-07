@@ -13,8 +13,7 @@
 | SPIRIT_PET_EXPLORE_COOLDOWN | `900` | 历练冷却秒数，最少 1 |
 | SPIRIT_PET_ENERGY_INTERVAL | `300` | 恢复 1 精力所需秒数，最少 1 |
 | SPIRIT_PET_PVE_COOLDOWN | `600` | 单人和组队 PVE 共享冷却，按玩家记录 |
-| SPIRIT_PET_PVP_COOLDOWN | `900` | 论剑冷却秒数，双方各自结算 |
-| SPIRIT_PET_INVITATION_TTL | `300` | 论剑/切磋邀请有效秒数 |
+| SPIRIT_PET_PVP_COOLDOWN | `900` | 主动论剑冷却秒数，镜像防守不改变冷却 |
 | SPIRIT_PET_TEAM_REQUEST_TTL | `600` | 入队申请与队伍邀请有效秒数，最少 1；到期立即不能审批 |
 | SPIRIT_PET_TEAM_REQUEST_LIMIT | `10` | 每支队伍、每名候选人各自的待处理请求总上限，范围 1-100；只计未过期记录 |
 | SPIRIT_PET_EXPEDITION_DURATION | `3600` | 离线委托行程秒数，最少 1；只影响新派遣，已出发行程不随配置变化 |

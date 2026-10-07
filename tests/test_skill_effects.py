@@ -239,7 +239,7 @@ def test_ward_skill_runs_through_real_pve_and_awards_mastery_once(game, play):
     assert not any("effects" in row or "stunned" in row for row in sql(game[1], "SELECT * FROM pets"))
 
 
-def test_dispel_works_in_consented_pvp_and_only_real_dispel_is_counted(game, play):
+def test_dispel_works_in_direct_pvp_and_only_real_dispel_is_counted(game, play):
     play("adopt", "青鸾")
     play("adopt", "白泽", user="u2")
     play("dao_name", "护盾道友", user="u2")
@@ -247,11 +247,11 @@ def test_dispel_works_in_consented_pvp_and_only_real_dispel_is_counted(game, pla
     sql(game[1], "UPDATE players SET stones=10000 WHERE user_id='u1'")
     play("buy", "破障术诀")
     play("learn", "破障术")
-    play("pvp", "护盾道友")
-    result = play("accept", user="u2", op="dispel-pvp")
+    result = play("pvp", "护盾道友", op="dispel-pvp")
+    assert result.title == "论剑结算"
     assert "已驱散" in result.text()
     row = sql(game[1], "SELECT * FROM learned_skills WHERE skill_id='spirit_dispel'")[0]
     assert row["level"] == 1
     assert row["proficiency"] == game[0].content.rules.skill_proficiency_per_use
-    assert play("accept", user="u2", op="dispel-pvp") == result
+    assert play("pvp", "护盾道友", op="dispel-pvp") == result
     assert sql(game[1], "SELECT * FROM learned_skills WHERE skill_id='spirit_dispel'")[0] == row

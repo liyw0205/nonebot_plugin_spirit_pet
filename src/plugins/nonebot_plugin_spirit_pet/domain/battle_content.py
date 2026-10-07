@@ -1,3 +1,4 @@
+from math import prod
 from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
@@ -123,6 +124,55 @@ class Skill(Definition):
         return self
 
 
+NamePart = Annotated[str, Field(pattern=r"^[\u4e00-\u9fffA-Za-z0-9]{1,4}$")]
+
+
 class DaoNames(Definition):
-    prefixes: list[Annotated[str, Field(pattern=r"^[\u4e00-\u9fff]{1,4}$")]] = Field(min_length=2)
-    suffixes: list[Annotated[str, Field(pattern=r"^[\u4e00-\u9fff]{1,4}$")]] = Field(min_length=2)
+    fields: dict[Identifier, Annotated[list[NamePart], Field(min_length=1)]] = Field(min_length=1)
+    templates: list[Annotated[list[Identifier], Field(min_length=1)]] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def check_name_space(self):
+        widths = {}
+        for field, entries in self.fields.items():
+            if len({entry.lower() for entry in entries}) != len(entries):
+                raise ValueError(f"duplicate dao name components: {field}")
+            if len({len(entry) for entry in entries}) != 1:
+                raise ValueError(f"dao name components must have a fixed width: {field}")
+            widths[field] = len(entries[0])
+        lengths = set()
+        for template in self.templates:
+            if any(field not in self.fields for field in template):
+                raise ValueError("unknown dao name field in template")
+            length = sum(widths[field] for field in template)
+            if not 2 <= length <= 12:
+                raise ValueError("dao name templates must produce 2-12 characters")
+            # Fixed field boundaries and disjoint lengths prove every output is unique.
+            if length in lengths:
+                raise ValueError("dao name templates must have different output lengths")
+            lengths.add(length)
+        if self.capacity < 10_000_000:
+            raise ValueError("dao name space requires at least 10000000 unique names")
+        return self
+
+    @property
+    def capacity(self) -> int:
+        return sum(prod(len(self.fields[field]) for field in template) for template in self.templates)
+
+    def name_at(self, index: int) -> str:
+        if type(index) is not int:
+            raise TypeError("dao name ordinal must be an integer")
+        if index < 0:
+            raise ValueError("dao name ordinal is out of range")
+        for template in self.templates:
+            size = prod(len(self.fields[field]) for field in template)
+            if index >= size:
+                index -= size
+                continue
+            parts = []
+            for field in reversed(template):
+                entries = self.fields[field]
+                index, offset = divmod(index, len(entries))
+                parts.append(entries[offset])
+            return "".join(reversed(parts))
+        raise ValueError("dao name ordinal is out of range")

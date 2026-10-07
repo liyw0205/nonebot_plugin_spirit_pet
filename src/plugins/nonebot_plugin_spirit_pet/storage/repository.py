@@ -95,6 +95,6 @@ class Repository:
             self.conn.execute(
                 "UPDATE players SET dao_name=:dao_name, stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
                 "quest_day=:quest_day, last_train=:last_train, last_explore=:last_explore, "
-                "last_pve=:last_pve, last_pvp=:last_pvp, rating=:rating WHERE user_id=:user_id",
+                "last_pve=:last_pve, last_pvp=:last_pvp WHERE user_id=:user_id",
                 asdict(player),
             )

@@ -73,9 +73,6 @@ def validate_battle_content(content):
         if enemy.primary_element not in enemy.elements:
             raise ValueError("enemy primary element must belong to its elements")
     validate_pet_acquisition(content)
-    names = content.dao_names
-    if len(set(names.prefixes)) != len(names.prefixes) or len(set(names.suffixes)) != len(names.suffixes):
-        raise ValueError("duplicate dao name components")
 
 
 def validate_pet_acquisition(content):

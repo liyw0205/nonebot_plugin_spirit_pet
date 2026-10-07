@@ -42,7 +42,8 @@ def occupy(game, user="u1", pet_id=None):
 
 def snapshot(game):
     tables = ("players", "pets", "inventory", "equipment", "unequipped_equipment", "learned_skills",
-              "teams", "team_members", "team_requests", "duels", "pvp_pairs", "quest_progress", "expeditions")
+              "teams", "team_members", "team_requests", "seasons", "season_entries", "pvp_results",
+              "season_claims", "quest_progress", "expeditions")
     return {table: sql(game[1], f"SELECT * FROM {table} ORDER BY rowid") for table in tables}
 
 
@@ -76,30 +77,47 @@ def test_same_actions_remain_available_without_occupation(game, play, action, ar
 
 
 @pytest.mark.parametrize("mode", ["pvp", "spar"])
-@pytest.mark.parametrize("busy_user", ["u1", "u2"])
-def test_both_invitation_modes_check_each_players_pet(game, play, mode, busy_user):
+@pytest.mark.parametrize("elapsed", [0, DURATION, DURATION + 1])
+def test_busy_attacker_cannot_start_either_direct_battle_mode(game, play, mode, elapsed):
     prepare(game, play)
     prepare(game, play, "u2", "赤霄")
-    occupy(game, busy_user)
+    occupy(game)
     before = snapshot(game)
     with pytest.raises(GameError, match="外出|派遣|待领取"):
-        play(mode, "赤霄")
+        play(mode, "赤霄", now=NOW + elapsed)
     assert snapshot(game) == before
 
 
 @pytest.mark.parametrize("mode", ["pvp", "spar"])
-@pytest.mark.parametrize("busy_user", ["u1", "u2"])
-def test_pending_duel_rechecks_both_pets_when_accepted(game, play, mode, busy_user):
+@pytest.mark.parametrize("elapsed", [0, DURATION, DURATION + 1])
+def test_busy_defender_mirror_can_fight_without_mutating_resources_or_occupation(game, play, mode, elapsed):
     prepare(game, play)
     prepare(game, play, "u2", "赤霄")
-    play(mode, "赤霄")
-    occupy(game, busy_user)
+    play("team_create", user="u2")
+    play("team_ready", user="u2")
+    occupy(game, "u2")
+    defender_pet_id = pet(game[1], "u2")["pet_id"]
+    sql(game[1], "UPDATE pets SET energy=0, energy_updated=? WHERE user_id='u2'", (NOW - 10000,))
+    sql(game[1], "UPDATE players SET last_pvp=? WHERE user_id='u2'", (NOW + elapsed,))
     before = snapshot(game)
-    with pytest.raises(GameError, match="外出|派遣|待领取"):
-        play("accept", user="u2")
-    assert snapshot(game) == before
-    play("reject", user="u2")
-    assert not sql(game[1], "SELECT * FROM duels")
+    reply = play(mode, "赤霄", now=NOW + elapsed)
+    assert reply.title == ("论剑结算" if mode == "pvp" else "切磋结算")
+    assert "镜像" in reply.text()
+    after = snapshot(game)
+    for table in ("players", "pets", "inventory", "unequipped_equipment", "team_members", "expeditions"):
+        assert [row for row in after[table] if row["user_id"] == "u2"] == [
+            row for row in before[table] if row["user_id"] == "u2"
+        ]
+    for table in ("equipment", "learned_skills"):
+        assert [row for row in after[table] if row["pet_id"] == defender_pet_id] == [
+            row for row in before[table] if row["pet_id"] == defender_pet_id
+        ]
+    assert after["expeditions"] == before["expeditions"]
+    if mode == "spar":
+        assert after == before
+    else:
+        assert len(after["pvp_results"]) == 1
+        assert after["pvp_results"][0]["target_pet_id"] == defender_pet_id
 
 
 def test_team_battle_rechecks_all_pets_even_with_stale_ready_rows(game, play):

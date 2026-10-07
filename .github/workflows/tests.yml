@@ -24,3 +24,32 @@ jobs:
       - run: python -m pip install -r requirements.txt "pytest>=8,<10"
       - run: python -m pytest -q
       - run: python -m compileall -q src tests scripts bot.py
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install With Linux Entry
+        if: runner.os == 'Linux'
+        run: SPIRIT_PET_SKIP_SYSTEM=1 bash scripts/install.sh --directory "$RUNNER_TEMP/spirit pet install" --yes --no-start
+      - name: Install With Windows Entry
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/install.ps1 -Directory "$env:RUNNER_TEMP\spirit pet install" -Yes -NoStart -SkipSystem
+      - name: Verify Installed Linux Runtime
+        if: runner.os == 'Linux'
+        run: '"$RUNNER_TEMP/spirit pet install/.venv/bin/python" "$RUNNER_TEMP/spirit pet install/scripts/smoke_test.py"'
+      - name: Verify Installed Windows Runtime
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '& "$env:RUNNER_TEMP\spirit pet install\.venv\Scripts\python.exe" "$env:RUNNER_TEMP\spirit pet install\scripts\smoke_test.py"'
