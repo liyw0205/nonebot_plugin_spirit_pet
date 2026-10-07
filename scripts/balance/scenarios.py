@@ -71,7 +71,7 @@ def build_fighters(store: Store, content: Catalog, config: Config, species_ids: 
                 if lineage_ids is not None:
                     pet.lineage_id = lineage_ids[index]
                 pet.affinity = 30 if prepared else species.initial_affinity
-                ctx = Context(repo, content, config, Random(0), user_id, 0)
+                ctx = Context(repo, content, config, Random(0), user_id, 0, "balance-scenario")
                 if prepared:
                     _equip(ctx, pet, skill_ids[index] if skill_ids is not None else None)
                 elif skill_ids is not None:

@@ -18,6 +18,7 @@
 | enemies.json | PVE 敌人、基础战斗属性与明确的主属性 |
 | dungeons.json | 秘境准入境界、敌人列表、精力消耗、奖励、是否组队 |
 | quests.json | 每日任务的事件、目标次数、奖励 |
+| expeditions.json | 离线委托的名称、描述、境界门槛、精力成本与奖励范围，不含时间或玩家状态 |
 | rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数等静态数值 |
 | dao_names.json | 随机道号的前缀与后缀词库，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
@@ -116,6 +117,39 @@
 固定奖励将 minimum 与 maximum 设成相同值。掉落可以为零，成本和权重必须为正，奖励最小值不能大于最大值。
 
 任务 event 仅允许 `train/feed/explore/pve/evolve`。领取不会推进任务；喂养和直接使用灵粮推进同一种任务；PVE 仅胜利计数。任务日和领取状态不出现在 JSON。
+
+## 离线委托定义
+
+`expeditions.json` 是对象数组，由 `domain/expedition_content.py` 的 `Expedition` 严格校验。它与每日任务 `quests.json` 分离，不使用 event 或累计次数。
+
+```json
+{
+  "id": "herb_gathering",
+  "name": "采灵药",
+  "description": "寻访山野灵圃，采集可制成灵粮的草木精华。",
+  "min_realm": "qiling",
+  "energy": 25,
+  "reward": {
+    "exp": {"minimum": 15, "maximum": 25},
+    "stones": {"minimum": 10, "maximum": 20},
+    "items": {"spirit_food": {"minimum": 1, "maximum": 2}}
+  }
+}
+```
+
+- 仅允许 id、name、description、min_realm、energy、reward 六个字段，且全部必填；ID 和名称在本表中分别唯一，数组不能为空。
+- `min_realm` 引用现有大境界 ID；`energy` 为 1-100 的整数，是出发成本，不是宠物当前精力。
+- `reward` 复用前述奖励区间结构；物品 ID 必须存在，所有数量非负且 minimum 不大于 maximum，不接受数字字符串。
+- 初版包含 `herb_gathering`（采灵药，启灵，25 精力）、`ore_survey`（寻锻矿，凝气，30 精力）、`essence_search`（探血髓，筑基，40 精力），分别提供灵粮、锻灵矿、血脉精华。
+- 行程秒数统一来自 `.env` 中的 `SPIRIT_PET_EXPEDITION_DURATION`，默认 3600。此 JSON 不允许 duration、duration_seconds、started_at、finishes_at、settled_at 等时间字段。
+
+每次派遣绑定的宠物、操作号、开始/完成时间、抽取后的实际奖励快照和领取状态属于 SQLite 的行程记录。奖励范围是静态定义，实际抽取结果是运行数据，不能写回内容目录。派遣时固定奖励快照，之后修改任务名称、时长配置或奖励区间，不应追溯改写既有行程。
+
+修改委托定义后运行：
+
+```bash
+$HOME/myenv/bin/python -m pytest tests/test_expedition_content.py -q
+```
 
 ## 校验与维护
 

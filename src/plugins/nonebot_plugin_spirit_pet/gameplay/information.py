@@ -26,12 +26,20 @@ def help_game(ctx: Context, arg: str) -> Reply:
         "审批：灵宠队务 / 灵宠队伍同意 道号 / 灵宠队伍拒绝 道号 / 灵宠队伍撤回 道号",
         "管理：灵宠队伍 道号 / 灵宠踢人 道号 / 灵宠转让 道号 / 灵宠退队 / 灵宠解散",
         "出征：灵宠准备 / 灵宠取消准备 / 灵宠组队挑战 上古灵殿",
+        "派遣：灵宠委托 / 灵宠派遣 名称 / 灵宠行程 / 灵宠归来 行程号 / 灵宠召回 行程号",
         "其他：灵宠改名 名字 / 我的道号 / 灵宠道号 新道号 / 灵宠图鉴 / 灵宠排行",
     ), ("灵宠领养 青鸾", "我的灵宠", "灵宠秘境", "灵宠任务"))
 
 
 def status(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
+    expedition = ctx.repo.active_expedition(pet.pet_id)
+    activity = ()
+    commands = ("灵宠突破", "灵宠进化", "灵宠喂养", "灵宠修炼", "灵宠行程")
+    if expedition is not None:
+        state = "外出中" if ctx.now < expedition["finishes_at"] else "已完成，待领取"
+        activity = (f"行程：{expedition['task_name']} · {state}。",)
+        commands = ("灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
     stats = combatant(ctx).stats
     species = ctx.content.species[pet.species_id]
     talent = ctx.content.talents[species.talent]
@@ -54,6 +62,7 @@ def status(ctx: Context, arg: str) -> Reply:
     )
     return Reply(pet.name, (
         f"道号：{player.dao_name}",
+        *activity,
         f"编号 {pet.pet_id} · 种族：{ctx.content.species[pet.species_id].name}",
         f"类别：{ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
         f"天赋神通：{talent.name} · {talent.description}",
@@ -63,7 +72,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
         f"气血：{stats.hp} · 攻击：{stats.attack} · 防御：{stats.defense} · 速度：{stats.speed}",
         breakthrough, evolve_line,
-    ), ("灵宠突破", "灵宠进化", "灵宠喂养", "灵宠修炼"))
+    ), commands)
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

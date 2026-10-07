@@ -188,7 +188,7 @@ def test_loadout_connects_persistent_levels_equipment_and_species_talent(game, p
 
     def current():
         with closing(store.connect()) as conn:
-            ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1_800_000_000)
+            ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1_800_000_000, "talent-test")
             return combatant(ctx)
 
     baseline = current()

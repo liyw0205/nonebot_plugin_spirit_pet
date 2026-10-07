@@ -69,6 +69,7 @@ def choose(ctx: Context, arg: str) -> Reply:
     if not arg:
         raise GameError("请指定血脉分支名称，可先查看 /灵宠血脉。")
     player, pet = ctx.player(), ctx.pet()
+    ctx.require_idle_pet(pet)
     if pet.lineage_id is not None:
         raise GameError("这只灵宠已选择血脉分支，不能重复选择或更换。")
     branch = named(ctx.content.lineages, arg)

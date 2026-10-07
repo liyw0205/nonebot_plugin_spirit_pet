@@ -10,6 +10,7 @@ from .validation import validate_battle_content
 from .crafting_validation import validate_crafting_content
 from .lineage_validation import validate_lineages
 from ..domain.crafting_content import Recipe
+from ..domain.expedition_content import Expedition
 from ..domain.lineage_content import Lineage
 
 from ..domain.content import (
@@ -63,6 +64,7 @@ class Catalog:
     forge_levels: dict[int, ForgeLevel]
     recipes: dict[str, Recipe]
     lineages: dict[str, Lineage]
+    expeditions: dict[str, Expedition]
     dao_names: DaoNames
 
     @classmethod
@@ -88,6 +90,7 @@ class Catalog:
             forge_levels=_index(directory / "forge_levels.json", ForgeLevel, "level"),
             recipes=_index(directory / "recipes.json", Recipe),
             lineages=_index(directory / "lineages.json", Lineage),
+            expeditions=_index(directory / "expeditions.json", Expedition),
             dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
@@ -119,9 +122,12 @@ class Catalog:
         for reward in (
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
+            *(expedition.reward for expedition in self.expeditions.values()),
         ):
             self._require(reward.items, self.items, "reward items")
         realm_ids = {realm.id for realm in self.realms}
+        for expedition in self.expeditions.values():
+            self._require([expedition.min_realm], realm_ids, "expedition realm")
         for dungeon in self.dungeons.values():
             self._require([dungeon.min_realm], realm_ids, "dungeon realm")
             self._require(dungeon.enemies, self.enemies, "dungeon enemies")

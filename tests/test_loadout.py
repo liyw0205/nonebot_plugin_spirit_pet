@@ -14,7 +14,7 @@ from .support import items, pet, sql
 def stats(game):
     service, store = game
     with closing(store.connect()) as conn:
-        ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1800000000)
+        ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1800000000, "read-stats")
         return combatant(ctx).stats
 
 

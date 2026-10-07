@@ -36,6 +36,9 @@ def invite(ctx: Context, target_name: str, mode: str) -> Reply:
         raise GameError("一方已有待处理邀请，请先应战、拒战或等待过期。")
     if mode == "pvp":
         _available(ctx, ctx.user_id, target)
+    else:
+        for user_id in (ctx.user_id, target):
+            ctx.require_idle_pet(ctx.pet(user_id))
     conn.execute(
         "INSERT INTO duels(challenger_id, target_id, mode, expires_at) VALUES (?, ?, ?, ?)",
         (ctx.user_id, target, mode, ctx.now + ctx.config.spirit_pet_invitation_ttl),
@@ -65,6 +68,9 @@ def accept(ctx: Context, arg: str) -> Reply:
     if duel["mode"] == "pvp":
         _available(ctx, first, second)
     pets = [ctx.pet(first), ctx.pet(second)]
+    if duel["mode"] == "spar":
+        for pet in pets:
+            ctx.require_idle_pet(pet)
     battle = fight(
         [combatant(ctx, first)], [combatant(ctx, second)], ctx.rng, ctx.content.elements,
     )

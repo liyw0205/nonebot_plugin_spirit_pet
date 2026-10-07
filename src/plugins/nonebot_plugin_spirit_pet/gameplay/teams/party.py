@@ -83,6 +83,7 @@ def _member_detail(ctx: Context, member, dao_name: str) -> Reply:
 def ready(ctx: Context, arg: str) -> Reply:
     require_member(ctx)
     pet = _active_pet(ctx, ctx.user_id)
+    ctx.require_idle_pet(pet)
     ctx.repo.conn.execute("UPDATE team_members SET ready_pet_id=? WHERE user_id=?", (pet.pet_id, ctx.user_id))
     return Reply("出征准备", (
         f"{pet.name}已准备。队长下一次组队挑战将消耗本宠的精力并共享 PVE 冷却。",

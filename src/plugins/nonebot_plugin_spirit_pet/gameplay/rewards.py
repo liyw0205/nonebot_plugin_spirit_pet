@@ -4,10 +4,14 @@ from ..domain.content import Reward
 
 def grant(ctx: Context, reward: Reward, user_id: str | None = None) -> tuple[str, ...]:
     player = ctx.player(user_id)
-    pet = ctx.pet(user_id)
+    pet = None
+    if reward.exp.maximum > 0:
+        pet = ctx.pet(user_id)
+        ctx.require_idle_pet(pet)
     exp = ctx.rng.randint(reward.exp.minimum, reward.exp.maximum)
     stones = ctx.rng.randint(reward.stones.minimum, reward.stones.maximum)
-    pet.exp += exp
+    if pet is not None:
+        pet.exp += exp
     player.stones += stones
     lines = [f"修为 +{exp}，灵石 +{stones}"]
     for item_id, bounds in reward.items.items():

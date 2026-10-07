@@ -58,7 +58,7 @@ def test_ice_pet_can_use_water_but_water_pet_cannot_use_ice_and_composites_requi
     water = next(pet for pet in service.content.species.values() if "water" in pet.elements and "ice" not in pet.elements)
     realm = service.content.realms[0].id
     with closing(store.connect()) as conn:
-        ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1_800_000_000)
+        ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", 1_800_000_000, "element-test")
         pet = ctx.pet()
         pet.species_id = ice.id
         check_requirements(ctx, pet, Requirement(elements=["water"], min_realm=realm))

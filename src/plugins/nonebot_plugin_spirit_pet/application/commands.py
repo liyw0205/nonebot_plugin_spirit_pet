@@ -3,7 +3,7 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, duels, economy, equipment, forging, identity, information, pets, quests, skills
-from ..gameplay import crafting, lineage
+from ..gameplay import crafting, expeditions, lineage
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -43,6 +43,11 @@ ACTIONS = {
     "challenge": Command(adventure.challenge, True),
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
+    "expedition_catalog": Command(expeditions.catalog, True),
+    "expedition_start": Command(expeditions.start, True),
+    "expedition_status": Command(expeditions.status, True),
+    "expedition_claim": Command(expeditions.claim, True),
+    "expedition_cancel": Command(expeditions.cancel, True),
     "pvp": Command(duels.pvp, True),
     "spar": Command(duels.spar, True),
     "accept": Command(duels.accept),
@@ -83,6 +88,8 @@ COMMANDS = {
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠修炼": "train",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
+    "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
+    "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
     "灵宠论剑": "pvp", "灵宠切磋": "spar", "灵宠应战": "accept", "灵宠拒战": "reject",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",

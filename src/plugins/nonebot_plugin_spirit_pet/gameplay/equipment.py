@@ -84,6 +84,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 def equip(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     item = named(ctx.content.items, arg)
     if item.kind != "equipment":
         raise GameError("该物品不是装备。")
@@ -110,6 +111,7 @@ def equip(ctx: Context, arg: str) -> Reply:
 
 def unequip(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     slot = selected_slot(ctx, pet.pet_id, arg)
     item_id, enhancement = loadout(ctx, pet.pet_id)[slot]
     ctx.repo.conn.execute("DELETE FROM equipment WHERE pet_id=? AND slot=?", (pet.pet_id, slot))

@@ -76,6 +76,7 @@ def use(ctx: Context, arg: str) -> Reply:
     if item.kind != "consumable":
         raise GameError("材料用于进化；破境丹用于突破；装备与秘笈请用灵宠装备、灵宠学习。")
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     effects = item.effects
     if not effects.exp and (not effects.energy or pet.energy == 100) and (
         not effects.affinity or pet.affinity == 100

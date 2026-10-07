@@ -30,7 +30,7 @@ def award(game, uses, user="u1", operation="mastery", fail=False):
 
     def execute(conn):
         repo = Repository(conn)
-        ctx = Context(repo, service.content, service.config, service.rng, user, 1_800_000_000)
+        ctx = Context(repo, service.content, service.config, service.rng, user, 1_800_000_000, operation)
         lines = award_mastery(ctx, user, uses)
         if fail:
             raise RuntimeError("abort battle settlement")

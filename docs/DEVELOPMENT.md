@@ -20,6 +20,8 @@ src/plugins/nonebot_plugin_spirit_pet/
   domain/battle_content.py     元素、天赋、装备、技能及成长阶梯模型
   domain/lineage_content.py    种族血脉分支与四维倍率模型
   domain/crafting_content.py   打造配方与纯函数分解回收公式
+  domain/expedition_content.py 离线委托的静态要求与奖励定义
+  domain/expedition_state.py   出发时抽取的严格运行奖励快照
   domain/state.py              Player、Pet 运行模型
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
@@ -33,6 +35,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/lineage.py          种族分支展示、选择和基础成长倍率
   gameplay/economy.py          签到、背包、商店、消耗品
   gameplay/quests.py           每日任务与领奖
+  gameplay/expeditions.py      离线委托、行程查询、原宠领奖与召回
   gameplay/rewards.py          共用奖励结算
   gameplay/combat.py           属性计算与限回合战斗
   gameplay/talents.py          天赋触发与单场护盾、毒伤效果
@@ -84,7 +87,7 @@ docs/                          安装、接入、玩法和开发文档
 
 不要在玩法函数中 `store.connect()`、`commit()`、`asyncio.sleep()` 或调用外部 API。尤其不要在同一事务中创建第二个 SQLite 写连接，也不要一边改缓存对象，一边对其同一字段执行 SQL 增量更新，避免锁等待或覆盖奖励。
 
-成功结果保留约七天，后续请求清理过期记录。超过保留窗口的古老重投不保证去重；业务拒绝不缓存，玩家修正条件后可重试。消息发送不承诺 exactly-once。
+通用成功结果保留约七天，后续请求清理过期记录。超过保留窗口的古老重投通常不保证去重；离线派遣另外永久保留出发消息键和行程终态，详见下文。业务拒绝不缓存，玩家修正条件后可重试。消息发送不承诺 exactly-once。
 
 ## 数据边界
 
@@ -95,6 +98,7 @@ docs/                          安装、接入、玩法和开发文档
 - `unequipped_equipment`：玩家背包中 +1 及以上的装备，按物品、强化等级计数；+0 仍使用普通 inventory。卸装和重新穿戴不清空强化，不重复计数。
 - `learned_skills`：每只宠物的学习/携带状态、技能等级与当前级剩余熟练度。
 - `quest_progress`：当前任务日的进度及领取状态；刷新按玩家的 `quest_day` 处理。
+- `expeditions`：行程及原宠归属、委托名称、永久出发消息键、开始/完成时间、严格奖励快照、运行/已领/已召回状态与结算时间。
 - `teams/team_members`：队长、成员、已同意出征的宠物编号。
 - `team_requests`：待处理申请/邀请，复合键为队伍与候选人，记录发起人、创建时间及失效时间。不是静态 JSON；解散级联清理，审批完成删除，入队删除该候选人所有请求。
 - `duels`：待处理邀请及失效时间；应战后删除。
@@ -116,7 +120,19 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 7，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 8，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+
+## 离线行程
+
+- `data/expeditions.json` 不放时间或玩家状态。行程时长来自 `Config.spirit_pet_expedition_duration`，开始时写入绝对完成时间；不依赖后台轮询或进程内定时器。
+- 数据库 `running` 状态同时对 user_id 和 pet_id 建部分唯一索引，组合外键保证宠物归属。只有归来/召回提交后释放；到期只是可领奖，不自动把 `running` 改为终态。
+- `Context.operation_id` 由 `Game.execute` 显式传入，出发时永久写入唯一 `source_operation_id`。通用缓存到期后重投只能查询旧行程，不生成新的派遣。归来/召回使用 job_id，不能按“当前行程”隐式修改；不带参数仅查询。
+- 出发时抽取并验证 `RewardSnapshot`，结算时再次严格读取，不重新随机，也不查询任务当前的奖励区间。任务名称从行程读取；快照引用的物品被移除时明确拒绝并回滚，管理员恢复定义后可重试，不静默丢奖励。
+- 三种写操作均使用原 `BEGIN IMMEDIATE`，宠物修为通过 Repository 缓存对象写回，禁止 SQL 增量与缓存覆盖混用。状态、资源、回复缓存同时提交；领取永远给行程原宠，不复用默认面向当前宠的 `rewards.grant`。
+- `Repository.active_expedition` 只检查 `state='running'`，`Context.require_idle_pet` 统一执行占用约束；`Context.pet` 仍供查询和被动精力恢复。`check_action` 拦截耗能玩法，突破/进化/消耗品/配装/技能/切磋双方/准备显式检查。应战和组队出征重新检查，不能只在邀请或准备时检查。
+- 纯账户奖励不读取当前宠；含修为上限的普通奖励在抽取之前要求当前宠闲置，即使本次可能抽到零修为也不能绕过。切宠后可继续其他玩法。
+- 保留终态记录用于重试与审计。时钟回退不能提前领奖，召回不能早于出发；新派遣不能早于上一行程结算。查询按归属过滤，只返回最近一条或指定编号，不展示来源消息键或玩家原始 ID。
+- 独立测试覆盖时间边界、重启、内容/配置变更、原宠归属、无参只读、终态竞争、七天后重投与所有占用入口。真实 WS 与 QQ 事件模型验证完整中文命令链；QQ 实号权限仍需单独验收。
 
 ## 队伍授权
 

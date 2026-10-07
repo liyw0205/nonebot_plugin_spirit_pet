@@ -29,6 +29,11 @@ class Repository:
             self.pets[pet_id] = Pet(**dict(row))
         return self.pets[pet_id]
 
+    def active_expedition(self, pet_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM expeditions WHERE pet_id=? AND state='running'", (pet_id,),
+        ).fetchone()
+
     def player_by_name(self, dao_name: str) -> Player | None:
         row = self.conn.execute("SELECT user_id FROM players WHERE dao_name=? COLLATE NOCASE", (dao_name,)).fetchone()
         return self.player(row["user_id"]) if row else None

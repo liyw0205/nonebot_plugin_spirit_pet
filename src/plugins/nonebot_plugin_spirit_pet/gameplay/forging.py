@@ -5,6 +5,7 @@ from .equipment import loadout, selected_slot
 
 def enhance(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
+    ctx.require_idle_pet(pet)
     slot = selected_slot(ctx, pet.pet_id, arg)
     item_id, level = loadout(ctx, pet.pet_id)[slot]
     current = ctx.content.forge_levels[level]

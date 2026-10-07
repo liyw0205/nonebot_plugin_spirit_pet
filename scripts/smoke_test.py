@@ -1,11 +1,13 @@
 """Run the actual ASGI app and a OneBot V11 client without NapCat or QQ credentials."""
 
+import json
 import os
 import sqlite3
 import sys
 import tempfile
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 import nonebot
 from fastapi.testclient import TestClient
@@ -36,9 +38,11 @@ def main():
         driver.register_adapter(QQAdapter)
         plugins = nonebot.load_from_toml("pyproject.toml")
         assert {plugin.name for plugin in plugins} == {"nonebot_plugin_spirit_pet"}
+        plugin_package = next(iter(plugins)).module.__name__
 
         responses = {}
         before_salvage = None
+        expedition_reward = None
         with TestClient(nonebot.get_asgi()) as client:
             try:
                 with client.websocket_connect("/onebot/v11/ws", headers={"X-Self-ID": "9000"}):
@@ -117,10 +121,28 @@ def main():
                 ]:
                     exchange(user_id, message_id, command, expected)
                     assert "12345" not in responses[message_id] and "67890" not in responses[message_id]
+                exchange(12345, 38, "灵宠委托 采灵药", "山海委托")
+                exchange(12345, 39, "灵宠派遣 采灵药", "灵宠启程")
+                exchange(12345, 39, "灵宠派遣 采灵药", "灵宠启程")
+                exchange(12345, 40, "灵宠修炼", "外出")
+                with closing(sqlite3.connect(database)) as conn:
+                    job_id, finishes_at, snapshot = conn.execute(
+                        "SELECT job_id, finishes_at, reward_snapshot FROM expeditions WHERE user_id='12345'"
+                    ).fetchone()
+                    expedition_reward = json.loads(snapshot)
+                    before_exp = conn.execute("SELECT exp FROM pets WHERE pet_id=1").fetchone()[0]
+                exchange(67890, 41, f"灵宠归来 {job_id}", "没有属于你的")
+                exchange(12345, 42, f"灵宠归来 {job_id}", "尚未完成")
+                with patch(f"{plugin_package}.application.game.time.time", return_value=finishes_at):
+                    exchange(12345, 43, "灵宠归来", "已完成")
+                    exchange(12345, 44, f"灵宠归来 {job_id}", "委托归来")
+                    exchange(12345, 44, f"灵宠归来 {job_id}", "委托归来")
+                    exchange(12345, 45, f"灵宠归来 {job_id}", "不能重复结算")
         with closing(sqlite3.connect(database)) as conn:
             user_id, stones = conn.execute("SELECT user_id, stones FROM players WHERE user_id='12345'").fetchone()
-            assert user_id == "12345" and 100 <= stones <= 140
-            assert before_salvage is not None and stones == before_salvage[0]
+            assert expedition_reward is not None
+            assert user_id == "12345" and 100 <= stones - expedition_reward['stones'] <= 140
+            assert before_salvage is not None and stones == before_salvage[0] + expedition_reward['stones']
             assert conn.execute(
                 "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='forge_ore'"
             ).fetchone()[0] == before_salvage[1] + 1
@@ -128,14 +150,16 @@ def main():
                 "SELECT quantity FROM inventory WHERE user_id='12345' AND item_id='wind_feather'"
             ).fetchone()[0] == 0
             assert conn.execute("SELECT COUNT(*) FROM pets").fetchone()[0] == 3
-            assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 65)
+            assert conn.execute("SELECT layer, energy FROM pets WHERE pet_id=1").fetchone() == (2, 40)
+            assert conn.execute("SELECT exp FROM pets WHERE pet_id=1").fetchone()[0] == before_exp + expedition_reward['exp']
+            assert conn.execute("SELECT state FROM expeditions").fetchall() == [("claimed",)]
             assert conn.execute("SELECT energy FROM pets WHERE user_id='67890'").fetchone()[0] == 100
             assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
             for table in ("teams", "team_members", "team_requests"):
                 assert conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
             skill = conn.execute("SELECT level, proficiency FROM learned_skills WHERE pet_id=1").fetchone()
             assert skill and (skill[0] > 1 or skill[1] > 0)
-        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, team consent, management and redelivery")
+        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, teams, offline journeys and redelivery")
 
 
 if __name__ == "__main__":

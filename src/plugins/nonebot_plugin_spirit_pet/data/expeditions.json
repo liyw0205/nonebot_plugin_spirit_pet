@@ -1,0 +1,38 @@
+[
+  {
+    "id": "herb_gathering",
+    "name": "采灵药",
+    "description": "寻访山野灵圃，采集可制成灵粮的草木精华。",
+    "min_realm": "qiling",
+    "energy": 25,
+    "reward": {
+      "exp": {"minimum": 15, "maximum": 25},
+      "stones": {"minimum": 10, "maximum": 20},
+      "items": {"spirit_food": {"minimum": 1, "maximum": 2}}
+    }
+  },
+  {
+    "id": "ore_survey",
+    "name": "寻锻矿",
+    "description": "踏勘幽谷矿脉，收集用于打造和强化装备的锻灵矿。",
+    "min_realm": "ningqi",
+    "energy": 30,
+    "reward": {
+      "exp": {"minimum": 20, "maximum": 35},
+      "stones": {"minimum": 15, "maximum": 30},
+      "items": {"forge_ore": {"minimum": 1, "maximum": 2}}
+    }
+  },
+  {
+    "id": "essence_search",
+    "name": "探血髓",
+    "description": "探访古兽遗迹，提取用于血脉成长的精华。",
+    "min_realm": "zhuji",
+    "energy": 40,
+    "reward": {
+      "exp": {"minimum": 30, "maximum": 50},
+      "stones": {"minimum": 20, "maximum": 40},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+    }
+  }
+]

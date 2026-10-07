@@ -21,6 +21,7 @@ def train(ctx: Context, arg: str) -> Reply:
 
 def breakthrough(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
+    ctx.require_idle_pet(pet)
     major = pet.layer == 10
     cost = ctx.content.realms[pet.realm].advancement if major else ctx.content.layers[pet.layer].advancement
     if cost is None:
@@ -61,6 +62,7 @@ def breakthrough(ctx: Context, arg: str) -> Reply:
 
 def evolve(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
+    ctx.require_idle_pet(pet)
     cost = ctx.content.bloodlines[pet.bloodline].evolution
     if cost is None:
         raise GameError("已达当前最高血脉。")

@@ -46,6 +46,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 def learn(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     skill = named(ctx.content.skills, arg)
     check_requirements(ctx, pet, skill.requirements)
     current = learned(ctx, pet.pet_id)
@@ -66,6 +67,7 @@ def learn(ctx: Context, arg: str) -> Reply:
 
 def equip(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     skill = named(ctx.content.skills, arg)
     check_requirements(ctx, pet, skill.requirements)
     current = learned(ctx, pet.pet_id)
@@ -84,6 +86,7 @@ def equip(ctx: Context, arg: str) -> Reply:
 
 def unequip(ctx: Context, arg: str) -> Reply:
     pet = ctx.pet()
+    ctx.require_idle_pet(pet)
     skill = named(ctx.content.skills, arg)
     if not learned(ctx, pet.pet_id).get(skill.id):
         raise GameError("当前宠物未携带该技能。")

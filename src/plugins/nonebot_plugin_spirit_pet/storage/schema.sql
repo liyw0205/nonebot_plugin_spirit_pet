@@ -30,6 +30,27 @@ CREATE TABLE pets (
 );
 CREATE INDEX pets_owner ON pets(user_id);
 CREATE INDEX pets_rank ON pets(realm DESC, layer DESC, exp DESC);
+CREATE TABLE expeditions (
+    job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    pet_id INTEGER NOT NULL,
+    task_id TEXT NOT NULL,
+    task_name TEXT NOT NULL,
+    source_operation_id TEXT NOT NULL UNIQUE CHECK(length(source_operation_id)>0),
+    started_at INTEGER NOT NULL,
+    finishes_at INTEGER NOT NULL CHECK(finishes_at>started_at),
+    state TEXT NOT NULL CHECK(state IN ('running', 'claimed', 'cancelled')),
+    reward_snapshot TEXT NOT NULL,
+    settled_at INTEGER,
+    FOREIGN KEY(user_id, pet_id) REFERENCES pets(user_id, pet_id),
+    CHECK((state='running' AND settled_at IS NULL)
+        OR (state='claimed' AND settled_at IS NOT NULL AND settled_at>=finishes_at)
+        OR (state='cancelled' AND settled_at IS NOT NULL
+            AND settled_at>=started_at AND settled_at<finishes_at))
+);
+CREATE UNIQUE INDEX expedition_running_player ON expeditions(user_id) WHERE state='running';
+CREATE UNIQUE INDEX expedition_running_pet ON expeditions(pet_id) WHERE state='running';
+CREATE INDEX expedition_history ON expeditions(user_id, job_id DESC);
 CREATE TABLE equipment (
     pet_id INTEGER NOT NULL REFERENCES pets(pet_id),
     slot TEXT NOT NULL CHECK (slot IN ('weapon', 'armor', 'charm')),

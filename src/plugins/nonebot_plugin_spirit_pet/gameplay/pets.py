@@ -51,13 +51,19 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     pages = max(1, (len(owned) + 4) // 5)
     if page > pages:
         raise GameError(f"共 {pages} 页。")
-    lines = tuple(
-        f"{'*' if pet.pet_id == player.active_pet_id else ''}编号 {pet.pet_id}：{pet.name}"
-        f"（{ctx.content.species[pet.species_id].name}）"
-        f" · {ctx.content.realms[pet.realm].name} {pet.layer}层"
-        for pet in owned[(page - 1) * 5:page * 5]
-    )
-    return Reply(f"灵宠名册 {page}/{pages}", lines, ("我的灵宠", "灵宠召唤"))
+    lines = []
+    for pet in owned[(page - 1) * 5:page * 5]:
+        expedition = ctx.repo.active_expedition(pet.pet_id)
+        activity = ""
+        if expedition is not None:
+            state = "外出中" if ctx.now < expedition["finishes_at"] else "待领取"
+            activity = f" · {state}：{expedition['task_name']}"
+        lines.append(
+            f"{'*' if pet.pet_id == player.active_pet_id else ''}编号 {pet.pet_id}：{pet.name}"
+            f"（{ctx.content.species[pet.species_id].name}）"
+            f" · {ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
+        )
+    return Reply(f"灵宠名册 {page}/{pages}", tuple(lines), ("我的灵宠", "灵宠召唤", "灵宠行程"))
 
 
 def switch(ctx: Context, arg: str) -> Reply:
