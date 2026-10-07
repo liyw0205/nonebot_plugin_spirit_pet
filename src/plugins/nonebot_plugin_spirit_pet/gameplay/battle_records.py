@@ -119,12 +119,17 @@ def record_battle(
     capture: BattleCapture,
     reply: Reply,
     battle_key: str = "",
+    battle_name: str = "",
 ) -> int:
     """Persist an immutable result and return its numeric report ID."""
     if kind not in _KIND_NAMES:
         raise ValueError(f"unknown battle kind: {kind}")
     if type(battle.winner) is not int or battle.winner not in (-1, 0, 1):
         raise ValueError("invalid battle winner side")
+    snapshot = dict(capture.snapshot)
+    snapshot["version"] = 2
+    if battle_name:
+        snapshot["scenario"] = {"id": battle_key, "name": battle_name}
     return ctx.repo.record_battle(
         operation_id=ctx.operation_id,
         initiator_id=ctx.user_id,
@@ -135,7 +140,7 @@ def record_battle(
         rounds=battle.rounds,
         played_at=ctx.now,
         reply=asdict(reply),
-        snapshot=capture.snapshot,
+        snapshot=snapshot,
         battle_log=battle.history or battle.lines,
         participants=list(capture.participants),
     )
@@ -174,6 +179,10 @@ def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:
         f"结果：{_outcome(row, row['side'])} · {row['rounds']} 回合 · "
         f"{datetime.fromtimestamp(row['played_at'], BEIJING).strftime('%Y-%m-%d %H:%M:%S')}（北京时间）",
     ]
+    scenario = snapshot.get("scenario")
+    scenario_name = scenario.get("name") if isinstance(scenario, dict) else None
+    if isinstance(scenario_name, str) and scenario_name:
+        summary.append(f"场景：{scenario_name}")
     for team in snapshot.get("teams", []):
         label = "我方" if team["side"] == row["side"] else "对方"
         summary.extend(f"{label} · {_member_text(member)}" for member in team.get("members", []))
@@ -221,8 +230,11 @@ def reports(ctx: Context, arg: str) -> Reply:
         snapshot = json.loads(row["snapshot"])
         own = snapshot.get("teams", [])[row["side"]].get("members", []) if snapshot.get("teams") else []
         names = "、".join(member.get("pet_name", "未知灵宠") for member in own)
+        scenario = snapshot.get("scenario")
+        scenario_name = scenario.get("name") if isinstance(scenario, dict) else None
+        context = f" · {scenario_name}" if isinstance(scenario_name, str) and scenario_name else ""
         lines.append(
-            f"#{row['battle_id']} {_KIND_NAMES.get(row['kind'], row['kind'])} · {row['title']} · "
+            f"#{row['battle_id']} {_KIND_NAMES.get(row['kind'], row['kind'])}{context} · {row['title']} · "
             f"{_outcome(row, row['side'])} · {row['rounds']}回合 · {names}"
         )
     commands = [f"灵宠战报 查看 {row['battle_id']}" for row in rows]

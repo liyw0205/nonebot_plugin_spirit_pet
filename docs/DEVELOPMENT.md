@@ -53,7 +53,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/mastery.py          熟练度结算、升级与满级处理
   gameplay/loadout.py          将装备与技能组装到战斗单位
   gameplay/adventure.py        奇遇、单人/组队 PVE 结算
-  gameplay/battle_records.py   战前快照、永久战斗记录、参与者授权与分页战报
+  gameplay/battle_records.py   战前快照、场景名称、永久战斗记录、参与者授权与分页战报
   gameplay/arena/              镜像对战、赛季快照、积分、资格、SQL 匹配与领奖
   gameplay/teams/common.py     队伍成员、权限、容量与准备失效的共用事务操作
   gameplay/teams/party.py      建队、成员详情、准备与出征
@@ -136,7 +136,7 @@ docs/                          安装、接入、玩法和开发文档
 
 ## Python 分发包
 
-仓库使用独立 PEP 517/setuptools 配置构建插件 wheel；`src/plugins/` 是包发现根目录，`data/*.json` 与 `storage/schema.sql` 是运行时资源，必须进入 wheel。构建和检查：
+仓库保留独立 PEP 517/setuptools 配置，以便未来需要时验证插件分发；它不是当前用户安装方式。普通用户推荐用 [一键安装脚本](INSTALLATION.md)，它从 GitHub 安装完整机器人项目，不要求 PyPI。若开发者需要检查可选分发产物，可手动构建：
 
 ```bash
 python -m pip install build twine
@@ -145,7 +145,7 @@ python scripts/verify_distribution.py dist/nonebot_plugin_spirit_pet-*.whl
 python -m twine check dist/*
 ```
 
-GitHub Actions 在 Linux 上构建 sdist 与 wheel、检查发行元数据和 wheel 资源，并分别隔离安装直接构建及从 sdist 重建的 wheel，加载 Catalog、初始化 SQLite。该构建配置不代表已经发布到 PyPI；正式发布前仍需冻结版本、核对索引资料并审阅发行说明。
+这些命令只验证可选插件分发的元数据和静态资源，不参与一键安装，也不代表已经发布到 PyPI。当前 CI 只负责跨平台功能测试、安装脚本冒烟和真实 WS 流程。
 
 ## 赛季与镜像
 
@@ -154,7 +154,7 @@ GitHub Actions 在 Linux 上构建 sdist 与 wheel、检查发行元数据和 wh
 - `eligibility` 检查主动方闲置、恢复后精力、冷却、日挑战次数，并检查双方境界、分差和同对额度。`matching` 在 SQL 中按后者筛选镜像，再执行 LIMIT/OFFSET，不无界加载全服玩家。守方精力、冷却、主动挑战次数或外出占用均不影响被挑战。
 - `loadout.combatant(recover_energy=False)` 构建镜像但不触发被动精力恢复，防守方的宠物/玩家资源、冷却、技能熟练度与队伍准备保持不变。切磋双方都用此只读路径，无积分或经济收益；只有主动方须闲置。
 - `pvp_results.operation_id` 永久唯一。读取该键必须先验证挑战者身份；通用缓存清除后直接重放旧 Reply，不重新解析当时道号、不重新参战，也不将旧挑战记入新季。原宠组合外键保证参与者归属。
-- PVP、切磋、单人/组队秘境及逐关挑战应在 `fight` 前调用 `battle_records.capture_snapshot`，结算完成后于同一事务调用 `record_battle`。详情分页只能读取 `snapshot` 与 `battle_log`，不能用当前宠物、道号、技能或装备补算；`battle_participants` 用于严格过滤本人可见记录，离队不撤销既有战报读取权限。
+- PVP、切磋、单人/组队秘境及逐关挑战应在 `fight` 前调用 `battle_records.capture_snapshot`，结算完成后于同一事务调用 `record_battle`。场景名称和战前阵容保存在版本化 `snapshot` 中；详情分页只能读取 `snapshot` 与 `battle_log`，不能用当前静态内容、宠物、道号、技能或装备补算；`battle_participants` 用于严格过滤本人可见记录，离队不撤销既有战报读取权限。
 - 章节首通按 `(user_id, stage_id)` 唯一写入；组队战胜后只给首次通关成员发该关奖励，已经通关的队友可以助战。失败照常扣参战者精力与冷却，但不写进度。
 - `data/achievements.json` 只声明稳定 ID、目标、指标与静态奖励。`gameplay/achievements.py` 通过 SQLite 查询派生进度；`achievement_claims` 的玩家/成就主键和操作键唯一约束共同保证并发、跨缓存过期重投均只领奖一次。记录奖励/回复快照后再发放，必须和发奖处于同一事务。
 - 日总额只统计主动挑战，包含平局；同对日/季额度统计两个方向所有结果。领奖只统计主动非平局及其不同对手，镜像防守不增加有效场次。败方余额不足时转移其余额，不能产生负分或凭空增分。

@@ -63,7 +63,8 @@ def pvp(ctx: Context, arg: str) -> Reply:
          winner, beijing_day(ctx.now), ctx.now, delta, ctx.operation_id,
          json.dumps(asdict(reply), ensure_ascii=False)),
     )
-    record_battle(ctx, kind="pvp", battle_key=season.season_id, battle=battle,
+    record_battle(ctx, kind="pvp", battle_key=season.season_id,
+                  battle_name=f"{season.season_id} 赛季", battle=battle,
                   capture=capture, reply=reply)
     return reply
 

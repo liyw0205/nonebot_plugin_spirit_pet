@@ -215,7 +215,10 @@ def challenge(ctx: Context, arg: str) -> Reply:
             lines.append("本次挑战未通关，关卡进度不变。")
     lines.append(f"每只灵宠精力 -{stage.energy}；气血仅在本场战斗内结算。")
     reply = Reply(title, tuple(lines), ("灵宠关卡", "灵宠战报", "我的灵宠"))
-    record_battle(ctx, kind="pve_stage", battle=battle, capture=capture, reply=reply, battle_key=stage.id)
+    record_battle(
+        ctx, kind="pve_stage", battle=battle, capture=capture, reply=reply,
+        battle_key=stage.id, battle_name=stage.name,
+    )
     return reply
 
 

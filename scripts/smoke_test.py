@@ -196,7 +196,29 @@ def main():
                     assert conn.execute("SELECT stones FROM players WHERE user_id='12345'").fetchone()[0] == stones
                     assert conn.execute("SELECT stones FROM players WHERE user_id='67890'").fetchone()[0] == 100
                     assert conn.execute("SELECT * FROM inventory ORDER BY user_id, item_id").fetchall() == before_duel_items
-        print("PASS: plugin load, WS authentication, collection, skills, PVE, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons and redelivery")
+                with patch(f"{plugin_package}.application.game.time.time", return_value=finishes_at):
+                    exchange(12345, 54, "灵宠关卡", "青木试锋")
+                    exchange(12345, 55, "灵宠收集", "已收集")
+                    exchange(12345, 56, "灵宠成就", "初结灵契")
+                    exchange(12345, 57, "灵宠成就领奖 初结灵契", "成就奖励已领取")
+                    exchange(12345, 57, "灵宠成就领奖 初结灵契", "成就奖励已领取")
+                    exchange(12345, 58, "灵宠挑战关卡 1", "第1关")
+                    with closing(sqlite3.connect(database)) as conn:
+                        stage_battle_id = conn.execute(
+                            "SELECT battle_id FROM battle_records WHERE kind='pve_stage' "
+                            "ORDER BY battle_id DESC LIMIT 1"
+                        ).fetchone()[0]
+                    exchange(12345, 59, f"灵宠战报 查看 {stage_battle_id}", "青木试锋")
+                with closing(sqlite3.connect(database)) as conn:
+                    assert conn.execute(
+                        "SELECT COUNT(*) FROM achievement_claims WHERE user_id='12345'"
+                    ).fetchone()[0] == 1
+                    assert conn.execute(
+                        "SELECT COUNT(*) FROM battle_records WHERE kind='pve_stage'"
+                    ).fetchone()[0] == 1
+                for message_id in range(54, 60):
+                    assert "12345" not in responses[message_id]
+        print("PASS: plugin load, WS authentication, collection, skills, PVE, stages, battle reports, achievements, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons and redelivery")
 
 
 if __name__ == "__main__":

@@ -74,6 +74,16 @@ def test_stage_listing_detail_and_first_clear_are_transactional_and_durable(game
     assert items(game[1]) != before_items
     report = sql(game[1], "SELECT kind, battle_key, reply FROM battle_records WHERE operation_id='stage-first'")[0]
     assert report["kind"] == "pve_stage" and report["battle_key"] == "stage_01"
+    battle_id = sql(game[1], "SELECT battle_id FROM battle_records WHERE operation_id='stage-first'")[0]["battle_id"]
+    game[0].content = replace(
+        game[0].content,
+        stages={**game[0].content.stages, "stage_01": game[0].content.stages["stage_01"].model_copy(
+            update={"name": "已更名关卡"},
+        )},
+    )
+    detail = play("battle_reports", f"查看 {battle_id}")
+    assert "场景：青木试锋" in detail.text()
+    assert "已更名关卡" not in detail.text()
 
     sql(game[1], "DELETE FROM operations WHERE operation_id='stage-first'")
     state = (player(game[1]), pet(game[1]), items(game[1]), sql(game[1], "SELECT * FROM pve_stage_progress"))

@@ -6,25 +6,6 @@ on:
 permissions:
   contents: read
 jobs:
-  package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install build twine
-      - run: python -m build
-      - run: python scripts/verify_distribution.py dist/nonebot_plugin_spirit_pet-*.whl
-      - run: python -m twine check dist/*
-      - run: python -m pip install -r requirements.txt
-      - run: python -m pip install --no-deps --target "$RUNNER_TEMP/wheel-install" dist/nonebot_plugin_spirit_pet-*.whl
-      - run: python scripts/smoke_distribution.py "$RUNNER_TEMP/wheel-install"
-      - run: python -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/sdist-wheel" dist/*.tar.gz
-      - run: python scripts/verify_distribution.py "$RUNNER_TEMP/sdist-wheel"/*.whl
-      - run: python -m pip install --no-deps --target "$RUNNER_TEMP/sdist-install" "$RUNNER_TEMP/sdist-wheel"/*.whl
-      - run: python scripts/smoke_distribution.py "$RUNNER_TEMP/sdist-install"
   test:
     strategy:
       fail-fast: false

@@ -101,6 +101,6 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")
     title = "秘境获胜" if battle.winner == 0 else ("秘境平局" if battle.winner == -1 else "秘境败退")
     reply = Reply(title, tuple(lines), ("灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养"))
-    record_battle(ctx, kind="pve", battle_key=dungeon.id, battle=battle,
+    record_battle(ctx, kind="pve", battle_key=dungeon.id, battle_name=dungeon.name, battle=battle,
                   capture=capture, reply=reply)
     return reply
