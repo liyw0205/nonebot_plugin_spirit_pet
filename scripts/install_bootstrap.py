@@ -169,6 +169,24 @@ def update_project(source, target):
             shutil.copy2(origin, destination)
 
 
+def update_checkout(project, *, runner=subprocess.run):
+    """Fast-forward the current checkout only when it has no local changes."""
+    status = runner(
+        ["git", "-C", str(project), "status", "--porcelain"],
+        check=True, capture_output=True, text=True,
+    )
+    if status.stdout.strip():
+        raise RuntimeError("Git checkout has local changes; commit or save them before update")
+    branch = runner(
+        ["git", "-C", str(project), "branch", "--show-current"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    if not branch:
+        raise RuntimeError("Cannot update a detached Git checkout")
+    print(f"Updating clean Git checkout on branch {branch} with fast-forward only", flush=True)
+    runner(["git", "-C", str(project), "pull", "--ff-only"], check=True)
+
+
 def project_directory(local, requested):
     if requested:
         candidate = requested.expanduser()
@@ -240,7 +258,7 @@ def main(argv=None):
     with tempfile.TemporaryDirectory(prefix="spirit-pet-install-") as temporary:
         # An installed archive has no Git remote of its own. In update mode,
         # fetch a fresh validated archive instead of silently copying itself.
-        if args.action == "update" and target == local and not (local / ".git").is_dir():
+        if args.action == "update" and target == local and not (local / ".git").exists():
             source = download_source(args.branch, Path(temporary))
         elif is_project(local):
             source = local
@@ -249,7 +267,10 @@ def main(argv=None):
         else:
             source = download_source(args.branch, Path(temporary))
         if args.action == "update":
-            update_project(source, target)
+            if source == target and (target / ".git").exists():
+                update_checkout(target)
+            else:
+                update_project(source, target)
         else:
             prepare_project(source, target)
         if not is_project(target):

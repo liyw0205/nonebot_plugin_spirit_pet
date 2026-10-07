@@ -183,6 +183,39 @@ def test_existing_project_and_nonproject_directories_are_not_overwritten(project
     assert (unrelated / "notes.txt").read_text(encoding="utf-8") == "keep"
 
 
+def test_git_update_fast_forwards_only_clean_current_branch(tmp_path):
+    calls = []
+    outputs = iter([
+        SimpleNamespace(stdout=""),
+        SimpleNamespace(stdout="develop\n"),
+        SimpleNamespace(stdout=""),
+    ])
+
+    def runner(command, **kwargs):
+        calls.append(command)
+        assert kwargs["check"]
+        return next(outputs)
+
+    bootstrap.update_checkout(tmp_path, runner=runner)
+    assert calls == [
+        ["git", "-C", str(tmp_path), "status", "--porcelain"],
+        ["git", "-C", str(tmp_path), "branch", "--show-current"],
+        ["git", "-C", str(tmp_path), "pull", "--ff-only"],
+    ]
+
+
+def test_git_update_refuses_local_changes_and_detached_head(tmp_path):
+    def dirty(command, **kwargs):
+        return SimpleNamespace(stdout=" M scripts/install.sh\n")
+
+    with pytest.raises(RuntimeError, match="local changes"):
+        bootstrap.update_checkout(tmp_path, runner=dirty)
+
+    outputs = iter([SimpleNamespace(stdout=""), SimpleNamespace(stdout="\n")])
+    with pytest.raises(RuntimeError, match="detached"):
+        bootstrap.update_checkout(tmp_path, runner=lambda *args, **kwargs: next(outputs))
+
+
 def test_bootstrap_sequence_creates_venv_then_pins_nb_cli_then_runs_setup(project, tmp_path, monkeypatch):
     commands = []
     monkeypatch.setattr(bootstrap, "run", lambda command, **kwargs: commands.append([str(part) for part in command]))

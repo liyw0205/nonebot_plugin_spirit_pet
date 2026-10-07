@@ -84,7 +84,7 @@ SPIRIT_PET_SKIP_SYSTEM=1 bash scripts/install_termux.sh install --venv "$HOME/my
 | `install` / `uninstall` / `reinstall` / `update` / `update-deps` | `-Action ...` | 操作类型；省略时默认为 `install` |
 | `--directory PATH` | `-Directory PATH` | 新安装目录；本地仓库默认为当前源码位置，独立入口默认为 `~/spirit-pet` |
 | `--venv PATH` | `-Venv PATH` | 显式使用已有/新虚拟环境，默认项目下 `.venv` |
-| `--branch main` / `--branch develop` | `-Branch main` / `-Branch develop` | 新源码下载分支；不会自动切换或更新已有目录 |
+| `--branch main` / `--branch develop` | `-Branch main` / `-Branch develop` | 新源码下载或归档安装目录更新时使用的分支；Git checkout 更新当前分支，不切换分支 |
 | `--host 127.0.0.1` | `-ListenHost 127.0.0.1` | 新 `.env` 监听地址 |
 | `--port 8080` | `-Port 8080` | 新 `.env` 监听端口，1-65535 |
 | `--yes` | `-Yes` | 非交互安全默认值，QQ 凭证留待后续填写 |
@@ -94,7 +94,7 @@ SPIRIT_PET_SKIP_SYSTEM=1 bash scripts/install_termux.sh install --venv "$HOME/my
 
 新 `.env` 自动生成随机 `ONEBOT_V11_ACCESS_TOKEN`，不会在安装日志显示凭证。OneBot 客户端的 token 要与该值一致。Linux/Termux 的新 `.env` 权限为 600。默认 `HOST=127.0.0.1`；局域网接入需显式设置 `--host 0.0.0.0`，并按连接教程限制防火墙入站。
 
-重复运行安装器会保留已有 `.env`、`.env.dev`、数据库和源代码，既有配置时新传入的 host/port 不会覆盖文件。不识别的非空目录或损坏的虚拟环境会拒绝覆盖。`reinstall` 只重建虚拟环境，`update` 刷新源码并重装依赖，`update-deps` 只处理依赖；这些操作默认不删除数据库。`uninstall` 才会在确认后停止进程并删除安装目录。
+重复运行安装器会保留已有 `.env`、`.env.dev`、数据库和源代码，既有配置时新传入的 host/port 不会覆盖文件。不识别的非空目录或损坏的虚拟环境会拒绝覆盖。`reinstall` 只重建虚拟环境，`update` 刷新源码并重装依赖，`update-deps` 只处理依赖；这些操作默认不删除数据库。Git checkout 的 `update` 仅在工作区干净时执行当前分支的 `git pull --ff-only`，不会覆盖本地修改或切换分支。`uninstall` 才会在确认后停止进程并删除安装目录。
 
 ## 下载来源
 
