@@ -56,16 +56,16 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
         assert result.returncode == 0, result.stderr
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
-    assert "install|uninstall|reinstall|update|update-deps" in result.stdout
+    assert "[install|uninstall]" in result.stdout
 
 
-def test_bad_branch_is_rejected_before_python_or_network_access():
+def test_removed_branch_option_is_rejected_before_python_or_network_access():
     result = subprocess.run(
-        ["bash", str(ROOT / "scripts/install.sh"), "--branch", "dev"],
+        ["bash", str(ROOT / "scripts/install.sh"), "install", "--branch=dev"],
         capture_output=True, text=True,
     )
-    assert result.returncode == 1
-    assert "Branch must be main or develop" in result.stderr
+    assert result.returncode == 2
+    assert "Unknown option: --branch=dev" in result.stderr
 
 
 def test_install_copies_source_creates_env_and_shell_command_then_preserves_config(source_project, tmp_path):
@@ -86,13 +86,12 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     result = subprocess.run(command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
     assert (destination / ".venv/bin/nb").is_file()
-    assert (destination / ".xiupet-venv").read_text(encoding="utf-8").strip() == str(destination / ".venv")
     config = (destination / ".env").read_text(encoding="utf-8")
     assert "HOST=127.0.0.1" in config and "PORT=8080" in config
     assert len(next(line.split("=", 1)[1] for line in config.splitlines() if line.startswith("ONEBOT_V11_ACCESS_TOKEN="))) == 64
     command_file = bin_dir / "xiupet"
-    assert command_file.is_file() and os.access(command_file, os.X_OK)
-    assert "XIUPET_PROJECT=" in command_file.read_text(encoding="utf-8")
+    assert command_file.is_symlink() and os.readlink(command_file) == str(destination / "scripts/xiupet.sh")
+    assert os.access(command_file, os.X_OK)
     status = subprocess.run([str(command_file), "status"], capture_output=True, text=True, env=env)
     assert status.returncode == 1 and "xiupet is stopped" in status.stdout
 
@@ -160,14 +159,14 @@ def test_uninstall_refuses_unmarked_directory_without_confirmation(source_projec
         capture_output=True, text=True,
     )
     assert result.returncode == 1
-    assert "unmarked source checkout" in result.stderr
+    assert "--yes" in result.stderr
     assert (source_project / "pyproject.toml").is_file()
 
 
 def test_uninstall_removes_marked_install_without_python(source_project, tmp_path):
     if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
-    (source_project / ".xiupet-install").write_text("source-install\n", encoding="ascii")
+    (source_project / ".xiupet-managed").write_text("managed\n", encoding="ascii")
     result = subprocess.run(
         ["bash", str(source_project / "scripts/install.sh"), "uninstall", "--directory", str(source_project), "--yes"],
         capture_output=True, text=True,
@@ -184,7 +183,9 @@ def test_linux_management_command_uses_nb_and_can_start_stop_status(source_proje
     executable = environment / "bin/nb"
     executable.write_text("#!/bin/sh\nsleep 30\n", encoding="utf-8")
     executable.chmod(0o755)
-    (source_project / ".xiupet-venv").write_text(str(environment), encoding="utf-8")
+    venv = source_project / ".venv"
+    (venv / "bin").mkdir(parents=True)
+    shutil.copy2(executable, venv / "bin/nb")
     env = {**os.environ, "XIUPET_PROJECT": str(source_project)}
 
     started = subprocess.run(["bash", str(source_project / "scripts/xiupet.sh"), "start"], capture_output=True, text=True, env=env)
@@ -200,7 +201,7 @@ def test_installer_and_management_command_are_bash_and_use_nb_cli():
     manager = (ROOT / "scripts/xiupet.sh").read_text(encoding="utf-8")
     assert " -c " not in shell_installer
     assert '"$PYTHON" -m venv' in shell_installer
-    assert '"$PIP_IN_VENV" install' in shell_installer
-    assert '"$VENV/bin/nb" run' in shell_installer
+    assert '"$venv/bin/python" -m pip install' in shell_installer
+    assert '"$venv/bin/nb" run' in shell_installer
     assert "python3" not in manager
     assert '"$NB" run' in manager

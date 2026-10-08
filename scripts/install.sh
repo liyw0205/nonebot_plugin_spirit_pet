@@ -105,6 +105,18 @@ install_system_dependencies() {
 
 find_python() {
     local candidate version major minor
+    if [[ -n ${SPIRIT_PET_PYTHON:-} ]]; then
+        candidate=$SPIRIT_PET_PYTHON
+        version=$("$candidate" --version 2>&1) || return 1
+        [[ $version =~ ^Python[[:space:]]+([0-9]+)\.([0-9]+) ]] || return 1
+        major=${BASH_REMATCH[1]}
+        minor=${BASH_REMATCH[2]}
+        if ((major > 3 || (major == 3 && minor >= 10))); then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+        return 1
+    fi
     for candidate in python3.13 python3.12 python3.11 python3.10 python3 python; do
         command -v "$candidate" >/dev/null 2>&1 || continue
         version=$("$candidate" --version 2>&1) || continue
@@ -188,16 +200,18 @@ ensure_env() {
     if [[ ! -f $DIRECTORY/.env ]]; then
         cp "$DIRECTORY/.env.example" "$DIRECTORY/.env"
         local token
-        token=$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')
+        token=$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')
         printf '\nONEBOT_V11_ACCESS_TOKEN=%s\n' "$token" >> "$DIRECTORY/.env"
         chmod 600 "$DIRECTORY/.env"
     fi
 }
 
 register_xiupet() {
-    local bin_dir="$HOME/.local/bin" link="$HOME/.local/bin/xiupet" target="$DIRECTORY/scripts/xiupet.sh"
+    local bin_dir=${SPIRIT_PET_BIN_DIR:-$HOME/.local/bin} link target="$DIRECTORY/scripts/xiupet.sh"
     [[ -f $target ]] || fail "未找到 xiupet 脚本：$target"
     mkdir -p -- "$bin_dir"
+    bin_dir=$(CDPATH= cd -- "$bin_dir" && pwd -P)
+    link="$bin_dir/xiupet"
     if [[ -L $link ]]; then
         local existing
         existing=$(readlink "$link")
@@ -206,6 +220,7 @@ register_xiupet() {
         fail "$link 已存在且不是符号链接，请先自行检查"
     fi
     [[ -L $link ]] || ln -s -- "$target" "$link"
+    printf '%s\n' "$link" > "$DIRECTORY/.xiupet-command"
     case ":${PATH}:" in
         *":$bin_dir:"*) ;;
         *) printf '将 %s 加入 PATH 后即可使用 xiupet。\n' "$bin_dir" ;;
@@ -213,8 +228,14 @@ register_xiupet() {
 }
 
 remove_xiupet() {
-    local link="$HOME/.local/bin/xiupet" target="$DIRECTORY/scripts/xiupet.sh"
+    local bin_dir=${SPIRIT_PET_BIN_DIR:-$HOME/.local/bin} link target="$DIRECTORY/scripts/xiupet.sh"
+    if [[ -f $DIRECTORY/.xiupet-command ]]; then
+        link=$(<"$DIRECTORY/.xiupet-command")
+    else
+        link="$bin_dir/xiupet"
+    fi
     if [[ -L $link && $(readlink "$link") == "$target" ]]; then rm -- "$link"; fi
+    rm -f -- "$DIRECTORY/.xiupet-command"
 }
 
 install_project() {
