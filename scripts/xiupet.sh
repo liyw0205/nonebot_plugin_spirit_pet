@@ -64,10 +64,13 @@ start() {
     rm -f -- "$PID_FILE"
     [[ -x $NB ]] || fail "NoneBot CLI not found: $NB. Run scripts/install.sh install first."
     mkdir -p -- "$RUNTIME"
+    # The child changes to the project before running the equivalent of "$NB" run.
     if command -v setsid >/dev/null 2>&1; then
-        nohup setsid "$NB" run >>"$LOG_FILE" 2>&1 </dev/null &
+        nohup setsid bash -c 'cd -- "$1" && exec "$2" run' xiupet "$PROJECT" "$NB" \
+            >>"$LOG_FILE" 2>&1 </dev/null &
     else
-        nohup "$NB" run >>"$LOG_FILE" 2>&1 </dev/null &
+        nohup bash -c 'cd -- "$1" && exec "$2" run' xiupet "$PROJECT" "$NB" \
+            >>"$LOG_FILE" 2>&1 </dev/null &
     fi
     pid=$!
     printf '%s\n' "$pid" > "$PID_FILE.tmp"
