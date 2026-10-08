@@ -35,10 +35,10 @@
 
 ## 安装与接入
 
-提供 Linux/Termux Bash 一键安装入口。安装脚本从零准备 Python 环境、安装 `nb-cli==1.5.0` 和项目依赖，并使用 `nb run` 启动；安装、卸载与 `xiupet` 管理命令均由 Bash 实现。源码下载会检查多个 HTTPS 来源并保留已有配置和存档。
+提供 Linux/Termux Bash 一键安装入口。脚本可从零安装 Python 运行环境、依赖和 `xiupet` 命令，并通过 NoneBot CLI 的 `nb run` 启动；安装、卸载和进程管理均由 Bash 实现。
 
 - 完整仓库：Linux/Termux `bash scripts/install.sh install`。
-- 管理已安装实例：`xiupet start|stop|restart|status|logs|update|update-deps|uninstall`。卸载会先停止进程并删除安装目录，非交互环境请显式追加 `--yes`。
+- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|uninstall`。独立安装目录卸载时会删除该目录；源码仓库卸载只移除运行环境并保留源码、配置和存档。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
 - [Linux / Termux 安装教程](docs/INSTALLATION.md)

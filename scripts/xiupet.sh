@@ -15,9 +15,6 @@ SCRIPT_PATH=$(resolve_script)
 PROJECT=${XIUPET_PROJECT:-$(dirname -- "$(dirname -- "$SCRIPT_PATH")")}
 PROJECT=$(CDPATH= cd -- "$PROJECT" && pwd -P)
 VENV="$PROJECT/.venv"
-if [[ -f $PROJECT/.xiupet-venv ]]; then
-    VENV=$(<"$PROJECT/.xiupet-venv")
-fi
 BIN="$VENV/bin"
 NB="$BIN/nb"
 RUNTIME="$PROJECT/.xiupet"
@@ -65,7 +62,7 @@ start() {
         return 0
     fi
     rm -f -- "$PID_FILE"
-    [[ -x $NB ]] || fail "NoneBot CLI not found: $NB. Run xiupet update-deps first."
+    [[ -x $NB ]] || fail "NoneBot CLI not found: $NB. Run scripts/install.sh install first."
     mkdir -p -- "$RUNTIME"
     if command -v setsid >/dev/null 2>&1; then
         nohup setsid "$NB" run >>"$LOG_FILE" 2>&1 </dev/null &
@@ -114,13 +111,10 @@ stop() {
 }
 
 run_installer() {
+    local action=$1
     local installer="$PROJECT/scripts/install.sh"
     [[ -f $installer ]] || fail "Installer not found: $installer"
-    local -a venv_args=()
-    if [[ -f $PROJECT/.xiupet-venv ]]; then
-        venv_args=(--venv "$(<"$PROJECT/.xiupet-venv")")
-    fi
-    "$installer" "$@" --directory "$PROJECT" "${venv_args[@]}" --yes --no-start
+    "$installer" "$action" --directory "$PROJECT" --no-start "${@:2}"
 }
 
 ACTION=${1:-status}
@@ -130,6 +124,7 @@ case "$ACTION" in
     stop) stop ;;
     restart) stop; start ;;
     status) status ;;
+    install) stop; run_installer install ;;
     logs)
         lines=80
         if [[ ${1:-} == --lines ]]; then
@@ -138,20 +133,12 @@ case "$ACTION" in
         fi
         if [[ -f $LOG_FILE ]]; then tail -n "$lines" "$LOG_FILE"; else printf 'No log file yet: %s\n' "$LOG_FILE"; fi
         ;;
-    update)
-        stop
-        run_installer update
-        ;;
-    update-deps)
-        stop
-        run_installer update-deps
-        ;;
     uninstall)
         stop
-        "$PROJECT/scripts/install.sh" uninstall --directory "$PROJECT" "$@"
+        run_installer uninstall --yes
         ;;
     --help|-h)
-        printf 'Usage: xiupet [start|stop|restart|status|logs [--lines N]|update|update-deps|uninstall [--yes]]\n'
+        printf 'Usage: xiupet [start|stop|restart|status|logs [--lines N]|install|uninstall]\n'
         ;;
     *) fail "Unknown action: $ACTION" ;;
 esac
