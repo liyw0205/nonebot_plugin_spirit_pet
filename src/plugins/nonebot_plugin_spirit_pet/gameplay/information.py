@@ -16,7 +16,7 @@ def element_line(ctx: Context, species: Species) -> str:
 
 def help_game(ctx: Context, arg: str) -> Reply:
     return Reply("灵宠仙途", (
-        "结契：灵宠领养 青鸾 / 灵宠召唤 1 / 灵宠列表 / 灵宠切换 编号 / 灵宠封存 编号 / 灵宠封存库 / 灵宠复原 编号",
+        "结契：灵宠领养 青鸾 / 灵宠召唤 1 / 灵宠列表 / 灵宠出战 编号 [编号] [编号] / 灵宠切换 编号 / 灵宠封存 编号 / 灵宠封存库 / 灵宠复原 编号",
         "成长：我的灵宠 / 灵宠签到 / 灵宠互动 [编号] / 灵宠喂养 [编号] / 灵宠修炼 [编号] / 灵宠合修 编号 / 灵宠突破 [编号] / 灵宠进化 [编号]",
         "血脉：灵宠血脉 / 灵宠分支 分支名",
         "道具：灵宠背包 / 灵宠商店 / 灵宠购买 灵粮 3 / 灵宠使用 回元丹 1",
@@ -32,7 +32,7 @@ def help_game(ctx: Context, arg: str) -> Reply:
         "管理：灵宠队伍 道号 / 灵宠踢人 道号 / 灵宠转让 道号 / 灵宠退队 / 灵宠解散",
         "出征：灵宠准备 / 灵宠取消准备 / 灵宠组队挑战 上古灵殿",
         "派遣：灵宠委托 / 灵宠派遣 名称 / 灵宠行程 / 灵宠归来 行程号 / 灵宠召回 行程号",
-        "其他：灵宠改名 名字 / 我的道号 / 灵宠道号 新道号 / 灵宠图鉴 / 灵宠排行",
+        "其他：我的道号 / 灵宠道号 新道号 / 灵宠图鉴 / 灵宠排行",
         "收集与战报：灵宠收集 [页] / 灵宠成就 [页] / 灵宠成就领奖 成就名 / 灵宠战报 [页]",
         "共鸣：灵宠共鸣 / 灵宠共鸣 查看 名称 / 灵宠共鸣 激活 名称 / 灵宠共鸣 停用",
     ), ("灵宠领养 青鸾", "我的灵宠", "灵宠秘境", "灵宠任务"))
@@ -40,6 +40,7 @@ def help_game(ctx: Context, arg: str) -> Reply:
 
 def status(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
+    roster = ctx.repo.active_pets(ctx.user_id)
     expedition = ctx.repo.active_expedition(pet.pet_id)
     activity = ()
     commands = ("灵宠突破", "灵宠进化", "灵宠互动", "灵宠喂养", "灵宠修炼", "灵宠行程")
@@ -89,6 +90,7 @@ def status(ctx: Context, arg: str) -> Reply:
     return Reply(pet.name, (
         f"道号：{player.dao_name}",
         *activity,
+        f"出战阵容：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
         f"编号 {pet.pet_id} · 种族：{ctx.content.species[pet.species_id].name}",
         f"类别：{ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
         f"天赋神通：{talent.name} · {talent.description}",

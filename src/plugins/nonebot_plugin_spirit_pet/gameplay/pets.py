@@ -1,5 +1,3 @@
-import re
-
 from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named, quantity
@@ -15,7 +13,7 @@ def adopt(ctx: Context, arg: str) -> Reply:
     species = named(starters, arg) if arg else weighted_choice(ctx.rng, list(starters.values()), [1] * len(starters))
     player = ctx.repo.create_player(ctx.user_id, random_name(ctx), ctx.content.rules.starter_stones)
     pet = ctx.repo.create_pet(ctx.user_id, species.id, species.name, species.initial_affinity, ctx.now)
-    player.active_pet_id = pet.pet_id
+    ctx.repo.set_active_pets(ctx.user_id, [pet.pet_id])
     for item_id, amount in ctx.content.rules.starter_items.items():
         ctx.repo.add_item(ctx.user_id, item_id, amount)
     return Reply("灵契初成", (
@@ -64,8 +62,9 @@ def summon(ctx: Context, arg: str) -> Reply:
 
 
 def pet_list(ctx: Context, arg: str) -> Reply:
-    player = ctx.player()
+    ctx.player()
     owned = ctx.repo.owned_pets(ctx.user_id)
+    active_ids = {pet.pet_id for pet in ctx.repo.active_pets(ctx.user_id)}
     page = quantity(arg or "1", 999)
     pages = max(1, (len(owned) + 4) // 5)
     if page > pages:
@@ -82,7 +81,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
             state = "外出中" if ctx.now < expedition["finishes_at"] else "待领取"
             activity = f" · {state}：{expedition['task_name']}"
         lines.append(
-            f"{'*' if pet.pet_id == player.active_pet_id else ''}编号 {pet.pet_id}：{pet.name}"
+            f"{'*' if pet.pet_id in active_ids else ''}编号 {pet.pet_id}：{pet.name}"
             f"（{ctx.content.species[pet.species_id].name}）"
             f" · {ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
         )
@@ -91,13 +90,14 @@ def pet_list(ctx: Context, arg: str) -> Reply:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
     archive_commands = [
         f"灵宠封存 {pet.pet_id}" for pet in selected
-        if pet.pet_id != player.active_pet_id
+        if pet.pet_id not in active_ids
     ][:2 if co_training_partner is not None else 3]
     commands = (
         [f"灵宠合修 {co_training_partner.pet_id}"] if co_training_partner is not None else []
     )
     commands.extend(archive_commands)
     commands.extend(("我的灵宠", "灵宠封存库"))
+    commands.append("灵宠出战")
     if has_expedition:
         commands.append("灵宠行程")
     if page > 1:
@@ -150,8 +150,8 @@ def archive(ctx: Context, arg: str) -> Reply:
     pet = _owned_pet_by_id(ctx, arg)
     if pet.archived:
         raise GameError(f"{pet.name}已经封存，可在灵宠封存库中复原。")
-    if pet.pet_id == player.active_pet_id:
-        raise GameError("当前出战灵宠不能封存，请先切换到其他灵宠。")
+    if pet.pet_id in {active.pet_id for active in ctx.repo.active_pets(ctx.user_id)}:
+        raise GameError("当前出战灵宠不能封存，请先调整出战阵容。")
     expedition = ctx.repo.active_expedition(pet.pet_id)
     if expedition is not None:
         raise GameError(f"{pet.name}仍有未结行程，不能封存；请先查看灵宠行程。")
@@ -181,6 +181,8 @@ def restore(ctx: Context, arg: str) -> Reply:
 
 
 def switch(ctx: Context, arg: str) -> Reply:
+    if any(separator in arg for separator in (" ", "，", ",")):
+        return lineup(ctx, arg)
     owned = ctx.repo.owned_pets(ctx.user_id)
     matches = [pet for pet in owned if str(pet.pet_id) == arg]
     if not matches:
@@ -196,12 +198,29 @@ def switch(ctx: Context, arg: str) -> Reply:
         raise GameError("未找到灵宠或名字重复，请用灵宠列表中的编号切换。")
     player = ctx.player()
     player.active_pet_id = matches[0].pet_id
+    ctx.repo.set_active_pets(ctx.user_id, [matches[0].pet_id])
     ctx.repo.invalidate_ready(ctx.user_id)
     return Reply("灵宠出战", (f"当前灵宠：{matches[0].name}（编号 {matches[0].pet_id}）。",))
 
 
-def rename(ctx: Context, arg: str) -> Reply:
-    if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9]{1,12}", arg):
-        raise GameError("名字限 1-12 个汉字、英文字母或数字。")
-    ctx.pet().name = arg
-    return Reply("赐名结缘", (f"灵宠从此名为：{arg}。",))
+def lineup(ctx: Context, arg: str) -> Reply:
+    """Set one to three distinct species as the player's battle roster."""
+    ctx.player()
+    if not arg:
+        active = ctx.repo.active_pets(ctx.user_id)
+        return Reply(
+            "灵宠出战阵容",
+            tuple(f"{index}. {pet.name}（编号 {pet.pet_id} · {ctx.content.species[pet.species_id].name}）"
+                  for index, pet in enumerate(active, 1)),
+            (f"灵宠出战 {' '.join(str(pet.pet_id) for pet in active)}", "灵宠列表"),
+        )
+    parts = [part for part in arg.replace("，", " ").replace(",", " ").split() if part]
+    if not 1 <= len(parts) <= 3 or any(not part.isdecimal() for part in parts):
+        raise GameError("格式：灵宠出战 编号 [编号] [编号]，最多三只。")
+    ids = [int(part) for part in parts]
+    ctx.repo.set_active_pets(ctx.user_id, ids)
+    ctx.repo.invalidate_ready(ctx.user_id)
+    active = ctx.repo.active_pets(ctx.user_id)
+    names = "、".join(f"{pet.name}（{pet.pet_id}）" for pet in active)
+    return Reply("灵宠出战阵容", (f"当前出战：{names}。", "同一阵容不能重复宠物种类，最多出战三只。"),
+                 ("灵宠列表", "灵宠出战"))

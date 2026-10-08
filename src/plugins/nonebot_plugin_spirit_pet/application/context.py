@@ -36,6 +36,22 @@ class Context:
         restore_energy(pet, self.now, self.config.spirit_pet_energy_interval)
         return pet
 
+    def active_pets(self, user_id: str | None = None) -> list[Pet]:
+        """Load and refresh every pet in the user's battle roster."""
+        owner = user_id or self.user_id
+        pets = self.repo.active_pets(owner)
+        if not pets:
+            raise GameError("尚未选择出战灵宠。")
+        for pet in pets:
+            if pet.archived:
+                raise GameError(f"{pet.name}已封存，请先复原后再出战。")
+            restore_energy(pet, self.now, self.config.spirit_pet_energy_interval)
+        if len(pets) > 3:
+            raise GameError("出战阵容最多三只灵宠。")
+        if len({pet.species_id for pet in pets}) != len(pets):
+            raise GameError("同一出战阵容不能包含重复宠物种类。")
+        return pets
+
     def require_idle_pet(self, pet: Pet) -> None:
         expedition = self.repo.active_expedition(pet.pet_id)
         if expedition is not None:

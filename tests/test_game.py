@@ -195,16 +195,17 @@ def test_concurrent_adoptions_and_redelivery(game):
     assert len(sql(store, "SELECT * FROM pets")) == 1
 
 
-def test_foreign_pet_switch_and_nickname_validation(game, play):
+def test_foreign_pet_switch_and_nickname_command_removed(game, play):
     play("adopt", "青鸾")
     play("adopt", "玄狐", user="u2")
     with pytest.raises(GameError):
         play("switch", str(pet(game[1], "u2")["pet_id"]))
     with pytest.raises(GameError):
         play("rename", "[bad](url)")
-    play("rename", "小青")
-    assert play("status").title == "小青"
-    assert "小青" in play("rank").text()
+    with pytest.raises(GameError, match="未知指令"):
+        play("rename", "小青")
+    assert play("status").title == "青鸾"
+    assert "青鸾" in play("rank").text()
 
 
 @pytest.mark.parametrize("version", [*range(1, SCHEMA_VERSION), SCHEMA_VERSION + 1, 99])

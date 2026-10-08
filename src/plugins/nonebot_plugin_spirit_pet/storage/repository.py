@@ -54,6 +54,44 @@ class Repository:
         )
         return self.pet(cursor.lastrowid)
 
+    def active_pets(self, user_id: str) -> list[Pet]:
+        """Return the persisted battle roster, with a safe legacy fallback."""
+        player = self.player(user_id)
+        rows = self.conn.execute(
+            "SELECT pet_id FROM active_pet_slots WHERE user_id=? ORDER BY slot", (user_id,),
+        ).fetchall()
+        if rows and player is not None and player.active_pet_id == rows[0]["pet_id"]:
+            return [self.pet(row["pet_id"]) for row in rows]
+        if player is None or player.active_pet_id is None:
+            return []
+        return [self.pet(player.active_pet_id)]
+
+    def set_active_pets(self, user_id: str, pet_ids: list[int]) -> None:
+        if not 1 <= len(pet_ids) <= 3:
+            raise GameError("出战阵容需要 1-3 只灵宠。")
+        if len(set(pet_ids)) != len(pet_ids):
+            raise GameError("同一只灵宠不能重复出战。")
+        placeholders = ",".join("?" for _ in pet_ids)
+        rows = self.conn.execute(
+            f"SELECT pet_id, species_id, archived FROM pets WHERE user_id=? AND pet_id IN ({placeholders})",
+            (user_id, *pet_ids),
+        ).fetchall()
+        by_id = {int(row["pet_id"]): row for row in rows}
+        if len(by_id) != len(pet_ids):
+            raise GameError("只能选择属于你的灵宠出战。")
+        if any(row["archived"] for row in by_id.values()):
+            raise GameError("封存灵宠不能出战，请先复原。")
+        if len({row["species_id"] for row in by_id.values()}) != len(pet_ids):
+            raise GameError("同一出战阵容不能包含重复宠物种类。")
+        self.conn.execute("DELETE FROM active_pet_slots WHERE user_id=?", (user_id,))
+        self.conn.executemany(
+            "INSERT INTO active_pet_slots(user_id, slot, pet_id) VALUES (?, ?, ?)",
+            [(user_id, slot, pet_id) for slot, pet_id in enumerate(pet_ids, 1)],
+        )
+        player = self.player(user_id)
+        if player is not None:
+            player.active_pet_id = pet_ids[0]
+
     def owned_pets(self, user_id: str) -> list[Pet]:
         ids = self.conn.execute(
             "SELECT pet_id FROM pets WHERE user_id=? AND archived=0 ORDER BY pet_id", (user_id,),
@@ -115,7 +153,14 @@ class Repository:
             raise GameError("道具数量不足。")
 
     def invalidate_ready(self, user_id: str) -> None:
-        self.conn.execute("UPDATE team_members SET ready_pet_id=NULL WHERE user_id=?", (user_id,))
+        self.conn.execute(
+            "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE user_id=?", (user_id,),
+        )
+
+    def invalidate_team_ready(self, team_id: int) -> None:
+        self.conn.execute(
+            "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE team_id=?", (team_id,),
+        )
 
     def record_battle(
         self, *, operation_id: str, initiator_id: str, kind: str, battle_key: str, title: str,

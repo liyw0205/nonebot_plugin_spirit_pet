@@ -106,17 +106,21 @@ def capture_snapshot(
     """Capture all user-visible combatant state before combat starts."""
     groups = []
     participants = []
+    participant_keys = set()
     for side, (team, user_ids) in enumerate(zip(teams, user_ids_by_side)):
         members = []
         for index, fighter in enumerate(team):
             user_id = user_ids[index] if index < len(user_ids) else None
             members.append(_fighter_snapshot(ctx, fighter, user_id))
             if user_id is not None:
-                participants.append({
-                    "user_id": user_id,
-                    "side": side,
-                    "permission": "defender" if side == 1 else "participant",
-                })
+                key = (user_id, side)
+                if key not in participant_keys:
+                    participant_keys.add(key)
+                    participants.append({
+                        "user_id": user_id,
+                        "side": side,
+                        "permission": "defender" if side == 1 else "participant",
+                    })
         groups.append({"side": side, "members": members})
     return BattleCapture({"version": 1, "teams": groups}, tuple(participants))
 

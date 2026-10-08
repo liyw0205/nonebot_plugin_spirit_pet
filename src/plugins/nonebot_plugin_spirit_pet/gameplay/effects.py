@@ -95,6 +95,13 @@ def enemy_target(skill: Skill | None, targets: list[Fighter], multiplier: float,
     return candidates[rng.randint(0, len(candidates) - 1)]
 
 
+def heal_target(skill: Skill, unit: Fighter, allies: list[Fighter]) -> Fighter:
+    """Choose the most injured living ally for ally-directed healing."""
+    ally_effect = any(effect.target == "ally" for effect in skill.effects)
+    candidates = [ally for ally in allies if ally.hp > 0] if ally_effect else [unit]
+    return max(candidates, key=lambda target: target.stats.hp - target.hp)
+
+
 def plan(unit: Fighter, skill: Skill, enemy: Fighter, allies: list[Fighter]) -> tuple[tuple[SkillEffect, Fighter], ...]:
     multiplier = unit.skill_multipliers.get(skill.id, 1)
     planned = []

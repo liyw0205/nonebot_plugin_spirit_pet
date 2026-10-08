@@ -47,7 +47,7 @@ def require_room(ctx: Context, team_id: int) -> Row:
 
 
 def invalidate_team(ctx: Context, team_id: int) -> None:
-    ctx.repo.conn.execute("UPDATE team_members SET ready_pet_id=NULL WHERE team_id=?", (team_id,))
+    ctx.repo.invalidate_team_ready(team_id)
 
 
 def clear_candidate_requests(ctx: Context, user_id: str) -> None:

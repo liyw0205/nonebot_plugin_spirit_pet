@@ -66,4 +66,4 @@ cp .env.example .env
 
 本项目没有 `bot.py` 启动入口。
 
-当前存档 schema 为 17。安装器不迁移不兼容的旧开发库；schema 1-16、未来版本和未版本化的非空库会被拒绝，遇到 `Unsupported spirit pet schema version` 时会保留旧文件并停止启动。需要保留旧存档时先备份，再为新版本设置新的 `SPIRIT_PET_DB` 路径。
+当前存档 schema 为 18。安装器不迁移不兼容的旧开发库；schema 1-17、未来版本和未版本化的非空库会被拒绝，遇到 `Unsupported spirit pet schema version` 时会保留旧文件并停止启动。需要保留旧存档时先备份，再为新版本设置新的 `SPIRIT_PET_DB` 路径。

@@ -138,8 +138,10 @@ def _act(unit, allies, targets, rng, definitions, log):
     target = effects.enemy_target(skill, targets, multiplier, rng)
     planned = effects.plan(unit, skill, target, allies) if skill else ()
     if skill and skill.kind in {"heal", "utility"}:
+        healing_target = effects.heal_target(skill, unit, allies) if skill.kind == "heal" else unit
         healing = (
-            min(unit.stats.hp - unit.hp, max(1, int(unit.stats.hp * skill.coefficient * multiplier)))
+            min(healing_target.stats.hp - healing_target.hp,
+                max(1, int(healing_target.stats.hp * skill.coefficient * multiplier)))
             if skill.kind == "heal" else 0
         )
         if healing or planned:
@@ -147,8 +149,10 @@ def _act(unit, allies, targets, rng, definitions, log):
             if any(effect.target == "enemy" for effect in skill.effects) and talents.evades(target, rng):
                 _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的{skill.name}。")
                 return
-            unit.hp += healing
+            healing_target.hp += healing
             detail = f"，恢复 {healing} 气血" if healing else ""
+            if healing and healing_target is not unit:
+                detail = f"，为{healing_target.name}恢复 {healing} 气血"
             _record(log, f"{unit.name}施展{skill.name}{detail}。", *effects.apply(unit, skill, planned))
             return
         skill = None

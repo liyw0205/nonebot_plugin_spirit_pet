@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ..domain.models import GameError, Reply
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 

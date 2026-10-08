@@ -51,10 +51,10 @@ SQLite 备份使用 Online Backup API，可在 bot 运行时生成一致快照�
 
 ```bash
 python scripts/database_admin.py backup PATH/TO/spirit_pet.db PATH/TO/backups/pre-upgrade.db
-python scripts/database_admin.py verify PATH/TO/backups/pre-upgrade.db --schema-version 15
+python scripts/database_admin.py verify PATH/TO/backups/pre-upgrade.db --schema-version 18
 ```
 
-升级前记录当前 `git rev-parse HEAD`，备份 `.env` 与数据库并验证备份。当前开发版本使用 schema 17：全新空库可初始化；schema 1-16、未来版本和未版本化的非空库会被拒绝，原文件保持不变。未发布开发 schema 不自动迁移；若旧库不匹配，先备份并验证，再为新版本配置新的 `SPIRIT_PET_DB` 路径，保留旧库供旧代码使用。
+升级前记录当前 `git rev-parse HEAD`，备份 `.env` 与数据库并验证备份。当前开发版本使用 schema 18：全新空库可初始化；schema 1-17、未来版本和未版本化的非空库会被拒绝，原文件保持不变。未发布开发 schema 不自动迁移；若旧库不匹配，先备份并验证，再为新版本配置新的 `SPIRIT_PET_DB` 路径，保留旧库供旧代码使用。
 
 需要恢复时先停止 bot，恢复命令只写入新的数据库路径，然后验证结果，再将 `SPIRIT_PET_DB` 指向恢复副本：
 

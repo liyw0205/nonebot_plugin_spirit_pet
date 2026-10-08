@@ -32,7 +32,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   content/validation.py        装备、技能、元素与内容可用性验证
   content/lineage_validation.py 种族分支、成本与成长取舍校验
   content/crafting_validation.py 配方完整性、材料来源与资源损耗校验
-  gameplay/pets.py             领养、召唤、名册/封存库、切换、改名
+  gameplay/pets.py             领养、召唤、名册/封存库、切换与三宠出战阵容
   gameplay/companionship.py    每日灵宠互动与亲密提升
   gameplay/hatching.py         灵卵孵化与名册容量检查
   gameplay/identity.py         唯一道号生成、显示、修改
@@ -109,7 +109,8 @@ docs/                          安装、接入、玩法和开发文档
 - `learned_skills`：每只宠物的学习/携带状态、技能等级与当前级剩余熟练度。
 - `quest_progress`：当前任务日的进度及领取状态；刷新按玩家的 `quest_day` 处理。
 - `expeditions`：行程及原宠归属、委托名称、永久出发消息键、开始/完成时间、严格奖励快照、运行/已领/已召回状态与结算时间。
-- `teams/team_members`：队长、成员、已同意出征的宠物编号。
+- `active_pet_slots`：每名玩家 1-3 个有序出战槽位；同一阵容禁止重复宠物种类。
+- `teams/team_members`：队长、成员、已同意出征的宠物编号；队长可带三只，队友各带一只，整队最多五只。
 - `team_requests`：待处理申请/邀请，复合键为队伍与候选人，记录发起人、创建时间及失效时间。不是静态 JSON；解散级联清理，审批完成删除，入队删除该候选人所有请求。
 - `seasons/season_entries`：自然月边界、观测时间高水位、规则快照及实际参赛玩家的独立积分与胜负平。
 - `pvp_results`：挑战双方及原宠、胜者、日期、分差、结算时间、永久唯一消息键和当时的 Reply；用于配额、领奖统计和重投，不是逐回合完整战报。
@@ -134,7 +135,7 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 17，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 18，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
 升级前可用 `scripts/database_admin.py` 通过 SQLite Online Backup API 生成一致快照，并检查完整性与外键。备份和恢复都只能写入不存在的目标路径；恢复不会修改当前数据库或迁移 schema。具体操作和版本配对规则见 [配置与升级回滚](CONFIGURATION.md#升级与回滚)。
 

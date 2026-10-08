@@ -4,7 +4,7 @@ from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .combat import enemy_fighter, fight
 from .battle_records import capture_snapshot, record_battle
-from .loadout import combatant
+from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
@@ -167,27 +167,39 @@ def challenge(ctx: Context, arg: str) -> Reply:
     return run_dungeon(ctx, dungeon, [ctx.user_id])
 
 
-def run_dungeon(ctx: Context, dungeon, user_ids: list[str]) -> Reply:
-    players = [ctx.player(user_id) for user_id in user_ids]
-    pets = [ctx.pet(user_id) for user_id in user_ids]
+def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | None = None) -> Reply:
+    selected = team_pets(ctx, user_ids, leader_id) if len(user_ids) > 1 else [
+        (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])
+    ]
     minimum = next(i for i, realm in enumerate(ctx.content.realms) if realm.id == dungeon.min_realm)
-    for player, pet in zip(players, pets):
+    first_checked = set()
+    for user_id, pet in selected:
+        player = ctx.player(user_id)
         if pet.realm < minimum:
             raise GameError(f"{pet.name}境界不足，{dungeon.name}需要{ctx.content.realms[minimum].name}。")
-        ctx.check_action(player, pet, "pve", dungeon.energy, ctx.config.spirit_pet_pve_cooldown)
-    allies = [combatant(ctx, user_id) for user_id in user_ids]
+        if user_id not in first_checked:
+            ctx.check_action(player, pet, "pve", dungeon.energy, ctx.config.spirit_pet_pve_cooldown)
+            first_checked.add(user_id)
+        else:
+            ctx.require_idle_pet(pet)
+            if pet.energy < dungeon.energy:
+                raise GameError(f"{pet.name}精力不足，需要 {dungeon.energy} 点。")
+    allies = [combatant(ctx, user_id, recover_energy=False, pet_id=pet.pet_id) for user_id, pet in selected]
     enemies = [enemy_fighter(ctx.content.enemies[key], ctx.content.skills) for key in dungeon.enemies]
-    capture = capture_snapshot(ctx, (allies, enemies), (list(user_ids), []))
+    capture = capture_snapshot(ctx, (allies, enemies), ([user_id for user_id, _ in selected], []))
     battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
     lines = [f"{dungeon.name} · {battle.rounds} 回合", *battle.lines]
-    for player, pet in zip(players, pets):
+    by_user = {user_id: ctx.player(user_id) for user_id in user_ids}
+    for user_id, pet in selected:
+        player = by_user[user_id]
         pet.energy -= dungeon.energy
         player.last_pve = ctx.now
-        ctx.repo.invalidate_ready(player.user_id)
-        lines.extend(award_mastery(ctx, player.user_id, battle.skill_uses[0].get(pet.pet_id, {})))
+        lines.extend(award_mastery(ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {})))
         if battle.winner == 0:
-            advance(ctx, "pve", player.user_id)
-            lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, player.user_id)))
+            advance(ctx, "pve", user_id)
+            lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+    for user_id in user_ids:
+        ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")
     title = "秘境获胜" if battle.winner == 0 else ("秘境平局" if battle.winner == -1 else "秘境败退")
     reply = Reply(title, tuple(lines), ("灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养"))

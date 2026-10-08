@@ -45,6 +45,15 @@ CREATE TABLE pets (
 );
 CREATE INDEX pets_owner ON pets(user_id, archived, pet_id);
 CREATE INDEX pets_rank ON pets(archived, realm DESC, layer DESC, exp DESC);
+CREATE TABLE active_pet_slots (
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    slot INTEGER NOT NULL CHECK(slot BETWEEN 1 AND 3),
+    pet_id INTEGER NOT NULL,
+    PRIMARY KEY(user_id, slot),
+    UNIQUE(user_id, pet_id),
+    FOREIGN KEY(user_id, pet_id) REFERENCES pets(user_id, pet_id) ON DELETE CASCADE
+);
+CREATE INDEX active_pet_slots_pet ON active_pet_slots(pet_id);
 CREATE TABLE expeditions (
     job_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL REFERENCES players(user_id),
@@ -108,7 +117,8 @@ CREATE TABLE teams (
 CREATE TABLE team_members (
     user_id TEXT PRIMARY KEY REFERENCES players(user_id),
     team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
-    ready_pet_id INTEGER REFERENCES pets(pet_id)
+    ready_pet_id INTEGER REFERENCES pets(pet_id),
+    ready_pet_ids TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX team_roster ON team_members(team_id);
 CREATE TABLE team_requests (
