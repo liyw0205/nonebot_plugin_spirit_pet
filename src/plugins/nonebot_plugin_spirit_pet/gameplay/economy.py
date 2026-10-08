@@ -4,6 +4,7 @@ from ..utils.arguments import item_amount, named
 from ..utils.energy import add_energy
 from ..utils.pagination import paginate
 from ..utils.time import beijing_day
+from .pet_targets import selected_pet
 from .quests import advance
 from .rewards import grant
 
@@ -14,6 +15,7 @@ def sign(ctx: Context, arg: str) -> Reply:
     if player.sign_day >= today:
         raise GameError("今日已领取仙缘，明日再来。（每日北京时间 00:00 刷新）")
     player.sign_day = today
+    advance(ctx, "sign")
     return Reply("今日仙缘", grant(ctx, ctx.content.rules.daily_reward))
 
 
@@ -76,6 +78,10 @@ def use(ctx: Context, arg: str) -> Reply:
     if item.kind != "consumable":
         raise GameError("材料用于进化；破境丹用于突破；装备与秘笈请用灵宠装备、灵宠学习。")
     pet = ctx.pet()
+    return _use_consumable(ctx, item, amount, pet)
+
+
+def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
     ctx.require_idle_pet(pet)
     effects = item.effects
     if not effects.exp and (not effects.energy or pet.energy == 100) and (
@@ -90,11 +96,13 @@ def use(ctx: Context, arg: str) -> Reply:
     pet.affinity += affinity
     if item.id == "spirit_food":
         advance(ctx, "feed")
-    ctx.repo.invalidate_ready(ctx.user_id)
+    if pet.pet_id == ctx.player().active_pet_id:
+        ctx.repo.invalidate_ready(ctx.user_id)
     return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
         f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
     ))
 
 
 def feed(ctx: Context, arg: str) -> Reply:
-    return use(ctx, "spirit_food")
+    pet = selected_pet(ctx, arg, "喂养")
+    return _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet)

@@ -48,7 +48,7 @@ def snapshot(game):
 
 
 BLOCKED_ACTIONS = (
-    ("train", ""), ("explore", ""), ("challenge", "青岚林"),
+    ("train", ""), ("explore", "灵泉修行"), ("challenge", "青岚林"),
     ("breakthrough", ""), ("evolve", ""), ("lineage_choose", "凌风鸾脉"),
     ("feed", ""), ("use", "回元丹"), ("use", "蕴灵丹"),
     ("equipment", "灵心铃"), ("unequip", "灵器"), ("enhance", "灵器"),

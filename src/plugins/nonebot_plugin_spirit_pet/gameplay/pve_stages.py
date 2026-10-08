@@ -15,7 +15,7 @@ from ..domain.stage_content import Stage
 from ..gameplay.battle_records import capture_snapshot, record_battle
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
-from .combat import Fighter, fight
+from .combat import Fighter, enemy_fighter, fight
 from .loadout import combatant
 from .mastery import award_mastery
 from .quests import advance
@@ -63,10 +63,17 @@ def catalog(ctx: Context, arg: str) -> Reply:
         mode = "组队" if stage.team else "单人"
         reward = stage.reward
         enemy_names = "、".join(ctx.content.enemies[key].name for key in stage.enemies)
+        enemy_techniques = tuple(
+            f"{ctx.content.enemies[key].name}招式："
+            f"{ctx.content.skills[ctx.content.enemies[key].signature_skill].name}"
+            f"（每 {ctx.content.enemies[key].skill_every} 次行动施展）"
+            for key in stage.enemies if ctx.content.enemies[key].signature_skill
+        )
         return Reply(f"关卡 {stage.order} · {stage.name}", (
             stage.description,
             f"进度：{progress}",
             f"{mode} · {realm}起 · 精力 {stage.energy} · 敌手：{enemy_names}",
+            *enemy_techniques,
             f"首通奖励：修为 {reward.exp.minimum}-{reward.exp.maximum} · "
             f"灵石 {reward.stones.minimum}-{reward.stones.maximum}",
             *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
@@ -143,15 +150,7 @@ def _participants(ctx: Context, stage: Stage) -> list[str]:
 
 
 def _enemy_fighters(ctx: Context, stage: Stage) -> list[Fighter]:
-    return [
-        Fighter.create(
-            ctx.content.enemies[key].name,
-            ctx.content.enemies[key].stats,
-            tuple(ctx.content.enemies[key].elements),
-            primary_element=ctx.content.enemies[key].primary_element,
-        )
-        for key in stage.enemies
-    ]
+    return [enemy_fighter(ctx.content.enemies[key], ctx.content.skills) for key in stage.enemies]
 
 
 def _settle_cost(ctx: Context, user_ids: list[str], stage: Stage) -> None:

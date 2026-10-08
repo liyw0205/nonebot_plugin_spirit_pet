@@ -72,6 +72,13 @@ def validate_battle_content(content):
             raise ValueError("duplicate enemy elements")
         if enemy.primary_element not in enemy.elements:
             raise ValueError("enemy primary element must belong to its elements")
+        if enemy.signature_skill is not None:
+            require([enemy.signature_skill], content.skills, "enemy signature skill")
+            skill = content.skills[enemy.signature_skill]
+            if skill.requirements.categories or not set(skill.requirements.elements).issubset(
+                expand_elements(enemy.elements, content.elements)
+            ):
+                raise ValueError("enemy signature skill is incompatible with enemy elements")
     validate_pet_acquisition(content)
 
 

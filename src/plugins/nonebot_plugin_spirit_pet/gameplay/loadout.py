@@ -3,7 +3,7 @@ from ..domain.content import Stats
 from ..domain.models import GameError
 from .combat import Fighter, pet_stats
 from .compatibility import check_requirements
-from .equipment import loadout
+from .equipment import active_sets, loadout
 from .mastery import progress
 from .skills import learned
 
@@ -34,6 +34,11 @@ def combatant(ctx: Context, user_id: str | None = None, *, recover_energy: bool 
         multiplier = ctx.content.forge_levels[enhancement].bonus_multiplier
         for key, bonus in gear.bonuses.model_dump().items():
             stats[key] += int(bonus * multiplier)
+    equipment_set_names = []
+    for equipment_set in active_sets(ctx, pet.pet_id):
+        equipment_set_names.append(equipment_set.name)
+        for key, bonus in equipment_set.bonuses.model_dump().items():
+            stats[key] += bonus
     selected = []
     skill_multipliers = {}
     progression = progress(ctx, pet.pet_id)
@@ -48,5 +53,6 @@ def combatant(ctx: Context, user_id: str | None = None, *, recover_energy: bool 
         name, Stats(**stats), tuple(species.elements), tuple(selected),
         primary_element=species.primary_element, pet_id=pet.pet_id,
         talent=ctx.content.talents[species.talent], skill_multipliers=skill_multipliers,
-        resonance_name=resonance_name,
+        resonance_name=resonance_name, affinity=pet.affinity,
+        equipment_sets=tuple(equipment_set_names),
     )

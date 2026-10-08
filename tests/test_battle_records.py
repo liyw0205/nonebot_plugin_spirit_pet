@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -11,19 +12,22 @@ from .test_arena_matching import NOW, register
 def test_report_is_immutable_after_rename_and_loadout_changes(game, play):
     register(game, play)
     attacker_pet_id = pet(game[1], "private-0")["pet_id"]
+    sql(game[1], "UPDATE pets SET affinity=100 WHERE pet_id=?", (attacker_pet_id,))
     sql(game[1], "INSERT INTO equipment(pet_id,slot,item_id) VALUES (?,'weapon','wind_feather')", (attacker_pet_id,))
     sql(game[1], "INSERT INTO learned_skills(pet_id,skill_id,equipped) VALUES (?,'wind_slash',1)",
         (attacker_pet_id,))
     result = play("pvp", "道友01", user="private-0", now=NOW, op="report-once")
     row = sql(game[1], "SELECT battle_id,snapshot,battle_log FROM battle_records")[0]
     snapshot = json.loads(row["snapshot"])
-    assert snapshot["version"] == 2
+    assert snapshot["version"] == 3
     assert snapshot["scenario"] == {"id": "2028-01", "name": "2028-01 赛季"}
     assert snapshot["teams"][0]["members"][0]["dao_name"] == "道友00"
     assert snapshot["teams"][1]["members"][0]["dao_name"] == "道友01"
     assert snapshot["teams"][0]["members"][0]["realm_name"]
     assert snapshot["teams"][0]["members"][0]["layer"] == 1
     assert snapshot["teams"][0]["members"][0]["bloodline_name"]
+    assert snapshot["teams"][0]["members"][0]["affinity"] == 100
+    assert snapshot["teams"][0]["members"][0]["bond_protection"] is True
     assert snapshot["teams"][0]["members"][0]["skills"][0]["name"]
     assert snapshot["teams"][0]["members"][0]["equipment"][0]["enhancement"] == 0
     history = play("battle_reports", user="private-0", now=NOW + 1)
@@ -39,8 +43,29 @@ def test_report_is_immutable_after_rename_and_loadout_changes(game, play):
     assert "全新宠名" not in detail.text()
     assert "风刃术" in detail.text()
     assert "青岚翎" in detail.text()
+    assert "心契护佑" in detail.text()
     assert result.title == "论剑结算"
     assert json.loads(row["battle_log"])
+
+
+def test_pve_report_snapshots_enemy_signature_skill(game, play):
+    register(game, play)
+    service = game[0]
+    enemies = dict(service.content.enemies)
+    enemies["wood_guard"] = enemies["wood_guard"].model_copy(update={
+        "signature_skill": "earth_crush", "skill_every": 2,
+    })
+    service.content = replace(service.content, enemies=enemies)
+
+    play("challenge", "青岚林", user="private-0", now=NOW, op="enemy-skill-report")
+    battle_id = sql(game[1], "SELECT battle_id FROM battle_records WHERE operation_id='enemy-skill-report'")[0]["battle_id"]
+    snapshot = json.loads(sql(game[1], "SELECT snapshot FROM battle_records WHERE battle_id=?", (battle_id,))[0]["snapshot"])
+    enemy = snapshot["teams"][1]["members"][0]
+    assert enemy["skills"] == [{
+        "id": "earth_crush", "name": "碎岩术", "targeting": "single", "interval": 2,
+    }]
+    detail = play("battle_reports", f"查看 {battle_id}", user="private-0", now=NOW)
+    assert "碎岩术（每 2 次行动）" in detail.text()
 
 
 def test_report_detail_requires_participation_and_survives_team_leave(game, play):

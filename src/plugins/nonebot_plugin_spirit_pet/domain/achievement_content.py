@@ -5,9 +5,10 @@ from pydantic import Field, model_validator
 from .content import Definition, Identifier, Name, NonNegative, Positive
 
 AchievementMetric = Literal[
-    "species_collected", "pets_owned", "max_realm", "max_layer", "max_bloodline",
-    "stage_clears", "pvp_wins", "pve_wins", "lineage_branches",
-    "skills_learned", "max_skill_level", "skill_level_sum",
+    "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
+    "stage_clears", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
+    "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
+    "best_bond_streak", "adventures_discovered",
 ]
 
 

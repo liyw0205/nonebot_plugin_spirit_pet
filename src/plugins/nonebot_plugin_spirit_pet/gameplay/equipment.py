@@ -21,6 +21,17 @@ def loadout(ctx: Context, pet_id: int) -> dict[str, tuple[str, int]]:
     }
 
 
+def active_sets(ctx: Context, pet_id: int):
+    equipped_ids = {
+        ctx.content.items[item_id].equipment_id
+        for item_id, _ in loadout(ctx, pet_id).values()
+    }
+    return tuple(
+        equipment_set for equipment_set in ctx.content.equipment_sets.values()
+        if set(equipment_set.items).issubset(equipped_ids)
+    )
+
+
 def selected_slot(ctx: Context, pet_id: int, arg: str) -> str:
     items = equipped(ctx, pet_id)
     slot = next((key for key, label in SLOTS.items() if arg in {key, label}), None)
@@ -57,7 +68,19 @@ def view(ctx: Context, arg: str) -> Reply:
         costs.extend(f"{ctx.content.items[key].name} {amount}" for key, amount in forge.upgrade_items.items())
         lines.append(f"强化至 +{level + 1}：{'、'.join(costs)}。")
         commands.append(f"灵宠强化 {label}")
-    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠装备图鉴", "灵宠商店"))
+    equipped_ids = {
+        ctx.content.items[item_id].equipment_id for item_id, _ in items.values()
+    }
+    for equipment_set in ctx.content.equipment_sets.values():
+        count = sum(equipment_id in equipped_ids for equipment_id in equipment_set.items)
+        if count:
+            state = "已激活" if count == len(equipment_set.items) else "未激活"
+            lines.append(f"套装：{equipment_set.name} {count}/{len(equipment_set.items)} · {state}")
+            if count == len(equipment_set.items):
+                lines.append(
+                    "套装加成：" + _bonus_text(equipment_set.bonuses.model_dump()) + "。"
+                )
+    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠套装", "灵宠装备图鉴", "灵宠商店"))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
@@ -80,6 +103,27 @@ def catalog(ctx: Context, arg: str) -> Reply:
         f" 防御 +{gear.bonuses.defense} 速度 +{gear.bonuses.speed}"
         for gear in page.entries
     ), (*(f"灵宠装备图鉴 {gear.name}" for gear in page.entries), *page.navigation, "灵宠装备"))
+
+
+def sets(ctx: Context, arg: str) -> Reply:
+    if arg and not arg.isdecimal():
+        equipment_set = named(ctx.content.equipment_sets, arg)
+        pieces = "、".join(ctx.content.equipment[item_id].name for item_id in equipment_set.items)
+        return Reply(f"装备套装 · {equipment_set.name}", (
+            equipment_set.description,
+            f"套件：{pieces}（需同时装备 {len(equipment_set.items)} 件）。",
+            f"套装加成：{_bonus_text(equipment_set.bonuses.model_dump())}。",
+        ), ("灵宠装备", "灵宠套装"))
+    page = paginate(ctx.content.equipment_sets.values(), arg, "装备套装", "灵宠套装")
+    return Reply(f"装备套装 {page.number}/{page.total}", tuple(
+        f"{equipment_set.name} · {len(equipment_set.items)}件 · {_bonus_text(equipment_set.bonuses.model_dump())}"
+        for equipment_set in page.entries
+    ), (*(f"灵宠套装 {equipment_set.name}" for equipment_set in page.entries), *page.navigation, "灵宠装备"))
+
+
+def _bonus_text(bonuses: dict[str, int]) -> str:
+    labels = {"hp": "气血", "attack": "攻击", "defense": "防御", "speed": "速度"}
+    return " ".join(f"{labels[key]} +{value}" for key, value in bonuses.items() if value)
 
 
 def equip(ctx: Context, arg: str) -> Reply:

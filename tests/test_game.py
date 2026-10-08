@@ -39,10 +39,54 @@ def test_sign_replay_daily_boundary_and_clock_rollback(game, play):
     first = play("sign", now=midnight - 1, op="same")
     assert play("sign", now=midnight - 1, op="same") == first
     assert player(game[1])["stones"] == 300
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='sign_once'") == [
+        {"progress": 1},
+    ]
+    play("claim", "晨光初至", now=midnight - 1)
+    assert player(game[1])["stones"] == 330
     play("sign", now=midnight)
-    assert player(game[1])["stones"] == 500
+    assert player(game[1])["stones"] == 530
+    assert sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id='sign_once'") == [
+        {"progress": 1, "claimed": 0},
+    ]
     with pytest.raises(GameError, match="今日已领取"):
         play("sign", now=midnight - 1)
+    assert sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id='sign_once'") == [
+        {"progress": 1, "claimed": 0},
+    ]
+
+
+def test_evolution_daily_quest_counts_only_success_and_claims_once(game, play, monkeypatch):
+    play("adopt", now=1_800_000_000)
+    sql(game[1], "UPDATE players SET stones=2000 WHERE user_id='u1'")
+    sql(game[1], "UPDATE pets SET exp=1000 WHERE user_id='u1'")
+    sql(game[1], "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('u1','bloodline_essence',9)")
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 1.0)
+    failed = play("evolve", now=1_800_000_000, op="evolve-failed")
+    assert failed.title == "进化未成"
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='evolve_once'")
+
+    sql(game[1], "UPDATE players SET stones=2000 WHERE user_id='u1'")
+    sql(game[1], "UPDATE pets SET exp=1000 WHERE user_id='u1'")
+    sql(game[1], "UPDATE inventory SET quantity=9 WHERE user_id='u1' AND item_id='bloodline_essence'")
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.0)
+    success = play("evolve", now=1_800_000_001, op="evolve-success")
+    assert success.title == "血脉觉醒"
+    assert play("evolve", now=1_800_000_001, op="evolve-success") == success
+    assert sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id='evolve_once'") == [
+        {"progress": 1, "claimed": 0},
+    ]
+    assert "血脉淬炼：1/1（可领取）" in play("quests", now=1_800_000_002).text()
+
+    reward = play("claim", "血脉淬炼", now=1_800_000_002)
+    assert reward.title == "任务领奖"
+    assert items(game[1])["bloodline_essence"] == 7
+    with pytest.raises(GameError, match="今日已领取"):
+        play("claim", "血脉淬炼", now=1_800_000_003)
+    assert sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id='evolve_once'") == [
+        {"progress": 1, "claimed": 1},
+    ]
 
 
 def test_cooldown_error_rolls_back_restoration(game, play):
@@ -92,6 +136,17 @@ def test_pet_cap_and_ambiguous_names(game, play):
     game[0].config.spirit_pet_max_pets = 2
     with pytest.raises(GameError, match="上限"):
         play("summon")
+
+
+def test_active_roster_cap_excludes_archived_pets(game, play):
+    play("adopt", "青鸾")
+    sql(game[1], "UPDATE players SET stones=1000 WHERE user_id='u1'")
+    game[0].config.spirit_pet_max_pets = 2
+    play("summon")
+    archived_id = sql(game[1], "SELECT MAX(pet_id) AS pet_id FROM pets")[0]["pet_id"]
+    play("pet_archive", str(archived_id))
+    assert play("summon").title == "山海召唤"
+    assert len(sql(game[1], "SELECT * FROM pets WHERE archived=0")) == 2
 
 
 def test_inventory_consumables_and_materials(game, play):

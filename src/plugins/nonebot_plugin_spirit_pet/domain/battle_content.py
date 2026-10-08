@@ -71,8 +71,16 @@ class Equipment(Definition):
     bonuses: Bonuses
 
 
+class EquipmentSet(Definition):
+    id: Identifier
+    name: Name
+    description: str
+    items: list[Identifier] = Field(min_length=2, max_length=3)
+    bonuses: Bonuses
+
+
 class SkillEffect(Definition):
-    kind: Literal["stun", "weaken", "ward", "empower", "cleanse", "dispel"]
+    kind: Literal["stun", "weaken", "ward", "empower", "cleanse", "dispel", "taunt"]
     target: Literal["self", "ally", "enemy"]
     power: Annotated[float, Field(ge=0, le=0.8)] = 0
     duration: Annotated[int, Field(ge=0, le=3)] = 0
@@ -85,6 +93,9 @@ class SkillEffect(Definition):
         if self.kind == "stun":
             if self.power or self.duration != 1:
                 raise ValueError("stun must skip exactly one action without a power value")
+        elif self.kind == "taunt":
+            if self.power or self.duration <= 0:
+                raise ValueError("taunt requires a positive action duration without a power value")
         elif self.kind in {"cleanse", "dispel"}:
             if self.power or self.duration:
                 raise ValueError("instant removal effects cannot have power or duration")
@@ -100,12 +111,15 @@ class Skill(Definition):
     element: Identifier | None
     requirements: Requirement
     kind: Literal["damage", "heal", "utility"]
+    targeting: Literal["single", "all"] = "single"
     coefficient: Annotated[float, Field(ge=0, le=3)]
     book_item: Identifier
     effects: list[SkillEffect] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
     def check_skill(self):
+        if self.targeting == "all" and (self.kind != "damage" or self.effects):
+            raise ValueError("all-targeting skills must be effect-free damage skills")
         if self.kind == "utility":
             if self.coefficient or not self.effects:
                 raise ValueError("utility skills require effects and a zero coefficient")
@@ -117,7 +131,9 @@ class Skill(Definition):
         hostile = {effect.target == "enemy" for effect in self.effects}
         if len(hostile) > 1:
             raise ValueError("one skill cannot mix beneficial and hostile effects")
-        if self.kind == "damage" and False in hostile:
+        if self.kind == "damage" and False in hostile and not all(
+            effect.kind == "taunt" and effect.target == "self" for effect in self.effects
+        ):
             raise ValueError("damage skills may only carry hostile effects")
         if self.kind == "heal" and True in hostile:
             raise ValueError("healing skills may only carry beneficial effects")

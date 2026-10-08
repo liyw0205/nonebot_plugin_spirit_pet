@@ -3,6 +3,8 @@
     "id": "standard",
     "name": "山海灵契",
     "stones": 100,
+    "guaranteed_batch_size": 10,
+    "guaranteed_species": ["xuanwu", "sanlinglu", "bingcan", "leize", "leitingdiao"],
     "entries": [
       {
         "species": "qingluan",

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from nonebot_plugin_spirit_pet.content.catalog import Catalog
 from nonebot_plugin_spirit_pet.gameplay import talents
-from nonebot_plugin_spirit_pet.gameplay.combat import Fighter
+from nonebot_plugin_spirit_pet.gameplay.combat import enemy_fighter
 
 from .scenarios import build_fighters
 
@@ -44,14 +44,17 @@ def special_scenarios(content: Catalog) -> list[SpecialScenario]:
         "pure_breath": (("qingluan", "xuanhu"), ("duman", "baize"), True),
         "spirit_dispel": (("qingluan",), ("baize",), False),
         "battle_chant": (("qingluan", "xuanhu"), ("baize", "jiaolong"), False),
+        "mountain_taunt": (("baize", "qingluan"), ("xuanhu", "jiaolong"), False),
+        "spirit_wave": (("qingluan", "xuanhu"), ("baize", "jiaolong"), False),
     }
     for key, (party, opponents, initial_venom) in fixtures.items():
         if key not in content.skills:
             continue
         minimum = content.skills[key].requirements.min_realm
         realm = next(index for index, stage in enumerate(content.realms) if stage.id == minimum)
+        category = "effect" if content.skills[key].effects else "skill"
         for variant in ("selected", "control"):
-            result.append(SpecialScenario("effect", key, variant, realm, party, opponents,
+            result.append(SpecialScenario(category, key, variant, realm, party, opponents,
                                           initial_venom=initial_venom))
     return result
 
@@ -65,8 +68,7 @@ def build_special(store, content, config, scenario):
             lineage_ids=(lineage_id,), bloodlines=(branch.min_bloodline,),
         )
         dungeon = content.dungeons[scenario.dungeon_id]
-        right = [Fighter.create(enemy.name, enemy.stats, enemy.elements, primary_element=enemy.primary_element)
-                 for enemy in (content.enemies[key] for key in dungeon.enemies)]
+        right = [enemy_fighter(content.enemies[key], content.skills) for key in dungeon.enemies]
     else:
         party = (*scenario.party, *scenario.opponents)
         skills = tuple((scenario.subject,) if index == 0 and scenario.variant == "selected" else ()

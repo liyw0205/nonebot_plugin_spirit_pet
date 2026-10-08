@@ -18,7 +18,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   application/context.py       单次事务上下文
   application/game.py          调度、事务、保存
   domain/content.py            Pydantic 静态内容模型
-  domain/battle_content.py     元素、天赋、装备、技能及成长阶梯模型
+  domain/battle_content.py     元素、天赋、装备、装备套装、技能及成长阶梯模型
   domain/lineage_content.py    种族血脉分支与四维倍率模型
   domain/crafting_content.py   打造配方与纯函数分解回收公式
   domain/expedition_content.py 离线委托的静态要求与奖励定义
@@ -26,13 +26,14 @@ src/plugins/nonebot_plugin_spirit_pet/
   domain/stage_content.py      章节关卡静态定义
   domain/achievement_content.py 成就指标、目标与固定奖励定义
   domain/resonance_content.py  双种族组合与属性倍率定义
-  domain/state.py              Player、Pet 运行模型
+  domain/state.py              Player、Pet 运行模型（封存宠物保留为历史记录）
   domain/models.py             Reply、GameError
   content/catalog.py           JSON 加载、唯一性和引用验证
   content/validation.py        装备、技能、元素与内容可用性验证
   content/lineage_validation.py 种族分支、成本与成长取舍校验
   content/crafting_validation.py 配方完整性、材料来源与资源损耗校验
-  gameplay/pets.py             领养、召唤、列表、切换、改名
+  gameplay/pets.py             领养、召唤、名册/封存库、切换、改名
+  gameplay/companionship.py    每日灵宠互动与亲密提升
   gameplay/hatching.py         灵卵孵化与名册容量检查
   gameplay/identity.py         唯一道号生成、显示、修改
   gameplay/cultivation.py      修炼、大小境界突破、血脉进化
@@ -46,7 +47,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   gameplay/resonance.py       共鸣目录、启用成本与状态切换
   gameplay/combat.py           属性计算与限回合战斗
   gameplay/talents.py          天赋触发与单场护盾、毒伤效果
-  gameplay/effects.py          主动控制、弱化、增益、净化、驱散和持续次数
+  gameplay/effects.py          主动控制、嘲阵、弱化、增益、净化、驱散和持续次数
   gameplay/compatibility.py    类别、元素、境界适用性检查
   gameplay/equipment.py        穿戴、卸装、槽位与图鉴
   gameplay/forging.py          装备强化与强化件库存保留
@@ -77,7 +78,7 @@ tests/                         单元、并发、适配器契约和真实 WS 测
 scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
 scripts/database_admin.py      SQLite 在线备份、完整性验证与非覆盖恢复
 scripts/balance_report.py      固定种子仿真入口，只使用临时数据库
-scripts/balance_specials.py    血脉分支与六类主动效果的独立专项仿真
+scripts/balance_specials.py    血脉分支与七类主动效果的独立专项仿真
 scripts/balance/               场景矩阵、实际战斗、单位时间收益与验收
 docs/                          安装、接入、玩法和开发文档
 ```
@@ -103,7 +104,7 @@ docs/                          安装、接入、玩法和开发文档
 - `players`：原始用户 ID、唯一道号、共享灵石、出战宠物、日期与玩家级冷却。道号用 SQLite UNIQUE COLLATE NOCASE 约束，生成和改名均处于写事务内。
 - `pets`：每只宠物独立的种族 ID、名字、大境界、层数、血脉、选定的 lineage_id、修为、亲密、精力及恢复时间。分支不改 species_id。
 - `inventory`：道具 ID 与数量，没有专门的“灵粮镜像”字段。
-- `equipment`：每只宠物的槽位物品与强化等级，装备不同时计入库存。
+- `equipment`：每只宠物的槽位物品与强化等级，装备不同时计入库存；完整套件的属性由静态 `equipment_sets.json` 按当前穿戴组合派生，不另存运行状态。
 - `unequipped_equipment`：玩家背包中 +1 及以上的装备，按物品、强化等级计数；+0 仍使用普通 inventory。卸装和重新穿戴不清空强化，不重复计数。
 - `learned_skills`：每只宠物的学习/携带状态、技能等级与当前级剩余熟练度。
 - `quest_progress`：当前任务日的进度及领取状态；刷新按玩家的 `quest_day` 处理。
@@ -112,9 +113,9 @@ docs/                          安装、接入、玩法和开发文档
 - `team_requests`：待处理申请/邀请，复合键为队伍与候选人，记录发起人、创建时间及失效时间。不是静态 JSON；解散级联清理，审批完成删除，入队删除该候选人所有请求。
 - `seasons/season_entries`：自然月边界、观测时间高水位、规则快照及实际参赛玩家的独立积分与胜负平。
 - `pvp_results`：挑战双方及原宠、胜者、日期、分差、结算时间、永久唯一消息键和当时的 Reply；用于配额、领奖统计和重投，不是逐回合完整战报。
-- `battle_records/battle_participants`：永久唯一操作键、发起人、战斗类型/胜方/回合/时间、战前阵容快照、完整战斗事件日志与 Reply；参与者表按原始用户 ID 授权查询。快照持有当时道号、宠物名、主属性、属性面板、技能等级/熟练度和装备强化，不引用当前玩家/宠物资料来重建历史。
+- `battle_records/battle_participants`：永久唯一操作键、发起人、战斗类型/胜方/回合/时间、战前阵容快照、完整战斗事件日志与 Reply；参与者表按原始用户 ID 授权查询。快照持有当时道号、宠物名、主属性、属性面板、技能等级/熟练度、装备强化和生效套装，不引用当前玩家/宠物资料来重建历史。
 - `pve_stage_progress`：每名玩家每个静态关卡的首通时间与来源操作键；前置链来自 `data/stages.json`，不把玩家进度或运行时间写回内容文件。
-- `achievement_claims`：每名玩家每项成就的唯一领取凭证、永久操作键、领取时间、实际奖励快照与回复。成就进度从当前存档、关卡进度和永久战斗记录派生，不重复保存累计计数。
+- `achievement_claims`：每名玩家每项成就的唯一领取凭证、永久操作键、领取时间、实际奖励快照与回复。成就进度从当前存档、关卡进度和永久战斗记录派生，不重复保存累计计数；组队 PVE 成就按战报中同侧玩家参战人数识别协作胜场。
 - `season_claims`：每季每人唯一的领奖凭证、实际奖励快照与领取时间。
 - `operations`：事件来源去重键、玩家和完整结果。
 
@@ -133,7 +134,7 @@ docs/                          安装、接入、玩法和开发文档
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
 
-涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 12，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
+涉及持久化结构时直接修改运行模型与 schema，提高开发期 schema 版本，使用新临时库测试。当前 schema 为 17，旧版库明确拒绝启动并保留原文件。不要保留历史字段双写。需要保留某份真实存档时，应另立明确的数据迁移任务，而不是默认销毁或假装兼容。
 
 升级前可用 `scripts/database_admin.py` 通过 SQLite Online Backup API 生成一致快照，并检查完整性与外键。备份和恢复都只能写入不存在的目标路径；恢复不会修改当前数据库或迁移 schema。具体操作和版本配对规则见 [配置与升级回滚](CONFIGURATION.md#升级与回滚)。
 
@@ -177,12 +178,13 @@ docs/                          安装、接入、玩法和开发文档
 
 当前是自定义回合制规则，不依赖已有桌游或游戏规则体系：
 
-- 属性来自种族基础值乘以境界、层数、血脉、亲密、分支各属性倍率，再加装备各自强化后的固定属性，修为余额不直接增加攻击。血脉分支引用错误或不属于该种族时明确拒绝，不能悄悄返回默认倍率。
+- 属性来自种族基础值乘以境界、层数、血脉、亲密、分支各属性倍率，再加装备各自强化后的固定属性和完整装备套件的固定加成，修为余额不直接增加攻击。血脉分支引用错误或不属于该种族时明确拒绝，不能悄悄返回默认倍率。
 - `loadout.combatant` 对装备和技能再次校验类别、全部所需元素与最低境界；拒绝不兼容内容，不静默跳过坏数据。
 - `Fighter.primary_element` 显式从宠物/敌人定义传入，不能取 elements[0]。普攻使用主属性，伤害技能使用技能元素，防守仅看目标主属性；分支递归继承五行关系，倍率只算一次，1.25/0.8/1.0。无属性技能按中性处理。
+- `Skill.targeting=all` 只允许无状态附加的伤害技能；施法瞬间锁定存活目标，随后每名目标独立闪避、承伤和触发受击天赋，即使反击击倒施法者也完成本次锁定结算，但施法计数、熟练度与 `Fighter.attacks` 各只推进一次。群攻不经由单体嘲阵目标选择。
 - 已携带技能依固定顺序轮换，系数乘数据库等级对应的威力倍率。治疗技能回复自身；满血但仍有有效净化等附加效果时可以施放，否则回退普攻且不记技能施放。技能轮次属于单场内存状态，不是 JSON 时间字段。
 - `talents` 负责开场护盾、行动前毒伤/恢复、进攻增益、闪避和命中后触发。毒和反击不递归触发天赋或技能熟练度。效果状态在每场新建 Fighter 时重置。
-- `effects` 负责明确的控制/增益状态与行动计数：先处理行动前毒伤和天赋，再检查受控，随后施法或普攻，最后推进效果期限和免控。规划目标后才检查效用，避免随机探测目标与实际目标不一致。`actions` 只统计真正行动并推动技能轮换，`turns` 包含受控跳过的行动机会。
+- `effects` 负责明确的控制/增益状态与行动计数：先处理行动前毒伤和天赋，再检查受控，随后施法或普攻，最后推进效果期限和免控。亲密达到 100 的灵宠在每场战斗首次受到控制时自动抵挡一次；该标记仅属于 Fighter，不持久化。嘲阵优先重定向敌方目标选择，并按护阵者自己的行动计时；驱散会一并移除。规划目标后才检查效用，避免随机探测目标与实际目标不一致。`actions` 只统计真正行动并推动技能轮换，`turns` 包含受控跳过的行动机会。
 - 同类效果取较强值、较长剩余次数并刷新，不叠加；自身刚施加的持续效果从后续行动才计期。护盾先消耗临时层再消耗天赋层。有效驱散和净化计技能施放，无目标则回退普攻；持续效果、反击和天赋不记技能施放。
 - 每场从满气血开始；气血只在本场存在，结算消耗精力，不持久化战斗气血。
 - 速度决定行动顺序，同速时随机决定先后，目标从存活对手中抽取。伤害至少为 1，有 90%-110% 浮动。

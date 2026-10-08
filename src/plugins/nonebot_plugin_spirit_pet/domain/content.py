@@ -122,9 +122,24 @@ class Reward(Definition):
 
 class Encounter(Definition):
     id: Identifier
+    name: Name
     text: str
     weight: Positive
     reward: Reward
+
+
+class ExplorationRoute(Definition):
+    id: Identifier
+    name: Name
+    description: str
+    min_realm: Identifier
+    encounters: list[Identifier] = Field(min_length=2, max_length=5)
+
+    @model_validator(mode="after")
+    def check_encounters(self):
+        if len(set(self.encounters)) != len(self.encounters):
+            raise ValueError("exploration route encounters must be unique")
+        return self
 
 
 class Enemy(Definition):
@@ -133,6 +148,14 @@ class Enemy(Definition):
     stats: Stats
     elements: list[Identifier] = Field(min_length=1, max_length=4)
     primary_element: Identifier
+    signature_skill: Identifier | None = None
+    skill_every: Annotated[int, Field(ge=2, le=10)] | None = None
+
+    @model_validator(mode="after")
+    def check_signature_skill(self):
+        if (self.signature_skill is None) != (self.skill_every is None):
+            raise ValueError("enemy signature skill and interval must be configured together")
+        return self
 
 
 class Dungeon(Definition):
@@ -148,7 +171,9 @@ class Dungeon(Definition):
 class Quest(Definition):
     id: Identifier
     name: Name
-    event: Literal["train", "feed", "explore", "pve", "evolve"]
+    event: Literal[
+        "sign", "train", "feed", "explore", "pve", "pvp", "breakthrough", "evolve", "bond", "expedition",
+    ]
     target: Positive
     reward: Reward
 
@@ -163,6 +188,18 @@ class Pool(Definition):
     name: Name
     stones: Positive
     entries: list[DrawEntry] = Field(min_length=1)
+    guaranteed_batch_size: int | None = None
+    guaranteed_species: list[Identifier] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_batch_guarantee(self):
+        if self.guaranteed_batch_size is not None and not 2 <= self.guaranteed_batch_size <= 10:
+            raise ValueError("batch guarantee size must be between 2 and 10")
+        if (self.guaranteed_batch_size is None) != (not self.guaranteed_species):
+            raise ValueError("batch guarantee requires both a size and species")
+        if len(set(self.guaranteed_species)) != len(self.guaranteed_species):
+            raise ValueError("duplicate batch guarantee species")
+        return self
 
 
 class Rules(Definition):

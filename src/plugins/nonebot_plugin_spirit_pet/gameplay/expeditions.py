@@ -5,6 +5,7 @@ from ..domain.expedition_state import RewardSnapshot
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
+from .quests import advance
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
@@ -144,6 +145,7 @@ def claim(ctx: Context, arg: str) -> Reply:
         ctx.repo.add_item(ctx.user_id, key, amount)
         if amount:
             lines.append(f"{ctx.content.items[key].name} +{amount}")
+    advance(ctx, "expedition")
     return Reply("委托归来", tuple(lines), ("灵宠委托", "灵宠列表", "灵宠背包"))
 
 

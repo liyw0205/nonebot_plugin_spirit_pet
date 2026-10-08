@@ -8,14 +8,14 @@ from nonebot_plugin_spirit_pet.gameplay import effects
 
 def _snapshot(kind, unit):
     state = unit.effects
-    if kind in {"weaken", "empower", "ward"}:
+    if kind in {"weaken", "empower", "ward", "taunt"}:
         value = getattr(state, kind)
         return asdict(value) if value else None
     if kind == "stun":
         return state.stunned
     if kind == "cleanse":
         return (unit.poison_damage, unit.poison_turns, _snapshot("weaken", unit), state.stunned)
-    return (unit.shield, _snapshot("ward", unit), _snapshot("empower", unit))
+    return (unit.shield, _snapshot("ward", unit), _snapshot("empower", unit), _snapshot("taunt", unit))
 
 
 @contextmanager

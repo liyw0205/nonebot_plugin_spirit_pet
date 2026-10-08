@@ -214,5 +214,16 @@
     "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "ningqi"},
     "kind": "utility", "coefficient": 0.0, "book_item": "book_battle_chant",
     "effects": [{"kind": "empower", "target": "ally", "power": 0.2, "duration": 2}]
+  },
+  {
+    "id": "mountain_taunt", "name": "镇岳护阵", "description": "凝气境通用灵术，命中造成灵息伤害并引动护阵，使自身成为敌方优先攻击目标，持续两次自身行动；可被破障术驱散。",
+    "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "ningqi"},
+    "kind": "damage", "coefficient": 1.1, "book_item": "book_mountain_taunt",
+    "effects": [{"kind": "taunt", "target": "self", "duration": 2}]
+  },
+  {
+    "id": "spirit_wave", "name": "灵潮荡阵", "description": "凝气境通用群攻灵术，以无属性灵息攻击全体存活敌人；每个目标分别判定闪避和受击天赋，单体威力低于普攻。",
+    "element": null, "requirements": {"elements": [], "categories": [], "min_realm": "ningqi"},
+    "kind": "damage", "targeting": "all", "coefficient": 0.65, "book_item": "book_spirit_wave"
   }
 ]

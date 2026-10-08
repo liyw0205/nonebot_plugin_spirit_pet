@@ -6,7 +6,7 @@ from pydantic import BaseModel, TypeAdapter
 from ..domain.achievement_content import Achievement
 from ..domain.arena_content import ArenaRules
 from ..domain.battle_content import (
-    Category, DaoNames, Element, Equipment, ForgeLevel, Skill, SkillLevel, Talent,
+    Category, DaoNames, Element, Equipment, EquipmentSet, ForgeLevel, Skill, SkillLevel, Talent,
 )
 from .validation import validate_battle_content
 from .crafting_validation import validate_crafting_content
@@ -18,7 +18,7 @@ from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 
 from ..domain.content import (
-    Bloodline, Dungeon, Encounter, Enemy, Item, Layer, Pool, Quest, Realm, Rules, Species,
+    Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
 )
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -54,6 +54,7 @@ class Catalog:
     bloodlines: dict[int, Bloodline]
     items: dict[str, Item]
     encounters: dict[str, Encounter]
+    exploration_routes: dict[str, ExplorationRoute]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -63,6 +64,7 @@ class Catalog:
     categories: dict[str, Category]
     elements: dict[str, Element]
     equipment: dict[str, Equipment]
+    equipment_sets: dict[str, EquipmentSet]
     skills: dict[str, Skill]
     talents: dict[str, Talent]
     skill_levels: dict[int, SkillLevel]
@@ -84,6 +86,7 @@ class Catalog:
             bloodlines=_index(directory / "bloodlines.json", Bloodline, "level"),
             items=_index(directory / "items.json", Item),
             encounters=_index(directory / "adventures.json", Encounter),
+            exploration_routes=_index(directory / "exploration_routes.json", ExplorationRoute),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -93,6 +96,7 @@ class Catalog:
             categories=_index(directory / "categories.json", Category),
             elements=_index(directory / "elements.json", Element),
             equipment=_index(directory / "equipment.json", Equipment),
+            equipment_sets=_index(directory / "equipment_sets.json", EquipmentSet),
             skills=_index(directory / "skills.json", Skill),
             talents=_index(directory / "talents.json", Talent),
             skill_levels=_index(directory / "skill_levels.json", SkillLevel, "level"),
@@ -140,8 +144,26 @@ class Catalog:
             *(expedition.reward for expedition in self.expeditions.values()),
         ):
             self._require(reward.items, self.items, "reward items")
+        route_encounters = [
+            encounter_id
+            for route in self.exploration_routes.values()
+            for encounter_id in route.encounters
+        ]
+        self._require(route_encounters, self.encounters, "exploration route encounters")
+        if set(route_encounters) != set(self.encounters) or len(route_encounters) != len(set(route_encounters)):
+            raise ValueError("each exploration encounter must belong to exactly one route")
         realm_ids = {realm.id for realm in self.realms}
+        for route in self.exploration_routes.values():
+            self._require([route.min_realm], realm_ids, "exploration route realm")
+        missing_route_realms = realm_ids - {
+            route.min_realm for route in self.exploration_routes.values()
+        }
+        if missing_route_realms:
+            raise ValueError(
+                f"missing exploration routes for realms: {sorted(missing_route_realms)}"
+            )
         self._require([self.arena.min_realm], realm_ids, "arena realm")
+        self._validate_equipment_sets()
         for tier in self.arena.tiers:
             self._require(tier.items, self.items, "arena tier reward items")
         for expedition in self.expeditions.values():
@@ -160,8 +182,15 @@ class Catalog:
             self._require(ids, self.species, "summon pool")
             if len(set(ids)) != len(ids):
                 raise ValueError("duplicate species in summon pool")
+            self._require(pool.guaranteed_species, self.species, "summon guarantee")
+            if not set(pool.guaranteed_species).issubset(ids):
+                raise ValueError("batch guarantee species must belong to the same pool")
+            if pool.guaranteed_species and set(pool.guaranteed_species) == set(ids):
+                raise ValueError("batch guarantee must be narrower than its summon pool")
         if "standard" not in self.pools or "spirit_food" not in self.items:
             raise ValueError("standard pool and spirit_food are required")
+        if self.pools["standard"].guaranteed_batch_size is None:
+            raise ValueError("standard pool requires a batch summon guarantee")
         if self.items["spirit_food"].kind != "consumable":
             raise ValueError("spirit_food must be a consumable")
         self._validate_progression()
@@ -203,6 +232,22 @@ class Catalog:
             ):
                 raise ValueError("progression multipliers must strictly increase")
 
+    def _validate_equipment_sets(self):
+        assigned: dict[str, str] = {}
+        for equipment_set in self.equipment_sets.values():
+            if len(set(equipment_set.items)) != len(equipment_set.items):
+                raise ValueError("equipment set items must be unique")
+            self._require(equipment_set.items, self.equipment, "equipment set items")
+            slots = [self.equipment[item_id].slot for item_id in equipment_set.items]
+            if len(set(slots)) != len(slots):
+                raise ValueError("equipment set items must use distinct slots")
+            if not any(equipment_set.bonuses.model_dump().values()):
+                raise ValueError("equipment set must provide a bonus")
+            for item_id in equipment_set.items:
+                previous = assigned.setdefault(item_id, equipment_set.id)
+                if previous != equipment_set.id:
+                    raise ValueError("equipment cannot belong to multiple sets")
+
     def _validate_stages(self, realm_ids):
         if not self.stages:
             raise ValueError("stages must not be empty")
@@ -224,9 +269,10 @@ class Catalog:
 
     def _validate_achievements(self):
         required = {
-            "species_collected", "pets_owned", "max_realm", "max_layer", "max_bloodline",
-            "stage_clears", "pvp_wins", "pve_wins", "lineage_branches", "skills_learned",
-            "max_skill_level", "skill_level_sum",
+            "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
+            "stage_clears", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches", "skills_learned",
+            "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
+            "best_bond_streak", "adventures_discovered",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):
@@ -236,6 +282,7 @@ class Catalog:
             raise ValueError("duplicate achievement metric target")
         maxima = {
             "species_collected": len(self.species),
+            "duplicate_species": len(self.species),
             "max_realm": len(self.realms),
             "max_layer": len(self.realms) * 10,
             "max_bloodline": max(self.bloodlines),
@@ -244,13 +291,15 @@ class Catalog:
             "skills_learned": len(self.skills),
             "max_skill_level": len(self.skill_levels),
             "skill_level_sum": len(self.skills) * len(self.skill_levels),
+            "max_affinity": 100,
+            "adventures_discovered": len(self.encounters),
         }
         targets = {}
         for entry in self.achievements.values():
             targets.setdefault(entry.metric, set()).add(entry.target)
         final_milestones = {
             "species_collected", "max_realm", "max_layer", "max_bloodline",
-            "stage_clears", "max_skill_level",
+            "stage_clears", "max_skill_level", "max_affinity", "adventures_discovered",
         }
         for metric in final_milestones:
             if maxima[metric] not in targets.get(metric, set()):
@@ -258,6 +307,14 @@ class Catalog:
         expected_layers = set(range(10, maxima["max_layer"] + 1, 10))
         if not expected_layers.issubset(targets.get("max_layer", set())):
             raise ValueError("missing realm layer achievement milestone")
+        if not {50, 100}.issubset(targets.get("max_affinity", set())):
+            raise ValueError("missing affinity achievement milestone")
+        if not {7, 30}.issubset(targets.get("best_bond_streak", set())):
+            raise ValueError("missing bond streak achievement milestone")
+        if not {1, 10, 30}.issubset(targets.get("team_pve_wins", set())):
+            raise ValueError("missing team PVE achievement milestone")
+        if not {5, 10}.issubset(targets.get("adventures_discovered", set())):
+            raise ValueError("missing adventure discovery achievement milestone")
         for entry in self.achievements.values():
             self._require(entry.reward.items, self.items, "achievement reward items")
             maximum = maxima.get(entry.metric)

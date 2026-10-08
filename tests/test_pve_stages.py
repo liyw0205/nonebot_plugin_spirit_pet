@@ -42,6 +42,8 @@ def test_catalog_lists_personal_clear_unlock_state_and_details(game, play):
     assert "2. 月影追猎 · 可挑战" in listing.text()
     assert "进度：可挑战" in play("stage_catalog", "月影追猎").text()
     assert "进度：已通关" in play("stage_catalog", "青木试锋").text()
+    assert "霜封术" in play("stage_catalog", "冰魄封关").text()
+    assert "每 8 次行动施展" in play("stage_catalog", "冰魄封关").text()
 
 
 def test_unregistered_player_can_browse_without_creating_an_account(game, play):

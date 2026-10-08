@@ -1,5 +1,22 @@
 [
   {
+    "id": "sign_once",
+    "name": "晨光初至",
+    "event": "sign",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "items": {}
+    }
+  },
+  {
     "id": "train_once",
     "name": "吐纳一周天",
     "event": "train",
@@ -66,6 +83,45 @@
     }
   },
   {
+    "id": "bond_once",
+    "name": "灵契相伴",
+    "event": "bond",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "items": {}
+    }
+  },
+  {
+    "id": "expedition_once",
+    "name": "山海归来",
+    "event": "expedition",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
     "id": "pve_once",
     "name": "斩破迷障",
     "event": "pve",
@@ -82,6 +138,67 @@
       "items": {
         "forge_ore": {"minimum": 2, "maximum": 2},
         "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "pvp_once",
+    "name": "论剑扬名",
+    "event": "pvp",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "items": {}
+    }
+  },
+  {
+    "id": "evolve_once",
+    "name": "血脉淬炼",
+    "event": "evolve",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "breakthrough_once",
+    "name": "破境有成",
+    "event": "breakthrough",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "items": {
+        "spirit_food": {
           "minimum": 1,
           "maximum": 1
         }

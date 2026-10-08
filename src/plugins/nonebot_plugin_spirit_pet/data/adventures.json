@@ -1,6 +1,7 @@
 [
   {
     "id": "spring",
+    "name": "灵泉寻踪",
     "text": "踏入青岚秘境，在古树下寻得一处灵泉。",
     "weight": 30,
     "reward": {
@@ -22,6 +23,7 @@
   },
   {
     "id": "mountain",
+    "name": "古阵修复",
     "text": "越过断云山，帮助守山人修复了一座古阵。",
     "weight": 25,
     "reward": {
@@ -43,6 +45,7 @@
   },
   {
     "id": "valley",
+    "name": "灵草采集",
     "text": "夜探星落谷，循着流光采回几株灵草。",
     "weight": 25,
     "reward": {
@@ -64,6 +67,7 @@
   },
   {
     "id": "cave",
+    "name": "洞府幻阵",
     "text": "误入上古洞府，凭借心神感应走出了幻阵。",
     "weight": 20,
     "reward": {
@@ -81,6 +85,144 @@
           "maximum": 1
         }
       }
+    }
+  },
+  {
+    "id": "meteor",
+    "name": "坠星采矿",
+    "text": "循着星落谷的坠星痕迹，采到几块可用来打造的锻灵矿。",
+    "weight": 20,
+    "reward": {
+      "exp": {
+        "minimum": 15,
+        "maximum": 35
+      },
+      "stones": {
+        "minimum": 55,
+        "maximum": 100
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "treasury",
+    "name": "封印宝匣",
+    "text": "破开古洞深处的封印，寻得一匣血脉精华。",
+    "weight": 20,
+    "reward": {
+      "exp": {
+        "minimum": 20,
+        "maximum": 55
+      },
+      "stones": {
+        "minimum": 20,
+        "maximum": 100
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 0,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "ember_refining",
+    "name": "焚心炼魄",
+    "text": "借赤霞火脉淬炼灵息，在余烬中拾得几块锻灵矿。",
+    "weight": 30,
+    "reward": {
+      "exp": {"minimum": 45, "maximum": 85},
+      "stones": {"minimum": 80, "maximum": 150},
+      "items": {"forge_ore": {"minimum": 1, "maximum": 2}}
+    }
+  },
+  {
+    "id": "golden_cave",
+    "name": "金脉采矿",
+    "text": "循着地脉金光找到一处旧矿，矿髓深处还残留着血脉精华。",
+    "weight": 20,
+    "reward": {
+      "exp": {"minimum": 40, "maximum": 75},
+      "stones": {"minimum": 90, "maximum": 170},
+      "items": {
+        "forge_ore": {"minimum": 1, "maximum": 2},
+        "bloodline_essence": {"minimum": 0, "maximum": 1}
+      }
+    }
+  },
+  {
+    "id": "primordial_root",
+    "name": "归墟拾脉",
+    "text": "在沉没古境的断壁下寻得灵脉遗物，收获数份血脉精华。",
+    "weight": 25,
+    "reward": {
+      "exp": {"minimum": 65, "maximum": 110},
+      "stones": {"minimum": 120, "maximum": 210},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 2}}
+    }
+  },
+  {
+    "id": "azure_mirror",
+    "name": "青冥守镜",
+    "text": "替古境灵木守过一夜，镜湖映出可供锻造的灵矿。",
+    "weight": 25,
+    "reward": {
+      "exp": {"minimum": 70, "maximum": 120},
+      "stones": {"minimum": 130, "maximum": 220},
+      "items": {
+        "forge_ore": {"minimum": 2, "maximum": 3},
+        "bloodline_essence": {"minimum": 0, "maximum": 1}
+      }
+    }
+  },
+  {
+    "id": "void_sword",
+    "name": "太虚观剑",
+    "text": "循着虚空中的古剑痕迹静悟片刻，并采回几块星淬灵矿。",
+    "weight": 35,
+    "reward": {
+      "exp": {"minimum": 80, "maximum": 140},
+      "stones": {"minimum": 170, "maximum": 280},
+      "items": {"forge_ore": {"minimum": 2, "maximum": 4}}
+    }
+  },
+  {
+    "id": "nether_soul",
+    "name": "幽庭渡魂",
+    "text": "助迷失的幽魂寻回归途，得到其留下的血脉精华。",
+    "weight": 25,
+    "reward": {
+      "exp": {"minimum": 90, "maximum": 150},
+      "stones": {"minimum": 180, "maximum": 300},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 2}}
+    }
+  },
+  {
+    "id": "thunder_altar",
+    "name": "劫海采雷",
+    "text": "避开雷瀑，在劫云祭坛边收集淬雷后的锻灵矿。",
+    "weight": 20,
+    "reward": {
+      "exp": {"minimum": 110, "maximum": 180},
+      "stones": {"minimum": 240, "maximum": 380},
+      "items": {"forge_ore": {"minimum": 3, "maximum": 5}}
+    }
+  },
+  {
+    "id": "heavenly_gate",
+    "name": "天门问道",
+    "text": "在天门外悟得一线道韵，带回数份凝结的血脉精华。",
+    "weight": 30,
+    "reward": {
+      "exp": {"minimum": 120, "maximum": 200},
+      "stones": {"minimum": 260, "maximum": 400},
+      "items": {"bloodline_essence": {"minimum": 2, "maximum": 3}}
     }
   }
 ]

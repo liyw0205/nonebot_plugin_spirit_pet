@@ -2,6 +2,8 @@
   {"id":"first_contract","name":"初结灵契","description":"拥有一只灵宠。","metric":"pets_owned","target":1,"reward":{"stones":100,"items":{"spirit_food":2}}},
   {"id":"three_companions","name":"三灵相伴","description":"拥有三只灵宠。","metric":"pets_owned","target":3,"reward":{"stones":300,"items":{"exp_pill":1}}},
   {"id":"five_companions","name":"灵兽成群","description":"拥有五只灵宠。","metric":"pets_owned","target":5,"reward":{"stones":600,"items":{"bloodline_essence":1}}},
+  {"id":"first_duplicate_species","name":"同族双灵","description":"拥有两只同一种族的灵宠。","metric":"duplicate_species","target":1,"reward":{"stones":180,"items":{"spirit_food":2}}},
+  {"id":"three_duplicate_species","name":"三族同脉","description":"拥有三种各自至少两只的灵宠种族。","metric":"duplicate_species","target":3,"reward":{"stones":600,"items":{"bloodline_essence":1}}},
   {"id":"first_species","name":"初识百灵","description":"收集三种不同灵宠种族。","metric":"species_collected","target":3,"reward":{"stones":150,"items":{"spirit_food":3}}},
   {"id":"many_species","name":"百灵相逢","description":"收集十种不同灵宠种族。","metric":"species_collected","target":10,"reward":{"stones":500,"items":{"bloodline_essence":1}}},
   {"id":"all_species","name":"万灵归藏","description":"集齐全部二十七种灵宠种族。","metric":"species_collected","target":27,"reward":{"stones":2000,"items":{"bloodline_essence":5}}},
@@ -31,5 +33,17 @@
   {"id":"learn_eight","name":"博闻术藏","description":"累计学会八种灵术。","metric":"skills_learned","target":8,"reward":{"stones":500,"items":{"bloodline_essence":1}}},
   {"id":"skill_level_two","name":"术法精熟","description":"任一已学灵术达到二阶。","metric":"max_skill_level","target":2,"reward":{"stones":200,"items":{"exp_pill":1}}},
   {"id":"skill_level_five","name":"灵术大家","description":"任一已学灵术达到五阶。","metric":"max_skill_level","target":5,"reward":{"stones":700,"items":{"bloodline_essence":2}}},
-  {"id":"skill_levels_total","name":"百术同修","description":"累计灵术等级达到二十阶。","metric":"skill_level_sum","target":20,"reward":{"stones":1000,"items":{"bloodline_essence":3}}}
+  {"id":"skill_levels_total","name":"百术同修","description":"累计灵术等级达到二十阶。","metric":"skill_level_sum","target":20,"reward":{"stones":1000,"items":{"bloodline_essence":3}}},
+  {"id":"first_expedition_return","name":"初履山海","description":"完成并领取一项离线委托的奖励。","metric":"expedition_claims","target":1,"reward":{"stones":200,"items":{"spirit_food":2}}},
+  {"id":"twenty_expedition_returns","name":"熟稔山海","description":"累计完成并领取二十项离线委托奖励。","metric":"expedition_claims","target":20,"reward":{"stones":1000,"items":{"bloodline_essence":2}}},
+  {"id":"affinity_fifty","name":"心意渐明","description":"至少一只灵宠的亲密达到五十。","metric":"max_affinity","target":50,"reward":{"stones":150,"items":{"spirit_food":2}}},
+  {"id":"affinity_full","name":"心有灵犀","description":"至少一只灵宠的亲密达到一百。","metric":"max_affinity","target":100,"reward":{"stones":500,"items":{"bloodline_essence":1}}},
+  {"id":"bond_streak_week","name":"七日相守","description":"连续七天与灵宠互动。","metric":"best_bond_streak","target":7,"reward":{"stones":500,"items":{"spirit_food":5}}},
+  {"id":"bond_streak_month","name":"朝夕不倦","description":"连续三十天与灵宠互动。","metric":"best_bond_streak","target":30,"reward":{"stones":1500,"items":{"bloodline_essence":3}}},
+  {"id":"team_first_victory","name":"并肩初捷","description":"参与并赢得一场组队秘境或组队关卡。","metric":"team_pve_wins","target":1,"reward":{"stones":120,"items":{"spirit_food":2}}},
+  {"id":"team_ten_victories","name":"同心破阵","description":"参与并赢得十场组队秘境或组队关卡。","metric":"team_pve_wins","target":10,"reward":{"stones":500,"items":{"forge_ore":4,"bloodline_essence":1}}},
+  {"id":"team_thirty_victories","name":"同袍久战","description":"参与并赢得三十场组队秘境或组队关卡。","metric":"team_pve_wins","target":30,"reward":{"stones":1200,"items":{"bloodline_essence":4}}},
+  {"id":"adventure_five","name":"奇闻初见","description":"在历练中发现五条不同奇闻。","metric":"adventures_discovered","target":5,"reward":{"stones":250,"items":{"spirit_food":2}}},
+  {"id":"adventure_ten","name":"博闻山海","description":"在历练中发现十条不同奇闻。","metric":"adventures_discovered","target":10,"reward":{"stones":600,"items":{"forge_ore":4}}},
+  {"id":"adventure_all","name":"尽览奇闻","description":"发现当前历练目录中的全部奇闻。","metric":"adventures_discovered","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
 ]

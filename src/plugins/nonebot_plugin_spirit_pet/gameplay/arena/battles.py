@@ -8,6 +8,7 @@ from ..combat import fight
 from ..battle_records import capture_snapshot, record_battle
 from ..loadout import combatant
 from ..mastery import award_mastery
+from ..quests import advance
 from .common import current_season
 from .eligibility import check_ranked
 from .scoring import settle_ranked
@@ -46,6 +47,8 @@ def pvp(ctx: Context, arg: str) -> Reply:
     capture = capture_snapshot(ctx, (attackers, defenders), ([ctx.user_id], [target.user_id]))
     battle = fight(attackers, defenders, ctx.rng, ctx.content.elements)
     delta, scores = settle_ranked(ctx, season, target.user_id, battle)
+    if battle.winner == 0:
+        advance(ctx, "pvp")
     attacking_pet.energy -= season.rules.energy
     ctx.player().last_pvp = ctx.now
     ctx.repo.invalidate_ready(ctx.user_id)

@@ -119,3 +119,7 @@ effect/spirit_dispel/selected,effect,spirit_dispel,selected,ningqi,effect/spirit
 effect/spirit_dispel/control,effect,spirit_dispel,control,ningqi,effect/spirit_dispel/1,,False,100,0,0,100,0.0,11.65,13,0.0,0.4035,0,0,0
 effect/battle_chant/selected,effect,battle_chant,selected,ningqi,effect/battle_chant/1,,False,100,0,0,100,0.0,6.92,8,0.0,0.7318,592,592,0
 effect/battle_chant/control,effect,battle_chant,control,ningqi,effect/battle_chant/1,,False,100,0,0,100,0.0,7.01,11,0.0,0.5261,0,0,0
+effect/mountain_taunt/selected,effect,mountain_taunt,selected,ningqi,effect/mountain_taunt/1,,False,100,82,0,18,0.82,9.73,11,0.159,0.0129,615,332,0
+effect/mountain_taunt/control,effect,mountain_taunt,control,ningqi,effect/mountain_taunt/1,,False,100,21,0,79,0.21,10.0,14,0.0238,0.1956,0,0,0
+skill/spirit_wave/selected,skill,spirit_wave,selected,ningqi,skill/spirit_wave/1,,False,100,0,0,100,0.0,7.06,8,0.0,0.7029,644,0,0
+skill/spirit_wave/control,skill,spirit_wave,control,ningqi,skill/spirit_wave/1,,False,100,0,0,100,0.0,7.06,9,0.0,0.529,0,0,0

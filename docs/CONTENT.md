@@ -14,8 +14,9 @@
 | layers.json | 1-10 层、层数倍率、该层升下一层的代价 |
 | bloodlines.json | 连续血脉等级、属性倍率、下一阶进化代价 |
 | items.json | 道具种类、名称、效果与商店价格 |
-| adventures.json | 奇遇文本、权重与奖励区间 |
-| enemies.json | PVE 敌人、基础战斗属性与明确的主属性 |
+| adventures.json | 奇遇名称、文本、权重与奖励区间 |
+| exploration_routes.json | 历练路线说明、境界门槛及其奇遇 ID；每条奇遇必须且只能属于一条路线 |
+| enemies.json | PVE 敌人、基础战斗属性、明确的主属性与可选周期招式 |
 | dungeons.json | 秘境准入境界、敌人列表、精力消耗、奖励、是否组队 |
 | quests.json | 每日任务的事件、目标次数、奖励 |
 | expeditions.json | 离线委托的名称、描述、境界门槛、精力成本与奖励范围，不含时间或玩家状态 |
@@ -28,6 +29,7 @@
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
 | equipment.json | 装备槽位、固定属性、元素/类别/境界门槛 |
+| equipment_sets.json | 装备套件组成、名称、说明与完整套件的属性加成 |
 | skills.json | 技能效果、元素、倍率、学习门槛与秘笈引用 |
 | talents.json | 种族天赋的名称、效果类型、强度与可选元素限制 |
 | skill_levels.json | 技能等级、升到下一级消耗的熟练度、威力倍率 |
@@ -65,13 +67,15 @@
 {"species": "chiling", "weight": 8}
 ```
 
-概率为该项权重除以池总权重，不要求权重和为 100。同一池不能重复引用同一个种族。随机领养仅从 `starter=true` 的种族等概率抽取；指定领养也不能绕过 starter 限制。召唤获得独立宠物实例，同种族可拥有多只，以实例编号切换，不自动合并。
+概率为该项权重除以池总权重，不要求权重和为 100。同一池不能重复引用同一个种族。可选 `guaranteed_batch_size` 和 `guaranteed_species` 配置批量保底，两者必须同时提供；批次数量达到门槛且随机结果尚未命中保底种族时，最后一抽会从保底种族中按原权重抽取。standard 池的十连保证至少一只珍稀灵宠。随机领养仅从 `starter=true` 的种族等概率抽取；指定领养也不能绕过 starter 限制。召唤获得独立宠物实例，同种族可拥有多只，以实例编号切换，不自动合并。
 
 初始种族固定为 `qingluan/xuanhu/baize/jiaolong`。扩充其他种族时 `starter` 必须为 false，并提供可达的召唤或灵卵来源。天赋引用必须存在；正式内容应为每种宠物配置贴合定位的神通，而不是复制属性、仅改名字。
 
 `primary_element` 必须显式填写，且出现在不重复的 `elements` 中，不能通过数组位置推断。其余元素是副属性。怪物也遵守此规则。分支以 `elements.json` 的 `parent` 表示，例如冰的 parent 为 water；引用必须存在，不能自指或构成环。
 
 `utils/elements.py` 统一展开祖先：冰可以满足水系门槛，水不能满足冰系门槛。攻击和防守的主属性均继承祖先克制关系；副属性不参与防御倍率。普攻取主属性，技能取自己的 element，不能为了多属性“优势相消”遍历整组副属性。
+
+`enemies.json` 的高阶敌人可同时定义 `signature_skill` 与正整数 `skill_every`；前者必须引用 `skills.json`，且招式元素必须与敌人元素兼容。敌人每到设定行动次数施展招式，其余行动普通攻击。没有这两个字段时敌人只会普通攻击。
 
 ## 境界、层数与血脉
 
@@ -120,17 +124,53 @@
 
 固定奖励将 minimum 与 maximum 设成相同值。掉落可以为零，成本和权重必须为正，奖励最小值不能大于最大值。
 
+`achievements.json` 的每项只定义稳定 ID、名称、说明、指标、目标和一次性奖励，不保存玩家进度。`duplicate_species` 指至少拥有两只实例的种族数量；封存宠物仍属于玩家，也计入此指标。动态进度从 SQLite 当前存档与永久记录计算，领取凭证和奖励快照单独持久化。
+
+## 奇遇定义
+
+`adventures.json` 为奇遇对象数组。`id`、`name`、`text`、`weight`、`reward` 均必填且不接受额外字段；名称在奇遇间唯一，权重为正整数。同一路线内的权重按总和归一为出现概率，路线目录显示各奇遇概率。
+
+```json
+{
+  "id": "spring",
+  "name": "灵泉寻踪",
+  "text": "踏入青岚秘境，在古树下寻得一处灵泉。",
+  "weight": 30,
+  "reward": {
+    "exp": {"minimum": 15, "maximum": 40},
+    "stones": {"minimum": 30, "maximum": 90},
+    "items": {"spirit_food": {"minimum": 0, "maximum": 2}}
+  }
+}
+```
+
+## 历练路线定义
+
+`exploration_routes.json` 为路线对象数组，定义可进入的境界门槛与所属奇遇；每条奇遇必须且只能归属一条路线。
+
+```json
+{
+  "id": "spirit_spring",
+  "name": "灵泉修行",
+  "description": "寻泉静修，偏重修为与基础补给。",
+  "min_realm": "qiling",
+  "encounters": ["spring", "mountain"]
+}
+```
+
+ID、名称、说明、`min_realm` 和 `encounters` 均必填，不接受额外字段。境界 ID 与奇遇 ID 必须分别引用 `realms.json` 和 `adventures.json` 中的定义；同一路线不得重复奇遇；七个大境界必须各有一条以该境界为准入门槛的路线。目录会显示进入门槛，未达境界时不消耗精力或冷却。路线从启灵的灵泉修行、凝气的星谷采集、筑基的古洞寻珍，逐步延伸到金丹赤霞寻脉、元婴归墟拾遗、化神太虚巡界和渡劫劫云问道。玩家首次遇见奇遇后，发现记录写入 SQLite 的 `adventure_discoveries`，作为个人长期图鉴和 `adventures_discovered` 成就指标；该状态不进入静态 JSON 或短期消息缓存。
+
 ## 共鸣定义
 
 `resonances.json` 为对象数组。每项必须引用两个不同的已有种族，种族组合不能重复，且每个种族至少出现在一项组合中。`bonuses` 可定义 `hp`、`attack`、`defense`、`speed`；每项倍率为正且不超过 8%，总倍率不超过 10%。玩家状态和启用时间不写入静态文件。
 
 `rules.json` 的 `resonance_cost` 定义启用成本，只能消耗灵石与材料。启用后属性加成只对组合内种族的当前出战宠物生效；该玩家的启用选择及时间存入 SQLite。
 
-任务 event 仅允许 `train/feed/explore/pve/evolve`。领取不会推进任务；喂养和直接使用灵粮推进同一种任务；PVE 仅胜利计数。任务日和领取状态不出现在 JSON。
+任务 event 允许 `sign/train/feed/explore/pve/pvp/breakthrough/evolve/bond/expedition`。签到成功后推进当日签到委托；重复消息重投不重复计数。离线委托只在归来成功领取奖励后推进；提前召回、尚未完成或重复领取都不计数。喂养和直接使用灵粮推进同一种任务；突破和血脉进化仅成功时计数；PVE 与排位论剑仅胜利计数，论剑只计挑战者获胜，不含平局、防守镜像或切磋。任务日和领取状态不出现在 JSON。
 
 ## 离线委托定义
 
-`expeditions.json` 是对象数组，由 `domain/expedition_content.py` 的 `Expedition` 严格校验。它与每日任务 `quests.json` 分离，不使用 event 或累计次数。
+`expeditions.json` 是对象数组，由 `domain/expedition_content.py` 的 `Expedition` 严格校验。委托定义与每日任务 `quests.json` 分离；委托成功结算后会产生 `expedition` 任务事件，永久已领取的行程数也用于累计成就。
 
 ```json
 {
@@ -237,9 +277,11 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 这份 requirements 表示：必须同时有风、火，类别属于羽族或兽族，并达到凝气。elements 空数组为不限制元素，categories 空数组为不限制类别。三灵鹿同时拥有风、火、木，可以通过此元素门槛；只有火的玄狐不可以。至少要存在一种兼容宠物，否则目录校验失败。
 
-技能 kind 为 damage、heal 或 utility；前两者 coefficient 为正的攻击倍率或最大气血恢复比例，治疗比例不得超过 1。utility 的 coefficient 必须为 0，且必须有 effects。技能的 element 非空时，必须由 requirements.elements 或其祖先覆盖，不能把水技能标成“火宠也可学”。通用技能的 element 为 null。book_item 与 items 中 skill_id 必须互相引用。
+技能 kind 为 damage、heal 或 utility；前两者 coefficient 为正的攻击倍率或最大气血恢复比例，治疗比例不得超过 1。utility 的 coefficient 必须为 0，且必须有 effects。`targeting` 默认是 `single`；`all` 仅用于无 effects 的 damage 技能，在施法瞬间锁定全部存活敌人后逐个结算，每名目标独立判定闪避、克制、护盾和受击天赋，即使反击击倒施法者也不截断本次锁定结算，施法与熟练度只计一次。全体攻击不受单体嘲阵改写目标。技能的 element 非空时，必须由 requirements.elements 或其祖先覆盖，不能把水技能标成“火宠也可学”。通用技能的 element 为 null。book_item 与 items 中 skill_id 必须互相引用。
 
 装备 slot 为 weapon/armor/charm，对应灵器/护甲/饰品。bonuses 是 hp/attack/defense/speed 的非负固定增量，叠加在成长倍率计算之后，不随使用次数递增。穿戴与卸装使用 SQLite 库存事务，不修改 JSON。
+
+`equipment_sets.json` 中每套至少包含两件、最多三件装备，套件必须占用不同槽位；一件装备不能属于多套。只有同一只灵宠同时装备套件内全部装备时，套装 bonuses 才生效，不能由背包持有或不同宠物拼出。套装加成是完成套件后额外叠加的固定属性，不受单件强化倍率放大；未知装备、重复部位、重复成员和零加成套件均在启动时拒绝。
 
 `forge_levels.json` 必须完整包含 0-10 级。当前级的 `upgrade_stones/upgrade_items` 为升下一级成本，材料引用必须是 material。最后一级 upgrade_stones 为 null、upgrade_items 为空；仅 +0 的 bonus_multiplier 为 1，之后严格递增。该倍率只乘装备 bonuses，再向下取整，不能乘基础种族属性。
 
@@ -265,8 +307,9 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 - stun：敌方目标，power=0、duration=1。跳过一次行动并给予短暂免控。
 - weaken/empower/ward：power 为 (0, 0.8]，duration 为 1-3 次；弱化针对敌方，增益/护盾针对 self 或 ally。
+- taunt：仅 damage 技能可附加，target 必须为 self，power=0、duration 为 1-3 次自身行动；敌方优先攻击护阵单位，可被 dispel 移除。
 - cleanse/dispel：即时移除，power=0、duration=0。净化针对己方，驱散针对敌方。
-- 同一技能不能混合敌我效果，不允许重复 kind/target。damage 只附敌方效果，heal 只附己方效果。
+- 同一技能不能混合敌我效果，不允许重复 kind/target。damage 只附敌方效果，但允许单独附加 taunt self；heal 只附己方效果。
 - 技能等级放大伤害、治疗、护盾量，不放大控制次数、弱化比例、攻击增益比例或免控次数。
 
 示例：冰系伤害附带一次控制：

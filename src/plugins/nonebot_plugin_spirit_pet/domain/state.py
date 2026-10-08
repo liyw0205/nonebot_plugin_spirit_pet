@@ -8,6 +8,9 @@ class Player:
     stones: int
     active_pet_id: int | None
     sign_day: str = ""
+    last_bond_day: str = ""
+    current_bond_streak: int = 0
+    best_bond_streak: int = 0
     quest_day: str = ""
     last_train: int | None = None
     last_explore: int | None = None
@@ -29,3 +32,5 @@ class Pet:
     energy: int
     energy_updated: int
     lineage_id: str | None = None
+    archived: bool = False
+    major_breakthrough_failures: int = 0

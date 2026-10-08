@@ -4,6 +4,9 @@ CREATE TABLE players (
     stones INTEGER NOT NULL CHECK (stones >= 0),
     active_pet_id INTEGER,
     sign_day TEXT NOT NULL DEFAULT '',
+    last_bond_day TEXT NOT NULL DEFAULT '',
+    current_bond_streak INTEGER NOT NULL DEFAULT 0 CHECK (current_bond_streak >= 0),
+    best_bond_streak INTEGER NOT NULL DEFAULT 0 CHECK (best_bond_streak >= current_bond_streak),
     quest_day TEXT NOT NULL DEFAULT '',
     last_train INTEGER,
     last_explore INTEGER,
@@ -17,6 +20,12 @@ CREATE TABLE player_resonance (
     resonance_id TEXT NOT NULL CHECK(length(resonance_id)>0),
     activated_at INTEGER NOT NULL
 );
+CREATE TABLE adventure_discoveries (
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    encounter_id TEXT NOT NULL CHECK(length(encounter_id)>0),
+    discovered_at INTEGER NOT NULL,
+    PRIMARY KEY(user_id, encounter_id)
+);
 CREATE TABLE pets (
     pet_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL REFERENCES players(user_id),
@@ -26,14 +35,16 @@ CREATE TABLE pets (
     layer INTEGER NOT NULL DEFAULT 1 CHECK (layer BETWEEN 1 AND 10),
     bloodline INTEGER NOT NULL DEFAULT 0 CHECK (bloodline >= 0),
     lineage_id TEXT,
+    archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1)),
     exp INTEGER NOT NULL DEFAULT 0 CHECK (exp >= 0),
     affinity INTEGER NOT NULL DEFAULT 0 CHECK (affinity BETWEEN 0 AND 100),
+    major_breakthrough_failures INTEGER NOT NULL DEFAULT 0 CHECK (major_breakthrough_failures >= 0),
     energy INTEGER NOT NULL DEFAULT 100 CHECK (energy BETWEEN 0 AND 100),
     energy_updated INTEGER NOT NULL,
     UNIQUE(user_id, pet_id)
 );
-CREATE INDEX pets_owner ON pets(user_id);
-CREATE INDEX pets_rank ON pets(realm DESC, layer DESC, exp DESC);
+CREATE INDEX pets_owner ON pets(user_id, archived, pet_id);
+CREATE INDEX pets_rank ON pets(archived, realm DESC, layer DESC, exp DESC);
 CREATE TABLE expeditions (
     job_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL REFERENCES players(user_id),

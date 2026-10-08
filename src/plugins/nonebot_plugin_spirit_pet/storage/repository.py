@@ -27,7 +27,9 @@ class Repository:
             row = self.conn.execute("SELECT * FROM pets WHERE pet_id=?", (pet_id,)).fetchone()
             if row is None:
                 raise GameError("灵宠不存在。")
-            self.pets[pet_id] = Pet(**dict(row))
+            data = dict(row)
+            data["archived"] = bool(data["archived"])
+            self.pets[pet_id] = Pet(**data)
         return self.pets[pet_id]
 
     def active_expedition(self, pet_id: int) -> sqlite3.Row | None:
@@ -53,8 +55,22 @@ class Repository:
         return self.pet(cursor.lastrowid)
 
     def owned_pets(self, user_id: str) -> list[Pet]:
-        ids = self.conn.execute("SELECT pet_id FROM pets WHERE user_id=? ORDER BY pet_id", (user_id,))
+        ids = self.conn.execute(
+            "SELECT pet_id FROM pets WHERE user_id=? AND archived=0 ORDER BY pet_id", (user_id,),
+        )
         return [self.pet(row["pet_id"]) for row in ids]
+
+    def archived_pets(self, user_id: str, *, limit: int, offset: int) -> list[Pet]:
+        ids = self.conn.execute(
+            "SELECT pet_id FROM pets WHERE user_id=? AND archived=1 ORDER BY pet_id LIMIT ? OFFSET ?",
+            (user_id, limit, offset),
+        )
+        return [self.pet(row["pet_id"]) for row in ids]
+
+    def archived_pet_count(self, user_id: str) -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=1", (user_id,),
+        ).fetchone()[0])
 
     def inventory(self, user_id: str) -> dict[str, int]:
         return dict(self.conn.execute(
@@ -201,12 +217,16 @@ class Repository:
         for pet in self.pets.values():
             self.conn.execute(
                 "UPDATE pets SET name=:name, realm=:realm, layer=:layer, bloodline=:bloodline, lineage_id=:lineage_id, "
-                "exp=:exp, affinity=:affinity, energy=:energy, energy_updated=:energy_updated "
+                "archived=:archived, exp=:exp, affinity=:affinity, "
+                "major_breakthrough_failures=:major_breakthrough_failures, "
+                "energy=:energy, energy_updated=:energy_updated "
                 "WHERE pet_id=:pet_id AND user_id=:user_id", asdict(pet),
             )
         for player in self.players.values():
             self.conn.execute(
                 "UPDATE players SET dao_name=:dao_name, stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
+                "last_bond_day=:last_bond_day, current_bond_streak=:current_bond_streak, "
+                "best_bond_streak=:best_bond_streak, "
                 "quest_day=:quest_day, last_train=:last_train, last_explore=:last_explore, "
                 "last_pve=:last_pve, last_pvp=:last_pvp WHERE user_id=:user_id",
                 asdict(player),

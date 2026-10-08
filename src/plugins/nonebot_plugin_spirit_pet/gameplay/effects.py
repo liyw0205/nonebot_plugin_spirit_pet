@@ -9,6 +9,9 @@ if TYPE_CHECKING:
     from .combat import Fighter
 
 
+BOND_GUARD_AFFINITY = 100
+
+
 @dataclass
 class TimedEffect:
     value: float
@@ -21,6 +24,7 @@ class EffectState:
     weaken: TimedEffect | None = None
     empower: TimedEffect | None = None
     ward: TimedEffect | None = None
+    taunt: TimedEffect | None = None
     stunned: bool = False
     control_immunity: int = 0
 
@@ -52,7 +56,7 @@ def skip_action(unit: Fighter) -> bool:
 
 def finish_action(unit: Fighter) -> None:
     # The skipped action counts too; newly cast self buffs start ticking on the next action.
-    for key in ("weaken", "empower", "ward"):
+    for key in ("weaken", "empower", "ward", "taunt"):
         current = getattr(unit.effects, key)
         if current is not None and current.applied_turn < unit.turns:
             current.remaining -= 1
@@ -74,16 +78,20 @@ def useful(effect: SkillEffect, target: Fighter, multiplier: float = 1) -> bool:
     if effect.kind == "cleanse":
         return bool(target.poison_turns or state.weaken or state.stunned)
     if effect.kind == "dispel":
-        return bool(target.shield or state.ward or state.empower)
+        return bool(target.shield or state.ward or state.empower or state.taunt)
+    if effect.kind == "taunt":
+        return state.taunt is None or state.taunt.remaining < effect.duration
     current = getattr(state, effect.kind)
     return current is None or current.value < _value(effect, target, multiplier) or current.remaining < effect.duration
 
 
 def enemy_target(skill: Skill | None, targets: list[Fighter], multiplier: float, rng) -> Fighter:
-    candidates = targets
+    candidates = [target for target in targets if target.effects.taunt is not None]
+    if not candidates:
+        candidates = targets
     if skill and skill.kind == "utility" and any(effect.target == "enemy" for effect in skill.effects):
         applicable = [target for target in targets if any(useful(effect, target, multiplier) for effect in skill.effects)]
-        candidates = applicable or targets
+        candidates = [target for target in candidates if target in applicable] or candidates
     return candidates[rng.randint(0, len(candidates) - 1)]
 
 
@@ -118,6 +126,10 @@ def apply(unit: Fighter, skill: Skill, planned: tuple[tuple[SkillEffect, Fighter
             continue
         state = target.effects
         if effect.kind == "stun":
+            if target.affinity == BOND_GUARD_AFFINITY and not target.bond_protection_used:
+                target.bond_protection_used = True
+                events.append(f"{target.name}与主人心意相通，抵挡了一次控制。")
+                continue
             state.stunned = True
             events.append(f"{target.name}受控，下一次行动跳过。")
         elif effect.kind == "cleanse":
@@ -129,8 +141,13 @@ def apply(unit: Fighter, skill: Skill, planned: tuple[tuple[SkillEffect, Fighter
             events.append(f"{target.name}的毒、虚弱与控制已净化。")
         elif effect.kind == "dispel":
             target.shield = 0
-            state.ward = state.empower = None
-            events.append(f"{target.name}的护盾与攻击增益已驱散。")
+            state.ward = state.empower = state.taunt = None
+            events.append(f"{target.name}的护盾、攻击增益与护阵已驱散。")
+        elif effect.kind == "taunt":
+            current = state.taunt
+            duration = max(effect.duration, current.remaining if current else 0)
+            state.taunt = TimedEffect(0, duration, target.turns)
+            events.append(f"{target.name}摆出护阵，敌方将在 {duration} 次行动内优先攻击该灵宠。")
         else:
             current = getattr(state, effect.kind)
             value = max(_value(effect, target, multiplier), current.value if current else 0)

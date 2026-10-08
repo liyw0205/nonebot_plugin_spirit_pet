@@ -62,6 +62,19 @@ def test_prepared_parties_have_a_viable_path_at_every_realm(game):
     assert all(row["wins"] + row["losses"] + row["draws"] == 10 for row in rows)
 
 
+def test_high_tier_prepared_solo_boss_keeps_a_farmable_win_rate(game):
+    service, store = game
+    scenario = next(case for case in scenarios(service.content)
+                    if case.id == "void_sanctum/prepared/mingdie")
+    row = evaluate(store, service.content, service.config, scenario, 100, 20261007)
+    assert row["wins"] >= 70
+
+    row["wins"] = 69
+    row["win_rate"] = 0.69
+    assert any("high-tier prepared solo win rate below 70%" in issue
+               for issue in audit([row], service.content))
+
+
 def test_audit_reports_absent_tiers_and_unwinnable_prepared_scenarios(game):
     service, store = game
     scenario = Scenario("losing", "forest", 0, "prepared", ("qingluan",))
@@ -96,6 +109,9 @@ def test_dungeon_pages_and_details_expose_actual_content(game, play):
             enemy = content.enemies[enemy_id]
             assert content.elements[enemy.primary_element].name in detail.text()
             assert str(enemy.stats.hp) in detail.text()
+            if enemy.signature_skill:
+                assert content.skills[enemy.signature_skill].name in detail.text()
+                assert f"每 {enemy.skill_every} 次行动施展" in detail.text()
         for item_id in dungeon.reward.items:
             assert content.items[item_id].name in detail.text()
     with pytest.raises(GameError):

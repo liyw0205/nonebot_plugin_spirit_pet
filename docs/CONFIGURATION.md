@@ -51,16 +51,16 @@ SQLite 备份使用 Online Backup API，可在 bot 运行时生成一致快照�
 
 ```bash
 python scripts/database_admin.py backup PATH/TO/spirit_pet.db PATH/TO/backups/pre-upgrade.db
-python scripts/database_admin.py verify PATH/TO/backups/pre-upgrade.db --schema-version 12
+python scripts/database_admin.py verify PATH/TO/backups/pre-upgrade.db --schema-version 15
 ```
 
-升级前记录当前 `git rev-parse HEAD`，备份 `.env` 与数据库并验证备份。当前开发版本使用 schema 12：全新空库可初始化；schema 1-11、未来版本和未版本化的非空库会被拒绝，原文件保持不变。未发布开发 schema 不自动迁移；若旧库不匹配，先备份并验证，再为新版本配置新的 `SPIRIT_PET_DB` 路径，保留旧库供旧代码使用。
+升级前记录当前 `git rev-parse HEAD`，备份 `.env` 与数据库并验证备份。当前开发版本使用 schema 17：全新空库可初始化；schema 1-16、未来版本和未版本化的非空库会被拒绝，原文件保持不变。未发布开发 schema 不自动迁移；若旧库不匹配，先备份并验证，再为新版本配置新的 `SPIRIT_PET_DB` 路径，保留旧库供旧代码使用。
 
 需要恢复时先停止 bot，恢复命令只写入新的数据库路径，然后验证结果，再将 `SPIRIT_PET_DB` 指向恢复副本：
 
 ```bash
 python scripts/database_admin.py restore PATH/TO/backups/pre-upgrade.db PATH/TO/spirit_pet.restored.db
-python scripts/database_admin.py verify PATH/TO/spirit_pet.restored.db --schema-version 12
+python scripts/database_admin.py verify PATH/TO/spirit_pet.restored.db --schema-version 15
 ```
 
 恢复旧 schema 备份时省略 `--schema-version` 可以检查 SQLite 完整性；当前代码仍会拒绝不匹配的旧 schema。回滚时同时使用与该 schema 对应的代码和数据库备份，不单独降级其中一项。保留原始数据库，确认恢复副本正常前不要更改或删除它。今后若已发布版本需要携带存档升级，必须先提供针对该来源 schema 的迁移工具和回滚验证；否则继续明确拒绝并保留原库。

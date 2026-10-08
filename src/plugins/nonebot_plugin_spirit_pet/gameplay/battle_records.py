@@ -12,6 +12,7 @@ from datetime import datetime
 from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..gameplay.combat import Battle, Fighter
+from ..gameplay.effects import BOND_GUARD_AFFINITY
 from ..gameplay.equipment import loadout
 from ..gameplay.mastery import progress
 from ..utils.arguments import quantity
@@ -34,6 +35,7 @@ def _skill_snapshot(ctx: Context, pet_id: int, fighter: Fighter) -> list[dict]:
         {
             "id": skill.id,
             "name": skill.name,
+            "targeting": skill.targeting,
             "level": mastery.get(skill.id, (1, 0))[0],
             "proficiency": mastery.get(skill.id, (1, 0))[1],
         }
@@ -57,9 +59,16 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
         "primary_element": fighter.primary_element,
         "primary_element_name": primary.name if primary else fighter.primary_element,
         "stats": fighter.stats.model_dump(),
-        "skills": [],
+        "skills": [
+            {"id": skill.id, "name": skill.name, "targeting": skill.targeting,
+             "interval": fighter.skill_interval}
+            for skill in fighter.skills
+        ],
         "equipment": [],
+        "equipment_sets": list(fighter.equipment_sets),
         "resonance": fighter.resonance_name,
+        "affinity": fighter.affinity,
+        "bond_protection": fighter.affinity == BOND_GUARD_AFFINITY,
     }
     if fighter.pet_id is None:
         return member
@@ -128,7 +137,7 @@ def record_battle(
     if type(battle.winner) is not int or battle.winner not in (-1, 0, 1):
         raise ValueError("invalid battle winner side")
     snapshot = dict(capture.snapshot)
-    snapshot["version"] = 2
+    snapshot["version"] = 3
     if battle_name:
         snapshot["scenario"] = {"id": battle_key, "name": battle_name}
     return ctx.repo.record_battle(
@@ -157,17 +166,28 @@ def _member_text(member: dict) -> str:
     dao = member.get("dao_name") or "秘境敌手"
     element = member.get("primary_element_name") or member.get("primary_element") or "未知"
     skills = "、".join(
-        f"{item['name']} {item['level']}级/{item['proficiency']}熟练度"
+        (
+            f"{item['name']} {item['level']}级/{item['proficiency']}熟练度"
+            f"（{'全体' if item.get('targeting') == 'all' else '单体'}）"
+        ) if "level" in item else (
+            f"{item['name']}（每 {item['interval']} 次行动）·"
+            f"{'全体' if item.get('targeting') == 'all' else '单体'}"
+        )
         for item in member.get("skills", [])
     ) or "无"
     equipment = "、".join(
         f"{item['name']} +{item['enhancement']}" for item in member.get("equipment", [])
     ) or "无"
+    equipment_sets = "、".join(member.get("equipment_sets", [])) or "无"
     realm = member.get("realm_name")
     realm_text = f" · {realm}{member.get('layer')}层 · {member.get('bloodline_name')}" if realm else ""
     resonance = f" · 共鸣 {member['resonance']}" if member.get("resonance") else ""
-    return (f"{dao}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance} · 主属性 {element} · "
-            f"技能 {skills} · 装备 {equipment}")
+    affinity = f" · 亲密 {member['affinity']}/100" if isinstance(member.get("affinity"), int) else ""
+    bond_protection = " · 心契护佑" if member.get("bond_protection") else ""
+    return (
+        f"{dao}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance}"
+        f"{affinity}{bond_protection} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
+    )
 
 
 def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:

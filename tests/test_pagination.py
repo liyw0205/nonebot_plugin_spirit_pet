@@ -79,6 +79,13 @@ def test_details_offer_matching_shop_skill_equipment_and_workshop_actions(play):
     assert "灵宠工坊 青岚翎" in gear.commands
 
 
+def test_area_skill_catalog_exposes_target_scope(game, play):
+    detail = play("skill_catalog", "灵潮荡阵")
+    assert "目标：全体存活敌人" in detail.text()
+    page = play("skill_catalog", "5")
+    assert any("灵潮荡阵" in line and "目标：全体存活敌人" in line for line in page.lines)
+
+
 def test_shop_does_not_list_or_offer_unpurchasable_items(game, play):
     unpriced = [item for item in game[0].content.items.values() if item.price is None]
     assert unpriced

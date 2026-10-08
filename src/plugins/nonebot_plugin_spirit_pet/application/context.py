@@ -31,6 +31,8 @@ class Context:
         if player.active_pet_id is None:
             raise GameError("尚未选择出战灵宠。")
         pet = self.repo.pet(player.active_pet_id)
+        if pet.archived:
+            raise GameError(f"{pet.name}已封存，请先复原后再出战。")
         restore_energy(pet, self.now, self.config.spirit_pet_energy_interval)
         return pet
 

@@ -2,7 +2,7 @@
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 
-一键安装默认最后以前台方式启动；用了 `--no-start` / `-NoStart` 时，在项目目录执行 `nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
+一键安装默认最后以前台方式启动；用了 `--no-start` 时，在项目目录执行 `nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
 
 安装器首次生成的 `.env` 已含随机 `ONEBOT_V11_ACCESS_TOKEN`，填写 OneBot 客户端时使用文件中的真实值，不必重新生成。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
 
@@ -20,7 +20,7 @@
 
    如果只在同一台电脑连接，可以将 `HOST` 设为 `127.0.0.1`。跨电脑连接时要使用 `0.0.0.0` 监听，允许防火墙 TCP 入站端口 `8080`，并只向可信局域网开放。切勿将无访问令牌的端口暴露到公网。
 
-   Token 使用 ASCII 随机字符串，不要直接填中文占位提示；可用 `python -c "import secrets; print(secrets.token_urlsafe(32))"` 生成。
+   Token 使用 ASCII 随机字符串，不要直接填中文占位提示；可用 `openssl rand -hex 32` 或 `od -An -N32 -tx1 /dev/urandom | tr -d ' \n'` 生成。
 
 2. 在 **NapCat WebUI → 网络配置 → WebSocket 客户端**新增并启用连接，配置对应字段：
 

@@ -16,11 +16,13 @@ def collection(ctx: Context, arg: str) -> Reply:
     pages = max(1, (len(species) + COLLECTION_PAGE_SIZE - 1) // COLLECTION_PAGE_SIZE)
     if page > pages:
         raise GameError(f"灵宠收集共 {pages} 页。")
-    owned = {
-        row["species_id"] for row in ctx.repo.conn.execute(
-            "SELECT DISTINCT species_id FROM pets WHERE user_id=?", (ctx.user_id,),
+    owned_counts = {
+        row["species_id"]: row["amount"] for row in ctx.repo.conn.execute(
+            "SELECT species_id, COUNT(*) AS amount FROM pets WHERE user_id=? GROUP BY species_id",
+            (ctx.user_id,),
         )
     }
+    owned = set(owned_counts)
     entries = species[(page - 1) * COLLECTION_PAGE_SIZE:page * COLLECTION_PAGE_SIZE]
     commands = []
     if page > 1:
@@ -29,9 +31,14 @@ def collection(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠收集 {page + 1}")
     commands.extend(("灵宠图鉴", "灵宠成就"))
     collected = len(owned & set(ctx.content.species))
+    duplicate_species = sum(amount >= 2 for amount in owned_counts.values())
+    lines = [f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种"]
+    for entry in entries:
+        amount = owned_counts.get(entry.id, 0)
+        status = f"已拥有（{amount}只）" if amount else "未收集"
+        lines.append(f"{entry.name} · {status}")
     return Reply(f"灵宠收集 {page}/{pages}", (
-        f"已收集 {collected}/{len(species)} 种",
-        *(f"{entry.name} · {'已拥有' if entry.id in owned else '未收集'}" for entry in entries),
+        *lines,
     ), tuple(commands))
 
 
@@ -39,6 +46,9 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     conn = ctx.repo.conn
     if metric == "species_collected":
         query, params = "SELECT COUNT(DISTINCT species_id) FROM pets WHERE user_id=?", (user_id,)
+    elif metric == "duplicate_species":
+        query = "SELECT COUNT(*) FROM (SELECT species_id FROM pets WHERE user_id=? GROUP BY species_id HAVING COUNT(*)>=2)"
+        params = (user_id,)
     elif metric == "pets_owned":
         query, params = "SELECT COUNT(*) FROM pets WHERE user_id=?", (user_id,)
     elif metric == "max_realm":
@@ -57,6 +67,16 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
             "WHERE p.user_id=? AND b.kind IN ('pve','pve_stage') AND b.winner_side=p.side"
         )
         params = (user_id,)
+    elif metric == "team_pve_wins":
+        query = (
+            "SELECT COUNT(*) FROM battle_records b JOIN battle_participants p USING(battle_id) "
+            "WHERE p.user_id=? AND p.permission='participant' "
+            "AND b.kind IN ('pve','pve_stage') AND b.winner_side=p.side "
+            "AND (SELECT COUNT(*) FROM battle_participants teammates "
+            "WHERE teammates.battle_id=b.battle_id AND teammates.side=p.side "
+            "AND teammates.permission='participant')>=2"
+        )
+        params = (user_id,)
     elif metric == "lineage_branches":
         query, params = "SELECT COUNT(DISTINCT lineage_id) FROM pets WHERE user_id=? AND lineage_id IS NOT NULL", (user_id,)
     elif metric == "skills_learned":
@@ -68,6 +88,20 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     elif metric == "skill_level_sum":
         query = "SELECT COALESCE(SUM(s.level),0) FROM learned_skills s JOIN pets p USING(pet_id) WHERE p.user_id=?"
         params = (user_id,)
+    elif metric == "expedition_claims":
+        query, params = "SELECT COUNT(*) FROM expeditions WHERE user_id=? AND state='claimed'", (user_id,)
+    elif metric == "max_affinity":
+        query, params = "SELECT COALESCE(MAX(affinity),0) FROM pets WHERE user_id=?", (user_id,)
+    elif metric == "best_bond_streak":
+        query, params = "SELECT COALESCE(MAX(best_bond_streak),0) FROM players WHERE user_id=?", (user_id,)
+    elif metric == "adventures_discovered":
+        encounter_ids = tuple(ctx.content.encounters)
+        placeholders = ",".join("?" for _ in encounter_ids)
+        query = (
+            f"SELECT COUNT(*) FROM adventure_discoveries WHERE user_id=? "
+            f"AND encounter_id IN ({placeholders})"
+        )
+        params = (user_id, *encounter_ids)
     else:
         raise ValueError(f"unknown achievement metric: {metric}")
     return int(conn.execute(query, params).fetchone()[0])

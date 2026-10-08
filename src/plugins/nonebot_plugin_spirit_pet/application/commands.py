@@ -3,7 +3,7 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
-from ..gameplay import crafting, expeditions, lineage, pve_stages
+from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records
 from ..gameplay.arena import battles, matching, seasons
@@ -24,6 +24,7 @@ ACTIONS = {
     "status": Command(information.status),
     "catalog": Command(information.catalog, True),
     "rank": Command(information.rank),
+    "adventure_rank": Command(information.adventure_rank),
     "pvp_rank": Command(seasons.rank, True),
     "season": Command(seasons.status, True),
     "season_rewards": Command(seasons.catalog, True),
@@ -32,6 +33,9 @@ ACTIONS = {
     "adopt": Command(pets.adopt, True),
     "summon": Command(pets.summon, True),
     "pet_list": Command(pets.pet_list, True),
+    "pet_archive_list": Command(pets.archive_list, True),
+    "pet_archive": Command(pets.archive, True),
+    "pet_restore": Command(pets.restore, True),
     "switch": Command(pets.switch, True),
     "rename": Command(pets.rename, True),
     "sign": Command(economy.sign),
@@ -39,13 +43,16 @@ ACTIONS = {
     "shop": Command(economy.shop, True),
     "buy": Command(economy.buy, True),
     "use": Command(economy.use, True),
-    "feed": Command(economy.feed),
-    "train": Command(cultivation.train),
+    "feed": Command(economy.feed, True),
+    "bond": Command(companionship.bond, True),
+    "train": Command(cultivation.train, True),
+    "co_train": Command(cultivation.co_train, True),
     "breakthrough": Command(cultivation.breakthrough, True),
-    "evolve": Command(cultivation.evolve),
+    "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True),
     "lineage_choose": Command(lineage.choose, True),
-    "explore": Command(adventure.explore),
+    "explore": Command(adventure.explore, True),
+    "adventure_codex": Command(adventure.adventure_codex, True),
     "dungeons": Command(adventure.dungeons, True),
     "challenge": Command(adventure.challenge, True),
     "stage_catalog": Command(pve_stages.catalog, True),
@@ -81,6 +88,7 @@ ACTIONS = {
     "team_disband": Command(management.disband),
     "team_challenge": Command(party.challenge, True),
     "equipment": Command(equipment.view, True),
+    "equipment_sets": Command(equipment.sets, True),
     "equipment_catalog": Command(equipment.catalog, True),
     "unequip": Command(equipment.unequip, True),
     "enhance": Command(forging.enhance, True),
@@ -95,13 +103,15 @@ ACTIONS = {
 }
 COMMANDS = {
     "灵宠": "help", "灵宠帮助": "help", "我的道号": "identity", "灵宠道号": "dao_name", "我的灵宠": "status",
-    "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠论剑榜": "pvp_rank",
+    "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季领奖": "season_claim",
     "灵宠匹配": "match",
     "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
+    "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠改名": "rename", "灵宠签到": "sign", "灵宠背包": "bag", "灵宠商店": "shop",
-    "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠修炼": "train",
-    "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore",
+    "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond", "灵宠修炼": "train",
+    "灵宠合修": "co_train",
+    "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
     "灵宠组队关卡": "team_stage_challenge",
@@ -118,6 +128,7 @@ COMMANDS = {
     "灵宠队伍同意": "team_accept", "灵宠队伍拒绝": "team_reject", "灵宠队伍撤回": "team_withdraw",
     "灵宠踢人": "team_kick", "灵宠转让": "team_transfer", "灵宠解散": "team_disband",
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
+    "灵宠套装": "equipment_sets",
     "灵宠强化": "enhance",
     "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",
     "灵宠工坊": "recipe_catalog", "灵宠打造": "craft", "灵宠分解": "salvage",
