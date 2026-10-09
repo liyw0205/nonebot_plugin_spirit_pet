@@ -58,7 +58,9 @@ def pvp(ctx: Context, arg: str) -> Reply:
     ctx.repo.invalidate_ready(ctx.user_id)
     mastery_lines = []
     for pet in ctx.active_pets(ctx.user_id):
-        mastery_lines.extend(award_mastery(ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {})))
+        mastery_lines.extend(award_mastery(
+            ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+        ))
     reply = Reply("论剑结算", (
         f"{ctx.player().dao_name}的{len(attackers)}宠阵容 挑战 {target.dao_name}的{len(defenders)}宠阵容镜像"
         f" · {battle.rounds} 回合", *battle.lines, *scores, *mastery_lines,

@@ -38,8 +38,7 @@ def bond(ctx: Context, arg: str) -> Reply:
     player.current_bond_streak = streak
     player.best_bond_streak = max(player.best_bond_streak, streak)
     pet.affinity += gained
-    if pet.pet_id == player.active_pet_id:
-        ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     advance(ctx, "bond")
     affinity = f"亲密 +{gained}（{pet.affinity}/100）；每日互动次数已用尽。" if gained else (
         "亲密已满，本次陪伴不再增加；每日互动次数已用尽。"

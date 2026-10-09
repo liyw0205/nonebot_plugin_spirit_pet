@@ -191,13 +191,17 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
     lines = [f"{dungeon.name} · {battle.rounds} 回合", *battle.lines]
     by_user = {user_id: ctx.player(user_id) for user_id in user_ids}
     for user_id, pet in selected:
-        player = by_user[user_id]
         pet.energy -= dungeon.energy
-        player.last_pve = ctx.now
-        lines.extend(award_mastery(ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {})))
-        if battle.winner == 0:
+        by_user[user_id].last_pve = ctx.now
+        lines.extend(award_mastery(
+            ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+        ))
+    if battle.winner == 0:
+        # 掉落和每日任务按参战成员结算一次；多宠阵容只提高战力，不叠加单位时间收益。
+        for user_id in user_ids:
             advance(ctx, "pve", user_id)
-            lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+            names = "、".join(pet.name for owner, pet in selected if owner == user_id)
+            lines.append(f"{by_user[user_id].dao_name}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
     for user_id in user_ids:
         ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")

@@ -54,9 +54,7 @@ NapCat 只是可选的 OneBot V11 实现，不是插件或反向 WS 的必要依
 
 ## 项目文档
 
-开发从 [唯一执行入口](docs/DEVELOPMENT.md#唯一执行入口) 开始，阶段与验收状态见 [开发路线](docs/ROADMAP.md)。D1-D3 本地开发版已交付，证据见 [交付记录](docs/reports/development-delivery.md)；QQ 与 Termux 真机验收待执行，正式发布尚未通过。
-
-[变更记录](CHANGELOG.md) · [玩法说明](docs/GAMEPLAY.md) · [静态内容规范](docs/CONTENT.md)
+[变更记录](CHANGELOG.md) · [开发指南](docs/DEVELOPMENT.md) · [静态内容规范](docs/CONTENT.md) · [开发路线](docs/ROADMAP.md)
 
 ## 许可
 

@@ -1,0 +1,10 @@
+10-09 23:13:14 [SUCCESS] nonebot | NoneBot is initializing...
+626 scenarios, 62600 battles; 0 issues
+seed=20261007; content_sha256=f9d32d0fb7864e6fa85dc9c15a328de7f2b82e5f0b3ffc1e9e52558498628458
+qiling: prepared 37 scenarios; minimum win rate 100.0%; mean 100.0%
+ningqi: prepared 91 scenarios; minimum win rate 100.0%; mean 100.0%
+zhuji: prepared 37 scenarios; minimum win rate 100.0%; mean 100.0%
+jindan: prepared 37 scenarios; minimum win rate 100.0%; mean 100.0%
+yuanying: prepared 37 scenarios; minimum win rate 100.0%; mean 100.0%
+huashen: prepared 37 scenarios; minimum win rate 90.0%; mean 99.7%
+dujie: prepared 37 scenarios; minimum win rate 98.0%; mean 99.9%

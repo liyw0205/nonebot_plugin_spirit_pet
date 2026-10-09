@@ -17,12 +17,16 @@ def progress_text(ctx: Context, level: int, proficiency: int) -> str:
     return f"{level}级 · {detail}"
 
 
-def award_mastery(ctx: Context, user_id: str, uses: dict[str, int]) -> tuple[str, ...]:
+def award_mastery(
+    ctx: Context, user_id: str, uses: dict[str, int], *, pet_id: int,
+) -> tuple[str, ...]:
     if any(type(count) is not int or count < 0 for count in uses.values()):
         raise ValueError("skill use counts must be nonnegative integers")
     if not any(uses.values()):
         return ()
-    pet = ctx.pet(user_id)
+    pet = ctx.repo.pet(pet_id)
+    if pet.user_id != user_id:
+        raise ValueError("mastery pet must belong to the participant")
     rows = ctx.repo.conn.execute(
         "SELECT skill_id, level, proficiency FROM learned_skills "
         "WHERE pet_id=? AND equipped=1 ORDER BY skill_id", (pet.pet_id,),

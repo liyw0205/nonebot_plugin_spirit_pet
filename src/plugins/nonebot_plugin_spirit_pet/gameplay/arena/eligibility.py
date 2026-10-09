@@ -14,6 +14,8 @@ def check_participant(ctx: Context, season: Season, user_id: str) -> Pet:
     for active in pets:
         if active.realm < minimum:
             raise GameError(f"{active.name}境界不足，论剑需达到{ctx.content.realms[minimum].name}。")
+    if len({active.realm for active in pets}) > 1:
+        raise GameError("论剑按出战阵容的大境界匹配，请先用 灵宠出战 改为同一大境界的灵宠。")
     ctx.check_action(player, pet, "pvp", season.rules.energy, ctx.config.spirit_pet_pvp_cooldown)
     for extra in pets[1:]:
         ctx.require_idle_pet(extra)
@@ -40,6 +42,8 @@ def check_ranked(ctx: Context, season: Season, first: str, second: str) -> tuple
     if not target_pets:
         raise GameError("该道友尚未选择出战灵宠。")
     right = target_pets[0]
+    if any(active.realm != right.realm for active in target_pets):
+        raise GameError(f"{target.dao_name}的出战阵容处于不同大境界，当前不能参与论剑。")
     if left.realm != right.realm:
         raise GameError("论剑双方需处于相同大境界。")
     if abs(rating(ctx, season, first) - rating(ctx, season, second)) > season.rules.max_rating_gap:

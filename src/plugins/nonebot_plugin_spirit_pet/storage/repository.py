@@ -157,6 +157,18 @@ class Repository:
             "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE user_id=?", (user_id,),
         )
 
+    def invalidate_pet_ready(self, user_id: str, pet_id: int) -> None:
+        member = self.conn.execute(
+            "SELECT t.leader_id FROM team_members m JOIN teams t USING(team_id) "
+            "WHERE m.user_id=? AND m.ready_pet_id IS NOT NULL", (user_id,),
+        ).fetchone()
+        if member is None:
+            return
+        pets = self.active_pets(user_id)
+        participants = pets if member["leader_id"] == user_id else pets[:1]
+        if any(pet.pet_id == pet_id for pet in participants):
+            self.invalidate_ready(user_id)
+
     def invalidate_team_ready(self, team_id: int) -> None:
         self.conn.execute(
             "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE team_id=?", (team_id,),

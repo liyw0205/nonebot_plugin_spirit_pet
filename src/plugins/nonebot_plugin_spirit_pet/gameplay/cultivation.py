@@ -23,8 +23,7 @@ def train(ctx: Context, arg: str) -> Reply:
     pet.exp += gained
     pet.energy -= rules.training_energy
     player.last_train = ctx.now
-    if pet.pet_id == player.active_pet_id:
-        ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     advance(ctx, "train")
     return Reply("吐纳修炼", (
         f"{pet.name}（编号 {pet.pet_id}）吸纳天地灵气。",
@@ -145,8 +144,7 @@ def breakthrough(ctx: Context, arg: str) -> Reply:
         ctx.repo.consume_item(ctx.user_id, item_id, amount)
     player.stones -= stones
     chance = breakthrough_chance(pet, cost, bonus)
-    if pet.pet_id == player.active_pet_id:
-        ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     if ctx.rng.random() < chance:
         previous_failures = pet.major_breakthrough_failures
         pet.exp -= exp
@@ -190,8 +188,7 @@ def evolve(ctx: Context, arg: str) -> Reply:
         ctx.repo.consume_item(ctx.user_id, item_id, amount)
     pet.exp -= cost.exp
     player.stones -= cost.stones
-    if pet.pet_id == player.active_pet_id:
-        ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     if ctx.rng.random() >= cost.chance:
         return Reply("进化未成", ("血脉未改变，本次修为、灵石和材料已消耗。",))
     pet.bloodline += 1

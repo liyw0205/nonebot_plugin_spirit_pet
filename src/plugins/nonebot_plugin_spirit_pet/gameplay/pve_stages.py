@@ -210,7 +210,9 @@ def challenge(ctx: Context, arg: str) -> Reply:
     _settle_cost(ctx, user_ids, stage)
     lines = [f"第{stage.order}关 · {stage.name} · {battle.rounds} 回合", *battle.lines]
     for user_id, pet in selected:
-        lines.extend(award_mastery(ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {})))
+        lines.extend(award_mastery(
+            ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+        ))
 
     if battle.winner == 0:
         for user_id in user_ids:

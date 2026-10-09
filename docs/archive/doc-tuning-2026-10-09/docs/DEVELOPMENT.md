@@ -4,38 +4,6 @@
 
 开发计划见 [开发路线](ROADMAP.md)，数据字段见 [静态内容规范](CONTENT.md)，玩家操作见 [玩法说明](GAMEPLAY.md)。
 
-## 唯一执行入口
-
-默认只读取本短入口与路线图当前阶段，再按该任务读取相关领域章节、源码和测试；不每轮全量加载历史文档。已实现范围与原文快照供定向核对。
-
-### 本轮提交推送交付（2026-10-10）
-
-当前目标为审查并提交推送已验收的 D1-D3 本地开发版到 `origin/develop`。用户已授权本轮提交和普通推送；本轮 goal 须在提交推送成功并确认远端提交后才 `complete`。
-
-1. 复用 [本地交付记录](reports/development-delivery.md) 中的 `1450 passed`、真实 ASGI/OneBot WS、compileall 和合计 81,400 场固定种子仿真结果。2026-10-10 文档更新前已核对运行 SHA 清单、运行 diff patch、依赖快照及三份配置/依赖声明哈希，均与该记录一致；没有后续运行改动，不重跑长测。
-2. 检查本次文档链接和 diff，审查当前 `develop` 本轮相关代码、测试、文档、报告及 AGENTS 的最终差异，按明确文件清单暂存。玩家数据库、运行数据、密钥、`.env`、缓存不暂存；历史文档归档保留。
-3. 提交已审查内容，普通推送到 `origin/develop`，确认远端 `develop` 与本地 HEAD 为同一提交，记录提交与推送结果后才完成 goal。不强推、不合并、不创建发布标签或发版。
-4. QQ/Termux 真机继续 `waiting_external`，正式发布继续 `blocked`；提交推送交付不代表真机验收或正式发布通过。若运行证据不再匹配，先定位相关变化，再按影响补必要验证。
-
-### 开发阶段流程
-
-1. 读取 [本地开发版交付清单](ROADMAP.md#本地开发版交付清单)，选取当前阶段的下一未完成项；先核对工作区已有改动和相同状态的验证记录。
-2. 对排队缺陷先做最小复现，再修改对应模块并运行相关快测；记录输入、行为、改动和结果。小项通过后继续下一项，阶段通过后进入下一阶段。
-3. 按 [验证节奏](#验证节奏) 完成阶段门禁，更新路线图状态和证据。D1-D3 全部完成并有本地交付记录后，开发阶段才通过；goal 完成条件以当前交付目标为准。
-4. QQ AppID/客户端和 Termux 真机验收单列 `waiting_external`，记录缺少的环境与待执行步骤。剩余本地事项继续开发；只剩外部验收时等待该环境，正式发布仍为 `blocked`。
-
-开发范围仍是整份既有玩法合同的本地开发版，不以一次阵容修复代替交付，也不以等待真机为理由循环跑同一组测试。下面的架构、数据、玩法和事务规则仍是完整开发合同。
-
-当前 D1-D3 已全部 `passed`，最终运行状态与验证结果见 [本地交付记录](reports/development-delivery.md)。本轮先完成上述提交推送交付；随后等待路线图的 QQ/Termux 外部验收，仅等待环境时不重复本地门禁。
-
-### 可复用 goal
-
-```text
-/goal 按docs/DEVELOPMENT.md唯一入口完成2026-10-10提交推送交付，成功后complete。
-```
-
-清理只处理本任务明确生成且已不再使用的产物。不得删除 `/tmp/codex-daemon-*`、代理 IPC socket/lock 或其他活跃代理目录。
-
 ## 目录与依赖
 
 ```text
@@ -111,7 +79,6 @@ scripts/smoke_test.py          无需 NapCat 的协议冒烟测试
 scripts/database_admin.py      SQLite 在线备份、完整性验证与非覆盖恢复
 scripts/balance_report.py      固定种子仿真入口，只使用临时数据库
 scripts/balance_specials.py    血脉分支与七类主动效果的独立专项仿真
-scripts/balance_lineups.py     单人三宠、三人五宠与合法基线的生产战斗/结算仿真
 scripts/balance/               场景矩阵、实际战斗、单位时间收益与验收
 docs/                          安装、接入、玩法和开发文档
 ```
@@ -163,7 +130,7 @@ docs/                          安装、接入、玩法和开发文档
 
 1. 静态掉落写入对应 JSON，涉及新结构时先在 `domain/content.py` 定义模型，在 Catalog 校验其物品引用。新冷却秒数放 `core/config.py` 和 `.env.example`。
 2. 在合适的 `gameplay/` 模块编写 `def gather(ctx: Context, arg: str) -> Reply`。先校验条件，再通过同一 Repository 修改资源；预期拒绝抛 `GameError`。
-3. 如果消费精力或改变战斗能力，须取消对应组队准备。指定宠物的养成使用 `ctx.repo.invalidate_pet_ready(user_id, pet_id)`，按队长整队/队友首宠判断实际参战；阵容或账户战斗配置变更使用 `ctx.repo.invalidate_ready(user_id)`。
+3. 如果消费精力或改变战斗能力，调用 `ctx.repo.invalidate_ready(user_id)`，不要沿用旧的组队准备。
 4. 在 `application/commands.py` 为 ACTIONS 注册函数，COMMANDS 注册中文入口。仅确实接受参数时设置 `arguments=True`。
 5. 如果影响每日任务，明确成功事件并调用 `quests.advance`，同时扩展静态任务事件类型。
 6. 添加成功、失败回滚、资源不足、并发、相同消息重投和冷却边界测试；更新玩家帮助、`docs/GAMEPLAY.md`。
@@ -233,38 +200,14 @@ docs/                          安装、接入、玩法和开发文档
 
 `develop` 用于日常开发和提交，`main` 接收验证通过的版本。本轮以同一通过测试的提交建立两个分支；后续功能先提交 develop，再通过审查/测试合入 main。提交不包含 .env、玩家库或本地虚拟环境，不强制推送覆盖已有提交。
 
-## 验证节奏
-
-| 时点 | 验证要求 |
-| --- | --- |
-| 仅文档调整 | 检查链接、合同表述和 diff；不跑全量测试或仿真 |
-| 一次实现修改 | 运行直接涉及的测试文件；修复先有可复现失败，再证明通过 |
-| D1/D2 阶段结束 | 按实际影响运行全量回归；共享事务、阵容、奖励或适配器链路变更需要全量 pytest，协议变更另做 WS 冒烟 |
-| 数值/内容/战斗公式改变 | 相关快测通过后，运行受影响的完整固定种子矩阵并审阅差异 |
-| D3 本地交付里程碑 | 对最终状态完成全量 pytest、真实 WS 冒烟、compileall、基础与专项 100 次仿真，以及 D2 的三宠/五宠验收；复用最终状态已有通过记录 |
-
-验证记录须写明源码提交与未提交 diff 状态、静态内容/配置/依赖状态、命令、结果和覆盖限制。只改变文档时可复用原运行状态证据；实现、内容、配置或依赖变化后重跑受影响检查。无改动不重跑已通过门禁，遇到失败回到该失败的最早不确定环节。
-
-依赖缺失时才安装：
+## 验证
 
 ```bash
 .venv/bin/python -m pip install -r requirements.txt 'pytest>=8,<10'
-```
-
-实现修改先选择相关文件，例如阵容结算：
-
-```bash
-.venv/bin/python -m pytest -q tests/test_multi_pet_lineup.py tests/test_lineup_settlement.py tests/test_lineup_coverage.py tests/test_mastery.py
-```
-
-阶段和交付门禁按上表选用：
-
-```bash
 .venv/bin/python -m pytest -q
 .venv/bin/python scripts/smoke_test.py
 .venv/bin/python scripts/balance_report.py --runs 100 --seed 20261007 --check
 .venv/bin/python scripts/balance_specials.py --runs 100 --seed 20261007 --check
-.venv/bin/python scripts/balance_lineups.py --runs 100 --seed 20261007 --check --json docs/reports/development-lineups.json --markdown docs/reports/development-lineups.md
 .venv/bin/python -m compileall -q src tests scripts
 ```
 
@@ -274,7 +217,7 @@ Windows 使用 `.venv\Scripts\python.exe`。当前 Termux 可直接用 `$HOME/my
 
 一键安装脚本的无 Python 自举、隔离安装/卸载与 `xiupet` 启停由本地测试覆盖。QQ 真机 AppID 权限、Markdown 审批和蓝字客户端呈现需另行验收，单元测试不代表平台授权已经通过。
 
-固定种子矩阵的场景、准备程度、收益口径和留存结果见 [数值验收](BALANCE.md)。全量 pytest 含原基础矩阵每个准备阵容 10 次及新增有限阵容每场景 2 次的快速门禁；完整 100 次矩阵只按上表的相关变更或交付里程碑运行。原 626/124 矩阵与新增三宠/五宠矩阵分别记录，不能互相替代。新增矩阵运行生产 `run_dungeon`，包含逐宠精力、首宠修为、成员掉落、任务与快照检查。脚本不得连接或修改 `SPIRIT_PET_DB`，仿真只使用临时数据库、生产装配和真实 `fight`。
+固定种子矩阵的场景、准备程度、收益口径和留存结果见 [数值验收](BALANCE.md)。日常 pytest 含每个准备阵容 10 次的快速门禁；内容、公式、主动技能变更后另跑完整 100 次并审阅差异。脚本不得连接或修改 `SPIRIT_PET_DB`，仿真只使用临时数据库、生产 `loadout.combatant` 和真实 `fight`。
 
 基础矩阵不包含血脉分支或辅助配装；专项脚本另外验证全部分支和主动效果，并保留未胜利的对照结果。效果观测器仅在单进程专项范围内临时包装 `effects.apply`，统计实际状态变化，退出或异常时恢复原函数；它不是机器人运行时组件，不应在运行中的服务进程里调用。
 

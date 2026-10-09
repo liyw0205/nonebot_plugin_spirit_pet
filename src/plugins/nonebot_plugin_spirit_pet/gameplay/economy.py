@@ -96,8 +96,7 @@ def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
     pet.affinity += affinity
     if item.id == "spirit_food":
         advance(ctx, "feed")
-    if pet.pet_id == ctx.player().active_pet_id:
-        ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
         f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
     ))

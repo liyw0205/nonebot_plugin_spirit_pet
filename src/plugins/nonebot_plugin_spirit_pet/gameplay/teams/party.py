@@ -50,6 +50,8 @@ def status(ctx: Context, arg: str) -> Reply:
     others = []
     for row in rows:
         active = ctx.repo.active_pets(row["user_id"])
+        if row["user_id"] != member["leader_id"]:
+            active = active[:1]
         pet = active[0] if active else _active_pet(ctx, row["user_id"])
         role = "队长" if row["user_id"] == member["leader_id"] else "队员"
         ready_ids = _ready_ids(row)
@@ -79,6 +81,8 @@ def _member_detail(ctx: Context, member, dao_name: str) -> Reply:
     if row is None:
         raise GameError("该道友不在你的队伍中。")
     active = ctx.repo.active_pets(row["user_id"])
+    if row["user_id"] != member["leader_id"]:
+        active = active[:1]
     pet = active[0] if active else _active_pet(ctx, row["user_id"])
     role = "队长" if row["user_id"] == member["leader_id"] else "队员"
     ready_ids = _ready_ids(row)

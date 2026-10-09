@@ -21,3 +21,4 @@ def test_actual_nonebot_reverse_websocket_roundtrip():
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "PASS:" in result.stdout
+    assert "multi-pet protocol chain" in result.stdout

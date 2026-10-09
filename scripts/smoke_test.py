@@ -1,5 +1,6 @@
 """Run the actual ASGI app and a OneBot V11 client without NapCat or QQ credentials."""
 
+import importlib
 import json
 import os
 import sqlite3
@@ -14,6 +15,244 @@ from fastapi.testclient import TestClient
 from nonebot.adapters.onebot.v11 import Adapter as OneBotAdapter
 from nonebot.adapters.qq import Adapter as QQAdapter
 from starlette.websockets import WebSocketDisconnect
+
+
+class _MinimumRandom:
+    def randint(self, start, stop):
+        return start
+
+    def random(self):
+        return 0.0
+
+
+def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
+    """Verify one protocol flow against temporary persisted state and real combat."""
+    users = (41001, 41002, 41003, 41004)
+    names = ("三灵队长", "三灵队友", "单灵队友", "三灵镜像")
+    species = ("qingluan", "xuanhu", "baize")
+    handlers = importlib.import_module(f"{plugin_package}.adapters.handlers")
+    adventure = importlib.import_module(f"{plugin_package}.gameplay.adventure")
+    arena = importlib.import_module(f"{plugin_package}.gameplay.arena.battles")
+    battles = []
+
+    def read(statement, arguments=()):
+        with closing(sqlite3.connect(database)) as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(row) for row in conn.execute(statement, arguments)]
+
+    def write(statement, arguments=()):
+        with closing(sqlite3.connect(database)) as conn:
+            conn.execute(statement, arguments)
+            conn.commit()
+
+    original_fight = adventure.fight
+
+    def observed_fight(*args, **kwargs):
+        result = original_fight(*args, **kwargs)
+        battles.append(result)
+        return result
+
+    def pets(user):
+        return read("SELECT * FROM pets WHERE user_id=? ORDER BY pet_id", (str(user),))
+
+    def mastery():
+        return read("SELECT * FROM learned_skills ORDER BY pet_id, skill_id")
+
+    def items(user):
+        return {row["item_id"]: row["quantity"] for row in read("SELECT * FROM inventory WHERE user_id=?", (str(user),))}
+
+    def resource_state():
+        tables = ("players", "pets", "inventory", "learned_skills", "team_members", "quest_progress",
+                  "pvp_results", "season_entries")
+        return {table: read(f"SELECT * FROM {table} ORDER BY rowid") for table in tables}
+
+    def mastery_points(row):
+        return row["proficiency"] + sum(
+            handlers.game.content.skill_levels[level].required_proficiency
+            for level in range(1, row["level"])
+        )
+
+    def check_mastery(before, battle, participating):
+        old = {(row["pet_id"], row["skill_id"]): row for row in before}
+        cap = sum(level.required_proficiency or 0 for level in handlers.game.content.skill_levels.values())
+        for row in mastery():
+            key = row["pet_id"], row["skill_id"]
+            uses = battle.skill_uses[0].get(row["pet_id"], {}).get(row["skill_id"], 0)
+            gained = uses * handlers.game.content.rules.skill_proficiency_per_use if row["pet_id"] in participating else 0
+            assert mastery_points(row) == min(cap, mastery_points(old[key]) + gained), (row, uses)
+        assert all(battle.skill_uses[0].get(pet_id, {}).get("spirit_wave", 0) > 0 for pet_id in participating)
+
+    def last_record(kind):
+        return read("SELECT * FROM battle_records WHERE initiator_id=? AND kind=? ORDER BY battle_id DESC LIMIT 1",
+                    (str(users[0]), kind))[0]
+
+    def check_snapshot(record, expected_sides, before_mastery):
+        snapshot = json.loads(record["snapshot"])
+        assert snapshot["version"] == 3
+        previous = {(row["pet_id"], row["skill_id"]): row for row in before_mastery}
+        for side, selected in enumerate(expected_sides):
+            members = snapshot["teams"][side]["members"]
+            assert len(members) == len(selected)
+            for member, (user, pet_id) in zip(members, selected):
+                row = read("SELECT * FROM pets WHERE pet_id=?", (pet_id,))[0]
+                assert member["pet_name"] == row["name"]
+                assert member["dao_name"] == names[users.index(user)]
+                assert member["species_id"] == row["species_id"]
+                assert member["realm"] == row["realm"] and member["layer"] == row["layer"]
+                assert set(member["stats"]) == {"hp", "attack", "defense", "speed"}
+                assert member["primary_element"] and member["elements"]
+                skill = member["skills"][0]
+                old = previous[pet_id, "spirit_wave"]
+                assert (skill["id"], skill["level"], skill["proficiency"]) == ("spirit_wave", old["level"], old["proficiency"])
+                assert "equipment" in member and "equipment_sets" in member and "resonance" in member
+        participants = read("SELECT user_id, side FROM battle_participants WHERE battle_id=? ORDER BY side, user_id",
+                            (record["battle_id"],))
+        expected = sorted({(str(user), side) for side, selected in enumerate(expected_sides) for user, _ in selected},
+                          key=lambda item: (item[1], item[0]))
+        assert [(row["user_id"], row["side"]) for row in participants] == expected
+        assert json.loads(record["battle_log"])
+
+    with patch(f"{plugin_package}.application.game.time.time", return_value=now), \
+         patch.object(handlers.game, "rng", _MinimumRandom()), \
+         patch.object(adventure, "fight", observed_fight), patch.object(arena, "fight", observed_fight):
+        for index, (user, name) in enumerate(zip(users, names)):
+            exchange(user, 100 + index * 10, "灵宠领养 青鸾", "灵契初成")
+            exchange(user, 101 + index * 10, f"灵宠道号 {name}", "道号已定")
+            write("UPDATE players SET stones=10000 WHERE user_id=?", (str(user),))
+            if index != 2:
+                exchange(user, 102 + index * 10, "灵宠召唤 2", "山海召唤")
+
+        rosters = {}
+        # Prerequisites only: all mutations under test still enter through commands.
+        for user in users:
+            rosters[user] = [row["pet_id"] for row in pets(user)]
+            for index, pet_id in enumerate(rosters[user]):
+                write("UPDATE pets SET species_id=?, name=?, realm=1, energy=100, energy_updated=? WHERE pet_id=?",
+                      (species[index], f"{names[users.index(user)]}{index + 1}", now, pet_id))
+                write("INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, 'spirit_wave', 1)", (pet_id,))
+            exchange(user, 140 + users.index(user), "灵宠出战 " + " ".join(map(str, rosters[user])), "灵宠出战阵容")
+
+        slots_before = read("SELECT * FROM active_pet_slots ORDER BY user_id, slot")
+        exchange(users[0], 150, "灵宠出战", "三灵队长3")
+        assert read("SELECT * FROM active_pet_slots ORDER BY user_id, slot") == slots_before
+        assert read("SELECT active_pet_id FROM players WHERE user_id=?", (str(users[0]),))[0]["active_pet_id"] == rosters[users[0]][0]
+
+        before = pets(users[0]), mastery(), read("SELECT stones FROM players WHERE user_id=?", (str(users[0]),))[0]["stones"]
+        before_items = items(users[0])
+        solo_reply = exchange(users[0], 151, "灵宠挑战 青岚林", "秘境获胜")
+        assert [row["energy"] for row in pets(users[0])] == [80, 80, 80]
+        assert [row["exp"] - old["exp"] for row, old in zip(pets(users[0]), before[0])] == [35, 0, 0]
+        assert read("SELECT stones FROM players WHERE user_id=?", (str(users[0]),))[0]["stones"] - before[2] == 40
+        assert items(users[0]).get("forge_ore", 0) - before_items.get("forge_ore", 0) == 1
+        assert items(users[0]).get("bloodline_essence", 0) - before_items.get("bloodline_essence", 0) == 1
+        assert read("SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='pve_once'", (str(users[0]),)) == [{"progress": 1}]
+        check_mastery(before[1], battles[-1], rosters[users[0]])
+        solo = last_record("pve")
+        check_snapshot(solo, [[(users[0], pet_id) for pet_id in rosters[users[0]]]], before[1])
+        after_solo = resource_state()
+        assert exchange(users[0], 151, "灵宠挑战 青岚林", "秘境获胜") == solo_reply
+        assert resource_state() == after_solo
+
+        exchange(users[0], 152, "灵宠组队", "灵契小队")
+        for index, user in enumerate(users[1:3]):
+            exchange(user, 153 + index * 2, f"灵宠入队 {names[0]}", "入队申请已提交")
+            exchange(users[0], 154 + index * 2, f"灵宠队伍同意 {names[index + 1]}", "加入队伍")
+        for index, user in enumerate(users[:3]):
+            exchange(user, 157 + index, "灵宠准备", "出征准备")
+        expected_ready = {str(user): rosters[user] if index == 0 else rosters[user][:1] for index, user in enumerate(users[:3])}
+        ready = read("SELECT user_id, ready_pet_ids FROM team_members ORDER BY user_id")
+        assert {row["user_id"]: json.loads(row["ready_pet_ids"]) for row in ready} == expected_ready
+        exchange(users[0], 160, f"灵宠修炼 {rosters[users[0]][1]}", "吐纳修炼")
+        ready = read("SELECT user_id, ready_pet_id FROM team_members ORDER BY user_id")
+        assert [row["ready_pet_id"] is None for row in ready] == [True, False, False]
+        assert [row["energy"] for row in pets(users[0])] == [80, 65, 80]
+        rejected_before = resource_state()
+        exchange(users[0], 161, "灵宠组队挑战 上古灵殿", "全体成员准备")
+        assert resource_state() == rejected_before
+        exchange(users[0], 162, "灵宠准备", "出征准备")
+
+        with patch(f"{plugin_package}.application.game.time.time", return_value=now + 600):
+            before = {user: pets(user) for user in users[:3]}
+            before_items = {user: items(user) for user in users[:3]}
+            before_skills = mastery()
+            stones = {row["user_id"]: row["stones"] for row in read("SELECT user_id, stones FROM players")}
+            team_reply = exchange(users[0], 163, "灵宠组队挑战 上古灵殿", "秘境获胜")
+            selected = [(user, pet_id) for user in users[:3] for pet_id in expected_ready[str(user)]]
+            assert len(selected) == 5
+            for user in users[:3]:
+                for row, old in zip(pets(user), before[user]):
+                    fought = row["pet_id"] in expected_ready[str(user)]
+                    assert row["energy"] == min(100, old["energy"] + 2) - (30 if fought else 0)
+                    assert row["exp"] - old["exp"] == (70 if row["pet_id"] == rosters[user][0] else 0)
+                assert read("SELECT stones FROM players WHERE user_id=?", (str(user),))[0]["stones"] - stones[str(user)] == 90
+                assert items(user).get("forge_ore", 0) - before_items[user].get("forge_ore", 0) == 2
+                assert items(user).get("bloodline_essence", 0) - before_items[user].get("bloodline_essence", 0) == 1
+                progress = read("SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='pve_once'", (str(user),))[0]["progress"]
+                assert progress == 1
+            check_mastery(before_skills, battles[-1], [pet_id for _, pet_id in selected])
+            team = last_record("pve")
+            check_snapshot(team, [selected], before_skills)
+            assert all(row["ready_pet_id"] is None for row in read("SELECT ready_pet_id FROM team_members"))
+            after_team = resource_state()
+            assert exchange(users[0], 163, "灵宠组队挑战 上古灵殿", "秘境获胜") == team_reply
+            assert resource_state() == after_team
+
+            # A stale, empty-energy defender is still a read-only three-pet mirror.
+            exchange(users[3], 175, "灵宠组队", "灵契小队")
+            exchange(users[3], 176, "灵宠准备", "出征准备")
+            for pet_id in rosters[users[3]]:
+                write("UPDATE pets SET energy=0, energy_updated=? WHERE pet_id=?", (now - 3600, pet_id))
+            for index, user in enumerate(users[:3]):
+                exchange(user, 164 + index, "灵宠准备", "出征准备")
+            defender_before = pets(users[3])
+            defender_ready = read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),))
+            before_skills = mastery()
+            exchange(users[0], 167, "灵宠匹配", names[3])
+            ranked_reply = exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算")
+            assert pets(users[3]) == defender_before
+            assert read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),)) == defender_ready
+            assert [row["energy"] for row in pets(users[0])] == [32, 17, 32]
+            check_mastery(before_skills, battles[-1], rosters[users[0]])
+            ranked = last_record("pvp")
+            check_snapshot(ranked, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
+                                    [(users[3], pet_id) for pet_id in rosters[users[3]]]], before_skills)
+            assert read("SELECT last_pvp FROM players WHERE user_id=?", (str(users[3]),)) == [{"last_pvp": None}]
+            assert read("SELECT ready_pet_id FROM team_members WHERE user_id=?", (str(users[0]),)) == [{"ready_pet_id": None}]
+            ranked_state = resource_state()
+            assert exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算") == ranked_reply
+            assert resource_state() == ranked_state
+
+            spar_before = resource_state()
+            spar_skills = mastery()
+            spar_reply = exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算")
+            assert resource_state() == spar_before
+            spar = last_record("spar")
+            check_snapshot(spar, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
+                                 [(users[3], pet_id) for pet_id in rosters[users[3]]]], spar_skills)
+            assert all(battles[-1].skill_uses[side].get(pet_id, {}).get("spirit_wave", 0) > 0
+                       for side, user in enumerate((users[0], users[3])) for pet_id in rosters[user])
+            assert exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算") == spar_reply
+            assert resource_state() == spar_before
+            exchange(users[0], 170, "灵宠战报", "三灵队长1、三灵队长2、三灵队长3")
+            exchange(users[1], 171, f"灵宠战报 查看 {team['battle_id']}", "上古灵殿")
+            exchange(users[3], 172, f"灵宠战报 查看 {ranked['battle_id']}", "战报")
+            exchange(users[3], 173, f"灵宠战报 查看 {team['battle_id']}", "不是该场战斗的参与者")
+
+        saved_records = read("SELECT * FROM battle_records WHERE initiator_id=? ORDER BY battle_id", (str(users[0]),))
+        write("DELETE FROM operations WHERE user_id=?", (str(users[0]),))
+        # Replay after cache expiry, changed lineup and a future cooldown boundary.
+        with patch(f"{plugin_package}.application.game.time.time", return_value=now + 8 * 86400):
+            exchange(users[0], 174, f"灵宠出战 {rosters[users[0]][2]}", "灵宠出战阵容")
+            replay_before = resource_state()
+            for message_id, command, reply, expected in (
+                (151, "灵宠挑战 青岚林", solo_reply, "秘境获胜"),
+                (163, "灵宠组队挑战 上古灵殿", team_reply, "秘境获胜"),
+                (168, f"灵宠论剑 {names[3]}", ranked_reply, "论剑结算"),
+                (169, f"灵宠切磋 {names[3]}", spar_reply, "切磋结算"),
+            ):
+                assert exchange(users[0], message_id, command, expected) == reply
+                assert resource_state() == replay_before
+            assert read("SELECT * FROM battle_records WHERE initiator_id=? ORDER BY battle_id", (str(users[0]),)) == saved_records
 
 
 def main():
@@ -66,6 +305,7 @@ def main():
                         assert text == responses[message_id]
                     responses[message_id] = text
                     ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
+                    return text
 
                 for message_id, command, expected in [
                     (1, "灵宠领养 青鸾", "灵契初成"),
@@ -219,7 +459,8 @@ def main():
                     ).fetchone()[0] == 1
                 for message_id in range(54, 60):
                     assert "12345" not in responses[message_id]
-        print("PASS: plugin load, WS authentication, collection, achievements, resonance, skills, PVE, stages, battle reports, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons and redelivery")
+                run_multi_pet_chain(database, exchange, plugin_package, now=finishes_at + 1)
+        print("PASS: plugin load, WS authentication, collection, achievements, resonance, skills, PVE, stages, battle reports, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons, multi-pet protocol chain and redelivery")
 
 
 if __name__ == "__main__":
