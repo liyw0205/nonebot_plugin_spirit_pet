@@ -6,10 +6,10 @@
 
 项目实际加载 `.venv` 中的外部 pip 分发，不是内置 vendor。`pyproject.toml` 将 OneBot V11、QQ 分别注册为 `nonebot.adapters.onebot.v11`、`nonebot.adapters.qq`；插件内 `src/plugins/nonebot_plugin_spirit_pet/adapters/` 是应用接线与消息包装。
 
-| 分发 | 当前解析版本 | 上游仓库与匹配 tag commit | 逐文件核对 |
+| 分发 | 实际导入文件 | 当前解析版本 | 上游仓库与匹配 tag commit | 逐文件核对 |
 | --- | --- | --- | --- |
-| `nonebot-adapter-onebot` | `2.4.6` | [nonebot/adapter-onebot](https://github.com/nonebot/adapter-onebot), `v2.4.6` `7194dbb9d363d152230ecb9a7225125999a0e6af` | 安装的 24 个 Python 文件均与 tag 一致 |
-| `nonebot-adapter-qq` | `1.7.3` | [nonebot/adapter-qq](https://github.com/nonebot/adapter-qq), `v1.7.3` `9bf584471e4fa658f276903481b99373c43016fd` | 安装的 15 个 Python 文件均与 tag 一致 |
+| `nonebot-adapter-onebot` | `.venv/lib/python3.11/site-packages/nonebot/adapters/onebot/v11/__init__.py` | `2.4.6` | [nonebot/adapter-onebot](https://github.com/nonebot/adapter-onebot), `v2.4.6` `7194dbb9d363d152230ecb9a7225125999a0e6af` | 安装的 24 个 Python 文件均与 tag 一致 |
+| `nonebot-adapter-qq` | `.venv/lib/python3.11/site-packages/nonebot/adapters/qq/__init__.py` | `1.7.3` | [nonebot/adapter-qq](https://github.com/nonebot/adapter-qq), `v1.7.3` `9bf584471e4fa658f276903481b99373c43016fd` | 安装的 15 个 Python 文件均与 tag 一致 |
 
 版本取自当前 `.venv` 的分发元数据，并与 [交付依赖快照](reports/development-dependencies.txt) 一致。`requirements.txt` 只声明 `onebot>=2.4.6`、`qq>=1.7.1`，没有精确 pin 或上限；因此 QQ `1.7.3` 是已记录的解析结果，高于声明下限，但现有材料不能追溯该环境具体由谁或通过哪次操作升级。`direct_url.json` 缺失，包的 `RECORD` 与 tag 源文件匹配也只能证明已安装文件内容，不能证明 wheel 的构建来源或发布者。
 
