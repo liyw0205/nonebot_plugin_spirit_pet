@@ -1,7 +1,8 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.energy import restore_energy
+from ..utils.pagination import paginate
 from ..utils.time import cooldown_left
 from .pet_targets import pet_id, selected_pet
 from .quests import advance
@@ -45,8 +46,13 @@ def _breakthrough_arguments(arg: str) -> tuple[str, str]:
 
 
 def co_train(ctx: Context, arg: str) -> Reply:
-    if not arg:
-        raise GameError("格式：灵宠合修 灵宠编号。请先召唤一只与当前出战灵宠同族的灵宠。")
+    parts = arg.split()
+    if not parts:
+        return _co_training_partners(ctx, "")
+    if parts[0] == "分页":
+        if len(parts) != 2:
+            raise GameError("请填写页码，例如：灵宠合修 分页 2。")
+        return _co_training_partners(ctx, parts[1])
     player, active = ctx.player(), ctx.pet()
     partner_id = pet_id(arg)
     if partner_id == active.pet_id:
@@ -80,10 +86,69 @@ def co_train(ctx: Context, arg: str) -> Reply:
     ctx.repo.invalidate_ready(ctx.user_id)
     advance(ctx, "train")
     return Reply("同族合修", (
-        f"{active.name}修为 +{active_gain}，精力 -{rules.training_energy}。",
-        f"{partner.name}修为 +{partner_gain}，精力 -{rules.training_energy}。",
+        f"{active.name}（编号 {active.pet_id}）修为 +{active_gain}，精力 -{rules.training_energy}。",
+        f"{partner.name}（编号 {partner.pet_id}）修为 +{partner_gain}，精力 -{rules.training_energy}。",
         "本次合修只计一次每日修炼任务；修炼冷却仍由玩家共享。",
-    ), ("灵宠列表", "我的灵宠", "灵宠任务"))
+    ), ("灵宠合修", "灵宠任务"), (InlineCommand(0, "查看成长", "我的灵宠"),))
+
+
+def _co_training_blocker(ctx: Context, pet) -> str:
+    expedition = ctx.repo.active_expedition(pet.pet_id)
+    if expedition is not None:
+        return "外出中，先完成行程" if ctx.now < expedition["finishes_at"] else "行程已完成，先领取奖励"
+    if _available_energy(ctx, pet) < ctx.content.rules.training_energy:
+        return "精力不足，稍作休息或补充灵粮"
+    return ""
+
+
+def _co_training_partners(ctx: Context, argument: str) -> Reply:
+    player = ctx.player()
+    if player.active_pet_id is None:
+        raise ctx.missing_pet()
+    active = ctx.repo.pet(player.active_pet_id)
+    if active.archived:
+        raise ctx.archived_active_pet(active, ctx.user_id)
+    partners = [pet for pet in ctx.repo.owned_pets(ctx.user_id)
+                if pet.pet_id != active.pet_id and pet.species_id == active.species_id]
+    page = paginate(partners, argument, "同族合修", "灵宠合修 分页", page_size=2)
+    species = ctx.content.species[active.species_id]
+    energy_cost = ctx.content.rules.training_energy
+    lines = [
+        f"当前伙伴：{active.name} · 编号 {active.pet_id} · 可用精力 {_available_energy(ctx, active)}/100",
+        f"同族相伴，共习一轮。双方各消耗 {energy_cost} 精力，各自积攒修为。",
+        "查看不会扣费；选好伙伴后再合修，与普通修炼共用调息时间。",
+    ]
+    links = [InlineCommand(0, "查看成长", "我的灵宠")]
+    if not partners:
+        lines.append(f"尚无另一位在册同族伙伴，再寻一位{species.name}，就能一同修行。")
+        links.append(InlineCommand(len(lines) - 1, "了解获取途径", f"灵宠图鉴 {species.name}"))
+        archived = ctx.repo.conn.execute(
+            "SELECT 1 FROM pets WHERE user_id=? AND species_id=? AND archived=1 LIMIT 1",
+            (ctx.user_id, active.species_id),
+        ).fetchone()
+        if archived:
+            lines.append("封存库中还有同族伙伴，名册有空位时可先迎它回来。")
+            links.append(InlineCommand(len(lines) - 1, "查看封存库", "灵宠封存库"))
+        return Reply("同族合修", tuple(lines), ("灵宠列表", "灵宠召唤 "), tuple(links))
+
+    remaining = cooldown_left(player.last_train, ctx.now, ctx.config.spirit_pet_train_cooldown)
+    active_blocker = _co_training_blocker(ctx, active) or (f"当前伙伴还需调息 {remaining} 秒" if remaining else "")
+    if active_blocker:
+        lines.append(f"当前伙伴：{active_blocker}。")
+    commands = []
+    for partner in page.entries:
+        blocker = _co_training_blocker(ctx, partner) or active_blocker
+        lines.append(
+            f"编号 {partner.pet_id}：{partner.name} · {ctx.content.realms[partner.realm].name} {partner.layer}层"
+            f" · 可用精力 {_available_energy(ctx, partner)}/100 · {blocker or '可合修'}"
+        )
+        if not blocker:
+            commands.append(f"灵宠合修 {partner.pet_id}")
+    if any(ctx.repo.active_expedition(pet.pet_id) is not None for pet in (active, *page.entries)):
+        lines.append("外出的伙伴归来后，就能继续相伴修行。")
+        links.append(InlineCommand(len(lines) - 1, "查看行程", "灵宠行程"))
+    return Reply(f"同族合修 {page.number}/{page.total}", tuple(lines),
+                 tuple(commands) + page.navigation, tuple(links))
 
 
 def available_co_training_partner(ctx: Context):
@@ -91,18 +156,16 @@ def available_co_training_partner(ctx: Context):
     if player is None or player.active_pet_id is None:
         return None
     active = ctx.repo.pet(player.active_pet_id)
-    rules = ctx.content.rules
     if (
         active.archived
-        or ctx.repo.active_expedition(active.pet_id) is not None
+        or _co_training_blocker(ctx, active)
         or cooldown_left(player.last_train, ctx.now, ctx.config.spirit_pet_train_cooldown)
-        or _available_energy(ctx, active) < rules.training_energy
     ):
         return None
     for partner in ctx.repo.owned_pets(ctx.user_id):
         if partner.pet_id == active.pet_id or partner.species_id != active.species_id:
             continue
-        if ctx.repo.active_expedition(partner.pet_id) is None and _available_energy(ctx, partner) >= rules.training_energy:
+        if not _co_training_blocker(ctx, partner):
             return partner
     return None
 

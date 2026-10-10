@@ -94,6 +94,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     co_training_partner = available_co_training_partner(ctx)
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
+        inline_commands.append(InlineCommand(len(lines) - 1, "选择合修伙伴", "灵宠合修"))
     commands = ["我的灵宠", "灵宠出战"]
     if pages > 1:
         commands.append(f"灵宠列表 {page - 1}" if page > 1 else f"灵宠列表 {page + 1}")

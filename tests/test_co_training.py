@@ -73,15 +73,41 @@ def test_roster_surfaces_co_training_only_when_both_pets_can_act(game, play):
     partner_id = add_pet(game[1])
 
     roster = play("pet_list")
-    assert f"灵宠合修 {partner_id}" in roster.commands
+    assert any(link.command == "灵宠合修" for link in roster.inline_commands)
     assert f"青鸾副宠（编号 {partner_id}）" in roster.text()
 
     play("train")
-    assert f"灵宠合修 {partner_id}" not in play("pet_list").commands
+    assert not any(link.command == "灵宠合修" for link in play("pet_list").inline_commands)
 
     sql(game[1], "UPDATE players SET last_train=NULL WHERE user_id='u1'")
     sql(game[1], "UPDATE pets SET energy=0, energy_updated=1800000000 WHERE pet_id=?", (partner_id,))
-    assert f"灵宠合修 {partner_id}" not in play("pet_list").commands
+    assert not any(link.command == "灵宠合修" for link in play("pet_list").inline_commands)
+
+
+def test_co_training_without_id_previews_partners_without_charging_or_selecting(game, play):
+    play("adopt", "青鸾")
+    partner_id = add_pet(game[1], realm=2)
+    before = sql(game[1], "SELECT * FROM players"), sql(game[1], "SELECT * FROM pets ORDER BY pet_id")
+
+    reply = play("co_train")
+
+    assert reply.title == "同族合修 1/1"
+    assert f"灵宠合修 {partner_id}" in reply.commands
+    assert "双方各消耗 15 精力" in reply.text()
+    assert "编号 1" in reply.text() and f"编号 {partner_id}" in reply.text()
+    assert (sql(game[1], "SELECT * FROM players"), sql(game[1], "SELECT * FROM pets ORDER BY pet_id")) == before
+
+
+def test_co_training_without_partner_explains_acquisition_without_summoning(game, play):
+    play("adopt", "青鸾")
+    before = sql(game[1], "SELECT * FROM players"), sql(game[1], "SELECT * FROM pets")
+
+    reply = play("co_train")
+
+    assert "尚无另一位在册同族伙伴" in reply.text()
+    assert any(link.command == "灵宠图鉴 青鸾" for link in reply.inline_commands)
+    assert "灵宠召唤 " in reply.commands
+    assert (sql(game[1], "SELECT * FROM players"), sql(game[1], "SELECT * FROM pets")) == before
 
 
 def test_roster_hides_co_training_for_partner_on_expedition(game, play):
@@ -92,7 +118,7 @@ def test_roster_hides_co_training_for_partner_on_expedition(game, play):
     play("expedition_start", "采灵药")
     play("switch", str(active_id))
 
-    assert f"灵宠合修 {partner_id}" not in play("pet_list").commands
+    assert not any(link.command == "灵宠合修" for link in play("pet_list").inline_commands)
     before = sql(game[1], "SELECT pet_id, exp, energy FROM pets ORDER BY pet_id")
     with pytest.raises(GameError, match="外出|派遣|待领取"):
         play("co_train", str(partner_id))

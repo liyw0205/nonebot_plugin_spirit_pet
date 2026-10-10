@@ -26,6 +26,7 @@ _ACTION_LABELS = {
     "我的灵宠": "查看灵宠",
     "我的信息": "我的信息",
     "灵宠修炼": "修炼",
+    "灵宠合修": "选择合修伙伴",
     "灵宠互动": "互动",
     "灵宠突破": "突破境界",
     "灵宠进化": "进化血脉",
@@ -39,6 +40,11 @@ _ACTION_LABELS = {
 
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
+    parts = visible.split()
+    if len(parts) == 2 and parts[0] == "灵宠合修" and parts[1].isascii() and parts[1].isdecimal():
+        return f"与编号 {parts[1]} 合修"
+    if len(parts) == 3 and parts[:2] == ["灵宠合修", "分页"]:
+        return f"合修第 {parts[2]} 页"
     return _ACTION_LABELS.get(visible, _ACTION_LABELS.get(visible.split(maxsplit=1)[0], visible))
 
 
