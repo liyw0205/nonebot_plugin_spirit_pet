@@ -25,7 +25,6 @@ _ACTION_LABELS = {
     "灵宠帮助 身份与收集": "身份与收集",
     "我的灵宠": "查看灵宠",
     "我的信息": "我的信息",
-    "灵宠道号": "修改道号",
     "灵宠修炼": "修炼",
     "灵宠互动": "互动",
     "灵宠突破": "突破境界",
@@ -40,7 +39,7 @@ _ACTION_LABELS = {
 
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
-    return _ACTION_LABELS.get(visible, visible)
+    return _ACTION_LABELS.get(visible, _ACTION_LABELS.get(visible.split(maxsplit=1)[0], visible))
 
 
 def _command_enters(command: str) -> bool:
@@ -53,9 +52,18 @@ def _action_items(reply: Reply) -> tuple[tuple[str, str], ...]:
     commands = reply.commands
     if reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·"):
         commands = ()
-    linked = {action.command for action in reply.inline_commands}
-    commands = tuple(command for command in commands if command not in linked)
-    return tuple((_action_label(command), command) for command in commands)
+    linked = {
+        action.command
+        for action in reply.inline_commands if action.command.strip()
+    }
+    unique = []
+    seen = set()
+    for command in commands:
+        if not command.strip() or command in linked or command in seen:
+            continue
+        seen.add(command)
+        unique.append(command)
+    return tuple((_action_label(command), command) for command in unique[:4])
 
 
 def inline_command(label: str, command: str, prefix: str = "/") -> str:
@@ -104,18 +112,16 @@ async def send_reply(bot: Bot, event: Event, reply: Reply, config: Config) -> No
     if adapter_name == "QQ" or bot.__class__.__module__.startswith("nonebot.adapters.qq"):
         await _send_qq(bot, event, reply, config)
     else:
-        await bot.send(event, reply.text())
+        await bot.send(event, _plain_reply(reply, config.spirit_pet_command_prefix))
 
 
-def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
+def _qq_segments(reply: Reply, config: Config, *, allow_keyboard: bool = True) -> tuple[str, Any]:
     prefix = config.spirit_pet_command_prefix
     actions = _action_items(reply)
     commands = tuple(command for _, command in actions)
     labels = tuple(label for label, _ in actions)
     qq_mode = config.spirit_pet_qq_mode
-    plain = reply.text()
-    if labels:
-        plain += "\n下一步：" + "、".join(labels)
+    plain = _plain_reply(reply, prefix)
 
     def escape(value: str) -> str:
         return re.sub(r"([\\`*_{}\[\]()#+.!|>-])", r"\\\1", value)
@@ -134,7 +140,7 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
             if use_links:
                 rendered.append(inline_command(action.label, action.command, prefix))
             else:
-                rendered.append(f"{escape(action.label)}（{escape(action.command.rstrip())}）")
+                rendered.append(f"{escape(action.label)}（{escape(prefix + action.command.rstrip())}）")
         return " · ".join(rendered)
 
     for source_index, line in enumerate(reply.lines):
@@ -154,19 +160,6 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
             if contextual:
                 rendered += f" · {contextual}"
             body.extend((rendered, ""))
-        elif line.startswith("道号：") and reply.title == "我的信息":
-            edit_link = (
-                f" · {inline_command('修改道号', '灵宠道号 ', prefix)}" if use_links else " · 改名：灵宠道号 新道号"
-            )
-            rendered = f"**道号**：{escape(line.removeprefix('道号：'))}{edit_link}"
-            if contextual:
-                rendered += f" · {contextual}"
-            body.append(rendered)
-        elif line.startswith("你的道号：") and reply.title == "灵契初成":
-            rendered = f"**{escape(line)}**"
-            if contextual:
-                rendered += f" · {contextual}"
-            body.append(rendered)
         else:
             rendered = escape(line)
             if contextual:
@@ -174,13 +167,10 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
             body.append(rendered)
     body_markdown = "\n".join(body)
     markdown = f"**{escape(reply.title)}**\n\n" + body_markdown
-    if reply.title == "我的信息":
-        actions = tuple(item for item in actions if item[1] != "灵宠道号")
-        commands = tuple(command for _, command in actions)
-        labels = tuple(label for label, _ in actions)
-    if actions and not is_help:
+    keyboard_available = bool(allow_keyboard and config.spirit_pet_qq_keyboard and commands and not is_help)
+    if actions and not is_help and not keyboard_available:
         action_block = "\n".join(
-            f"- {inline_command(label, command, prefix) if use_links else escape(label)}"
+            f"- {inline_command(label, command, prefix) if use_links else escape(label + '（' + prefix + command.rstrip() + '）')}"
             for label, command in actions
         )
         markdown += f"\n\n{action_block}"
@@ -205,14 +195,29 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
     else:
         return plain, Message(plain)
     message = Message(markdown_segment)
-    if config.spirit_pet_qq_keyboard and commands and not is_help:
+    if keyboard_available:
         message += qq_keyboard(commands, prefix, labels)
     return plain, message
 
 
+def _plain_reply(reply: Reply, prefix: str) -> str:
+    lines = [f"【{reply.title}】"]
+    for index, line in enumerate(reply.lines):
+        contextual = [action for action in reply.inline_commands if action.line == index]
+        if contextual:
+            line += " · " + " · ".join(
+                f"{action.label}（{prefix}{action.command.rstrip()}）" for action in contextual
+            )
+        lines.append(line)
+    actions = _action_items(reply)
+    if actions:
+        lines.append("可选操作：" + "；".join(f"{label}（{prefix}{command.rstrip()}）" for label, command in actions))
+    return "\n".join(lines)
+
+
 async def _send_qq(bot: Bot, event: Event, reply: Reply, config: Config) -> None:
     if config.spirit_pet_qq_mode == "text":
-        await bot.send(event, reply.text())
+        await bot.send(event, _plain_reply(reply, config.spirit_pet_command_prefix))
         return
 
     from nonebot.adapters.qq.exception import ActionFailed
@@ -221,7 +226,7 @@ async def _send_qq(bot: Bot, event: Event, reply: Reply, config: Config) -> None
         fallback, message = _qq_segments(reply, config)
     except (ImportError, AttributeError, ValueError, TypeError):
         logger.warning("QQ rich-message support unavailable; sending plain-text reply")
-        await bot.send(event, reply.text())
+        await bot.send(event, _plain_reply(reply, config.spirit_pet_command_prefix))
         return
     try:
         await bot.send(event, message)
@@ -230,4 +235,14 @@ async def _send_qq(bot: Bot, event: Event, reply: Reply, config: Config) -> None
         if exc.status_code not in (400, 403, 422):
             raise
         logger.warning(f"QQ rich message rejected (status={exc.status_code}, code={exc.code}); using text")
+        commands = tuple(command for _, command in _action_items(reply))
+        is_help = reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·")
+        if config.spirit_pet_qq_keyboard and commands and not is_help:
+            try:
+                _, markdown_only = _qq_segments(reply, config, allow_keyboard=False)
+                await bot.send(event, markdown_only)
+                return
+            except ActionFailed as retry_exc:
+                if retry_exc.status_code not in (400, 403, 422):
+                    raise
         await bot.send(event, fallback)

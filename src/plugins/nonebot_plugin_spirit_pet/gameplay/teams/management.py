@@ -12,7 +12,7 @@ def leave(ctx: Context, arg: str) -> Reply:
     )
     invalidate_team(ctx, member["team_id"])
     return Reply("退出队伍", (
-        f"{ctx.player().dao_name}已离开{ctx.player(member['leader_id']).dao_name}的小队。",
+        f"{ctx.player().uid_label}已离开{ctx.player(member['leader_id']).uid_label}的小队。",
     ), ("灵宠组队", "灵宠队务"))
 
 
@@ -28,7 +28,7 @@ def kick(ctx: Context, arg: str) -> Reply:
         raise GameError("该道友不在你的队伍中。")
     invalidate_team(ctx, member["team_id"])
     return Reply("移出队伍", (
-        f"{target.dao_name}已被移出{ctx.player().dao_name}的小队，全队准备已取消。",
+        f"{target.uid_label}已被移出{ctx.player().uid_label}的小队，全队准备已取消。",
     ), ("灵宠队伍", "灵宠队务"))
 
 
@@ -46,7 +46,7 @@ def transfer(ctx: Context, arg: str) -> Reply:
     ctx.repo.conn.execute("DELETE FROM team_requests WHERE team_id=?", (member["team_id"],))
     invalidate_team(ctx, member["team_id"])
     return Reply("队长交接", (
-        f"{ctx.player().dao_name}已将队长转让给{target.dao_name}。",
+        f"{ctx.player().uid_label}已将队长转让给{target.uid_label}。",
         "本队全部邀请与申请已取消，全队需要重新准备。",
     ), ("灵宠队伍", "灵宠队务", "灵宠退队"))
 
@@ -56,5 +56,5 @@ def disband(ctx: Context, arg: str) -> Reply:
     invalidate_team(ctx, member["team_id"])
     ctx.repo.conn.execute("DELETE FROM teams WHERE team_id=?", (member["team_id"],))
     return Reply("小队解散", (
-        f"{ctx.player().dao_name}已解散小队，成员离队，本队全部邀请与申请已取消。",
+        f"{ctx.player().uid_label}已解散小队，成员离队，本队全部邀请与申请已取消。",
     ), ("灵宠组队", "灵宠队务"))

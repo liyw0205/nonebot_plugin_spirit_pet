@@ -53,14 +53,28 @@ def test_contextual_links_stay_with_their_sentence_and_replace_duplicate_buttons
     payloads = [parse_qs(urlparse(url).query)["command"][0] for url in urls]
     assert payloads == ["!灵宠列表", "!灵宠出战 "]
     assert not message["keyboard"]
-    assert "查看名册（灵宠列表）" in fallback and "填写编号（灵宠出战）" in fallback
+    assert "查看名册（!灵宠列表）" in fallback and "填写编号（!灵宠出战）" in fallback
 
     _, no_links = _qq_segments(
         reply, Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
     )
     no_link_markdown = no_links["markdown"][0].data["markdown"].content
-    assert "查看名册（灵宠列表）" in no_link_markdown
+    assert "查看名册（/灵宠列表）" in no_link_markdown
     assert "mqqapi://" not in no_link_markdown
+
+
+def test_complete_same_family_keyboard_action_survives_contextual_blue_link():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "灵宠名册", ("伙伴列表。",), ("灵宠列表 2",),
+        (InlineCommand(0, "查看名册", "灵宠列表"),),
+    )
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    markdown = message["markdown"][0].data["markdown"].content
+    button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert "[查看名册](mqqapi://" in markdown
+    assert button.action.data == "/灵宠列表 2"
+    assert button.action.enter is True
 
 
 def test_item_and_recipe_details_link_related_queries_in_context(play):
@@ -125,28 +139,31 @@ def test_help_categories_get_inline_blue_links_and_unprefixed_labels(play):
     assert len(no_prefix_message["keyboard"]) == 0
 
 
-def test_player_info_places_dao_edit_link_beside_the_name():
+def test_contextual_blue_link_deduplicates_keyboard_and_survives_keyboard_disabled():
     pytest.importorskip("nonebot.adapters.qq")
     reply = Reply(
-        "我的信息",
-        ("道号：青云", "注册时间：未记录", "灵石：90"),
-        ("灵宠道号", "灵宠列表", "灵宠背包"),
+        "领养成功",
+        ("UID：10000", "初始灵宠：青鸾"),
+        ("我的灵宠", "我的信息"),
+        (InlineCommand(0, "查看我的信息", "我的信息"),),
     )
-    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"))
     markdown = message["markdown"][0].data["markdown"].content
-    assert "**道号**：青云 · [修改道号](mqqapi://aio/inlinecmd?" in markdown
-    assert "**下一步**" not in markdown
-    assert "\n> " not in markdown
-    rename_url = markdown.split("[修改道号](")[1].split(")")[0]
-    assert parse_qs(urlparse(rename_url).query)["command"] == ["/灵宠道号 "]
     buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows for button in row.buttons]
-    assert all(button.action.data != "/灵宠道号" for button in buttons)
+    assert [button.action.data for button in buttons] == ["!我的灵宠"]
+    assert markdown.count("[查看我的信息](mqqapi://") == 1
+    assert "!我的信息" not in [button.action.data for button in buttons]
 
-    _, no_blue_link_message = _qq_segments(
-        reply,
-        Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
+    _, keyboard_disabled = _qq_segments(
+        reply, Config(
+            spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=False,
+            spirit_pet_command_prefix="!",
+        ),
     )
-    assert "改名：灵宠道号 新道号" in no_blue_link_message["markdown"][0].data["markdown"].content
+    fallback_markdown = keyboard_disabled["markdown"][0].data["markdown"].content
+    assert not keyboard_disabled["keyboard"]
+    assert fallback_markdown.count("[查看我的信息](mqqapi://") == 1
+    assert "[查看灵宠]" in fallback_markdown
 
 
 @pytest.mark.parametrize("command,encoded", [
@@ -157,11 +174,10 @@ def test_player_info_places_dao_edit_link_beside_the_name():
 def test_structured_arguments_survive_blue_links_and_keyboard(command, encoded):
     reply = Reply("灵物工坊", (), (command,))
     _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
-    markdown = message["markdown"][0].data["markdown"].content
-    assert encoded in markdown
     button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
     assert button.action.data == "/" + command
     link = inline_command(command, command)
+    assert encoded in link
     assert parse_qs(urlparse(link.split("](")[1][:-1]).query)["command"] == ["/" + command]
 
 
@@ -218,7 +234,8 @@ def test_onebot_never_gets_qq_segments():
     bot = SimpleNamespace(adapter=SimpleNamespace(get_name=lambda: "OneBot V11"), send=AsyncMock())
     reply = Reply("测试", ("灵石 +200",))
     asyncio.run(send_reply(bot, object(), reply, Config(spirit_pet_qq_mode="native")))
-    assert bot.send.call_args.args[1] == reply.text()
+    assert bot.send.call_args.args[1].startswith("【测试】\n灵石 +200")
+    assert "查看灵宠（/我的灵宠）" in bot.send.call_args.args[1]
 
 
 def test_native_markdown_escapes_untrusted_fields():
@@ -242,7 +259,9 @@ def test_qq_fallback_only_retries_explicit_rejections(status, retry):
     if retry:
         asyncio.run(action)
         assert bot.send.await_count == 2
-        assert "修为 +30" in bot.send.call_args.args[1]
+        retried = bot.send.call_args.args[1]
+        assert retried["markdown"][0].data["markdown"].content.startswith("**测试**")
+        assert "修为 \\+30" in retried["markdown"][0].data["markdown"].content
     else:
         with pytest.raises(ActionFailed):
             asyncio.run(action)

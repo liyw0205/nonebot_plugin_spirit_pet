@@ -46,7 +46,7 @@ def _skill_snapshot(ctx: Context, pet_id: int, fighter: Fighter) -> list[dict]:
 def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> dict:
     primary = ctx.content.elements.get(fighter.primary_element) if fighter.primary_element else None
     member = {
-        "dao_name": ctx.player(user_id).dao_name if user_id else None,
+        "uid": ctx.player(user_id).uid_label if user_id else None,
         "pet_name": fighter.name.rsplit("的", 1)[-1] if "的" in fighter.name else fighter.name,
         "species_id": None,
         "realm": None,
@@ -167,7 +167,7 @@ def _outcome(row, side: int) -> str:
 
 
 def _member_text(member: dict) -> str:
-    dao = member.get("dao_name") or "秘境敌手"
+    player = member.get("uid") or ("玩家 UID 未记录" if "dao_name" in member else "秘境敌手")
     element = member.get("primary_element_name") or member.get("primary_element") or "未知"
     skills = "、".join(
         (
@@ -189,7 +189,7 @@ def _member_text(member: dict) -> str:
     affinity = f" · 亲密 {member['affinity']}/100" if isinstance(member.get("affinity"), int) else ""
     bond_protection = " · 心契护佑" if member.get("bond_protection") else ""
     return (
-        f"{dao}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance}"
+        f"{player}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance}"
         f"{affinity}{bond_protection} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
     )
 

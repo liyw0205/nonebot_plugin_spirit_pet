@@ -14,14 +14,14 @@ from .eligibility import check_ranked
 from .scoring import settle_ranked
 
 
-def _target(ctx: Context, dao_name: str):
-    target = ctx.repo.player_by_name(dao_name)
+def _target(ctx: Context, uid: str):
+    target = ctx.repo.player_by_uid(uid)
     if target is None:
-        raise GameError("该道号不存在，请填写对方的道号。")
+        raise GameError("没有找到这位玩家，请填写有效的 UID。")
     if target.user_id == ctx.user_id:
         raise GameError("不能向自己发起对战。")
     if not ctx.repo.active_pets(target.user_id):
-        raise GameError("该道友尚未选择出战灵宠。")
+        raise GameError("对方尚未选择出战灵宠。")
     return target
 
 
@@ -62,7 +62,7 @@ def pvp(ctx: Context, arg: str) -> Reply:
             ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
         ))
     reply = Reply("论剑结算", (
-        f"{ctx.player().dao_name}的{len(attackers)}宠阵容 挑战 {target.dao_name}的{len(defenders)}宠阵容镜像"
+        f"{ctx.player().uid_label}的{len(attackers)}宠阵容 挑战 {target.uid_label}的{len(defenders)}宠阵容镜像"
         f" · {battle.rounds} 回合", *battle.lines, *scores, *mastery_lines,
         f"挑战者精力 -{season.rules.energy}；防守方精力与冷却不变，不增加熟练度、不取消出征准备。",
     ), ("灵宠论剑榜", "灵宠匹配", "灵宠战报", "我的灵宠"))
@@ -83,7 +83,7 @@ def pvp(ctx: Context, arg: str) -> Reply:
 def spar(ctx: Context, arg: str) -> Reply:
     challenger = ctx.player()
     if not arg:
-        raise GameError("请发送 灵宠切磋 对方道号。")
+        raise GameError("请填写对方 UID。")
     target = _target(ctx, arg)
     if challenger.active_pet_id is None:
         raise GameError("尚未选择出战灵宠。")
@@ -100,9 +100,9 @@ def spar(ctx: Context, arg: str) -> Reply:
         ([ctx.user_id] * len(attackers), [target.user_id] * len(defenders)),
     )
     battle = fight(attackers, defenders, ctx.rng, ctx.content.elements)
-    result = "双方战平。" if battle.winner == -1 else f"{(challenger, target)[battle.winner].dao_name}获胜。"
+    result = "双方战平。" if battle.winner == -1 else f"{(challenger, target)[battle.winner].uid_label}获胜。"
     reply = Reply("切磋结算", (
-        f"{challenger.dao_name}的{len(attackers)}宠阵容 对 {target.dao_name}的{len(defenders)}宠阵容镜像"
+        f"{challenger.uid_label}的{len(attackers)}宠阵容 对 {target.uid_label}的{len(defenders)}宠阵容镜像"
         f" · {battle.rounds} 回合", *battle.lines, result,
         "切磋不消耗资源，不计赛季积分和熟练度。",
     ), ("灵宠战报", "我的灵宠", "灵宠论剑榜"))

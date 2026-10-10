@@ -57,7 +57,7 @@ def award_mastery(
         skill = ctx.content.skills[skill_id]
         suffix = "，领悟精进" if level > row["level"] else ""
         lines.append(
-            f"{ctx.player(user_id).dao_name}的{pet.name}：{skill.name}熟练度 +{gained}{suffix}；"
+            f"{ctx.player(user_id).uid_label}的{pet.name}：{skill.name}熟练度 +{gained}{suffix}；"
             f"{progress_text(ctx, level, proficiency)}。"
         )
     if upgraded:

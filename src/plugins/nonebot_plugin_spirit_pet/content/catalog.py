@@ -6,7 +6,7 @@ from pydantic import BaseModel, TypeAdapter
 from ..domain.achievement_content import Achievement
 from ..domain.arena_content import ArenaRules
 from ..domain.battle_content import (
-    Category, DaoNames, Element, Equipment, EquipmentSet, ForgeLevel, Skill, SkillLevel, Talent,
+    Category, Element, Equipment, EquipmentSet, ForgeLevel, Skill, SkillLevel, Talent,
 )
 from .validation import validate_battle_content
 from .crafting_validation import validate_crafting_content
@@ -75,7 +75,6 @@ class Catalog:
     stages: dict[str, Stage]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
-    dao_names: DaoNames
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -107,7 +106,6 @@ class Catalog:
             stages=_index(directory / "stages.json", Stage),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
-            dao_names=DaoNames.model_validate(_read(directory / "dao_names.json")),
         )
         catalog.validate()
         return catalog

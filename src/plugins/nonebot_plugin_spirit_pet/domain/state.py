@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class Player:
     user_id: str
-    dao_name: str
+    internal_id: int
     stones: int
     active_pet_id: int | None
     registered_at: int | None = None
@@ -17,6 +17,14 @@ class Player:
     last_explore: int | None = None
     last_pve: int | None = None
     last_pvp: int | None = None
+
+    @property
+    def uid(self) -> int:
+        return self.internal_id + 9999
+
+    @property
+    def uid_label(self) -> str:
+        return f"UID {self.uid}"
 
 
 @dataclass

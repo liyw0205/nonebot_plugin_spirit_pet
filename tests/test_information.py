@@ -48,12 +48,17 @@ def test_plugin_usage_does_not_assume_a_command_prefix():
     assert all(not item.strip().startswith("/") for item in __plugin_meta__.usage.split("·"))
 
 
-def test_rename_entry_without_argument_explains_the_existing_command(game, play):
-    play("adopt")
-    reply = play("dao_name")
-    assert reply.title == "修改道号"
-    assert "灵宠道号 青云" in reply.text()
-    assert reply.commands == ("我的信息",)
+def test_player_info_is_account_scoped_and_dao_commands_are_not_public(game, play):
+    assert "身份与收集" in play("help").text()
+    unregistered = play("identity")
+    assert unregistered.title == "初遇灵宠"
+    assert unregistered.inline_commands[0].command == "灵宠领养 "
+    play("adopt", "青鸾")
+    reply = play("identity")
+    assert "UID：10000" in reply.text()
+    assert "注册时间：2027-01-15 16:00:00（UTC+8）" in reply.text()
+    assert "道号" not in reply.text()
+    assert "我的道号" not in COMMANDS and "灵宠道号" not in COMMANDS
 
 
 def test_catalog_pages_cover_every_species_once(game, play):

@@ -27,7 +27,7 @@ def check_participant(ctx: Context, season: Season, user_id: str) -> Pet:
         (season.season_id, beijing_day(ctx.now), user_id),
     ).fetchone()[0]
     if count >= season.rules.daily_matches:
-        raise GameError(f"{player.dao_name}今日论剑次数已用尽。")
+        raise GameError(f"{player.uid_label}今日论剑次数已用尽。")
     return pet
 
 
@@ -43,7 +43,7 @@ def check_ranked(ctx: Context, season: Season, first: str, second: str) -> tuple
         raise GameError("该道友尚未选择出战灵宠。")
     right = target_pets[0]
     if any(active.realm != right.realm for active in target_pets):
-        raise GameError(f"{target.dao_name}的出战阵容处于不同大境界，当前不能参与论剑。")
+        raise GameError(f"{target.uid_label}的出战阵容处于不同大境界，当前不能参与论剑。")
     if left.realm != right.realm:
         raise GameError("论剑双方需处于相同大境界。")
     if abs(rating(ctx, season, first) - rating(ctx, season, second)) > season.rules.max_rating_gap:

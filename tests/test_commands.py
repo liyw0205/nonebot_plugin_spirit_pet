@@ -80,9 +80,10 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠共鸣 激活 青岚双翼") == ("resonance", "激活 青岚双翼")
     assert handlers._parse("灵宠战报 2") == ("battle_reports", "2")
     assert handlers._parse("灵宠签到后的聊天") is None
-    assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")
+    assert handlers._parse("灵宠论剑 UID 10000") == ("pvp", "UID 10000")
     assert handlers._parse("我的信息") == ("identity", "")
     assert handlers._parse("我的道号") is None
+    assert handlers._parse("灵宠道号 新名字") is None
     assert handlers._parse("我的宠") == ("status", "")
     assert handlers._parse("灵宠装备 青岚翎") == ("equipment", "青岚翎")
     assert handlers._parse("灵宠学习 风刃术") == ("learn", "风刃术")
@@ -115,7 +116,7 @@ def test_real_adapter_events_share_ids_not_account_bindings(tmp_path, monkeypatc
         await handlers._run(bot2, qq_event(), "我的灵宠")
         assert "青鸾" in str(bot2.send.call_args.args[1])
         await handlers._run(bot2, qq_event("different-id", message_id="3"), "我的灵宠")
-        assert "尚未结契" in str(bot2.send.call_args.args[1])
+        assert "还没有灵宠伙伴" in str(bot2.send.call_args.args[1])
 
     asyncio.run(run())
 
@@ -209,18 +210,16 @@ def test_team_approval_uses_shared_identity_across_real_adapter_events(tmp_path,
     async def run():
         await handlers._run(ob, onebot_event(message_id=101), "灵宠领养 青鸾")
         await handlers._run(qq, qq_event("member-openid", message_id="102"), "灵宠领养 玄狐")
-        await handlers._run(ob, onebot_event(message_id=103), "灵宠道号 青云")
-        await handlers._run(qq, qq_event("member-openid", message_id="104"), "灵宠道号 赤霄")
         await handlers._run(ob, onebot_event(message_id=105), "灵宠组队")
-        await handlers._run(qq, qq_event("member-openid", message_id="106"), "灵宠入队 青云")
+        await handlers._run(qq, qq_event("member-openid", message_id="106"), "灵宠入队 UID 10000")
         assert len(sql(store, "SELECT * FROM team_members")) == 1
-        await handlers._run(qq, qq_event("member-openid", message_id="107"), "灵宠队伍同意 青云")
+        await handlers._run(qq, qq_event("member-openid", message_id="107"), "灵宠队伍同意 UID 10000")
         assert len(sql(store, "SELECT * FROM team_members")) == 1
         assert len(sql(store, "SELECT * FROM team_requests")) == 1
         event = qq_event("12345", group=False, message_id="108")
-        await handlers._run(qq, event, "灵宠队伍同意 赤霄")
+        await handlers._run(qq, event, "灵宠队伍同意 UID 10001")
         reply = str(qq.send.call_args.args[1])
-        assert "加入队伍" in reply and "青云" in reply and "赤霄" in reply
+        assert "加入队伍" in reply and "UID 10000" in reply and "UID 10001" in reply
         assert "12345" not in reply and "member-openid" not in reply
         await handlers._run(qq, event, "灵宠队伍同意 赤霄")
         assert str(qq.send.call_args.args[1]) == reply

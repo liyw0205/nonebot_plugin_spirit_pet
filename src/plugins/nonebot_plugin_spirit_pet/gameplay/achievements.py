@@ -200,7 +200,7 @@ def claim(ctx: Context, arg: str) -> Reply:
         "items": item_snapshot,
     }
     reply = Reply("成就奖励已领取", (
-        f"{player.dao_name}完成成就：{achievement.name}。",
+        f"{player.uid_label}完成成就：{achievement.name}。",
         achievement.description,
         f"灵石 +{achievement.reward.stones}。",
         *(f"{item['name']} +{item['amount']}" for item in item_snapshot),

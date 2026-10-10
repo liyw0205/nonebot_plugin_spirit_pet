@@ -143,13 +143,14 @@ def acquisition(ctx: Context, species: Species) -> str:
 
 def rank(ctx: Context, arg: str) -> Reply:
     rows = ctx.repo.conn.execute(
-        "SELECT name, realm, layer, exp, dao_name FROM ("
+        "SELECT name, realm, layer, exp, identity.id + 9999 AS uid FROM ("
         "SELECT p.*, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY realm DESC, layer DESC, exp DESC, pet_id) n "
         "FROM pets p WHERE archived=0) ranked JOIN players owner ON ranked.user_id=owner.user_id "
+        "JOIN player_identity identity USING(user_id) "
         "WHERE n=1 ORDER BY realm DESC, layer DESC, exp DESC, pet_id LIMIT 10"
     ).fetchall()
     return Reply("万灵榜", tuple(
-        f"{index}. {row['dao_name']} · {row['name']} · {ctx.content.realms[row['realm']].name} {row['layer']}层"
+        f"{index}. UID {row['uid']} · {row['name']} · {ctx.content.realms[row['realm']].name} {row['layer']}层"
         f" · 修为 {row['exp']}" for index, row in enumerate(rows, 1)
     ) or ("尚无灵宠入榜。",))
 
@@ -158,16 +159,17 @@ def adventure_rank(ctx: Context, arg: str) -> Reply:
     encounter_ids = tuple(ctx.content.encounters)
     placeholders = ",".join("?" for _ in encounter_ids)
     rows = ctx.repo.conn.execute(
-        "SELECT owner.dao_name, COUNT(discovery.encounter_id) AS found, "
+        "SELECT identity.id + 9999 AS uid, COUNT(discovery.encounter_id) AS found, "
         "MAX(discovery.discovered_at) AS last_found "
-        "FROM players owner JOIN adventure_discoveries discovery ON discovery.user_id=owner.user_id "
+        "FROM players owner JOIN player_identity identity USING(user_id) "
+        "JOIN adventure_discoveries discovery ON discovery.user_id=owner.user_id "
         f"AND discovery.encounter_id IN ({placeholders}) "
         "GROUP BY owner.user_id "
-        "ORDER BY found DESC, last_found DESC, owner.dao_name COLLATE NOCASE LIMIT 10",
+        "ORDER BY found DESC, last_found DESC, identity.id LIMIT 10",
         encounter_ids,
     ).fetchall()
     total = len(encounter_ids)
     return Reply("山海奇闻榜", tuple(
-        f"{index}. {row['dao_name']} · 奇闻 {row['found']}/{total}"
+        f"{index}. UID {row['uid']} · 奇闻 {row['found']}/{total}"
         for index, row in enumerate(rows, 1)
     ) or ("尚无修士发现历练奇闻。",))

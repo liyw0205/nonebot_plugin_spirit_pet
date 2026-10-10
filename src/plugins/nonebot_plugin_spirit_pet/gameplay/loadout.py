@@ -53,7 +53,7 @@ def combatant(
             check_requirements(ctx, pet, skill.requirements)
             selected.append(skill)
             skill_multipliers[skill_id] = ctx.content.skill_levels[progression[skill_id][0]].power_multiplier
-    name = f"{ctx.player(user_id).dao_name}的{pet.name}"
+    name = f"{ctx.player(user_id).uid_label}的{pet.name}"
     return Fighter.create(
         name, Stats(**stats), tuple(species.elements), tuple(selected),
         primary_element=species.primary_element, pet_id=pet.pet_id,

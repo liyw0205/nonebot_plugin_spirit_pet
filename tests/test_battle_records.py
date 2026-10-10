@@ -4,9 +4,16 @@ from dataclasses import replace
 import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay.battle_records import _member_text
 
 from .support import pet, player, sql
 from .test_arena_matching import NOW, register
+
+
+def test_legacy_report_snapshot_remains_readable_without_showing_old_player_dao_name():
+    text = _member_text({"dao_name": "旧道号", "pet_name": "青鸾", "skills": [], "equipment": []})
+    assert text.startswith("玩家 UID 未记录的青鸾")
+    assert "旧道号" not in text
 
 
 def test_report_is_immutable_after_rename_and_loadout_changes(game, play):

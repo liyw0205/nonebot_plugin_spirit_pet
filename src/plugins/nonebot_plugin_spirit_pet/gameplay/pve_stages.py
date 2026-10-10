@@ -122,14 +122,13 @@ def _prior_reply(ctx: Context, stage: Stage) -> Reply | None:
 def _require_previous(ctx: Context, stage: Stage, user_id: str) -> None:
     if stage.previous_id is not None and _progress(ctx, user_id, stage.previous_id) is None:
         previous = ctx.content.stages[stage.previous_id]
-        raise GameError(f"{ctx.player(user_id).dao_name}尚未通关前置关卡：{previous.name}。")
+        raise GameError(f"{ctx.player(user_id).uid_label}尚未通关前置关卡：{previous.name}。")
 
 
 def _active_team(ctx: Context) -> list[Row]:
     member = require_leader(ctx)
     rows = ctx.repo.conn.execute(
-        "SELECT m.*, p.dao_name, t.leader_id FROM team_members m JOIN players p USING(user_id) "
-        "JOIN teams t USING(team_id) "
+        "SELECT m.*, t.leader_id FROM team_members m JOIN teams t USING(team_id) "
         "WHERE m.team_id=? ORDER BY m.user_id", (member["team_id"],),
     ).fetchall()
     if len(rows) < 2:
@@ -152,7 +151,7 @@ def _participants(ctx: Context, stage: Stage) -> list[str]:
             [row["ready_pet_id"]] if row["ready_pet_id"] is not None else []
         )
         if actual != expected.get(row["user_id"], []):
-            raise GameError(f"{ctx.player(row['user_id']).dao_name}尚未准备当前出战灵宠。")
+            raise GameError(f"{ctx.player(row['user_id']).uid_label}尚未准备当前出战灵宠。")
     return user_ids
 
 
@@ -229,7 +228,7 @@ def challenge(ctx: Context, arg: str) -> Reply:
         if first_clear_users:
             for user_id in first_clear_users:
                 reward = grant(ctx, stage.reward, user_id)
-                lines.append(f"{ctx.player(user_id).dao_name}首通{stage.name}：" + "，".join(reward))
+                lines.append(f"{ctx.player(user_id).uid_label}首通{stage.name}：" + "，".join(reward))
         else:
             lines.append("本队成员均已完成本关，本次为助战挑战，不重复发放首通奖励。")
         title = "关卡首通" if first_clear_users else "关卡助战胜利"

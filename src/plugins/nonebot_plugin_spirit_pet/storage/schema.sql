@@ -1,6 +1,5 @@
 CREATE TABLE players (
     user_id TEXT PRIMARY KEY,
-    dao_name TEXT NOT NULL UNIQUE COLLATE NOCASE,
     stones INTEGER NOT NULL CHECK (stones >= 0),
     active_pet_id INTEGER,
     registered_at INTEGER CHECK (registered_at >= 0),
@@ -15,6 +14,11 @@ CREATE TABLE players (
     last_pvp INTEGER,
     FOREIGN KEY(user_id, active_pet_id) REFERENCES pets(user_id, pet_id)
         DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE player_identity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL UNIQUE REFERENCES players(user_id) ON DELETE CASCADE,
+    legacy_dao_name TEXT
 );
 CREATE TABLE player_resonance (
     user_id TEXT PRIMARY KEY REFERENCES players(user_id) ON DELETE CASCADE,

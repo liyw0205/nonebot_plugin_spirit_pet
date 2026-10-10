@@ -201,7 +201,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
         for user_id in user_ids:
             advance(ctx, "pve", user_id)
             names = "、".join(pet.name for owner, pet in selected if owner == user_id)
-            lines.append(f"{by_user[user_id].dao_name}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+            lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
     for user_id in user_ids:
         ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")

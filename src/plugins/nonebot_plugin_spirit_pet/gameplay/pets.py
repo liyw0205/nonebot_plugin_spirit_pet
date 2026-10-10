@@ -3,7 +3,6 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .cultivation import available_co_training_partner
-from .identity import random_name
 
 
 def adopt(ctx: Context, arg: str) -> Reply:
@@ -11,18 +10,21 @@ def adopt(ctx: Context, arg: str) -> Reply:
         raise GameError("你已与灵宠结契，可通过灵宠召唤获得更多灵宠。")
     starters = {key: value for key, value in ctx.content.species.items() if value.starter}
     species = named(starters, arg) if arg else weighted_choice(ctx.rng, list(starters.values()), [1] * len(starters))
-    player = ctx.repo.create_player(ctx.user_id, random_name(ctx), ctx.content.rules.starter_stones, ctx.now)
+    player = ctx.repo.create_player(ctx.user_id, ctx.content.rules.starter_stones, ctx.now)
     pet = ctx.repo.create_pet(ctx.user_id, species.id, species.name, species.initial_affinity, ctx.now)
     ctx.repo.set_active_pets(ctx.user_id, [pet.pet_id])
     for item_id, amount in ctx.content.rules.starter_items.items():
         ctx.repo.add_item(ctx.user_id, item_id, amount)
-    return Reply("灵契初成", (
-        f"你的道号：{player.dao_name}。",
-        f"你与{pet.name}缔结了灵契，编号 {pet.pet_id}。",
+    species_name = ctx.content.species[pet.species_id].name
+    pet_label = pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
+    return Reply("领养成功", (
+        f"UID：{player.uid}",
+        f"初始灵宠：{pet_label} · 编号 {pet.pet_id}",
         "伙伴已自动出战，可以一起修炼与历练了。",
         f"境界：{ctx.content.realms[0].name}一层 · 血脉：{ctx.content.bloodlines[0].name}",
         f"获赠 {player.stones} 灵石。",
-    ), ("我的信息", "我的灵宠", "灵宠帮助 成长"))
+        "下一步：灵宠帮助",
+    ), ("我的灵宠", "灵宠帮助"), (InlineCommand(0, "查看我的信息", "我的信息"),))
 
 
 def summon(ctx: Context, arg: str) -> Reply:
@@ -73,42 +75,30 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     selected = owned[(page - 1) * 5:page * 5]
     archived_count = ctx.repo.archived_pet_count(ctx.user_id)
     lines = [f"在册 {len(owned)}/{ctx.config.spirit_pet_max_pets} · 封存 {archived_count} 只。"]
-    has_expedition = False
     inline_commands = []
     for index, pet in enumerate(selected, 1):
         expedition = ctx.repo.active_expedition(pet.pet_id)
         activity = ""
         if expedition is not None:
-            has_expedition = True
             state = "外出中" if ctx.now < expedition["finishes_at"] else "待领取"
             activity = f" · {state}：{expedition['task_name']}"
+        species_name = ctx.content.species[pet.species_id].name
+        pet_label = pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
+        state = "【出战】" if pet.pet_id in active_ids else ""
         lines.append(
-            f"{'*' if pet.pet_id in active_ids else ''}编号 {pet.pet_id}：{pet.name}"
-            f"（{ctx.content.species[pet.species_id].name}）"
-            f" · {ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
+            f"{state}编号 {pet.pet_id}：{pet_label} · "
+            f"{ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
         )
-        inline_commands.append(InlineCommand(len(lines) - 1, "改名", f"灵宠命名 {pet.pet_id} "))
+        if pet.pet_id not in active_ids:
+            inline_commands.append(InlineCommand(len(lines) - 1, "设为出战", f"灵宠出战 {pet.pet_id}"))
     co_training_partner = available_co_training_partner(ctx)
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
-    archive_commands = [
-        f"灵宠封存 {pet.pet_id}" for pet in selected
-        if pet.pet_id not in active_ids
-    ][:2 if co_training_partner is not None else 3]
-    commands = (
-        [f"灵宠合修 {co_training_partner.pet_id}"] if co_training_partner is not None else []
-    )
-    commands.extend(archive_commands)
-    commands.extend(("我的灵宠", "灵宠封存库"))
-    commands.append("灵宠出战 ")
-    if has_expedition:
-        commands.append("灵宠行程")
-    if page > 1:
-        commands.append(f"灵宠列表 {page - 1}")
-    if page < pages:
-        commands.append(f"灵宠列表 {page + 1}")
-    if len(commands) < 8:
-        commands.append("灵宠召唤")
+    commands = ["我的灵宠", "灵宠出战"]
+    if pages > 1:
+        commands.append(f"灵宠列表 {page - 1}" if page > 1 else f"灵宠列表 {page + 1}")
+        if page > 1 and page < pages:
+            commands.append(f"灵宠列表 {page + 1}")
     return Reply(f"灵宠名册 {page}/{pages}", tuple(lines), tuple(commands), tuple(inline_commands))
 
 

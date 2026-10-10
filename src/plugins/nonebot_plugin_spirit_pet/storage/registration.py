@@ -1,4 +1,4 @@
-"""The single supported preservation migration: deployed schema 18 to 19."""
+"""Player registration metadata and stable public UID migrations."""
 
 import json
 import os
@@ -11,40 +11,107 @@ from contextlib import closing
 REGISTRATION_COLUMN = "    registered_at INTEGER CHECK (registered_at >= 0),\n"
 
 
-def validate_schema18(conn: sqlite3.Connection, current_schema: str) -> None:
+def _legacy_schema(current_schema: str, version: int) -> str:
+    schema = re.sub(r"CREATE TABLE player_identity \([\s\S]*?\n\);\n", "", current_schema)
+    match = re.search(r"CREATE TABLE players \(([\s\S]*?)\n\);", schema)
+    if match is None:
+        raise RuntimeError("Current schema is missing players table")
+    body = match.group(1)
+    body = body.replace(
+        "    user_id TEXT PRIMARY KEY,\n",
+        "    user_id TEXT PRIMARY KEY,\n    dao_name TEXT NOT NULL UNIQUE COLLATE NOCASE,\n",
+        1,
+    )
+    if version == 18:
+        body = body.replace(REGISTRATION_COLUMN, "")
+    return schema[:match.start(1)] + body + schema[match.end(1):]
+
+
+def _validate_schema(conn: sqlite3.Connection, expected_schema: str, version: int) -> None:
+    def normalize(sql: str) -> str:
+        sql = re.sub(r'"([A-Za-z_][A-Za-z0-9_]*)"', r"\1", sql.strip())
+        return re.sub(r"\s+", " ", sql)
+
     def definitions(database):
         return {
-            (row[0], row[1]): re.sub(r"\s+", " ", row[2].strip())
+            (row[0], row[1]): normalize(row[2])
             for row in database.execute(
                 "SELECT type, name, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%'"
             )
         }
 
     with closing(sqlite3.connect(":memory:")) as expected:
-        expected.executescript(current_schema.replace(REGISTRATION_COLUMN, ""))
+        expected.executescript(expected_schema)
         if definitions(conn) != definitions(expected):
-            raise RuntimeError("Unsupported spirit pet schema version: 18 (structure mismatch)")
+            raise RuntimeError(f"Unsupported spirit pet schema version: {version} (structure mismatch)")
     if conn.execute("PRAGMA integrity_check").fetchall()[0][0] != "ok" or conn.execute("PRAGMA foreign_key_check").fetchone():
-        raise RuntimeError("Schema 18 integrity/foreign key check failed; database preserved")
+        raise RuntimeError(f"Schema {version} integrity/foreign key check failed; database preserved")
+
+
+def validate_schema18(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, _legacy_schema(current_schema, 18), 18)
+
+
+def validate_schema19(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, _legacy_schema(current_schema, 19), 19)
+
+
+def validate_schema20(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 20)
 
 
 def backup_schema18(path: Path) -> Path:
-    descriptor, name = tempfile.mkstemp(prefix=path.name + ".schema18-backup-", suffix=".db", dir=path.parent)
+    return _backup_schema(path, 18)
+
+
+def backup_schema19(path: Path) -> Path:
+    return _backup_schema(path, 19)
+
+
+def _backup_schema(path: Path, version: int) -> Path:
+    descriptor, name = tempfile.mkstemp(prefix=path.name + f".schema{version}-backup-", suffix=".db", dir=path.parent)
     os.close(descriptor)
     backup = Path(name)
+    os.chmod(backup, 0o600)
     try:
         # The caller holds BEGIN IMMEDIATE, before any writes. A separate reader sees that exact state.
         with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as reader:
             with closing(sqlite3.connect(backup)) as writer:
                 reader.backup(writer)
-                if writer.execute("PRAGMA user_version").fetchone()[0] != 18:
-                    raise RuntimeError("Schema 18 backup version mismatch")
+                if writer.execute("PRAGMA user_version").fetchone()[0] != version:
+                    raise RuntimeError(f"Schema {version} backup version mismatch")
                 if writer.execute("PRAGMA integrity_check").fetchall() != [("ok",)] or writer.execute("PRAGMA foreign_key_check").fetchone():
-                    raise RuntimeError("Schema 18 backup verification failed")
+                    raise RuntimeError(f"Schema {version} backup verification failed")
         return backup
     except BaseException:
         backup.unlink(missing_ok=True)
         raise
+
+
+def migrate_player_identity(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    identity_match = re.search(r"CREATE TABLE player_identity \([\s\S]*?\n\);", schema)
+    match = re.search(r"CREATE TABLE players \([\s\S]*?\n\);", schema)
+    if identity_match is None or match is None:
+        raise RuntimeError("Current schema is missing player identity tables")
+    conn.execute(identity_match.group(0))
+    players_sql = match.group(0)
+    conn.execute(
+        "INSERT INTO player_identity(user_id, legacy_dao_name) "
+        "SELECT user_id, dao_name FROM players ORDER BY rowid"
+    )
+
+    new_table = players_sql.replace("CREATE TABLE players (", "CREATE TABLE players_new (", 1)
+    conn.execute(new_table)
+    columns = (
+        "user_id, stones, active_pet_id, registered_at, sign_day, last_bond_day, current_bond_streak, "
+        "best_bond_streak, quest_day, last_train, last_explore, last_pve, last_pvp"
+    )
+    conn.execute(
+        f"INSERT INTO players_new(rowid, {columns}) SELECT rowid, {columns} FROM players ORDER BY rowid"
+    )
+    conn.execute("DROP TABLE players")
+    conn.execute("ALTER TABLE players_new RENAME TO players")
 
 
 def add_registration_times(conn: sqlite3.Connection) -> None:

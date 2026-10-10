@@ -23,11 +23,11 @@ class Context:
     def adoption_reply(self) -> Reply:
         starters = [species.name for species in self.content.species.values() if species.starter]
         return Reply("初遇灵宠", (
-            "尚未结契。挑一位山海伙伴，开启你们的仙途吧。",
+            "还没有灵宠伙伴。先完成领养，就能开启你们的仙途。",
             "初始伙伴：" + "、".join(starters),
-            "首次领养会获得专属道号，伙伴也会立即出战。",
-            "例如：灵宠领养 " + starters[0],
-        ), (), (InlineCommand(3, "开始领养", "灵宠领养 "),))
+            "领养成功后，伙伴会自动出战。",
+            "下一步：灵宠帮助",
+        ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
 
     def missing_pet(self, user_id: str | None = None) -> GameError:
         owner = user_id or self.user_id
@@ -43,6 +43,18 @@ class Context:
             links.append(InlineCommand(2, "查看封存库", "灵宠封存库"))
         reply = Reply("选择伙伴", tuple(lines), (), tuple(links))
         return GameError(lines[0], reply=reply)
+
+    def archived_active_pet(self, pet: Pet, user_id: str) -> GameError:
+        if user_id != self.user_id:
+            return GameError("对方的出战灵宠暂不可用，当前无法继续。")
+        reply = Reply("灵宠已封存", (
+            f"{pet.name}已经封存，复原后才能继续同行。",
+            "也可以打开名册，改选其他伙伴出战。",
+        ), (), (
+            InlineCommand(0, "复原这只灵宠", f"灵宠复原 {pet.pet_id}"),
+            InlineCommand(1, "查看灵宠名册", "灵宠列表"),
+        ))
+        return GameError(reply.lines[0], reply=reply)
 
     def player(self, user_id: str | None = None) -> Player:
         owner = user_id or self.user_id
@@ -61,9 +73,7 @@ class Context:
             raise self.missing_pet(owner)
         pet = self.repo.pet(player.active_pet_id)
         if pet.archived:
-            if owner != self.user_id:
-                raise GameError("对方的出战灵宠暂不可用，当前无法继续。")
-            raise GameError(f"{pet.name}已封存，请先复原后再出战。")
+            raise self.archived_active_pet(pet, owner)
         restore_energy(pet, self.now, self.config.spirit_pet_energy_interval)
         return pet
 
@@ -76,9 +86,7 @@ class Context:
             raise self.missing_pet(owner)
         for pet in pets:
             if pet.archived:
-                if owner != self.user_id:
-                    raise GameError("对方的出战灵宠暂不可用，当前无法继续。")
-                raise GameError(f"{pet.name}已封存，请先复原后再出战。")
+                raise self.archived_active_pet(pet, owner)
             restore_energy(pet, self.now, self.config.spirit_pet_energy_interval)
         if len(pets) > 3:
             raise GameError("出战阵容最多三只灵宠。")

@@ -38,26 +38,28 @@ def test_onebot_first_adoption_identity_pet_selection_and_use(game, monkeypatch)
     asyncio.run(run())
     replies = [call.args[1] for call in bot.send.call_args_list]
     allocated = player(store, "12345")
-    assert f"你的道号：{allocated['dao_name']}。" in replies[2]
-    assert "已自动出战" in replies[2]
+    assert "UID：10000" in replies[2]
+    assert "初始灵宠：青鸾" in replies[2]
+    assert "伙伴已自动出战" in replies[2]
     assert allocated["registered_at"] == 1800000000
     assert "注册时间：2027-01-15 16:00:00（UTC+8）" in replies[3]
-    assert "平台用户 ID：12345" in replies[3]
+    assert "12345" not in replies[3]
+    assert "UID：10000" in replies[3]
     assert "道号" not in replies[4]
     assert "当前出战：青鸾（1）" in replies[4]
     assert "吐纳修炼" in replies[-1]
     assert sql(store, "SELECT * FROM active_pet_slots")[0]["pet_id"] == 1
 
 
-@pytest.mark.parametrize("action", ["status", "train", "switch", "dao_name", "bag", "use", "challenge", "team_join"])
+@pytest.mark.parametrize("action", ["status", "train", "switch", "bag", "use", "challenge", "team_join"])
 def test_registered_features_guide_to_real_first_adoption_without_writing(game, play, action):
     with pytest.raises(GameError) as rejected:
         play(action)
     reply = rejected.value.reply
-    assert reply and "首次领养" in reply.text()
+    assert reply and "初遇灵宠" in reply.text()
     assert reply.inline_commands[0].command == "灵宠领养 "
     assert reply.inline_commands[0].label == "开始领养"
-    assert not reply.commands
+    assert "灵宠帮助" in reply.commands
     assert not sql(game[1], "SELECT * FROM players")
     assert not sql(game[1], "SELECT * FROM operations")
 
@@ -98,6 +100,19 @@ def test_target_owner_missing_account_or_active_pet_does_not_guide_requester(gam
             assert str(rejected.value) == "对方尚未选择出战灵宠，当前无法继续。"
             assert "registered-target" not in str(rejected.value)
             assert rejected.value.reply is None
+        conn.execute("UPDATE pets SET archived=1 WHERE user_id='registered-target'")
+        conn.execute(
+            "UPDATE players SET active_pet_id=(SELECT pet_id FROM pets WHERE user_id='registered-target') "
+            "WHERE user_id='registered-target'"
+        )
+        archived_ctx = Context(
+            Repository(conn), service.content, service.config, service.rng,
+            "requester", 1_800_000_000, "owner-archived-check",
+        )
+        with pytest.raises(GameError) as archived:
+            archived_ctx.pet("registered-target")
+        assert str(archived.value) == "对方的出战灵宠暂不可用，当前无法继续。"
+        assert archived.value.reply is None
 
 
 def test_contextual_reply_links_survive_idempotent_cache_and_read_legacy_rows(game):
@@ -121,9 +136,7 @@ def test_account_only_features_work_without_an_active_pet(game, play):
     clear_active(game[1])
     info = play("identity")
     assert "出战伙伴：0 只" in info.text() and "未记录" not in info.text()
-    play("dao_name", "听雨散人")
-    assert "听雨散人" in play("identity").text()
-    assert play("dao_name").title == "修改道号"
+    assert "UID：10000" in info.text()
     assert play("bag").title == "乾坤袋"
     assert play("sign").title == "今日仙缘"
     with pytest.raises(GameError) as rejected:
@@ -142,17 +155,16 @@ def test_account_only_features_work_without_an_active_pet(game, play):
     assert "灵宠封存库" in tuple(action.command for action in archived.value.reply.inline_commands)
 
 
-def test_registration_time_survives_rename_replay_expiry_and_restart(game, play):
+def test_registration_time_survives_replay_queries_expiry_and_restart(game, play):
     initial = play("adopt", "青鸾", now=1234567890, op="first-adoption")
     assert play("adopt", "青鸾", now=1234567899, op="first-adoption") == initial
-    play("dao_name", "听雨散人", now=1234567900)
     play("identity", now=1234567999)
     sql(game[1], "DELETE FROM operations")
     with pytest.raises(GameError, match="已与灵宠结契"):
         play("adopt", now=1234568000, op="first-adoption")
     Store(game[1].path).initialize()
     assert player(game[1])["registered_at"] == 1234567890
-    assert player(game[1])["dao_name"] == "听雨散人"
+    assert player(game[1])["user_id"] == "u1"
 
 
 @pytest.mark.parametrize("prefix", ["", "/", "!"])
@@ -196,13 +208,14 @@ def test_qq_native_first_adoption_and_guidance_use_the_real_outgoing_payload(gam
     payload = bot.post_group_messages.call_args.kwargs
     assert payload["msg_type"] == 2
     markdown = payload["markdown"].content
-    assert f"**你的道号：{player(game[1], 'opaque-platform-id')['dao_name']}。**" in markdown
-    assert "已自动出战" in markdown
-    assert "[我的信息](mqqapi://" in markdown
+    assert "UID：10000" in markdown
+    assert "初始灵宠：青鸾" in markdown
+    assert "伙伴已自动出战" in markdown
+    assert "[查看我的信息](mqqapi://" in markdown
     info = play("identity", user="opaque-platform-id")
     fallback, info_message = _qq_segments(info, config)
-    assert "平台用户 ID：opaque-platform-id" in fallback
-    assert "[修改道号](mqqapi://" in info_message["markdown"][0].data["markdown"].content
+    assert "UID：10000" in fallback and "opaque-platform-id" not in fallback
+    assert "灵宠道号" not in info_message["markdown"][0].data["markdown"].content
     pet_reply = play("status", user="opaque-platform-id")
     _, pet_message = _qq_segments(pet_reply, config)
     assert "道号" not in pet_reply.text()
@@ -215,7 +228,7 @@ def test_qq_native_first_adoption_and_guidance_use_the_real_outgoing_payload(gam
     assert guide["msg_type"] == 2 and "初遇灵宠" in guide["markdown"].content
     assert "[开始领养](mqqapi://aio/inlinecmd?" in guide["markdown"].content
     assert not sql(game[1], "SELECT * FROM players WHERE user_id='new-user'")
-    assert "keyboard" not in guide
+    assert guide["keyboard"].content.rows[0].buttons[0].action.data == "!灵宠帮助"
 
 
 def test_help_template_text_and_disabled_links_keep_examples_without_help_keyboard(play):

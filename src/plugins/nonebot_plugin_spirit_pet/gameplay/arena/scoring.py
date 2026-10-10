@@ -32,6 +32,6 @@ def settle_ranked(ctx: Context, season: Season, target_id: str, battle: Battle) 
             (season.season_id, user_id, scores[side] + adjustment, won, lost, drawn),
         )
         result = "平局" if drawn else "胜" if won else "负"
-        lines.append(f"{ctx.player(user_id).dao_name}：{result}，赛季积分 {adjustment:+d}，"
+        lines.append(f"{ctx.player(user_id).uid_label}：{result}，赛季积分 {adjustment:+d}，"
                      f"现为 {scores[side] + adjustment}。")
     return delta, tuple(lines)

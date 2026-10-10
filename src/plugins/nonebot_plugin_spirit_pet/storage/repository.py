@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from dataclasses import asdict
 
@@ -16,7 +17,10 @@ class Repository:
 
     def player(self, user_id: str) -> Player | None:
         if user_id not in self.players:
-            row = self.conn.execute("SELECT * FROM players WHERE user_id=?", (user_id,)).fetchone()
+            row = self.conn.execute(
+                "SELECT p.*, identity.id AS internal_id FROM players p "
+                "JOIN player_identity identity USING(user_id) WHERE p.user_id=?", (user_id,),
+            ).fetchone()
             if row is None:
                 return None
             self.players[user_id] = Player(**dict(row))
@@ -37,16 +41,26 @@ class Repository:
             "SELECT * FROM expeditions WHERE pet_id=? AND state='running'", (pet_id,),
         ).fetchone()
 
-    def player_by_name(self, dao_name: str) -> Player | None:
-        row = self.conn.execute("SELECT user_id FROM players WHERE dao_name=? COLLATE NOCASE", (dao_name,)).fetchone()
+    def player_by_uid(self, value: str | int) -> Player | None:
+        text = str(value).strip()
+        match = re.fullmatch(r"(?:UID\s*)?([0-9]+)", text, re.IGNORECASE)
+        if match is None:
+            return None
+        uid = int(match.group(1))
+        if not 10000 <= uid <= 9_223_372_036_854_785_806:
+            return None
+        row = self.conn.execute(
+            "SELECT user_id FROM player_identity WHERE id=?", (uid - 9999,),
+        ).fetchone()
         return self.player(row["user_id"]) if row else None
 
-    def create_player(self, user_id: str, dao_name: str, stones: int, now: int) -> Player:
+    def create_player(self, user_id: str, stones: int, now: int) -> Player:
         self.conn.execute(
-            "INSERT INTO players(user_id, dao_name, stones, registered_at) VALUES (?, ?, ?, ?)",
-            (user_id, dao_name, stones, now),
+            "INSERT INTO players(user_id, stones, registered_at) VALUES (?, ?, ?)",
+            (user_id, stones, now),
         )
-        player = Player(user_id, dao_name, stones, None, registered_at=now)
+        cursor = self.conn.execute("INSERT INTO player_identity(user_id) VALUES (?)", (user_id,))
+        player = Player(user_id, cursor.lastrowid, stones, None, registered_at=now)
         self.players[user_id] = player
         return player
 
@@ -283,11 +297,13 @@ class Repository:
                 "WHERE pet_id=:pet_id AND user_id=:user_id", asdict(pet),
             )
         for player in self.players.values():
+            values = asdict(player)
+            values.pop("internal_id")
             self.conn.execute(
-                "UPDATE players SET dao_name=:dao_name, stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
+                "UPDATE players SET stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
                 "last_bond_day=:last_bond_day, current_bond_streak=:current_bond_streak, "
                 "best_bond_streak=:best_bond_streak, "
                 "quest_day=:quest_day, last_train=:last_train, last_explore=:last_explore, "
                 "last_pve=:last_pve, last_pvp=:last_pvp WHERE user_id=:user_id",
-                asdict(player),
+                values,
             )
