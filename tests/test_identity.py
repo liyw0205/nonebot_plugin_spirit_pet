@@ -32,17 +32,20 @@ def test_name_collision_and_case_insensitive_uniqueness(game, play):
     assert play("spar", "CLOUD", user="u2").title == "切磋结算"
 
 
-def test_internal_ids_never_displayed_or_used_as_interaction_targets(game, play):
+def test_internal_ids_only_displayed_in_own_profile_and_never_interaction_targets(game, play):
     ids = ["private-openid-001", "private-openid-002"]
     for user in ids:
         play("adopt", user=user)
     target_name = player(game[1], ids[1])["dao_name"]
     with pytest.raises(GameError, match="道号不存在"):
         play("spar", ids[1], user=ids[0])
-    replies = [play(action, user=ids[0]) for action in ("status", "identity", "rank", "pvp_rank", "help")]
+    replies = [play(action, user=ids[0]) for action in ("status", "rank", "pvp_rank", "help")]
     replies.append(play("spar", target_name, user=ids[0]))
     assert replies[-1].title == "切磋结算"
     assert all(not any(user in reply.text() + " ".join(reply.commands) for user in ids) for reply in replies)
+    own_info = play("identity", user=ids[0])
+    assert ids[0] in own_info.text() and ids[1] not in own_info.text()
+    assert all(user not in " ".join(own_info.commands) for user in ids)
 
 
 def test_rename_changes_future_targets_but_not_completed_battle_replays(game, play):

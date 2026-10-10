@@ -3,6 +3,7 @@ CREATE TABLE players (
     dao_name TEXT NOT NULL UNIQUE COLLATE NOCASE,
     stones INTEGER NOT NULL CHECK (stones >= 0),
     active_pet_id INTEGER,
+    registered_at INTEGER CHECK (registered_at >= 0),
     sign_day TEXT NOT NULL DEFAULT '',
     last_bond_day TEXT NOT NULL DEFAULT '',
     current_bond_streak INTEGER NOT NULL DEFAULT 0 CHECK (current_bond_streak >= 0),

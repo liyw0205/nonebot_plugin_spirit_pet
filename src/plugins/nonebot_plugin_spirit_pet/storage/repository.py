@@ -41,9 +41,12 @@ class Repository:
         row = self.conn.execute("SELECT user_id FROM players WHERE dao_name=? COLLATE NOCASE", (dao_name,)).fetchone()
         return self.player(row["user_id"]) if row else None
 
-    def create_player(self, user_id: str, dao_name: str, stones: int) -> Player:
-        self.conn.execute("INSERT INTO players(user_id, dao_name, stones) VALUES (?, ?, ?)", (user_id, dao_name, stones))
-        player = Player(user_id, dao_name, stones, None)
+    def create_player(self, user_id: str, dao_name: str, stones: int, now: int) -> Player:
+        self.conn.execute(
+            "INSERT INTO players(user_id, dao_name, stones, registered_at) VALUES (?, ?, ?, ?)",
+            (user_id, dao_name, stones, now),
+        )
+        player = Player(user_id, dao_name, stones, None, registered_at=now)
         self.players[user_id] = player
         return player
 

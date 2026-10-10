@@ -39,6 +39,8 @@ class Game:
                     tuple(persistent_battle["commands"]),
                 )
             context = Context(repo, self.content, self.config, self.rng, user_id, timestamp, operation_id)
+            if command.registered:
+                context.player()
             result = command.handler(context, argument)
             repo.save()
             return result

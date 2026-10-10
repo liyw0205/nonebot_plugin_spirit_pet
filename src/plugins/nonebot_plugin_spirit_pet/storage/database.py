@@ -6,8 +6,9 @@ from dataclasses import asdict
 from pathlib import Path
 
 from ..domain.models import GameError, Reply
+from .registration import add_registration_times, backup_schema18, validate_schema18
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -32,6 +33,15 @@ class Store:
                     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
                 ).fetchall()
                 if version == SCHEMA_VERSION:
+                    conn.commit()
+                    return
+                if version == 18:
+                    validate_schema18(conn, SCHEMA_PATH.read_text(encoding="utf-8"))
+                    backup_schema18(self.path)
+                    add_registration_times(conn)
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Registration migration foreign key check failed")
+                    conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     conn.commit()
                     return
                 if version != 0 or tables:

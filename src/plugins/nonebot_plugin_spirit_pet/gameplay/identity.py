@@ -1,7 +1,9 @@
 import re
+from datetime import datetime
 
 from ..application.context import Context
 from ..domain.models import GameError, Reply
+from ..utils.time import BEIJING
 
 NAME_RANDOM_ATTEMPTS = 16
 NAME_BATCH_SIZE = 128
@@ -46,18 +48,29 @@ def random_name(ctx: Context) -> str:
 def profile(ctx: Context, arg: str) -> Reply:
     player = ctx.repo.player(ctx.user_id)
     if player is None:
-        return Reply("修士名帖", ("尚未结契，领养灵宠时会获得专属道号。",), ("灵宠领养 青鸾",))
-    return Reply("修士名帖", (f"道号：{player.dao_name}",), ("我的灵宠", "灵宠赛季", "灵宠论剑榜"))
+        return ctx.adoption_reply()
+    registered = (
+        datetime.fromtimestamp(player.registered_at, BEIJING).strftime("%Y-%m-%d %H:%M:%S（UTC+8）")
+        if player.registered_at is not None else "未记录"
+    )
+    return Reply("我的信息", (
+        f"道号：{player.dao_name}",
+        f"注册时间：{registered}",
+        f"平台用户 ID：{player.user_id}",
+        f"灵石：{player.stones}",
+        f"伙伴：在册 {len(ctx.repo.owned_pets(ctx.user_id))} 只 · 封存 {ctx.repo.archived_pet_count(ctx.user_id)} 只",
+        f"出战伙伴：{len(ctx.repo.active_pets(ctx.user_id))} 只",
+    ), ("灵宠道号", "灵宠列表", "灵宠背包"))
 
 
 def rename(ctx: Context, arg: str) -> Reply:
-    if not arg:
-        return Reply("修改道号", ("发送新道号完成修改，例如：灵宠道号 青云。",), ("我的灵宠",))
     player = ctx.player()
+    if not arg:
+        return Reply("修改道号", ("为自己取一个新道号吧，限 2-12 个汉字、字母或数字。", "例如：灵宠道号 青云。"), ("我的信息",))
     if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9]{2,12}", arg):
         raise GameError("道号限 2-12 个汉字、英文字母或数字。")
     occupied = ctx.repo.player_by_name(arg)
     if occupied and occupied.user_id != player.user_id:
         raise GameError("该道号已被使用，请换一个。")
     player.dao_name = arg
-    return Reply("道号已定", (f"道号：{arg}。",))
+    return Reply("道号已定", (f"道号：{arg}。",), ("我的信息",))

@@ -3,7 +3,7 @@ from typing import Any
 
 from ..content.catalog import Catalog
 from ..core.config import Config
-from ..domain.models import GameError
+from ..domain.models import GameError, Reply
 from ..domain.state import Pet, Player
 from ..storage.repository import Repository
 from ..utils.energy import restore_energy
@@ -20,16 +20,35 @@ class Context:
     now: int
     operation_id: str
 
+    def adoption_reply(self) -> Reply:
+        starters = [species.name for species in self.content.species.values() if species.starter]
+        return Reply("初遇灵宠", (
+            "尚未结契。挑一位山海伙伴，开启你们的仙途吧。",
+            "初始伙伴：" + "、".join(starters),
+            "首次领养会获得专属道号，伙伴也会立即出战。",
+            "例如：灵宠领养 " + starters[0],
+        ), tuple(f"灵宠领养 {name}" for name in starters))
+
+    def missing_pet(self) -> GameError:
+        commands = ["灵宠列表", "灵宠出战"]
+        lines = ["尚未选择出战灵宠。去名册挑一位伙伴，再一起出发吧。", "例如：灵宠出战 编号"]
+        if self.repo.archived_pet_count(self.user_id):
+            lines.append("封存的伙伴也能在灵宠封存库中复原。")
+            commands.append("灵宠封存库")
+        reply = Reply("选择伙伴", tuple(lines), tuple(commands))
+        return GameError(lines[0], reply=reply)
+
     def player(self, user_id: str | None = None) -> Player:
         player = self.repo.player(user_id or self.user_id)
         if player is None:
-            raise GameError("尚未结契，请先发送“灵宠领养 青鸾”。")
+            reply = self.adoption_reply()
+            raise GameError(reply.lines[0], reply=reply)
         return player
 
     def pet(self, user_id: str | None = None) -> Pet:
         player = self.player(user_id)
         if player.active_pet_id is None:
-            raise GameError("尚未选择出战灵宠。")
+            raise self.missing_pet()
         pet = self.repo.pet(player.active_pet_id)
         if pet.archived:
             raise GameError(f"{pet.name}已封存，请先复原后再出战。")
@@ -39,9 +58,10 @@ class Context:
     def active_pets(self, user_id: str | None = None) -> list[Pet]:
         """Load and refresh every pet in the user's battle roster."""
         owner = user_id or self.user_id
+        self.player(owner)
         pets = self.repo.active_pets(owner)
         if not pets:
-            raise GameError("尚未选择出战灵宠。")
+            raise self.missing_pet()
         for pet in pets:
             if pet.archived:
                 raise GameError(f"{pet.name}已封存，请先复原后再出战。")

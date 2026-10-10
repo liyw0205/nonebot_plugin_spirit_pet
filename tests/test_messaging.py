@@ -36,13 +36,9 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     assert button.action.data == "/我的灵宠"
 
 
-def test_help_categories_get_inline_blue_links_and_unprefixed_labels():
+def test_help_categories_get_inline_blue_links_and_unprefixed_labels(play):
     pytest.importorskip("nonebot.adapters.qq")
-    reply = Reply(
-        "灵宠仙途",
-        ("总览：选择一个玩法分类", "成长：查看灵宠养成", "组队与派遣：查看协作玩法"),
-        ("灵宠帮助 成长", "灵宠帮助 结契", "灵宠帮助 秘境与关卡", "灵宠帮助 组队与派遣"),
-    )
+    reply = play("help")
     _, message = _qq_segments(
         reply,
         Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
@@ -55,40 +51,38 @@ def test_help_categories_get_inline_blue_links_and_unprefixed_labels():
     assert parse_qs(urlparse(markdown.split("[成长](")[1].split(")")[0]).query)["command"] == [
         "!灵宠帮助 成长"
     ]
-    buttons = message["keyboard"][0].data["keyboard"].content.rows[0].buttons
-    assert buttons[0].render_data.label == "成长指南"
-    assert buttons[0].action.data == "!灵宠帮助 成长"
-    assert all(not button.render_data.label.startswith("/") for button in buttons)
+    assert len(message["keyboard"]) == 0
 
     _, no_prefix_message = _qq_segments(
         reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix=""),
     )
-    no_prefix_button = no_prefix_message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
-    assert no_prefix_button.action.data == "灵宠帮助 成长"
+    no_prefix_markdown = no_prefix_message["markdown"][0].data["markdown"].content
+    assert parse_qs(urlparse(no_prefix_markdown.split("[成长](")[1].split(")")[0]).query)["command"] == ["灵宠帮助 成长"]
+    assert len(no_prefix_message["keyboard"]) == 0
 
 
-def test_status_places_dao_edit_link_in_the_identity_line():
+def test_player_info_places_dao_edit_link_beside_the_name():
     pytest.importorskip("nonebot.adapters.qq")
     reply = Reply(
-        "青鸾",
-        ("概况", "道号：青云", "状态", "精力：90/100"),
-        ("灵宠道号", "灵宠修炼", "灵宠互动", "灵宠突破"),
+        "我的信息",
+        ("道号：青云", "注册时间：未记录", "灵石：90"),
+        ("灵宠道号", "灵宠列表", "灵宠背包"),
     )
     _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
     markdown = message["markdown"][0].data["markdown"].content
     assert "**道号**：青云 · [修改道号](mqqapi://aio/inlinecmd?" in markdown
     assert "**下一步**" not in markdown
-    assert len(message["keyboard"]) == 0
-    assert "**概况**\n**道号**：青云" in markdown
-    assert "**道号**：青云" in markdown and "\n\n**状态**\n> 精力：90/100" in markdown
+    assert "\n> " not in markdown
+    rename_url = markdown.split("[修改道号](")[1].split(")")[0]
+    assert parse_qs(urlparse(rename_url).query)["command"] == ["/灵宠道号 "]
+    buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows for button in row.buttons]
+    assert all(button.action.data != "/灵宠道号" for button in buttons)
 
     _, no_blue_link_message = _qq_segments(
         reply,
         Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
     )
-    button = no_blue_link_message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
-    assert button.render_data.label == "修改道号"
-    assert button.action.data == "/灵宠道号"
+    assert "改名：灵宠道号 新道号" in no_blue_link_message["markdown"][0].data["markdown"].content
 
 
 @pytest.mark.parametrize("command,encoded", [

@@ -11,7 +11,7 @@ def adopt(ctx: Context, arg: str) -> Reply:
         raise GameError("你已与灵宠结契，可通过灵宠召唤获得更多灵宠。")
     starters = {key: value for key, value in ctx.content.species.items() if value.starter}
     species = named(starters, arg) if arg else weighted_choice(ctx.rng, list(starters.values()), [1] * len(starters))
-    player = ctx.repo.create_player(ctx.user_id, random_name(ctx), ctx.content.rules.starter_stones)
+    player = ctx.repo.create_player(ctx.user_id, random_name(ctx), ctx.content.rules.starter_stones, ctx.now)
     pet = ctx.repo.create_pet(ctx.user_id, species.id, species.name, species.initial_affinity, ctx.now)
     ctx.repo.set_active_pets(ctx.user_id, [pet.pet_id])
     for item_id, amount in ctx.content.rules.starter_items.items():
@@ -19,9 +19,10 @@ def adopt(ctx: Context, arg: str) -> Reply:
     return Reply("灵契初成", (
         f"你的道号：{player.dao_name}。",
         f"你与{pet.name}缔结了灵契，编号 {pet.pet_id}。",
+        "伙伴已自动出战，可以一起修炼与历练了。",
         f"境界：{ctx.content.realms[0].name}一层 · 血脉：{ctx.content.bloodlines[0].name}",
         f"获赠 {player.stones} 灵石。",
-    ))
+    ), ("我的信息", "我的灵宠", "灵宠帮助 成长"))
 
 
 def summon(ctx: Context, arg: str) -> Reply:
@@ -181,6 +182,7 @@ def restore(ctx: Context, arg: str) -> Reply:
 
 
 def switch(ctx: Context, arg: str) -> Reply:
+    player = ctx.player()
     if any(separator in arg for separator in (" ", "，", ",")):
         return lineup(ctx, arg)
     owned = ctx.repo.owned_pets(ctx.user_id)
@@ -196,7 +198,6 @@ def switch(ctx: Context, arg: str) -> Reply:
             if row is not None:
                 raise GameError(f"{row['name']}已封存，请先发送 灵宠复原 {arg}。")
         raise GameError("未找到灵宠或名字重复，请用灵宠列表中的编号切换。")
-    player = ctx.player()
     player.active_pet_id = matches[0].pet_id
     ctx.repo.set_active_pets(ctx.user_id, [matches[0].pet_id])
     ctx.repo.invalidate_ready(ctx.user_id)

@@ -5,7 +5,7 @@ from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
 from ..gameplay import achievements, resonance
-from ..gameplay import battle_records
+from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
 from .context import Context
@@ -15,22 +15,23 @@ from .context import Context
 class Command:
     handler: Callable[[Context, str], Reply]
     arguments: bool = False
+    registered: bool = True
 
 
 ACTIONS = {
-    "help": Command(information.help_game, True),
-    "identity": Command(identity.profile),
+    "help": Command(help.help_game, True, registered=False),
+    "identity": Command(identity.profile, registered=False),
     "dao_name": Command(identity.rename, True),
     "status": Command(information.status),
-    "catalog": Command(information.catalog, True),
-    "rank": Command(information.rank),
-    "adventure_rank": Command(information.adventure_rank),
-    "pvp_rank": Command(seasons.rank, True),
+    "catalog": Command(information.catalog, True, registered=False),
+    "rank": Command(information.rank, registered=False),
+    "adventure_rank": Command(information.adventure_rank, registered=False),
+    "pvp_rank": Command(seasons.rank, True, registered=False),
     "season": Command(seasons.status, True),
     "season_rewards": Command(seasons.catalog, True),
     "season_claim": Command(seasons.claim, True),
     "match": Command(matching.candidates, True),
-    "adopt": Command(pets.adopt, True),
+    "adopt": Command(pets.adopt, True, registered=False),
     "summon": Command(pets.summon, True),
     "pet_list": Command(pets.pet_list, True),
     "pet_archive_list": Command(pets.archive_list, True),
@@ -40,7 +41,7 @@ ACTIONS = {
     "lineup": Command(pets.lineup, True),
     "sign": Command(economy.sign),
     "bag": Command(economy.bag),
-    "shop": Command(economy.shop, True),
+    "shop": Command(economy.shop, True, registered=False),
     "buy": Command(economy.buy, True),
     "use": Command(economy.use, True),
     "feed": Command(economy.feed, True),
@@ -49,22 +50,22 @@ ACTIONS = {
     "co_train": Command(cultivation.co_train, True),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
-    "lineage_catalog": Command(lineage.catalog, True),
+    "lineage_catalog": Command(lineage.catalog, True, registered=False),
     "lineage_choose": Command(lineage.choose, True),
-    "explore": Command(adventure.explore, True),
-    "adventure_codex": Command(adventure.adventure_codex, True),
-    "dungeons": Command(adventure.dungeons, True),
+    "explore": Command(adventure.explore, True, registered=False),
+    "adventure_codex": Command(adventure.adventure_codex, True, registered=False),
+    "dungeons": Command(adventure.dungeons, True, registered=False),
     "challenge": Command(adventure.challenge, True),
-    "stage_catalog": Command(pve_stages.catalog, True),
+    "stage_catalog": Command(pve_stages.catalog, True, registered=False),
     "stage_challenge": Command(pve_stages.challenge, True),
-    "achievements": Command(achievements.achievements, True),
+    "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
-    "collection": Command(achievements.collection, True),
+    "collection": Command(achievements.collection, True, registered=False),
     "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
-    "expedition_catalog": Command(expeditions.catalog, True),
+    "expedition_catalog": Command(expeditions.catalog, True, registered=False),
     "expedition_start": Command(expeditions.start, True),
     "expedition_status": Command(expeditions.status, True),
     "expedition_claim": Command(expeditions.claim, True),
@@ -88,21 +89,22 @@ ACTIONS = {
     "team_disband": Command(management.disband),
     "team_challenge": Command(party.challenge, True),
     "equipment": Command(equipment.view, True),
-    "equipment_sets": Command(equipment.sets, True),
-    "equipment_catalog": Command(equipment.catalog, True),
+    "equipment_sets": Command(equipment.sets, True, registered=False),
+    "equipment_catalog": Command(equipment.catalog, True, registered=False),
     "unequip": Command(equipment.unequip, True),
     "enhance": Command(forging.enhance, True),
-    "recipe_catalog": Command(crafting.catalog, True),
+    "recipe_catalog": Command(crafting.catalog, True, registered=False),
     "craft": Command(crafting.craft, True),
     "salvage": Command(crafting.salvage, True),
     "skills": Command(skills.view),
-    "skill_catalog": Command(skills.catalog, True),
+    "skill_catalog": Command(skills.catalog, True, registered=False),
     "learn": Command(skills.learn, True),
     "equip_skill": Command(skills.equip, True),
     "unequip_skill": Command(skills.unequip, True),
 }
 COMMANDS = {
-    "灵宠": "help", "灵宠帮助": "help", "我的道号": "identity", "灵宠道号": "dao_name", "我的灵宠": "status",
+    "灵宠": "help", "灵宠帮助": "help", "我的信息": "identity", "灵宠道号": "dao_name",
+    "我的灵宠": "status", "我的宠": "status",
     "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季领奖": "season_claim",
     "灵宠匹配": "match",

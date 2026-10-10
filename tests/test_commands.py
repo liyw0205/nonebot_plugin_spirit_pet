@@ -81,7 +81,9 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠战报 2") == ("battle_reports", "2")
     assert handlers._parse("灵宠签到后的聊天") is None
     assert handlers._parse("灵宠论剑 清风散人") == ("pvp", "清风散人")
-    assert handlers._parse("我的道号") == ("identity", "")
+    assert handlers._parse("我的信息") == ("identity", "")
+    assert handlers._parse("我的道号") is None
+    assert handlers._parse("我的宠") == ("status", "")
     assert handlers._parse("灵宠装备 青岚翎") == ("equipment", "青岚翎")
     assert handlers._parse("灵宠学习 风刃术") == ("learn", "风刃术")
     assert handlers._parse("灵宠身份") is None

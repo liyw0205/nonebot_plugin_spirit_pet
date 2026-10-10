@@ -14,83 +14,16 @@ def element_line(ctx: Context, species: Species) -> str:
     return f"主属性：{ctx.content.elements[species.primary_element].name} · 副属性：{'、'.join(secondary) or '无'}"
 
 
-_HELP_SECTIONS = {
-    "结契": (
-        "灵宠领养 青鸾 · 灵宠召唤 1 · 灵宠列表",
-        "灵宠出战 编号（也可用灵宠阵容） · 灵宠切换 编号",
-        "灵宠封存 编号 · 灵宠封存库 · 灵宠复原 编号",
-    ),
-    "成长": (
-        "我的灵宠 · 灵宠签到 · 灵宠互动 编号 · 灵宠喂养 编号",
-        "灵宠修炼 编号 · 灵宠合修 编号 · 灵宠突破 编号 · 灵宠进化 编号",
-    ),
-    "血脉与道具": (
-        "灵宠血脉 · 灵宠分支 分支名 · 灵宠共鸣 页",
-        "灵宠共鸣 查看 名称 · 灵宠共鸣 激活 名称 · 灵宠共鸣 停用",
-        "灵宠图鉴 · 灵宠排行",
-        "灵宠背包 · 灵宠商店 · 灵宠购买 灵粮 3 · 灵宠使用 回元丹 1",
-    ),
-    "秘境与关卡": (
-        "灵宠历练 路线 · 灵宠奇闻 页 · 灵宠奇闻榜 · 灵宠秘境",
-        "灵宠挑战 名称 · 灵宠任务 · 灵宠领奖 任务名 · 灵宠关卡",
-        "灵宠挑战关卡 名称 · 灵宠组队关卡 名称",
-    ),
-    "对战与赛季": (
-        "灵宠论剑 · 灵宠论剑 道号 · 灵宠切磋 道号",
-        "灵宠赛季 · 灵宠匹配 · 灵宠论剑榜 · 灵宠赛季奖励",
-        "灵宠赛季领奖 赛季号 · 灵宠战报 页",
-    ),
-    "灵物与灵术": (
-        "灵宠装备 · 灵宠装备 灵器 · 灵宠套装 · 灵宠强化 灵器",
-        "灵宠卸装 灵器 · 灵宠装备图鉴 · 灵宠工坊 · 灵宠打造 材料",
-        "灵宠分解 材料 数量 · 灵宠技能 · 灵宠技能图鉴",
-        "灵宠学习 技能 · 灵宠携带 技能 · 灵宠卸技 技能",
-    ),
-    "组队与派遣": (
-        "灵宠组队 · 灵宠入队 道号 · 灵宠邀请 道号 · 灵宠队伍",
-        "灵宠队务 · 灵宠队伍同意 道号 · 灵宠队伍拒绝 道号 · 灵宠队伍撤回 道号",
-        "灵宠准备 · 灵宠取消准备 · 灵宠踢人 道号 · 灵宠转让 道号",
-        "灵宠退队 · 灵宠解散 · 灵宠组队挑战 关卡",
-        "灵宠委托 · 灵宠派遣 任务 · 灵宠行程",
-        "灵宠归来 行程号 · 灵宠召回 行程号",
-    ),
-    "身份与收集": (
-        "我的道号 · 灵宠道号 新道号",
-        "灵宠收集 页 · 灵宠成就 页 · 灵宠成就领奖 成就名",
-    ),
-}
-
-
-def help_game(ctx: Context, arg: str) -> Reply:
-    section = arg.strip()
-    if section:
-        lines = _HELP_SECTIONS.get(section)
-        if lines is None:
-            available = "、".join(_HELP_SECTIONS)
-            raise GameError(f"未找到该帮助分类，可查看：{available}。")
-        commands = ("灵宠帮助",) + tuple(
-            f"灵宠帮助 {name}" for name in _HELP_SECTIONS if name != section
-        )
-        return Reply(f"帮助 · {section}", lines, commands)
-
-    overview = tuple(f"{name}：发送灵宠帮助 {name} 查看" for name in _HELP_SECTIONS)
-    return Reply(
-        "灵宠仙途",
-        ("总览：按玩法查看短帮助，不必记住固定前缀。",) + overview,
-        ("灵宠帮助 成长", "灵宠帮助 结契", "灵宠帮助 秘境与关卡", "灵宠帮助 组队与派遣"),
-    )
-
-
 def status(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
     roster = ctx.repo.active_pets(ctx.user_id)
     expedition = ctx.repo.active_expedition(pet.pet_id)
     activity = ()
-    commands = ("灵宠道号", "灵宠修炼", "灵宠互动", "灵宠突破", "灵宠进化")
+    commands = ("灵宠修炼", "灵宠互动", "灵宠突破", "灵宠进化")
     if expedition is not None:
         state = "外出中" if ctx.now < expedition["finishes_at"] else "已完成，待领取"
         activity = (f"行程：{expedition['task_name']} · {state}。",)
-        commands = ("灵宠道号", "灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
+        commands = ("灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
     fighter = combatant(ctx)
     stats = fighter.stats
     selected_resonance = ctx.repo.player_resonance(player.user_id)
@@ -132,7 +65,6 @@ def status(ctx: Context, arg: str) -> Reply:
     )
     return Reply(pet.name, (
         "概况",
-        f"道号：{player.dao_name}",
         f"当前出战：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
         *activity,
         "成长",

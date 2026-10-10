@@ -163,8 +163,10 @@ async def _run(bot: Bot, event: Event, text: str) -> None:
             _operation_id(bot, event),
         )
     except GameError as exc:
-        await bot.send(event, str(exc))
-        return
+        if exc.reply is None:
+            await bot.send(event, str(exc))
+            return
+        reply = exc.reply
     except Exception as exc:
         logger.exception(f"Spirit Pet command failed ({type(exc).__name__})")
         await bot.send(event, "仙途暂遇灵息紊乱，请稍后再试。")

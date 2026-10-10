@@ -7,6 +7,7 @@ from nonebot.log import logger
 
 from ..core.config import Config
 from ..domain.models import Reply
+from ..gameplay.help import help_link
 
 
 _SECTION_HEADINGS = frozenset({
@@ -23,6 +24,7 @@ _ACTION_LABELS = {
     "灵宠帮助 组队与派遣": "组队与派遣",
     "灵宠帮助 身份与收集": "身份与收集",
     "我的灵宠": "查看灵宠",
+    "我的信息": "我的信息",
     "灵宠道号": "修改道号",
     "灵宠修炼": "修炼",
     "灵宠互动": "互动",
@@ -43,10 +45,8 @@ def _action_label(command: str) -> str:
 def _action_items(reply: Reply) -> tuple[tuple[str, str], ...]:
     """Select short, page-specific next steps while retaining raw command payloads."""
     commands = reply.commands
-    if reply.title == "灵宠仙途":
-        commands = tuple(command for command in commands if command != "灵宠帮助")
-    elif "灵宠道号" in commands:
-        commands = ("灵宠道号",)
+    if reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·"):
+        commands = ()
     return tuple((_action_label(command), command) for command in commands)
 
 
@@ -65,6 +65,7 @@ def qq_keyboard(
 ) -> Any:
     from nonebot.adapters.qq.message import MessageSegment
     from nonebot.adapters.qq.models import Action, Button, InlineKeyboard, InlineKeyboardRow, MessageKeyboard, Permission, RenderData
+    from ..application.commands import ACTIONS, COMMANDS
 
     rows = []
     for offset in range(0, min(len(commands), 8), 2):
@@ -80,7 +81,11 @@ def qq_keyboard(
                         permission=Permission(type=2),
                         data=f"{prefix}{command}",
                         reply=True,
-                        enter=True,
+                        enter=not any(
+                            (command.strip() == name or command.startswith(name + " "))
+                            and ACTIONS[action].arguments
+                            for name, action in COMMANDS.items()
+                        ),
                         unsupport_tips="请直接发送指令",
                     ),
                 )
@@ -119,32 +124,31 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
             if body and body[-1] != "":
                 body.append("")
             body.append(f"**{escape(line)}**")
-        elif is_help and "：" in line:
+        elif is_help and (link := help_link(line)) is not None:
             heading, detail = line.split("：", 1)
-            category_command = f"灵宠帮助 {heading}"
             visible_heading = (
-                inline_command(heading, category_command, prefix)
-                if use_links and reply.title == "灵宠仙途" and heading != "总览"
+                inline_command(*link, prefix)
+                if use_links
                 else escape(heading)
             )
-            body.append(f"- **{visible_heading}**：{escape(detail)}")
-        elif line.startswith("道号：") and not is_help and "灵宠道号" in reply.commands:
+            body.extend((f"{visible_heading} · {escape(detail)}", ""))
+        elif line.startswith("道号：") and reply.title == "我的信息":
             edit_link = (
-                f" · {inline_command('修改道号', '灵宠道号', prefix)}" if use_links else " · 修改道号"
+                f" · {inline_command('修改道号', '灵宠道号 ', prefix)}" if use_links else " · 改名：灵宠道号 新道号"
             )
             body.append(f"**道号**：{escape(line.removeprefix('道号：'))}{edit_link}")
-        elif is_help:
-            body.append(f"- {escape(line)}")
+        elif line.startswith("你的道号：") and reply.title == "灵契初成":
+            body.append(f"**{escape(line)}**")
         else:
-            body.append(f"> {escape(line)}")
+            body.append(escape(line))
     body_markdown = "\n".join(body)
-    markdown = f"### {escape(reply.title)}\n\n" + body_markdown
-    if is_help and reply.title.startswith("帮助 ·"):
-        back = inline_command("返回帮助总览", "灵宠帮助", prefix) if use_links else "返回帮助总览"
-        markdown = f"### {escape(reply.title)}\n\n{back}\n\n{body_markdown}"
-    elif actions and not (is_help or reply.title == "灵宠仙途" or "灵宠道号" in reply.commands):
-        heading = "推荐入口" if is_help else "下一步"
-        action_block = f"**{heading}**\n" + "\n".join(
+    markdown = f"**{escape(reply.title)}**\n\n" + body_markdown
+    if reply.title == "我的信息":
+        actions = tuple(item for item in actions if item[1] != "灵宠道号")
+        commands = tuple(command for _, command in actions)
+        labels = tuple(label for label, _ in actions)
+    if actions and not is_help:
+        action_block = "\n".join(
             f"- {inline_command(label, command, prefix) if use_links else escape(label)}"
             for label, command in actions
         )
@@ -170,9 +174,7 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
     else:
         return plain, Message(plain)
     message = Message(markdown_segment)
-    if config.spirit_pet_qq_keyboard and commands and not (
-        "灵宠道号" in reply.commands and use_links
-    ):
+    if config.spirit_pet_qq_keyboard and commands and not is_help:
         message += qq_keyboard(commands, prefix, labels)
     return plain, message
 

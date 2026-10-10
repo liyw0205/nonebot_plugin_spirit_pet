@@ -237,7 +237,7 @@ def test_cached_operation_id_cannot_be_reused_by_another_player(game, play):
 
 
 def test_help_lists_collection_achievement_resonance_and_battle_report_commands(play):
-    text = play("help").text()
+    text = "\n".join(play("help", section).text() for section in ("身份与收集", "血脉与道具", "对战与赛季"))
     assert all(command in text for command in ("灵宠收集", "灵宠成就领奖", "灵宠共鸣", "灵宠战报"))
 
 

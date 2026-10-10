@@ -13,3 +13,7 @@ class Reply:
 
 class GameError(Exception):
     """可预期的玩法拒绝；由事务层回滚，不发送堆栈。"""
+
+    def __init__(self, message: str, *, reply: Reply | None = None):
+        super().__init__(message)
+        self.reply = reply

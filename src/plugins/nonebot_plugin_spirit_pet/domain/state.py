@@ -7,6 +7,7 @@ class Player:
     dao_name: str
     stones: int
     active_pet_id: int | None
+    registered_at: int | None = None
     sign_day: str = ""
     last_bond_day: str = ""
     current_bond_streak: int = 0
