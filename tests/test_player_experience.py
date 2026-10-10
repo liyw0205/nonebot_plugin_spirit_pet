@@ -1,5 +1,6 @@
 import asyncio
 import re
+from contextlib import closing
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
@@ -8,10 +9,12 @@ import pytest
 
 from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, send_reply
+from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay.help import _HELP_SECTIONS
 from nonebot_plugin_spirit_pet.storage.database import Store
+from nonebot_plugin_spirit_pet.storage.repository import Repository
 
 from .support import player, sql
 from .test_commands import onebot_event, qq_event
@@ -60,6 +63,40 @@ def test_registered_features_guide_to_real_first_adoption_without_writing(game, 
 def clear_active(store):
     sql(store, "DELETE FROM active_pet_slots")
     sql(store, "UPDATE players SET active_pet_id=NULL")
+
+
+def test_target_owner_missing_account_or_active_pet_does_not_guide_requester(game, play):
+    service, store = game
+    play("adopt", user="requester")
+    play("adopt", user="registered-target")
+    sql(store, "DELETE FROM active_pet_slots WHERE user_id=?", ("registered-target",))
+    sql(store, "UPDATE players SET active_pet_id=NULL WHERE user_id=?", ("registered-target",))
+
+    with closing(store.connect()) as conn:
+        ctx = Context(
+            Repository(conn), service.content, service.config, service.rng,
+            "requester", 1_800_000_000, "owner-check",
+        )
+        for operation in (
+            lambda: ctx.player("unregistered-target"),
+            lambda: ctx.pet("unregistered-target"),
+            lambda: ctx.active_pets("unregistered-target"),
+        ):
+            with pytest.raises(GameError) as rejected:
+                operation()
+            assert str(rejected.value) == "对方尚未结契，当前无法继续。"
+            assert "unregistered-target" not in str(rejected.value)
+            assert rejected.value.reply is None
+
+        for operation in (
+            lambda: ctx.pet("registered-target"),
+            lambda: ctx.active_pets("registered-target"),
+        ):
+            with pytest.raises(GameError) as rejected:
+                operation()
+            assert str(rejected.value) == "对方尚未选择出战灵宠，当前无法继续。"
+            assert "registered-target" not in str(rejected.value)
+            assert rejected.value.reply is None
 
 
 def test_account_only_features_work_without_an_active_pet(game, play):
