@@ -1,6 +1,6 @@
 # 配置与排错
 
-本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID / schema 20 版本。默认 `main` 的旧版源码可能没有这些配置和迁移，请按 [develop 安装教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md) 部署。
+本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID / schema 20 版本。默认 `main` 的旧版源码可能没有这些配置和迁移，请按 [develop 安装教程](INSTALLATION.md) 部署。
 
 安装器首次安装会从 `.env.example` 生成 `.env`；手动安装时执行 `cp .env.example .env`。不要只复制成 `.env.dev` 而遗漏 `ENVIRONMENT=dev` 的入口配置。已有 `.env.dev` / `.env.prod` 时 NoneBot 会读取所选环境文件，同名项可能覆盖 `.env`，请清理重复项。安装与更新保留已有配置，修改后重启生效。
 
