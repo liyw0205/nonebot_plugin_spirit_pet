@@ -11,4 +11,8 @@
   `3592480f7618a289b29fa57b13ac6b2b198cedaf16952a05114b5d57e2c2c5e5` 与 GitHub Release API
   摘要一致；pet 自身资产发布后仍需核验其实际响应。
 - Release workflow 从 tag 内容生成并上传 `project.tar.gz`；安装器保留已存在的项目源码、
-  `.env`、SQLite 存档和运行数据，不负责覆盖式源码升级。
+  `.env`、SQLite 存档和运行数据。
+- `xiupet update` 只更新来源标记为 Release 的受管理安装：停止实例后下载并校验资产，替换
+  `src/`、`scripts/`、`pyproject.toml` 和 `requirements.txt`，在现有 `.venv` 中安装依赖，不自动启动。
+- `.env`、`data/`、`.xiupet/`、`.venv` 目录、用户日志、来源标记和命令链接不被替换；源码替换或依赖安装失败会尝试恢复旧源码。
+- checkout、来源不明或缺少来源标记的目录会拒绝更新。旧安装目录需要先人工核实来源，不会推测为 Release 管理。

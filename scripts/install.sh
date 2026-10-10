@@ -5,8 +5,9 @@ REPOSITORY="https://github.com/liyw0205/nonebot_plugin_spirit_pet"
 RELEASE_ASSET="$REPOSITORY/releases/latest/download/project.tar.gz"
 RELEASE_PROXIES=("https://gh-proxy.com/")
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
+SOURCE_MARKER=.xiupet-source
 ACTION=install
-if (($#)) && [[ $1 == install || $1 == uninstall ]]; then
+if (($#)) && [[ $1 == install || $1 == update || $1 == uninstall ]]; then
     ACTION=$1
     shift
 fi
@@ -58,8 +59,8 @@ while (($#)); do
             shift
             ;;
         --help|-h)
-            printf 'Usage: %s [install|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
-            printf 'Install defaults to the latest GitHub Release; --source checkout uses this local repository. Existing project files are preserved.\n'
+            printf 'Usage: %s [install|update|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
+            printf 'Install and update default to the latest GitHub Release; --source checkout is for new development installs. Existing project files are preserved.\n'
             exit 0
             ;;
         *)
@@ -70,13 +71,17 @@ while (($#)); do
 done
 
 case "$ACTION" in
-    install|uninstall) ;;
-    *) printf 'Usage: %s [install|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0" >&2; exit 2 ;;
+    install|update|uninstall) ;;
+    *) printf 'Usage: %s [install|update|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0" >&2; exit 2 ;;
 esac
 case "$SOURCE_MODE" in
     release|checkout) ;;
     *) printf 'Invalid source mode: %s (expected release or checkout)\n' "$SOURCE_MODE" >&2; exit 2 ;;
 esac
+if [[ $ACTION == update && $SOURCE_MODE != release ]]; then
+    printf 'spirit-pet: update only accepts Release sources; checkout installs are never overwritten\n' >&2
+    exit 2
+fi
 
 if [[ -z $DIRECTORY ]]; then
     if [[ $SOURCE_MODE == checkout ]]; then
@@ -156,7 +161,41 @@ ensure_python() {
 }
 
 TMP_DIR=
-cleanup() { [[ -z $TMP_DIR ]] || rm -rf -- "$TMP_DIR"; }
+UPDATE_DIR=
+UPDATE_ACTIVE=0
+UPDATE_COMMITTED=0
+UPDATE_PATHS=(src scripts pyproject.toml requirements.txt)
+UPDATE_INSTALLED=()
+UPDATE_BACKED_UP=()
+
+rollback_update() {
+    local index path parent
+    for ((index=${#UPDATE_INSTALLED[@]}-1; index>=0; index--)); do
+        path=${UPDATE_INSTALLED[index]}
+        rm -rf -- "$DIRECTORY/$path" || return 1
+    done
+    for ((index=${#UPDATE_BACKED_UP[@]}-1; index>=0; index--)); do
+        path=${UPDATE_BACKED_UP[index]}
+        parent=$(dirname -- "$DIRECTORY/$path")
+        mkdir -p -- "$parent" || return 1
+        mv -- "$UPDATE_DIR/backup/$path" "$DIRECTORY/$path" || return 1
+    done
+}
+
+cleanup() {
+    local exit_code=$? rollback_ok=1
+    if ((UPDATE_ACTIVE && !UPDATE_COMMITTED)); then
+        rollback_update || rollback_ok=0
+        if ((rollback_ok == 0)); then
+            printf 'spirit-pet: source rollback incomplete; preserve backup at %s\n' "$UPDATE_DIR/backup" >&2
+        fi
+    fi
+    [[ -z $TMP_DIR ]] || rm -rf -- "$TMP_DIR"
+    if [[ -n $UPDATE_DIR ]] && ((UPDATE_COMMITTED || rollback_ok)); then
+        rm -rf -- "$UPDATE_DIR"
+    fi
+    return "$exit_code"
+}
 trap cleanup EXIT
 
 canonical_directory() {
@@ -222,12 +261,55 @@ prepare_project() {
         [[ -e $entry || -L $entry ]] || continue
         name=${entry##*/}
         case "$name" in
-            .git|.venv|.xiupet|.xiupet-managed|.pytest_cache|.ruff_cache|__pycache__|.env|data) continue ;;
+            .git|.venv|.xiupet|.xiupet-managed|.xiupet-source|.pytest_cache|.ruff_cache|__pycache__|.env|data) continue ;;
         esac
         cp -R -n "$entry" "$DIRECTORY/"
     done
     [[ -f $DIRECTORY/pyproject.toml && -f $DIRECTORY/requirements.txt ]] || fail "项目文件复制失败：$DIRECTORY"
     touch "$DIRECTORY/.xiupet-managed"
+    printf '%s\n' "$SOURCE_MODE" > "$DIRECTORY/$SOURCE_MARKER"
+}
+
+require_release_install() {
+    local source_mode=
+    [[ -d $DIRECTORY ]] || fail "安装目录不存在：$DIRECTORY"
+    [[ -f $DIRECTORY/.xiupet-managed ]] || fail '拒绝更新非托管目录'
+    [[ ! -e $DIRECTORY/.git ]] || fail '拒绝更新 Git checkout；开发源码不会被 Release 覆盖'
+    [[ -f $DIRECTORY/$SOURCE_MARKER ]] || fail '安装来源未知；仅可更新由 Release 管理的安装目录'
+    source_mode=$(<"$DIRECTORY/$SOURCE_MARKER")
+    [[ $source_mode == release ]] || fail "安装来源为 '$source_mode'；xiupet update 只更新 Release 安装，不覆盖 checkout 源码"
+    [[ -f $DIRECTORY/pyproject.toml && -f $DIRECTORY/requirements.txt ]] || fail '安装目录缺少项目或依赖定义'
+}
+
+replace_release_sources() {
+    local path destination parent
+    UPDATE_DIR="$DIRECTORY/.xiupet-update.$$"
+    [[ ! -e $UPDATE_DIR && ! -L $UPDATE_DIR ]] || fail "更新临时目录已存在：$UPDATE_DIR"
+    mkdir -p -- "$UPDATE_DIR/stage" "$UPDATE_DIR/backup" || fail '无法创建更新暂存目录'
+    for path in "${UPDATE_PATHS[@]}"; do
+        [[ -e $SOURCE_ROOT/$path ]] || fail "Release 归档缺少更新内容：$path"
+        cp -a -- "$SOURCE_ROOT/$path" "$UPDATE_DIR/stage/$path" || fail "暂存更新内容失败：$path"
+    done
+    UPDATE_ACTIVE=1
+    for path in "${UPDATE_PATHS[@]}"; do
+        destination="$DIRECTORY/$path"
+        parent=$(dirname -- "$destination")
+        mkdir -p -- "$parent" || return 1
+        if [[ -e $destination || -L $destination ]]; then
+            mv -- "$destination" "$UPDATE_DIR/backup/$path" || return 1
+            UPDATE_BACKED_UP+=("$path")
+        fi
+        mv -- "$UPDATE_DIR/stage/$path" "$destination" || return 1
+        UPDATE_INSTALLED+=("$path")
+    done
+}
+
+prepare_update() {
+    canonical_directory
+    require_release_install
+    download_source
+    [[ -d $SOURCE_ROOT/src && -d $SOURCE_ROOT/scripts ]] || fail 'Release 归档缺少 src/ 或 scripts/'
+    replace_release_sources || fail 'Release 源码替换失败；已尝试恢复原源码'
 }
 
 ensure_env() {
@@ -273,7 +355,7 @@ remove_xiupet() {
 }
 
 install_project() {
-    prepare_project
+    if [[ $ACTION == update ]]; then prepare_update; else prepare_project; fi
     ensure_python
     local venv="$DIRECTORY/.venv"
     local -a venv_args=()
@@ -289,6 +371,15 @@ install_project() {
     fi
     "$venv/bin/python" -m pip install --upgrade pip
     "$venv/bin/python" -m pip install 'nb-cli==1.5.0' -r "$DIRECTORY/requirements.txt"
+    if [[ $ACTION == update ]]; then
+        UPDATE_COMMITTED=1
+        rm -rf -- "$UPDATE_DIR"
+        UPDATE_DIR=
+        UPDATE_ACTIVE=0
+        printf 'Release 更新完成：%s\n' "$DIRECTORY"
+        printf '机器人未启动；使用 xiupet start 手动启动。\n'
+        return
+    fi
     ensure_env
     register_xiupet
     printf '安装完成：%s\n' "$DIRECTORY"
@@ -330,7 +421,7 @@ uninstall_project() {
     fi
 }
 
-if [[ $ACTION == install ]]; then
+if [[ $ACTION == install || $ACTION == update ]]; then
     install_project
 else
     uninstall_project

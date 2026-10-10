@@ -42,7 +42,7 @@
 
 - 安装最新正式版：Linux/Termux `bash scripts/install.sh install`；安装器先尝试已核验的 GitHub Release 代理，失败时回退官方 Release 资产。
 - 从本地 checkout 安装开发源码：`bash scripts/install.sh install --source checkout --directory "$HOME/spirit-pet-dev"`。
-- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|uninstall`。`xiupet install` 只使用本地项目重装依赖，不更新源码，也不会自动重启；现有 `.env` 和存档保留。独立安装目录卸载时会删除整个目录；源码仓库卸载只移除运行环境并保留源码、配置和存档。
+- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|update|uninstall`。`xiupet install` 只使用本地项目重装依赖；`xiupet update` 从最新 Release 更新受管理安装的程序源码和依赖，不会自动启动，并保留 `.env`、`data/`、`.xiupet/`、`.venv`、日志与命令链接。checkout 开发目录不会被 Release 覆盖。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
 - [Linux / Termux 安装教程](docs/INSTALLATION.md)

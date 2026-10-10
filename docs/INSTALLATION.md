@@ -71,10 +71,15 @@ xiupet restart
 xiupet status
 xiupet logs
 xiupet install
+xiupet update
 xiupet uninstall
 ```
 
-首次安装默认以前台方式执行 `nb run`，按 Ctrl+C 停止；传 `--no-start` 后可用 `xiupet start` 后台启动。`xiupet install` 会先停止该实例，然后用本地源码重新安装依赖；不会拉取或覆盖现有源码，不会自动重启。已有 `.env`、存档目录和虚拟环境保留。它不是源码升级命令。停止和卸载会结束机器人进程。非交互直接卸载必须显式传 `--yes`。
+首次安装默认以前台方式执行 `nb run`，按 Ctrl+C 停止；传 `--no-start` 后可用 `xiupet start` 后台启动。`xiupet install` 会先停止实例，再用本地源码重新安装依赖，不更新源码且不会自动重启。
+
+`xiupet update` 只接受来源标记为 Release 的受管理安装。它先停止当前实例，再按代理优先、官方直连回退的顺序下载并校验最新 `project.tar.gz`；只替换 `src/`、`scripts/`、`pyproject.toml` 和 `requirements.txt`，然后在现有 `.venv` 中安装依赖。`.env`、`data/`（包括 SQLite、WAL 与备份）、`.xiupet/`（包括运行日志）、`.venv` 目录、其他日志和命令链接均保留，更新完成后保持停止状态，需手动执行 `xiupet start`。源码替换失败或依赖安装失败时会尝试恢复旧源码。checkout、来源标记缺失或来源未知的目录会被拒绝，不会覆盖用户源码；早期安装目录若没有来源标记，也需先人工确认来源再迁移，不应直接更新。
+
+停止和卸载会结束机器人进程。非交互直接卸载必须显式传 `--yes`。
 
 新安装会从 `.env.example` 创建 `.env`，生成随机 `ONEBOT_V11_ACCESS_TOKEN` 并设置文件权限；重复安装完整保留现有 `.env`。OneBot 客户端 token 必须与 `.env` 的值相同。QQBot 凭证可在之后按 [连接教程](CONNECTIONS.md) 填写。
 

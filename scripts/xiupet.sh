@@ -120,6 +120,16 @@ run_installer() {
     "$installer" "$action" --directory "$PROJECT" --no-start "${@:2}"
 }
 
+require_release_install() {
+    local source_mode=
+    [[ -f $PROJECT/.xiupet-managed ]] || fail 'This is not a managed installation.'
+    [[ ! -e $PROJECT/.git ]] || fail 'This is a Git checkout; xiupet update will not overwrite development source.'
+    [[ -f $PROJECT/.xiupet-source ]] || fail 'Install source is unknown; update requires a Release-managed installation.'
+    source_mode=$(<"$PROJECT/.xiupet-source")
+    [[ $source_mode == release ]] || fail "Install source is '$source_mode'; development source will not be overwritten by xiupet update."
+    [[ -f $PROJECT/pyproject.toml && -f $PROJECT/requirements.txt ]] || fail 'Project or dependency files are missing.'
+}
+
 ACTION=${1:-status}
 shift || true
 case "$ACTION" in
@@ -128,6 +138,12 @@ case "$ACTION" in
     restart) stop; start ;;
     status) status ;;
     install) stop; run_installer install ;;
+    update)
+        [[ $# == 0 ]] || fail 'update does not accept arguments; checkout installs are not overwritten.'
+        require_release_install
+        stop
+        run_installer update
+        ;;
     logs)
         lines=80
         if [[ ${1:-} == --lines ]]; then
@@ -141,8 +157,9 @@ case "$ACTION" in
         run_installer uninstall --yes
         ;;
     --help|-h)
-        printf 'Usage: xiupet [start|stop|restart|status|logs [--lines N]|install|uninstall]\n'
-        printf 'install uses the local installer; it does not update project source and leaves existing .env and saved data in place.\n'
+        printf 'Usage: xiupet [start|stop|restart|status|logs [--lines N]|install|update|uninstall]\n'
+        printf 'install reinstalls dependencies from local files; update fetches the latest Release source and dependencies without starting the bot.\n'
+        printf 'update only accepts Release-managed installs and preserves .env, data, .xiupet, .venv, logs, and command links.\n'
         ;;
     *) fail "Unknown action: $ACTION" ;;
 esac

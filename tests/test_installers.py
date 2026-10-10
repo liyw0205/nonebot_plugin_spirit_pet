@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import shutil
+import sqlite3
 import subprocess
 import tarfile
 
@@ -91,11 +92,12 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
         assert result.returncode == 0, result.stderr
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
-    assert "[install|uninstall]" in result.stdout
+    assert "[install|update|uninstall]" in result.stdout
     assert "--source release|checkout" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
-    assert "does not update project source" in manager_help.stdout
+    assert "install reinstalls dependencies from local files" in manager_help.stdout
+    assert "update fetches the latest Release source" in manager_help.stdout
 
 
 def test_removed_branch_option_is_rejected_before_python_or_network_access():
@@ -160,6 +162,7 @@ def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
         assert urls == [proxy_url]
     assert (destination / "pyproject.toml").is_file()
     assert (destination / "scripts/xiupet.sh").is_file()
+    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "release\n"
 
 
 def test_install_copies_source_creates_env_and_shell_command_then_preserves_config(source_project, tmp_path):
@@ -179,6 +182,7 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"]
     result = subprocess.run(command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
+    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "checkout\n"
     assert (destination / ".venv/bin/nb").is_file()
     config = (destination / ".env").read_text(encoding="utf-8")
     assert "HOST=127.0.0.1" in config and "PORT=8080" in config
@@ -210,6 +214,141 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     assert uninstall.returncode == 0, uninstall.stdout + uninstall.stderr
     assert not destination.exists()
     assert not command_file.exists()
+
+
+@pytest.mark.parametrize("fail_dependencies", [False, True])
+def test_release_update_replaces_code_reinstalls_dependencies_and_preserves_runtime_state(
+    source_project, tmp_path, fail_dependencies,
+):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, _ = fake_python(tmp_path)
+    curl_dir = tmp_path / "curl-bin"
+    curl_dir.mkdir()
+    archive = tmp_path / "project.tar.gz"
+    release_module = source_project / "src/plugins/nonebot_plugin_spirit_pet/release_update.py"
+    release_module.write_text("RELEASE_CODE = True\n", encoding="utf-8")
+    (source_project / "requirements.txt").write_text("release-dependency==2\n", encoding="utf-8")
+    make_release_archive(source_project, archive)
+    fake_release_curl(curl_dir, archive)
+
+    destination = tmp_path / "managed install"
+    shutil.copytree(source_project, destination)
+    (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").unlink()
+    (destination / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    (destination / ".xiupet-source").write_text("release\n", encoding="ascii")
+    (destination / "src/obsolete.py").write_text("OLD_CODE = True\n", encoding="utf-8")
+    (destination / "requirements.txt").write_text("old-dependency==1\n", encoding="utf-8")
+    (destination / ".env").write_text("PRIVATE_CONFIG=unchanged\n", encoding="utf-8")
+    data_dir = destination / "data"
+    data_dir.mkdir()
+    database_path = data_dir / "players.sqlite3"
+    database = sqlite3.connect(database_path)
+    database.execute("PRAGMA journal_mode=WAL")
+    database.execute("CREATE TABLE player_state (player_id TEXT PRIMARY KEY, level INTEGER NOT NULL)")
+    database.execute("INSERT INTO player_state VALUES ('player-1', 17)")
+    database.commit()
+    backup_path = data_dir / "players.backup"
+    backup = sqlite3.connect(backup_path)
+    database.backup(backup)
+    backup.close()
+    wal_path = data_dir / "players.sqlite3-wal"
+    shm_path = data_dir / "players.sqlite3-shm"
+    wal_before = wal_path.read_bytes()
+    shm_before = shm_path.read_bytes()
+    runtime_dir = destination / ".xiupet"
+    runtime_dir.mkdir()
+    (runtime_dir / "run.log").write_text("runtime log\n", encoding="utf-8")
+    (runtime_dir / "custom-state").write_text("runtime state\n", encoding="utf-8")
+    external_logs = destination / "logs"
+    external_logs.mkdir()
+    (external_logs / "user.log").write_text("user log\n", encoding="utf-8")
+    venv_bin = destination / ".venv/bin"
+    venv_bin.mkdir(parents=True)
+    dependency_log = tmp_path / "dependency-installs.log"
+    venv_python = venv_bin / "python"
+    venv_python.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$*\" >> \"$SPIRIT_PET_TEST_DEPENDENCY_LOG\"\n"
+        "if [ \"${SPIRIT_PET_TEST_FAIL_DEPENDENCIES:-0}\" = 1 ] && [ \"$1 $2 $3\" = \"-m pip install\" ] && [ \"$4\" = \"nb-cli==1.5.0\" ]; then exit 1; fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    venv_python.chmod(0o755)
+    (venv_bin / "venv-sentinel").write_text("keep venv", encoding="utf-8")
+    command_file = tmp_path / "commands/xiupet"
+    command_file.parent.mkdir()
+    command_file.symlink_to(destination / "scripts/xiupet.sh")
+    (destination / ".xiupet-command").write_text(f"{command_file}\n", encoding="utf-8")
+
+    curl_log = tmp_path / "curl.log"
+    environment = {
+        **os.environ,
+        "PATH": f"{curl_dir}{os.pathsep}{os.environ['PATH']}",
+        "XIUPET_PROJECT": str(destination),
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_CURL_LOG": str(curl_log),
+        "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
+        "SPIRIT_PET_TEST_DEPENDENCY_LOG": str(dependency_log),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
+    }
+    if fail_dependencies:
+        environment["SPIRIT_PET_TEST_FAIL_DEPENDENCIES"] = "1"
+    result = subprocess.run(
+        ["bash", str(destination / "scripts/xiupet.sh"), "update"],
+        capture_output=True, text=True, env=environment,
+    )
+    assert (result.returncode != 0 if fail_dependencies else result.returncode == 0), result.stdout + result.stderr
+    assert (destination / ".env").read_text(encoding="utf-8") == "PRIVATE_CONFIG=unchanged\n"
+    assert database.execute("SELECT player_id, level FROM player_state").fetchone() == ("player-1", 17)
+    assert wal_path.read_bytes() == wal_before
+    assert shm_path.read_bytes() == shm_before
+    with sqlite3.connect(backup_path) as saved_database:
+        assert saved_database.execute("SELECT player_id, level FROM player_state").fetchone() == ("player-1", 17)
+    assert (runtime_dir / "run.log").read_text(encoding="utf-8") == "runtime log\n"
+    assert (runtime_dir / "custom-state").read_text(encoding="utf-8") == "runtime state\n"
+    assert (external_logs / "user.log").read_text(encoding="utf-8") == "user log\n"
+    assert (venv_bin / "venv-sentinel").read_text(encoding="utf-8") == "keep venv"
+    assert command_file.is_symlink()
+    assert os.readlink(command_file) == str(destination / "scripts/xiupet.sh")
+    assert (destination / ".xiupet-command").read_text(encoding="utf-8") == f"{command_file}\n"
+    assert not (runtime_dir / "pid").exists()
+    assert "-m pip install --upgrade pip" in dependency_log.read_text(encoding="utf-8")
+    assert f"-r {destination}/requirements.txt" in dependency_log.read_text(encoding="utf-8")
+    assert curl_log.read_text(encoding="utf-8").splitlines() == [
+        "https://gh-proxy.com/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    ]
+    assert not list(destination.glob(".xiupet-update.*"))
+    if fail_dependencies:
+        assert not (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").exists()
+        assert (destination / "src/obsolete.py").read_text(encoding="utf-8") == "OLD_CODE = True\n"
+        assert (destination / "requirements.txt").read_text(encoding="utf-8") == "old-dependency==1\n"
+        assert "Release 更新完成" not in result.stdout
+    else:
+        assert "Release 更新完成" in result.stdout
+        assert "未启动" in result.stdout
+        assert (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").is_file()
+        assert not (destination / "src/obsolete.py").exists()
+        assert (destination / "requirements.txt").read_text(encoding="utf-8") == "release-dependency==2\n"
+    database.close()
+
+
+def test_release_update_refuses_checkout_without_download_or_stopping(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    (source_project / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    (source_project / ".xiupet-source").write_text("checkout\n", encoding="ascii")
+    source_file = source_project / "src/plugins/nonebot_plugin_spirit_pet/__init__.py"
+    original_source = source_file.read_bytes()
+    environment = {**os.environ, "XIUPET_PROJECT": str(source_project)}
+    result = subprocess.run(
+        ["bash", str(source_project / "scripts/xiupet.sh"), "update"],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode != 0
+    assert "development source will not be overwritten" in result.stderr
+    assert source_file.read_bytes() == original_source
+    assert not (source_project / ".xiupet/pid").exists()
 
 
 def test_missing_python_is_prepared_by_apt_before_install(source_project, tmp_path):
