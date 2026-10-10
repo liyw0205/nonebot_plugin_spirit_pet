@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.resonance_content import Resonance
 from ..utils.arguments import named, quantity
 
@@ -45,16 +45,20 @@ def _detail(ctx: Context, resonance: Resonance, owned: set[str], active_id: str 
     active_pet = ctx.repo.pet(player.active_pet_id) if player.active_pet_id is not None else None
     applies = active_pet is not None and active_pet.species_id in resonance.required_species
     lines = [resonance.description, f"共鸣灵宠：{required}", f"战斗效果：{_bonus_text(resonance)}"]
+    status_line = 3
     if state == "已启用":
         lines.append("状态：已启用" + ("，当前出战灵宠可受益。" if applies else "，切换为共鸣灵宠后生效。"))
         commands = ("灵宠共鸣 停用", "灵宠共鸣")
+        links = (InlineCommand(status_line, "停用共鸣", "灵宠共鸣 停用"),)
     elif missing:
         lines.append(f"状态：尚未集齐；还需{'、'.join(missing)}。")
         commands = ("灵宠列表", "灵宠图鉴", "灵宠共鸣")
+        links = (InlineCommand(status_line, "查看灵宠图鉴", "灵宠图鉴"),)
     else:
         lines.append(f"状态：可启用 · 消耗 {_cost_text(ctx)}。")
         commands = (f"灵宠共鸣 激活 {resonance.name}", "灵宠共鸣")
-    return Reply(f"灵宠共鸣 · {resonance.name}", tuple(lines), commands)
+        links = (InlineCommand(status_line, "启用共鸣", f"灵宠共鸣 激活 {resonance.name}"),)
+    return Reply(f"灵宠共鸣 · {resonance.name}", tuple(lines), commands, links)
 
 
 def _catalog(ctx: Context, page: int) -> Reply:
@@ -79,7 +83,11 @@ def _catalog(ctx: Context, page: int) -> Reply:
         commands.append(f"灵宠共鸣 {page + 1}")
     if active_id:
         commands.append("灵宠共鸣 停用")
-    return Reply(f"灵宠共鸣 {page}/{pages}", lines, tuple(commands))
+    links = tuple(
+        InlineCommand(index, "查看详情", f"灵宠共鸣 查看 {resonance.name}")
+        for index, resonance in enumerate(selected)
+    )
+    return Reply(f"灵宠共鸣 {page}/{pages}", lines, tuple(commands), links)
 
 
 def _activate(ctx: Context, resonance: Resonance) -> Reply:
@@ -107,7 +115,8 @@ def _activate(ctx: Context, resonance: Resonance) -> Reply:
         f"{resonance.name}：{resonance.description}",
         f"当前战斗加成：{_bonus_text(resonance)}" + ("。" if applies else "；切换为共鸣灵宠后生效。"),
         f"消耗 {_cost_text(ctx)}；切换共鸣不会返还已消耗的材料。",
-    ), ("灵宠共鸣", "我的灵宠", "灵宠列表"))
+    ), ("灵宠共鸣", "我的灵宠", "灵宠列表"),
+        (InlineCommand(0, "查看共鸣详情", f"灵宠共鸣 查看 {resonance.name}"),))
 
 
 def _deactivate(ctx: Context) -> Reply:
@@ -116,7 +125,8 @@ def _deactivate(ctx: Context) -> Reply:
         raise GameError("当前没有启用灵宠共鸣。")
     ctx.repo.clear_player_resonance(ctx.user_id)
     ctx.repo.invalidate_ready(ctx.user_id)
-    return Reply("灵契共鸣已停用", ("已取消当前共鸣，不返还启用时消耗的材料。",), ("灵宠共鸣", "我的灵宠"))
+    return Reply("灵契共鸣已停用", ("已取消当前共鸣，不返还启用时消耗的材料。",),
+                 ("灵宠共鸣", "我的灵宠"), (InlineCommand(0, "查看共鸣目录", "灵宠共鸣"),))
 
 
 def resonance(ctx: Context, arg: str) -> Reply:

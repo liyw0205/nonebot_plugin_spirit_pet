@@ -30,6 +30,7 @@ _ACTION_LABELS = {
     "灵宠互动": "互动",
     "灵宠突破": "突破境界",
     "灵宠进化": "进化血脉",
+    "灵宠共鸣": "查看共鸣",
     "灵宠行程": "查看行程",
     "灵宠列表": "灵宠名册",
     "灵宠命名": "给灵宠命名",
@@ -41,6 +42,14 @@ _ACTION_LABELS = {
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
     parts = visible.split()
+    if len(parts) == 2 and parts[0] == "灵宠共鸣" and parts[1].isdecimal():
+        return f"共鸣第 {parts[1]} 页"
+    if len(parts) >= 3 and parts[:2] == ["灵宠共鸣", "查看"]:
+        return f"查看共鸣 · {parts[2]}"
+    if len(parts) >= 3 and parts[:2] == ["灵宠共鸣", "激活"]:
+        return f"启用共鸣 · {parts[2]}"
+    if parts == ["灵宠共鸣", "停用"]:
+        return "停用共鸣"
     if len(parts) == 2 and parts[0] == "灵宠合修" and parts[1].isascii() and parts[1].isdecimal():
         return f"与编号 {parts[1]} 合修"
     if len(parts) == 3 and parts[:2] == ["灵宠合修", "分页"]:
