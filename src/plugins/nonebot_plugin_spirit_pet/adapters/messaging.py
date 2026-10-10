@@ -38,8 +38,13 @@ _ACTION_LABELS = {
 
 
 def _action_label(command: str) -> str:
-    visible = command.removeprefix("/")
+    visible = command.strip().removeprefix("/")
     return _ACTION_LABELS.get(visible, visible)
+
+
+def _command_enters(command: str) -> bool:
+    """A trailing blank asks QQ to prefill the command instead of sending it."""
+    return not command.endswith((" ", "\t"))
 
 
 def _action_items(reply: Reply) -> tuple[tuple[str, str], ...]:
@@ -57,7 +62,8 @@ def inline_command(label: str, command: str, prefix: str = "/") -> str:
     if any(char in command for char in "\r\n\\[]()"):
         raise ValueError("invalid button command")
     encoded = quote(f"{prefix}{command}", safe="")
-    return f"[{label}](mqqapi://aio/inlinecmd?command={encoded}&enter=false&reply=false)"
+    enter = str(_command_enters(command)).lower()
+    return f"[{label}](mqqapi://aio/inlinecmd?command={encoded}&enter={enter}&reply=false)"
 
 
 def qq_keyboard(
@@ -65,7 +71,6 @@ def qq_keyboard(
 ) -> Any:
     from nonebot.adapters.qq.message import MessageSegment
     from nonebot.adapters.qq.models import Action, Button, InlineKeyboard, InlineKeyboardRow, MessageKeyboard, Permission, RenderData
-    from ..application.commands import ACTIONS, COMMANDS
 
     rows = []
     for offset in range(0, min(len(commands), 8), 2):
@@ -81,11 +86,7 @@ def qq_keyboard(
                         permission=Permission(type=2),
                         data=f"{prefix}{command}",
                         reply=True,
-                        enter=not any(
-                            (command.strip() == name or command.startswith(name + " "))
-                            and ACTIONS[action].arguments
-                            for name, action in COMMANDS.items()
-                        ),
+                        enter=_command_enters(command),
                         unsupport_tips="请直接发送指令",
                     ),
                 )

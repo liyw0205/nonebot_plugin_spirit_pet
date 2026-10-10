@@ -111,8 +111,16 @@ def test_account_only_features_work_without_an_active_pet(game, play):
     assert play("sign").title == "今日仙缘"
     with pytest.raises(GameError) as rejected:
         play("status")
-    assert rejected.value.reply.commands == ("灵宠列表", "灵宠出战")
+    assert rejected.value.reply.commands == ("灵宠列表", "灵宠出战 ")
     assert "领养" not in rejected.value.reply.text()
+    _, message = _qq_segments(rejected.value.reply, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data: button
+        for row in message["keyboard"][0].data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    assert buttons["/灵宠列表"].action.enter is True
+    assert buttons["/灵宠出战 "].action.enter is False
     sql(game[1], "UPDATE pets SET archived=1")
     with pytest.raises(GameError) as archived:
         play("train")
@@ -148,7 +156,8 @@ def test_native_help_links_prefill_near_descriptions_without_keyboards(play, pre
     for label, url in links:
         assert not label.startswith("/")
         params = parse_qs(urlparse(url).query)
-        assert params["enter"] == ["false"] and params["reply"] == ["false"]
+        assert params["enter"] == [str(not params["command"][0].endswith((" ", "\t"))).lower()]
+        assert params["reply"] == ["false"]
         payloads.add(params["command"][0])
         assert f"]({url}) · " in markdown
     assert {prefix + command for command in expected} <= payloads
@@ -190,7 +199,7 @@ def test_qq_native_first_adoption_and_guidance_use_the_real_outgoing_payload(gam
     guide = bot.post_group_messages.call_args.kwargs
     assert guide["msg_type"] == 2 and "初遇灵宠" in guide["markdown"].content
     assert not sql(game[1], "SELECT * FROM players WHERE user_id='new-user'")
-    assert all(not button.action.enter for row in guide["keyboard"].content.rows for button in row.buttons)
+    assert all(button.action.enter for row in guide["keyboard"].content.rows for button in row.buttons)
 
 
 def test_help_template_text_and_disabled_links_keep_examples_without_help_keyboard(play):

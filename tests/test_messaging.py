@@ -10,16 +10,22 @@ from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, inline_co
 from nonebot_plugin_spirit_pet.domain.models import Reply
 
 
-def test_qq_blue_link_uses_an_encoded_command_with_no_accidental_execution():
+def test_qq_blue_link_enters_a_complete_command():
     link = inline_command("灵宠修炼", "灵宠修炼")
     parsed = urlparse(link.removeprefix("[").split("](", 1)[1][:-1])
     assert parsed.scheme == "mqqapi"
     assert parsed.netloc == "aio"
     assert parse_qs(parsed.query) == {
         "command": ["/灵宠修炼"],
-        "enter": ["false"],
+        "enter": ["true"],
         "reply": ["false"],
     }
+
+
+def test_qq_blue_link_prefills_only_an_incomplete_parameter():
+    link = inline_command("选择伙伴", "灵宠出战 ")
+    params = parse_qs(urlparse(link.removeprefix("[").split("](", 1)[1][:-1]).query)
+    assert params == {"command": ["/灵宠出战 "], "enter": ["false"], "reply": ["false"]}
 
 
 def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
@@ -121,6 +127,22 @@ def test_keyboard_is_created_only_for_known_safe_commands():
 
     with pytest.raises(ValueError):
         inline_command("攻击", "灵宠签到\n恶意指令")
+
+
+@pytest.mark.parametrize(("command", "enter"), [
+    ("灵宠图鉴", True),
+    ("灵宠列表", True),
+    ("灵宠帮助 成长", True),
+    ("灵宠出战 12", True),
+    ("灵宠出战 ", False),
+])
+def test_keyboard_enters_complete_payloads_and_prefills_incomplete_ones(command, enter):
+    pytest.importorskip("nonebot.adapters.qq")
+    keyboard = qq_keyboard((command,))
+    button = keyboard.data["keyboard"].content.rows[0].buttons[0]
+    assert button.action.data == "/" + command
+    assert button.action.enter is enter
+    assert button.render_data.label == button.render_data.label.strip()
 
 
 def test_template_uses_configured_id_and_preserves_all_content():

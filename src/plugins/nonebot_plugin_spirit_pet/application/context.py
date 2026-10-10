@@ -33,7 +33,7 @@ class Context:
         owner = user_id or self.user_id
         if owner != self.user_id:
             return GameError("对方尚未选择出战灵宠，当前无法继续。")
-        commands = ["灵宠列表", "灵宠出战"]
+        commands = ["灵宠列表", "灵宠出战 "]
         lines = ["尚未选择出战灵宠。去名册挑一位伙伴，再一起出发吧。", "例如：灵宠出战 编号"]
         if self.repo.archived_pet_count(owner):
             lines.append("封存的伙伴也能在灵宠封存库中复原。")

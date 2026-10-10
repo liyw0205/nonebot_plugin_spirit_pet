@@ -98,7 +98,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     )
     commands.extend(archive_commands)
     commands.extend(("我的灵宠", "灵宠封存库"))
-    commands.append("灵宠出战")
+    commands.append("灵宠出战 ")
     if has_expedition:
         commands.append("灵宠行程")
     if page > 1:
@@ -224,4 +224,4 @@ def lineup(ctx: Context, arg: str) -> Reply:
     active = ctx.repo.active_pets(ctx.user_id)
     names = "、".join(f"{pet.name}（{pet.pet_id}）" for pet in active)
     return Reply("灵宠出战阵容", (f"当前出战：{names}。", "同一阵容不能重复宠物种类，最多出战三只。"),
-                 ("灵宠列表", "灵宠出战"))
+                 ("灵宠列表", "灵宠出战 "))
