@@ -1,4 +1,5 @@
 import asyncio
+import re
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
@@ -7,7 +8,7 @@ import pytest
 
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, inline_command, qq_keyboard, send_reply
-from nonebot_plugin_spirit_pet.domain.models import Reply
+from nonebot_plugin_spirit_pet.domain.models import InlineCommand, Reply
 
 
 def test_qq_blue_link_enters_a_complete_command():
@@ -26,6 +27,63 @@ def test_qq_blue_link_prefills_only_an_incomplete_parameter():
     link = inline_command("选择伙伴", "灵宠出战 ")
     params = parse_qs(urlparse(link.removeprefix("[").split("](", 1)[1][:-1]).query)
     assert params == {"command": ["/灵宠出战 "], "enter": ["false"], "reply": ["false"]}
+
+
+def test_contextual_links_stay_with_their_sentence_and_replace_duplicate_buttons():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "选择伙伴",
+        ("先到名册看看伙伴。", "选好后填写出战编号。"),
+        ("灵宠列表", "灵宠出战 "),
+        (
+            InlineCommand(0, "查看名册", "灵宠列表"),
+            InlineCommand(1, "填写编号", "灵宠出战 "),
+        ),
+    )
+    fallback, message = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+    )
+    markdown = message["markdown"][0].data["markdown"].content
+    roster = markdown.index("[查看名册](mqqapi://")
+    select = markdown.index("[填写编号](mqqapi://")
+    first_line = markdown.index("先到名册看看伙伴。")
+    assert first_line < roster < markdown.index("\n", first_line)
+    assert markdown.index("选好后填写出战编号。") < select
+    urls = [url for _, url in re.findall(r"\[([^\]]+)\]\((mqqapi://[^)]+)\)", markdown)]
+    payloads = [parse_qs(urlparse(url).query)["command"][0] for url in urls]
+    assert payloads == ["!灵宠列表", "!灵宠出战 "]
+    assert not message["keyboard"]
+    assert "查看名册（灵宠列表）" in fallback and "填写编号（灵宠出战）" in fallback
+
+    _, no_links = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
+    )
+    no_link_markdown = no_links["markdown"][0].data["markdown"].content
+    assert "查看名册（灵宠列表）" in no_link_markdown
+    assert "mqqapi://" not in no_link_markdown
+
+
+def test_item_and_recipe_details_link_related_queries_in_context(play):
+    pytest.importorskip("nonebot.adapters.qq")
+    for reply, command, label in (
+        (play("shop", "青岚翎"), "灵宠装备图鉴 青岚翎", "查看装备图鉴"),
+        (play("shop", "风刃术诀"), "灵宠技能图鉴 风刃术", "查看灵术图鉴"),
+        (play("recipe_catalog", "青岚翎 +3"), "灵宠装备图鉴 青岚翎", "查看装备属性"),
+    ):
+        _, message = _qq_segments(
+            reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+        )
+        markdown = message["markdown"][0].data["markdown"].content
+        url = next(url for link_label, url in re.findall(r"\[([^\]]+)\]\((mqqapi://[^)]+)\)", markdown)
+                   if link_label == label)
+        assert parse_qs(urlparse(url).query)["command"] == ["!" + command]
+        assert markdown.index(f"[{label}]") < markdown.rfind("\n\n")
+        button_payloads = [
+            button.action.data
+            for row in message["keyboard"][0].data["keyboard"].content.rows
+            for button in row.buttons
+        ]
+        assert "!" + command not in button_payloads
 
 
 def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():

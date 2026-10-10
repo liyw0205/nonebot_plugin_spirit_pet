@@ -34,7 +34,7 @@ def pvp(ctx: Context, arg: str) -> Reply:
         if previous["challenger_id"] != ctx.user_id:
             raise GameError("该挑战消息已被处理，不能复用。")
         data = json.loads(previous["reply"])
-        return Reply(data["title"], tuple(data["lines"]), tuple(data["commands"]))
+        return Reply.from_data(data)
     if not arg:
         from .seasons import rank
 

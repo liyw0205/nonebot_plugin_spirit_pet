@@ -3,7 +3,7 @@ from typing import Any
 
 from ..content.catalog import Catalog
 from ..core.config import Config
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.state import Pet, Player
 from ..storage.repository import Repository
 from ..utils.energy import restore_energy
@@ -27,18 +27,21 @@ class Context:
             "初始伙伴：" + "、".join(starters),
             "首次领养会获得专属道号，伙伴也会立即出战。",
             "例如：灵宠领养 " + starters[0],
-        ), tuple(f"灵宠领养 {name}" for name in starters))
+        ), (), (InlineCommand(3, "开始领养", "灵宠领养 "),))
 
     def missing_pet(self, user_id: str | None = None) -> GameError:
         owner = user_id or self.user_id
         if owner != self.user_id:
             return GameError("对方尚未选择出战灵宠，当前无法继续。")
-        commands = ["灵宠列表", "灵宠出战 "]
+        links = [
+            InlineCommand(0, "查看灵宠名册", "灵宠列表"),
+            InlineCommand(1, "填写出战编号", "灵宠出战 "),
+        ]
         lines = ["尚未选择出战灵宠。去名册挑一位伙伴，再一起出发吧。", "例如：灵宠出战 编号"]
         if self.repo.archived_pet_count(owner):
             lines.append("封存的伙伴也能在灵宠封存库中复原。")
-            commands.append("灵宠封存库")
-        reply = Reply("选择伙伴", tuple(lines), tuple(commands))
+            links.append(InlineCommand(2, "查看封存库", "灵宠封存库"))
+        reply = Reply("选择伙伴", tuple(lines), (), tuple(links))
         return GameError(lines[0], reply=reply)
 
     def player(self, user_id: str | None = None) -> Player:

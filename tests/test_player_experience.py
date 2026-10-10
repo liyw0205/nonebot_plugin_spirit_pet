@@ -11,7 +11,7 @@ from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, send_reply
 from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.core.config import Config
-from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.domain.models import GameError, InlineCommand, Reply
 from nonebot_plugin_spirit_pet.gameplay.help import _HELP_SECTIONS
 from nonebot_plugin_spirit_pet.storage.database import Store
 from nonebot_plugin_spirit_pet.storage.repository import Repository
@@ -55,7 +55,9 @@ def test_registered_features_guide_to_real_first_adoption_without_writing(game, 
         play(action)
     reply = rejected.value.reply
     assert reply and "首次领养" in reply.text()
-    assert set(reply.commands) == {"灵宠领养 青鸾", "灵宠领养 玄狐", "灵宠领养 白泽", "灵宠领养 蛟龙"}
+    assert reply.inline_commands[0].command == "灵宠领养 "
+    assert reply.inline_commands[0].label == "开始领养"
+    assert not reply.commands
     assert not sql(game[1], "SELECT * FROM players")
     assert not sql(game[1], "SELECT * FROM operations")
 
@@ -87,7 +89,6 @@ def test_target_owner_missing_account_or_active_pet_does_not_guide_requester(gam
             assert str(rejected.value) == "对方尚未结契，当前无法继续。"
             assert "unregistered-target" not in str(rejected.value)
             assert rejected.value.reply is None
-
         for operation in (
             lambda: ctx.pet("registered-target"),
             lambda: ctx.active_pets("registered-target"),
@@ -97,6 +98,22 @@ def test_target_owner_missing_account_or_active_pet_does_not_guide_requester(gam
             assert str(rejected.value) == "对方尚未选择出战灵宠，当前无法继续。"
             assert "registered-target" not in str(rejected.value)
             assert rejected.value.reply is None
+
+
+def test_contextual_reply_links_survive_idempotent_cache_and_read_legacy_rows(game):
+    _, store = game
+    expected = Reply(
+        "选择伙伴", ("去名册看看。",), (),
+        (InlineCommand(0, "查看名册", "灵宠列表"),),
+    )
+    first = store.transact("cache-user", "inline-reply", 1_800_000_000, lambda _: expected)
+    second = store.transact(
+        "cache-user", "inline-reply", 1_800_000_001,
+        lambda _: pytest.fail("idempotent reply was not replayed"),
+    )
+    assert first == second == expected
+    old = Reply.from_data({"title": "旧回复", "lines": ["内容"], "commands": []})
+    assert old.inline_commands == ()
 
 
 def test_account_only_features_work_without_an_active_pet(game, play):
@@ -111,20 +128,18 @@ def test_account_only_features_work_without_an_active_pet(game, play):
     assert play("sign").title == "今日仙缘"
     with pytest.raises(GameError) as rejected:
         play("status")
-    assert rejected.value.reply.commands == ("灵宠列表", "灵宠出战 ")
+    assert not rejected.value.reply.commands
+    assert [action.command for action in rejected.value.reply.inline_commands] == ["灵宠列表", "灵宠出战 "]
     assert "领养" not in rejected.value.reply.text()
     _, message = _qq_segments(rejected.value.reply, Config(spirit_pet_qq_mode="native"))
-    buttons = {
-        button.action.data: button
-        for row in message["keyboard"][0].data["keyboard"].content.rows
-        for button in row.buttons
-    }
-    assert buttons["/灵宠列表"].action.enter is True
-    assert buttons["/灵宠出战 "].action.enter is False
+    markdown = message["markdown"][0].data["markdown"].content
+    assert "[查看灵宠名册](mqqapi://aio/inlinecmd?" in markdown
+    assert "[填写出战编号](mqqapi://aio/inlinecmd?" in markdown
+    assert not message["keyboard"]
     sql(game[1], "UPDATE pets SET archived=1")
     with pytest.raises(GameError) as archived:
         play("train")
-    assert "灵宠封存库" in archived.value.reply.commands
+    assert "灵宠封存库" in tuple(action.command for action in archived.value.reply.inline_commands)
 
 
 def test_registration_time_survives_rename_replay_expiry_and_restart(game, play):
@@ -198,8 +213,9 @@ def test_qq_native_first_adoption_and_guidance_use_the_real_outgoing_payload(gam
     asyncio.run(handlers._run(bot, qq_event(user_id="new-user", message_id="prerequisite"), "我的灵宠"))
     guide = bot.post_group_messages.call_args.kwargs
     assert guide["msg_type"] == 2 and "初遇灵宠" in guide["markdown"].content
+    assert "[开始领养](mqqapi://aio/inlinecmd?" in guide["markdown"].content
     assert not sql(game[1], "SELECT * FROM players WHERE user_id='new-user'")
-    assert all(button.action.enter for row in guide["keyboard"].content.rows for button in row.buttons)
+    assert "keyboard" not in guide
 
 
 def test_help_template_text_and_disabled_links_keep_examples_without_help_keyboard(play):

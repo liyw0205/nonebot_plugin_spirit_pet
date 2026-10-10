@@ -116,7 +116,7 @@ def _prior_reply(ctx: Context, stage: Stage) -> Reply | None:
     if row["kind"] != "pve_stage" or row["battle_key"] != stage.id:
         raise GameError("该战斗消息已被用于其他结算，不能复用。")
     data = json.loads(row["reply"])
-    return Reply(data["title"], tuple(data["lines"]), tuple(data["commands"]))
+    return Reply.from_data(data)
 
 
 def _require_previous(ctx: Context, stage: Stage, user_id: str) -> None:

@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, named
 from ..utils.energy import add_energy
 from ..utils.pagination import paginate
@@ -42,11 +42,19 @@ def shop(ctx: Context, arg: str) -> Reply:
         if item.kind == "equipment":
             gear = ctx.content.equipment[item.equipment_id]
             commands.extend((f"灵宠装备图鉴 {gear.name}", f"灵宠工坊 {item.name}"))
+            links = (
+                InlineCommand(1, "查看装备图鉴", f"灵宠装备图鉴 {gear.name}"),
+                InlineCommand(1, "查看打造配方", f"灵宠工坊 {item.name}"),
+            )
         elif item.kind == "skill_book":
-            commands.append(f"灵宠技能图鉴 {ctx.content.skills[item.skill_id].name}")
+            skill_name = ctx.content.skills[item.skill_id].name
+            commands.append(f"灵宠技能图鉴 {skill_name}")
+            links = (InlineCommand(1, "查看灵术图鉴", f"灵宠技能图鉴 {skill_name}"),)
+        else:
+            links = ()
         return Reply(f"山海灵坊 · {item.name}", (
             f"售价：{item.price} 灵石。", item.description,
-        ), (*commands, "灵宠商店", "灵宠背包"))
+        ), (*commands, "灵宠商店", "灵宠背包"), links)
     page = paginate(available.values(), arg, "山海灵坊", "灵宠商店")
     return Reply(f"山海灵坊 {page.number}/{page.total}", tuple(
         f"{item.name}：{item.price} 灵石 · {item.description}"

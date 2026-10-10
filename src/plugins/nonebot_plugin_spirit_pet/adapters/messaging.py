@@ -52,6 +52,8 @@ def _action_items(reply: Reply) -> tuple[tuple[str, str], ...]:
     commands = reply.commands
     if reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·"):
         commands = ()
+    linked = {action.command for action in reply.inline_commands}
+    commands = tuple(command for command in commands if command not in linked)
     return tuple((_action_label(command), command) for command in commands)
 
 
@@ -120,7 +122,22 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
     is_help = reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·")
     body = []
     use_links = qq_mode == "native" and config.spirit_pet_qq_blue_links
-    for line in reply.lines:
+    links_by_line: dict[int, list] = {}
+    for action in reply.inline_commands:
+        if 0 <= action.line < len(reply.lines):
+            links_by_line.setdefault(action.line, []).append(action)
+
+    def contextual_actions(index: int) -> str:
+        rendered = []
+        for action in links_by_line.get(index, ()):
+            if use_links:
+                rendered.append(inline_command(action.label, action.command, prefix))
+            else:
+                rendered.append(f"{escape(action.label)}（{escape(action.command.rstrip())}）")
+        return " · ".join(rendered)
+
+    for source_index, line in enumerate(reply.lines):
+        contextual = contextual_actions(source_index)
         if line in _SECTION_HEADINGS:
             if body and body[-1] != "":
                 body.append("")
@@ -132,16 +149,28 @@ def _qq_segments(reply: Reply, config: Config) -> tuple[str, Any]:
                 if use_links
                 else escape(heading)
             )
-            body.extend((f"{visible_heading} · {escape(detail)}", ""))
+            rendered = f"{visible_heading} · {escape(detail)}"
+            if contextual:
+                rendered += f" · {contextual}"
+            body.extend((rendered, ""))
         elif line.startswith("道号：") and reply.title == "我的信息":
             edit_link = (
                 f" · {inline_command('修改道号', '灵宠道号 ', prefix)}" if use_links else " · 改名：灵宠道号 新道号"
             )
-            body.append(f"**道号**：{escape(line.removeprefix('道号：'))}{edit_link}")
+            rendered = f"**道号**：{escape(line.removeprefix('道号：'))}{edit_link}"
+            if contextual:
+                rendered += f" · {contextual}"
+            body.append(rendered)
         elif line.startswith("你的道号：") and reply.title == "灵契初成":
-            body.append(f"**{escape(line)}**")
+            rendered = f"**{escape(line)}**"
+            if contextual:
+                rendered += f" · {contextual}"
+            body.append(rendered)
         else:
-            body.append(escape(line))
+            rendered = escape(line)
+            if contextual:
+                rendered += f" · {contextual}"
+            body.append(rendered)
     body_markdown = "\n".join(body)
     markdown = f"**{escape(reply.title)}**\n\n" + body_markdown
     if reply.title == "我的信息":

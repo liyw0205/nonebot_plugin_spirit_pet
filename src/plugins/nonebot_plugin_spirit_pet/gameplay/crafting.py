@@ -2,7 +2,7 @@ import re
 
 from ..application.context import Context
 from ..domain.crafting_content import Recipe, salvage_yield
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, named, quantity
 from .equipment_inventory import put, take
 
@@ -25,7 +25,9 @@ def _detail(ctx: Context, recipe: Recipe, level: int) -> Reply:
         f"基础回收：{_materials(ctx, recipe.salvage_materials)}；强化材料回收累计投入的"
         f" {recipe.enhancement_refund_percent}%（每种材料向下取整），最多按 +{maximum} 累计投入计算。",
         "分解仅消耗背包装备，不返还打造或强化灵石。",
-    ), (f"灵宠打造 {recipe.name}", f"灵宠分解 {recipe.name} +{level}", "灵宠工坊", "灵宠背包"))
+    ), (f"灵宠打造 {recipe.name}", f"灵宠分解 {recipe.name} +{level}", "灵宠工坊", "灵宠背包"), (
+        InlineCommand(0, "查看装备属性", f"灵宠装备图鉴 {recipe.name}"),
+    ))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

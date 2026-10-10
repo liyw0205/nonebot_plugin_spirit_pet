@@ -165,7 +165,7 @@ def achievements(ctx: Context, arg: str) -> Reply:
 
 def _reply_from_row(row) -> Reply:
     value = json.loads(row["reply"])
-    return Reply(value["title"], tuple(value["lines"]), tuple(value["commands"]))
+    return Reply.from_data(value)
 
 
 def claim(ctx: Context, arg: str) -> Reply:

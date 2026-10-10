@@ -78,7 +78,7 @@ class Store:
                     if cached["user_id"] != user_id:
                         raise GameError("operation ID reused by a different user")
                     data = json.loads(cached["reply"])
-                    result = Reply(data["title"], tuple(data["lines"]), tuple(data["commands"]))
+                    result = Reply.from_data(data)
                 else:
                     result = action(conn)
                     conn.execute(
