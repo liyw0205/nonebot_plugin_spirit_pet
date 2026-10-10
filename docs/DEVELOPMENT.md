@@ -32,6 +32,12 @@
 
 上下文位置由可选的 `Reply.inline_commands` 行索引、标签和命令表达，并纳入幂等回复与战报/成就快照；`Reply.from_data` 对旧快照缺字段按空集合读取。OneBot、QQ template/text、蓝字关闭时输出可读命令标签，不向业务层执行蓝字操作。本次 formatter、SDK payload、首领养/缺宠、商店/配方与缓存兼容聚焦测试 `40 passed`；未重跑全量、OneBot 长链、仿真或压测。源码 commit `4e78473` 已普通推送并部署到现有 QQ 测试实例；具体提交/远端、备份、配置与运行核验见 `/tmp/pet-player-experience-20261010.md`。本地切片已结束，当前没有活动本地开发 goal。
 
+### 灵宠命名垂直切片（2026-10-11）
+
+本轮只补充一个有限玩法闭环：`灵宠命名` 可为当前出战伙伴直接取名，也可用编号为在册或封存伙伴取名。命名复用现有 `pets.name` 持久字段，不新增 schema 或迁移；未注册仍进入首次领养引导，没有出战伙伴时先给灵宠名册入口，不会暗示重新注册。命名入口出现在名册和“我的灵宠”对应行，QQ native 使用只预填名字的行内蓝链，OneBot 和 QQ 降级保留可读的命令标签；帮助归入“结契”分类，未堆叠键盘。
+
+本切片的聚焦测试覆盖：未注册保护、当前宠物命名与重启后持久化、无出战时按编号命名、封存宠物命名、名字校验、QQ 蓝链 payload 与 OneBot 文本降级；与命令/身份/名册/引导短合同合计 `111 passed`。没有重复运行全量门禁、OneBot 长业务链、QQ 真机、仿真或压测。
+
 ### 开发阶段流程
 
 1. 读取 [本地开发版交付清单](ROADMAP.md#本地开发版交付清单)，选取当前阶段的下一未完成项；先核对工作区已有改动和相同状态的验证记录。
@@ -82,6 +88,7 @@ src/plugins/nonebot_plugin_spirit_pet/
   content/lineage_validation.py 种族分支、成本与成长取舍校验
   content/crafting_validation.py 配方完整性、材料来源与资源损耗校验
   gameplay/pets.py             领养、召唤、名册/封存库、切换与三宠出战阵容
+  gameplay/naming.py           灵宠名字校验、当前/指定伙伴命名与前置引导
   gameplay/companionship.py    每日灵宠互动与亲密提升
   gameplay/hatching.py         灵卵孵化与名册容量检查
   gameplay/identity.py         唯一道号生成、显示、修改

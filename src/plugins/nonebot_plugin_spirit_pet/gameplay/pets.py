@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .cultivation import available_co_training_partner
@@ -74,7 +74,8 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     archived_count = ctx.repo.archived_pet_count(ctx.user_id)
     lines = [f"在册 {len(owned)}/{ctx.config.spirit_pet_max_pets} · 封存 {archived_count} 只。"]
     has_expedition = False
-    for pet in selected:
+    inline_commands = []
+    for index, pet in enumerate(selected, 1):
         expedition = ctx.repo.active_expedition(pet.pet_id)
         activity = ""
         if expedition is not None:
@@ -86,6 +87,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
             f"（{ctx.content.species[pet.species_id].name}）"
             f" · {ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
         )
+        inline_commands.append(InlineCommand(len(lines) - 1, "改名", f"灵宠命名 {pet.pet_id} "))
     co_training_partner = available_co_training_partner(ctx)
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
@@ -107,7 +109,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠列表 {page + 1}")
     if len(commands) < 8:
         commands.append("灵宠召唤")
-    return Reply(f"灵宠名册 {page}/{pages}", tuple(lines), tuple(commands))
+    return Reply(f"灵宠名册 {page}/{pages}", tuple(lines), tuple(commands), tuple(inline_commands))
 
 
 def archive_list(ctx: Context, arg: str) -> Reply:
@@ -125,13 +127,17 @@ def archive_list(ctx: Context, arg: str) -> Reply:
         f" · {ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉 {ctx.content.bloodlines[pet.bloodline].name}"
         for pet in selected
     )
+    inline_commands = tuple(
+        InlineCommand(index, "改名", f"灵宠命名 {pet.pet_id} ")
+        for index, pet in enumerate(selected)
+    )
     commands = [f"灵宠复原 {pet.pet_id}" for pet in selected]
     if page > 1:
         commands.append(f"灵宠封存库 {page - 1}")
     if page < pages:
         commands.append(f"灵宠封存库 {page + 1}")
     commands.append("灵宠列表")
-    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands))
+    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands), inline_commands)
 
 
 def _owned_pet_by_id(ctx: Context, arg: str):

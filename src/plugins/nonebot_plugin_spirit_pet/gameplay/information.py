@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.content import Species
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from .companionship import active_bond_streak
 from .cultivation import MAJOR_BREAKTHROUGH_PITY, breakthrough_chance
@@ -63,7 +63,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"进化：{evolution.exp} 修为、{evolution.stones} 灵石、"
         + "、".join(f"{ctx.content.items[key].name} {amount}" for key, amount in evolution.items.items())
     )
-    return Reply(pet.name, (
+    lines = [
         "概况",
         f"当前出战：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
         *activity,
@@ -83,7 +83,12 @@ def status(ctx: Context, arg: str) -> Reply:
         f"战斗共鸣：{resonance_status}",
         "进阶",
         breakthrough, evolve_line,
-    ), commands)
+    ]
+    detail_line = next(index for index, line in enumerate(lines) if line.startswith("编号："))
+    return Reply(
+        pet.name, tuple(lines), commands,
+        (InlineCommand(detail_line, "给灵宠改名", f"灵宠命名 {pet.pet_id} "),),
+    )
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

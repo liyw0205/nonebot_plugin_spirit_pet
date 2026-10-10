@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ..domain.models import Reply
-from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
+from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, naming, pets, quests, skills
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
@@ -22,6 +22,7 @@ ACTIONS = {
     "help": Command(help.help_game, True, registered=False),
     "identity": Command(identity.profile, registered=False),
     "dao_name": Command(identity.rename, True),
+    "pet_name": Command(naming.rename_pet, True),
     "status": Command(information.status),
     "catalog": Command(information.catalog, True, registered=False),
     "rank": Command(information.rank, registered=False),
@@ -103,7 +104,7 @@ ACTIONS = {
     "unequip_skill": Command(skills.unequip, True),
 }
 COMMANDS = {
-    "灵宠": "help", "灵宠帮助": "help", "我的信息": "identity", "灵宠道号": "dao_name",
+    "灵宠": "help", "灵宠帮助": "help", "我的信息": "identity", "灵宠道号": "dao_name", "灵宠命名": "pet_name",
     "我的灵宠": "status", "我的宠": "status",
     "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季领奖": "season_claim",
