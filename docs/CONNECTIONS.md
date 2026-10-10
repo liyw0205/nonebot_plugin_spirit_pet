@@ -1,6 +1,6 @@
 # 连接机器人
 
-本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID 版本。默认 `main` 的旧版源码可能没有本文中的指令和界面，请按 [develop 安装教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md) 部署。
+本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID 版本。默认 `main` 的旧版源码可能没有本文中的指令和界面，请按 [develop 安装教程](INSTALLATION.md) 部署。
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 

@@ -28,7 +28,7 @@ bash scripts/install.sh install --source checkout --directory "$PWD" --no-start
 
 安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet` 管理命令，首次生成 `.env` 与随机 OneBot 访问令牌。按下方最小配置连接机器人后执行 `xiupet start`。若命令不在 PATH，可使用 `bash scripts/xiupet.sh start`。
 
-当前尚无可下载的正式 `project.tar.gz`，`releases/latest/download/project.tar.gz` 返回 404。不要省略 `--source checkout`，也不要用旧 `main` 安装脚本代替以上入口。完整参数、Termux 环境与未来 Release 安装见 [安装教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md)。
+当前尚无可下载的正式 `project.tar.gz`，`releases/latest/download/project.tar.gz` 返回 404。不要省略 `--source checkout`，也不要用旧 `main` 安装脚本代替以上入口。完整参数、Termux 环境与未来 Release 安装见 [安装教程](docs/INSTALLATION.md)。
 
 ## 手动安装
 
@@ -67,7 +67,7 @@ QQ_BOTS='[]'
 
 两个适配器共用同一数据库，只有原始平台 ID 字符串完全相同才共享玩家；不同 ID 不自动绑定。UID 是游戏内固定编号，不是 QQ 号码或 OpenID。
 
-AppID 配置、Webhook、Markdown、按钮和蓝字说明见 [接入教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONNECTIONS.md)。
+AppID 配置、Webhook、Markdown、按钮和蓝字说明见 [接入教程](docs/CONNECTIONS.md)。
 
 ## 开始游戏
 
@@ -83,7 +83,7 @@ AppID 配置、Webhook、Markdown、按钮和蓝字说明见 [接入教程](http
 
 初始伙伴可选青鸾、玄狐、白泽或蛟龙；领养成功会显示 UID 与伙伴信息，并自动出战。QQ 群聊一般先 @机器人，私聊直接发送指令。可用 `灵宠帮助 成长`、`灵宠帮助 秘境与关卡` 等分类查看玩法。
 
-与其他玩家切磋或组队使用对方的 UID，例如 `灵宠切磋 10001`、`灵宠入队 10001`。宠物编号用于 `灵宠出战 1 2 3` 等伙伴操作，与玩家 UID 分开。完整指令和规则见 [玩法说明](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/GAMEPLAY.md)。
+与其他玩家切磋或组队使用对方的 UID，例如 `灵宠切磋 10001`、`灵宠入队 10001`。宠物编号用于 `灵宠出战 1 2 3` 等伙伴操作，与玩家 UID 分开。完整指令和规则见 [玩法说明](docs/GAMEPLAY.md)。
 
 ## 管理与更新
 
@@ -113,16 +113,16 @@ xiupet start
 
 玩家数据库默认位于 `data/spirit_pet/spirit_pet.db`。使用 `scripts/database_admin.py` 做一致性备份，不要只复制处于 WAL 模式的主 `.db` 文件。当前 UID 版本使用 schema 20，schema 18/19 升级先自动备份再迁移；升级及回滚应配对源码、配置与数据库版本。
 
-启动失败先查看 `xiupet logs`；连接失败核对监听端口、令牌与 QQ 平台订阅；存档像新服时核对启动目录与 `SPIRIT_PET_DB`。具体命令和恢复步骤见 [配置、备份与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONFIGURATION.md)。QQ 富消息呈现取决于平台权限与客户端，Termux 也需核对实际设备环境。
+启动失败先查看 `xiupet logs`；连接失败核对监听端口、令牌与 QQ 平台订阅；存档像新服时核对启动目录与 `SPIRIT_PET_DB`。具体命令和恢复步骤见 [配置、备份与排错](docs/CONFIGURATION.md)。QQ 富消息呈现取决于平台权限与客户端，Termux 也需核对实际设备环境。
 
 ## 文档
 
 | 文档 | 内容 |
 | --- | --- |
-| [安装与更新](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md) | Linux / Termux、checkout 安装、管理命令与更新 |
-| [机器人接入](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONNECTIONS.md) | OneBot 反向 WS、QQ 官方、消息模式 |
-| [配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONFIGURATION.md) | 参数、数据库备份、升级和恢复 |
-| [玩法说明](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/GAMEPLAY.md) | UID、伙伴养成、阵容、对战、队伍与收集 |
+| [安装与更新](docs/INSTALLATION.md) | Linux / Termux、checkout 安装、管理命令与更新 |
+| [机器人接入](docs/CONNECTIONS.md) | OneBot 反向 WS、QQ 官方、消息模式 |
+| [配置与排错](docs/CONFIGURATION.md) | 参数、数据库备份、升级和恢复 |
+| [玩法说明](docs/GAMEPLAY.md) | UID、伙伴养成、阵容、对战、队伍与收集 |
 | [变更记录](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/CHANGELOG.md) | 版本变化 |
 
 ## 许可证
