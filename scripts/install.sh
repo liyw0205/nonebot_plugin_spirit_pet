@@ -3,13 +3,11 @@ set -Eeuo pipefail
 
 REPOSITORY="https://github.com/liyw0205/nonebot_plugin_spirit_pet"
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
-ACTION=${1:-install}
-if (($#)); then shift; fi
-if [[ $ACTION == --help || $ACTION == -h ]]; then
-    printf 'Usage: %s [install|uninstall] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
-    exit 0
+ACTION=install
+if (($#)) && [[ $1 == install || $1 == uninstall ]]; then
+    ACTION=$1
+    shift
 fi
-
 resolve_script() {
     local source=${BASH_SOURCE[0]} directory
     while [[ -L $source ]]; do
@@ -53,6 +51,7 @@ while (($#)); do
             ;;
         --help|-h)
             printf 'Usage: %s [install|uninstall] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
+            printf 'The action is optional; install is the default. Existing project files are preserved.\n'
             exit 0
             ;;
         *)
@@ -175,6 +174,7 @@ download_source() {
 prepare_project() {
     canonical_directory
     if [[ -f $DIRECTORY/pyproject.toml && -f $DIRECTORY/requirements.txt ]]; then
+        printf '保留已有项目源码：%s\n' "$DIRECTORY"
         return
     fi
     if [[ ! -f $DIRECTORY/.xiupet-managed ]]; then

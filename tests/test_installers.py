@@ -57,6 +57,9 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
     assert "[install|uninstall]" in result.stdout
+    manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
+    assert manager_help.returncode == 0
+    assert "does not update project source" in manager_help.stdout
 
 
 def test_removed_branch_option_is_rejected_before_python_or_network_access():
@@ -97,9 +100,17 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
 
     sentinel = "PRIVATE_CONFIG=keep this exactly\n"
     (destination / ".env").write_text(sentinel, encoding="utf-8")
-    result = subprocess.run(command, capture_output=True, text=True, env=env)
+    data_dir = destination / "data"
+    data_dir.mkdir(parents=True)
+    save = data_dir / "player.db"
+    save.write_bytes(b"existing player save")
+    option_first_command = [
+        "bash", str(source_project / "scripts/install.sh"), "--directory", str(destination), "--yes", "--no-start",
+    ]
+    result = subprocess.run(option_first_command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
     assert (destination / ".env").read_text(encoding="utf-8") == sentinel
+    assert save.read_bytes() == b"existing player save"
 
     uninstall = subprocess.run(
         ["bash", str(source_project / "scripts/install.sh"), "uninstall", "--directory", str(destination), "--yes"],

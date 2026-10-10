@@ -142,6 +142,7 @@ case "$ACTION" in
         ;;
     --help|-h)
         printf 'Usage: xiupet [start|stop|restart|status|logs [--lines N]|install|uninstall]\n'
+        printf 'install uses the local installer; it does not update project source and leaves existing .env and saved data in place.\n'
         ;;
     *) fail "Unknown action: $ACTION" ;;
 esac

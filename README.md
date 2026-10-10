@@ -41,7 +41,7 @@
 提供 Linux/Termux Bash 一键安装入口。脚本可从零安装 Python 运行环境、依赖和 `xiupet` 命令，并通过 NoneBot CLI 的 `nb run` 启动；安装、卸载和进程管理均由 Bash 实现。
 
 - 完整仓库：Linux/Termux `bash scripts/install.sh install`。
-- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|uninstall`。独立安装目录卸载时会删除该目录；源码仓库卸载只移除运行环境并保留源码、配置和存档。
+- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|uninstall`。`xiupet install` 只使用本地项目重装依赖，不更新源码，也不会自动重启；现有 `.env` 和存档保留。独立安装目录卸载时会删除整个目录；源码仓库卸载只移除运行环境并保留源码、配置和存档。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
 - [Linux / Termux 安装教程](docs/INSTALLATION.md)
@@ -51,6 +51,8 @@
 NapCat 只是可选的 OneBot V11 实现，不是插件或反向 WS 的必要依赖。
 
 两个适配器共用同一个 SQLite 数据库。**用户 ID 完全相同才是同一玩家，不同 ID 就是不同的人**；不增加平台前缀，不绑定，不推测 OpenID 与 QQ 号的关系。
+
+本项目当前不发布 pip 包。推送 `vMAJOR.MINOR.PATCH` 标签时，GitHub Actions 会先运行测试和安装冒烟，再创建 GitHub Release；在首个正式标签发布前，请使用源码安装入口，不要将 `develop` 视为稳定版。
 
 ## 项目文档
 
