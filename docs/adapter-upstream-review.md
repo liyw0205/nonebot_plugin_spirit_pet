@@ -25,6 +25,6 @@
 
 ## 验证范围
 
-按接入差异选择短合同：`tests/test_commands.py` 核对解析、事件身份和事件键；`tests/test_messaging.py` 核对 QQ 消息构造、OneBot 路由、明确拒绝降级与超时不重发。若未来升级改变 Gateway timeout 行为，只需增加/运行对应 Adapter timeout 单测；只有运输或鉴权行为变化时才补必要 WS 验证。共享业务长链在同一运行状态只验一份。
+按接入差异选择短合同：OneBot WS 是共享业务链唯一完整适配器验收；QQ 只核对格式、Markdown、蓝字、按钮 payload、回调 ACK 与明确拒绝降级，另以 `tests/test_commands.py`、`tests/test_messaging.py` 核对解析、事件身份、事件键和发送边界。若未来升级改变 Gateway timeout 行为，只需增加/运行对应 Adapter timeout 单测；只有 OneBot 运输/鉴权行为变化时才补必要 WS 验证。共享业务长链在同一运行状态只验一份。
 
-本轮已把 `tests/test_lineup_protocol.py` 的 QQ 群/私聊 × text/native/template 六例改为单条帮助命令的短接入/消息格式合同，不再每例执行完整多宠链；共享链仍由 OneBot WS 冒烟代表一次，并由 `tests/test_runtime.py` 在全量 pytest 中调用。此次只运行六个 QQ 聚焦用例，未重新全量、WS 或仿真；`1450 passed`、真实 OneBot ASGI/WS、compileall 和 `81,400` 场仿真是去重前相同运行代码/内容状态的既有证据，不能表述成当前测试树重跑全量。真实 QQ 网络、权限及客户端仍待外部验收，本地 mock 不代表平台通过。
+本轮已把 `tests/test_lineup_protocol.py` 的 QQ 群/私聊 × text/native/template 六例改为短接入合同，不再每例执行完整多宠链；QQ 合同范围是格式、Markdown、蓝字、按钮 payload、回调 ACK 与降级，完整共享链仍由 OneBot WS 冒烟代表一次，并由 `tests/test_runtime.py` 在全量 pytest 中调用。此次只运行六个 QQ 聚焦用例，未重新全量、WS 或仿真；`1450 passed`、真实 OneBot ASGI/WS、compileall 和 `81,400` 场仿真是去重前相同运行代码/内容状态的既有证据，不能表述成当前测试树重跑全量。无真机时 QQ 官方呈现与权限均未实测；OneBot 通过不能声称 QQ 真机通过。Termux 真机和正式发布仍是外部待办，本地 mock 不代表平台通过。
