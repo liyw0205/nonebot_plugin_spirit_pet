@@ -1,103 +1,108 @@
 # 安装与启动
 
-## 发布资产与回退约定
+本文适用于 [develop 源码](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop)。默认 `main` 是旧版本，不包含当前 UID 与交互功能。当前正式 Release 下载入口返回 404，请先使用下面的 checkout 安装，不依赖尚未发布的 `project.tar.gz`。
 
-稳定发布 tag 固定为 `vMAJOR.MINOR.PATCH`，正式 Release 资产固定为
-`project.tar.gz`。默认安装从
-`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`
-获取资产，先尝试已核验的 `gh-proxy.com`，失败或归档无效后再直连官方地址。
+[用户说明](../README.md) · [安装后连接机器人](CONNECTIONS.md) · [配置与备份](CONFIGURATION.md)
 
-核验时本仓库尚无正式 Release 资产；资产缺失或官方 URL 下载失败时安装停止，不会改取
-`main` 分支归档。需要安装未发布的开发源码时使用 `--source checkout`。代理透传验证使用
-xiu2 `v1.0.0` 的 `project.tar.gz`，下载 SHA-256 与 GitHub Release API 摘要一致；pet 自身
-资产发布后仍需核验其实际响应。
+## Linux / Termux 快速安装
 
-[返回仓库](../README.md) · [安装后连接机器人](CONNECTIONS.md)
-
-支持 Python 3.10+。Linux/Termux 安装、卸载和 `xiupet` 进程管理均由 Bash 完成。没有 Python 环境时，脚本会尝试使用系统包管理器安装 Python；Python 仅用于建立虚拟环境、安装依赖和执行 NoneBot CLI。独立安装默认获取 GitHub 最新 Release 的 `project.tar.gz`，先尝试已核验字节一致的 `gh-proxy.com`，失败后回退 GitHub 官方资产地址；不会切换到其他未验证代理。
-
-## Linux 一键安装
-
-默认安装最新正式版：
+先准备 Bash、Git 和 curl。Debian/Ubuntu 可执行 `sudo apt install -y bash git curl`，Termux 执行 `pkg install -y bash git curl`。安装器会按需准备 Python 3.10+、venv 和 tar；Linux 自动安装系统依赖需要 root 或 sudo，Termux 使用 `pkg`。
 
 ```bash
-bash scripts/install.sh install
+git clone --branch develop --single-branch \
+  https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
+cd "$HOME/spirit-pet"
+bash scripts/install.sh install --source checkout --directory "$PWD" --no-start
 ```
 
-在本地 checkout 中安装当前开发源码时显式选择：
+首次安装创建 `.venv`，安装 `nb-cli==1.5.0` 与 `requirements.txt`，从 `.env.example` 生成 `.env` 和随机 `ONEBOT_V11_ACCESS_TOKEN`。重复安装保留源码、现有 `.env` 与存档。按 [接入教程](CONNECTIONS.md) 填写机器人配置后启动：
 
 ```bash
-bash scripts/install.sh install --source checkout --directory "$HOME/spirit-pet-dev"
+xiupet start
+xiupet status
+xiupet logs --lines 100
 ```
 
-`install` 是默认动作，也可以把选项写在动作名前：
+若 `~/.local/bin` 未加入 PATH，可使用 `bash scripts/xiupet.sh start` 等同名动作；也可按安装器提示将该目录加入 PATH。每个实例使用自己的 `scripts/xiupet.sh`，同一个快捷链接不会覆盖另一个安装。
 
-```bash
-bash scripts/install.sh --directory "$HOME/spirit-pet" --yes --no-start
-```
-
-有正式 Release 后，可单独下载入口并获取最新 Release 资产：
-
-```sh
-curl -fL --proto '=https' --proto-redir '=https' \
-  https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh \
-  -o install-spirit-pet.sh
-bash install-spirit-pet.sh install --directory "$HOME/spirit-pet"
-```
-
-单独下载脚本默认安装到 `~/spirit-pet`，并从最新 GitHub Release 获取 `project.tar.gz`；本地 checkout 仅在显式传入 `--source checkout` 时使用。安装会创建 `.venv`、安装 `nb-cli==1.5.0` 和 `requirements.txt`，并从 `.env.example` 生成配置。不会要求预先准备 Python 虚拟环境。
-
-Linux 自动安装系统依赖需要 root 或 sudo；Termux 使用 `pkg`。脚本支持 apt、dnf、yum、apk、pacman、zypper 和 Homebrew。准备好 Python、curl 和 tar 时可传 `--skip-system`，缺少依赖会报错且不会修改系统。
+`--no-start` 让安装后保持停止，便于先填配置；省略时会以前台 `.venv/bin/nb run` 启动，按 Ctrl+C 停止。Termux 仍需使用当前受维护的环境，并按设备系统设置允许后台运行；安装脚本不会消除 Android 的进程限制。
 
 ## 安装选项
 
+真实入口为仓库的 [scripts/install.sh](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/scripts/install.sh)：
+
 | 参数 | 作用 |
 | --- | --- |
-| `install` / `uninstall` | 操作类型，默认 `install` |
-| `--source release\|checkout` | 源码来源，默认 `release`；`checkout` 使用脚本所在的本地项目仓库 |
-| `--directory PATH` | 安装目录；默认 `~/spirit-pet`；checkout 模式未指定目录时使用本地仓库 |
-| `--yes` | 确认卸载，供非交互终端使用 |
-| `--no-start` | 安装后不以前台方式启动 |
-| `--skip-system` 或 `SPIRIT_PET_SKIP_SYSTEM=1` | 不通过系统包管理器安装依赖 |
+| `install` / `update` / `uninstall` | 动作，默认 `install`；`update` 只接受 Release 来源 |
+| `--source checkout` | 安装脚本所在的本地源码；本教程必须显式指定 |
+| `--source release` | 获取最新正式 Release，脚本默认值；当前资产尚不存在 |
+| `--directory PATH` | 目标目录；checkout 未指定时使用本地仓库，release 默认 `~/spirit-pet` |
+| `--no-start` | 安装后不启动 |
+| `--skip-system` 或 `SPIRIT_PET_SKIP_SYSTEM=1` | 已有 Python、venv、curl、tar 时跳过系统包管理器 |
+| `--yes` | 卸载时确认删除，非交互卸载必填 |
+| `SPIRIT_PET_PYTHON` | 指定可用的 Python 3.10+ 解释器 |
+| `SPIRIT_PET_BIN_DIR` | 指定 `xiupet` 快捷命令目录，默认 `~/.local/bin` |
 
-卸载独立安装目录时会删除整个目录。直接在现有源码仓库中卸载只移除 `.venv` 和运行状态，保留源码、`.env` 与存档。
+脚本支持 apt、dnf、yum、apk、pacman、zypper、Homebrew 与 Termux `pkg`。指定 `--skip-system` 后缺少依赖会明确报错，不自动安装系统组件。
 
-安装成功后，Linux/Termux 在 `~/.local/bin/xiupet` 生成 shell 快捷命令。若该目录不在当前 PATH 中，会显示需要添加的路径。可用命令：
+可从 checkout 复制到一个全新空目录安装：
 
-```text
-xiupet start
-xiupet stop
-xiupet restart
-xiupet status
-xiupet logs
-xiupet install
-xiupet update
-xiupet uninstall
+```bash
+bash scripts/install.sh install --source checkout \
+  --directory "$HOME/spirit-pet-instance" --no-start
 ```
 
-首次安装默认以前台方式执行 `nb run`，按 Ctrl+C 停止；传 `--no-start` 后可用 `xiupet start` 后台启动。`xiupet install` 会先停止实例，再用本地源码重新安装依赖，不更新源码且不会自动重启。
-
-`xiupet update` 只接受来源标记为 Release 的受管理安装。它先停止当前实例，再按代理优先、官方直连回退的顺序下载并校验最新 `project.tar.gz`；只替换 `src/`、`scripts/`、`pyproject.toml` 和 `requirements.txt`，然后在现有 `.venv` 中安装依赖。`.env`、`data/`（包括 SQLite、WAL 与备份）、`.xiupet/`（包括运行日志）、`.venv` 目录、其他日志和命令链接均保留，更新完成后保持停止状态，需手动执行 `xiupet start`。源码替换失败或依赖安装失败时会尝试恢复旧源码。checkout、来源标记缺失或来源未知的目录会被拒绝，不会覆盖用户源码；早期安装目录若没有来源标记，也需先人工确认来源再迁移，不应直接更新。
-
-停止和卸载会结束机器人进程。非交互直接卸载必须显式传 `--yes`。
-
-新安装会从 `.env.example` 创建 `.env`，生成随机 `ONEBOT_V11_ACCESS_TOKEN` 并设置文件权限；重复安装完整保留现有 `.env`。OneBot 客户端 token 必须与 `.env` 的值相同。QQBot 凭证可在之后按 [连接教程](CONNECTIONS.md) 填写。
-
-## 源码版本与发布
-
-推送 `vMAJOR.MINOR.PATCH` 标签会触发 GitHub Actions 测试门禁；通过后 workflow 用 `git archive` 从该 tag 检出内容生成 `project.tar.gz` 并附加到 GitHub Release。重复运行安装器会保留已有项目源码，不会覆盖或升级现有代码；它适用于新目录安装，源码更新需按当前版本的变更说明制定并验证更新步骤。
+副本不包含源仓库的 `.git`、`.env`、数据库与虚拟环境，拥有自己的配置与存档。已有项目目录会保留源码，重复 `install` 不把新 checkout 覆盖进去。为了以后直接使用 Git 更新，推荐前面的原地 checkout 安装；副本需要另行备份并明确复制更新文件，不能使用 `xiupet update` 代替。
 
 ## 手动安装
 
-已有源码和 Python 时，可直接使用虚拟环境内的 `nb` 命令启动：
+先按上方命令克隆 `develop`。已有 Python 3.10+ 时，在源码目录执行：
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
 if [ ! -f .env ]; then cp .env.example .env; fi
-.venv/bin/nb run
 ```
 
-本项目没有 `bot.py` 启动入口。
+编辑 `.env` 后运行 `.venv/bin/nb run`。不要覆盖已有 `.env`；手动安装时自行设置 OneBot 访问令牌。项目没有 `bot.py` 启动入口。
 
-当前存档 schema 为 19。安装器本身不修改数据库；启动时仅对 schema 18 执行注册时间保留迁移，迁移前会创建并验证数据库备份，原文件保留。schema 1-17、未来版本和未版本化的非空库会被拒绝且不重建，遇到 `Unsupported spirit pet schema version` 时会保留旧文件并停止启动。需要升级其他旧存档时先备份并验证，再按该版本迁移策略操作，不要更换或清空现有 `SPIRIT_PET_DB`。
+## 管理已安装实例
+
+| 命令 | 作用 |
+| --- | --- |
+| `xiupet start` / `stop` / `restart` | 后台启动、停止、重启 |
+| `xiupet status` | 显示进程状态与日志路径 |
+| `xiupet logs --lines 100` | 查看最近日志，默认 80 行 |
+| `xiupet install` | 先停止，再用本地项目重装依赖；不更新源码、不自动重启 |
+| `xiupet update` | 只更新 Release 管理的安装，完成后保持停止 |
+| `xiupet uninstall` | 停止并卸载；独立受管理目录会整目录删除 |
+
+默认日志为 `.xiupet/run.log`。源码仓库卸载只移除 `.venv`、运行状态和快捷链接，保留源码、`.env`、存档；安装器复制创建的独立受管理目录会整个删除，卸载前必须另存数据库和配置。也可显式运行 `bash scripts/install.sh uninstall --directory PATH --yes`。
+
+## 更新当前 checkout
+
+先停止机器人，按 [配置与备份](CONFIGURATION.md#升级与回滚) 记录代码版本、备份 `.env` 和数据库，检查本地源码修改；然后在原 checkout 中更新：
+
+```bash
+cd "$HOME/spirit-pet"
+xiupet stop
+git pull --ff-only origin develop
+xiupet install
+xiupet start
+```
+
+有本地修改或分支分歧时先处理差异，不强制覆盖源码。更新后若启动失败，查看日志并保留迁移备份，按源码与数据库版本成对回滚，不清空数据库。首次迁移可能生成备份，需为数据库目录预留空间。
+
+## 正式 Release 发布后
+
+正式版本采用 `vMAJOR.MINOR.PATCH`，Release 必须实际附带 `project.tar.gz`。当前没有这份安装资产；以下方式仅在发布后使用，不能替代当前 checkout 教程。
+
+正式资产存在后，安装器的 `--source release` 会读取最新 Release，先尝试 `gh-proxy.com`，失败或归档无效时回退官方地址；全部失败就停止，不换成 `main` 归档。固定版本应先检出实际存在的 tag 再使用 checkout 安装，默认 release 模式不固定版本。
+
+`xiupet update` 只接受来源标记为 `release` 的受管理安装，拒绝 checkout、缺来源标记及未知来源目录。更新先停止实例，再替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并安装依赖；保留 `.env`、`data/`、`.xiupet/`、`.venv`、日志与命令链接。完成后需手动 `xiupet start`；源码替换或依赖安装失败会尝试恢复旧源码。
+
+## 存档升级
+
+当前 UID 版本使用 schema 20。新空库可初始化；结构匹配的 schema 18/19 在启动前分别生成并验证备份后迁移，保留平台关联、灵宠、资源、队伍和进度。schema 18 先补注册时间进入 19，再迁移 UID 进入 20；无法确认的历史注册时间显示“未记录”。旧版玩家道号不再作为当前交互入口，UID 用于切磋和组队，灵宠自己的名字保留。
+
+schema 1-17、未来版本、结构不匹配和未版本化的非空库会被拒绝。安装器不清空数据库；升级失败应保留现有库与备份，按 [升级与回滚](CONFIGURATION.md#升级与回滚) 处理。

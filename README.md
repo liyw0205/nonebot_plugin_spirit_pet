@@ -1,69 +1,130 @@
-# nonebot_plugin_spirit_pet
+# 灵宠仙缘
 
-灵宠修仙、山海玄幻题材的 NoneBot2 文字宠物游戏。支持 **OneBot V11** 与 **QQ 官方机器人**，QQ 可使用 Markdown、指令按钮和蓝字，OneBot 使用纯文本。
+山海玄幻题材的 NoneBot2 文字宠物游戏，与灵宠一起修炼、探索秘境、组队和论剑。支持 **OneBot V11** 与 **QQ 官方机器人**，使用本地 SQLite 保存伙伴与玩家进度，无需 MySQL。
 
-当前为源码项目，使用 GitHub 一键脚本安装完整机器人项目。
+本文与下方教程适用于 [develop 版本](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop)。仓库默认 `main` 的旧源码尚不包含当前 UID 与交互功能，请按下方命令选择 `develop`。
 
-## 游戏内容
+## 能力概览
 
-- 27 种灵宠，四种初始可选；后续通过召唤与秘境灵卵孵化收集，多宠独立养成。
-- 超过两千万个随机候选道号，注册时确保唯一；玩家交互使用道号，不展示平台 ID。
-- 八类种族，五行、冰系分支与风雷毒；多属性有明确主属性，对战按属性克制结算。
-- 每种宠物独有天赋神通，技能熟练度与等级、三槽装备和 +0 至 +10 强化。
-- 一至三只不同种族灵宠组成出战阵容，秘境、关卡、论剑与切磋整份阵容参战；组队战斗整队最多五只。
-- 54 条种族专属血脉分支；控制、净化、驱散与护盾灵术；装备打造和分解。
-- 四套双件装备套装，完整配装后提供额外战斗属性，并在战报中保留生效快照。
-- 七个大境界，每个境界一至十层；小境界突破、大境界破境与五阶血脉进化。
-- 签到、喂养、修炼、历练、背包、商店与每日任务。
-- 离线委托采药、寻矿与采集血髓，派遣占用、手动归来领奖和提前召回。
-- 七境共 16 处单人/组队秘境、直接挑战榜单对手的 PVP 论剑、按道号无损切磋。
-- 八处线性单人/组队关卡、每位玩家独立首通奖励，以及保留战前阵容和完整战斗事件的永久战报。
-- 按种族进度展示的灵宠收集图鉴，以及从存档和永久记录派生、可一次性领取的长期成就。
-- 集齐指定的两种灵宠种族后可启用一种战斗共鸣，为匹配的出战灵宠提供有限属性加成。
-- 自然月论剑赛季、同境界积分区间匹配、场次限额与一次性赛季奖励，无需邀请或应战。
-- 入队审批、双向确认邀请、队长转让和成员管理；二至三人协作、全员准备与独立奖励。
+- 27 种山海灵宠，四种初始可选；召唤、十连珍稀保底、灵卵孵化与可逆封存。
+- 玩家使用从 10000 起的固定 UID 交互；每只灵宠可以单独命名与养成。
+- 七个大境界、每境十层，五阶血脉与 54 条种族分支；每日签到、互动、喂养、修炼、突破和任务。
+- 主副元素、天赋神通、技能熟练度、三槽装备、强化、套装、打造分解与双种族共鸣。
+- 一至三只不同种族灵宠组成阵容；16 处秘境、八处章节关卡、离线委托、收集与长期成就。
+- 二至三人组队，整队最多五只灵宠；申请与邀请需确认，全员准备后出征，每名成员独立领奖。
+- 镜像论剑、无损切磋、自然月赛季与永久战报，无需对手在线。
+- QQ 可使用 Markdown、少量主要操作按钮和正文蓝字；OneBot 与纯文本模式可直接发送中文指令。
+
+## 快速安装
+
+Linux 与 Termux 使用同一个 Bash 安装器。先准备 Bash、Git 和 curl：Debian/Ubuntu 可运行 `sudo apt install -y bash git curl`，Termux 可运行 `pkg install -y bash git curl`。再安装当前源码：
+
+```bash
+git clone --branch develop --single-branch \
+  https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
+cd "$HOME/spirit-pet"
+bash scripts/install.sh install --source checkout --directory "$PWD" --no-start
+```
+
+安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet` 管理命令，首次生成 `.env` 与随机 OneBot 访问令牌。按下方最小配置连接机器人后执行 `xiupet start`。若命令不在 PATH，可使用 `bash scripts/xiupet.sh start`。
+
+当前尚无可下载的正式 `project.tar.gz`，`releases/latest/download/project.tar.gz` 返回 404。不要省略 `--source checkout`，也不要用旧 `main` 安装脚本代替以上入口。完整参数、Termux 环境与未来 Release 安装见 [安装教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md)。
+
+## 手动安装
+
+已有 Python 3.10+ 时，先按上方命令克隆 `develop`，然后在源码目录执行：
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
+if [ ! -f .env ]; then cp .env.example .env; fi
+```
+
+编辑 `.env` 并配置适配器后，使用 `.venv/bin/nb run` 前台启动。项目没有 `bot.py` 入口；手动安装若需要 `xiupet` 快捷命令，可在同一源码目录运行上述 checkout 安装器。
+
+## 最小配置
+
+安装器已生成 `.env`，重复安装会保留它。关键字段如下；OneBot 的令牌应使用安装器生成的实际值，手动安装时自行设置：
+
+```dotenv
+ENVIRONMENT=dev
+DRIVER=~fastapi+~httpx+~websockets
+HOST=127.0.0.1
+PORT=8080
+SPIRIT_PET_DB=data/spirit_pet/spirit_pet.db
+SPIRIT_PET_COMMAND_PREFIX=/
+ONEBOT_V11_ACCESS_TOKEN=replace-with-your-random-token
+QQ_BOTS='[]'
+```
+
+`SPIRIT_PET_COMMAND_PREFIX` 可以改为空字符串或其他无空格前缀，按钮与蓝字会使用同一配置；无前缀完整中文命令始终可用。已有 `.env.dev` 或 `.env.prod` 时检查同名覆盖项，修改配置后重启。
+
+## 连接机器人
+
+**OneBot V11 / NapCat：**在客户端新增反向 WebSocket 连接，地址为 `ws://127.0.0.1:8080/onebot/v11/ws`，token 与 `.env` 一致。跨主机时填写 NoneBot 主机地址并调整监听与网络访问规则。NapCat 是可选 OneBot 实现，不是游戏必需组件。
+
+**QQ 官方机器人：**用 AppID、AppSecret 配置 `QQ_BOTS`，按开放平台权限选择 WebSocket 或 Webhook 接入。普通群 @ 消息与已获权限的群全量消息均可路由中文命令；是否推送全量事件取决于平台订阅。先使用 `SPIRIT_PET_QQ_MODE=text`，再按已获权限启用 `native` 或 `template`。
+
+两个适配器共用同一数据库，只有原始平台 ID 字符串完全相同才共享玩家；不同 ID 不自动绑定。UID 是游戏内固定编号，不是 QQ 号码或 OpenID。
+
+AppID 配置、Webhook、Markdown、按钮和蓝字说明见 [接入教程](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONNECTIONS.md)。
+
+## 开始游戏
 
 ```text
 灵宠领养 青鸾
-灵宠签到
+我的信息
 我的灵宠
-灵宠修炼
-灵宠出战 1 2 3
-灵宠突破
-灵宠挑战 青岚林
 灵宠帮助
+灵宠签到
+灵宠修炼
+灵宠命名 小青
 ```
 
-命令可以带 `/` 前缀；QQ 群聊通常需要先 @机器人。完整指令、成长规则、对战与组队流程见 [玩法说明](docs/GAMEPLAY.md)。
+初始伙伴可选青鸾、玄狐、白泽或蛟龙；领养成功会显示 UID 与伙伴信息，并自动出战。QQ 群聊一般先 @机器人，私聊直接发送指令。可用 `灵宠帮助 成长`、`灵宠帮助 秘境与关卡` 等分类查看玩法。
 
-## 安装与接入
+与其他玩家切磋或组队使用对方的 UID，例如 `灵宠切磋 10001`、`灵宠入队 10001`。宠物编号用于 `灵宠出战 1 2 3` 等伙伴操作，与玩家 UID 分开。完整指令和规则见 [玩法说明](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/GAMEPLAY.md)。
 
-提供 Linux/Termux Bash 一键安装入口。脚本可从零安装 Python 运行环境、依赖和 `xiupet` 命令，并通过 NoneBot CLI 的 `nb run` 启动；安装、卸载和进程管理均由 Bash 实现。
+## 管理与更新
 
-- 安装最新正式版：Linux/Termux `bash scripts/install.sh install`；安装器先尝试已核验的 GitHub Release 代理，失败时回退官方 Release 资产。
-- 从本地 checkout 安装开发源码：`bash scripts/install.sh install --source checkout --directory "$HOME/spirit-pet-dev"`。
-- 管理已安装实例：`xiupet start|stop|restart|status|logs|install|update|uninstall`。`xiupet install` 只使用本地项目重装依赖；`xiupet update` 从最新 Release 更新受管理安装的程序源码和依赖，不会自动启动，并保留 `.env`、`data/`、`.xiupet/`、`.venv`、日志与命令链接。checkout 开发目录不会被 Release 覆盖。
-- 单文件下载入口、安装选项和首次配置见下方安装教程。
+```text
+xiupet start
+xiupet stop
+xiupet restart
+xiupet status
+xiupet logs --lines 100
+```
 
-- [Linux / Termux 安装教程](docs/INSTALLATION.md)
-- [OneBot V11 反向 WS / NapCat / QQBot 配置](docs/CONNECTIONS.md)
-- [参数说明、备份与排错](docs/CONFIGURATION.md)
+当前推荐直接在 Git checkout 中安装。升级前先停止实例，再按下方备份教程备份配置与数据库，然后更新同一分支：
 
-NapCat 只是可选的 OneBot V11 实现，不是插件或反向 WS 的必要依赖。
+```bash
+cd "$HOME/spirit-pet"
+xiupet stop
+git pull --ff-only origin develop
+xiupet install
+xiupet start
+```
 
-两个适配器共用同一个 SQLite 数据库。**用户 ID 完全相同才是同一玩家，不同 ID 就是不同的人**；不增加平台前缀，不绑定，不推测 OpenID 与 QQ 号的关系。
+本地有源码修改时先处理差异，不强制覆盖。`xiupet install` 只重装当前源码的依赖，不更新源码且不自动重启；`xiupet update` 仅用于未来 Release 管理的安装，不接受 checkout 目录。若将 checkout 复制安装到另一个目录，该副本没有 Git 更新入口，更新方式见安装教程。
 
-本项目当前不发布 pip 包。稳定版由 `vMAJOR.MINOR.PATCH` tag 发布，并附带
-`project.tar.gz`；默认安装只取最新 Release 资产，不回退到分支源码。在首个正式
-Release 建立前，请显式使用本地 checkout 模式。完整约定见
-[发布资产与回退约定](docs/release-distribution.md)。
+`xiupet uninstall` 会停止实例并卸载；独立受管理安装目录会整目录删除，先备份存档。直接在源码仓库安装时，卸载保留源码、配置和存档。
 
-## 项目文档
+## 备份与排错
 
-开发从 [唯一执行入口](docs/DEVELOPMENT.md#唯一执行入口) 开始，阶段与验收状态见 [开发路线](docs/ROADMAP.md)。D1-D3 本地开发版已交付，证据见 [交付记录](docs/reports/development-delivery.md)；QQ 与 Termux 真机验收待执行，正式发布尚未通过。
+玩家数据库默认位于 `data/spirit_pet/spirit_pet.db`。使用 `scripts/database_admin.py` 做一致性备份，不要只复制处于 WAL 模式的主 `.db` 文件。当前 UID 版本使用 schema 20，schema 18/19 升级先自动备份再迁移；升级及回滚应配对源码、配置与数据库版本。
 
-[变更记录](CHANGELOG.md) · [玩法说明](docs/GAMEPLAY.md) · [静态内容规范](docs/CONTENT.md)
+启动失败先查看 `xiupet logs`；连接失败核对监听端口、令牌与 QQ 平台订阅；存档像新服时核对启动目录与 `SPIRIT_PET_DB`。具体命令和恢复步骤见 [配置、备份与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONFIGURATION.md)。QQ 富消息呈现取决于平台权限与客户端，Termux 也需核对实际设备环境。
 
-## 许可
+## 文档
+
+| 文档 | 内容 |
+| --- | --- |
+| [安装与更新](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/INSTALLATION.md) | Linux / Termux、checkout 安装、管理命令与更新 |
+| [机器人接入](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONNECTIONS.md) | OneBot 反向 WS、QQ 官方、消息模式 |
+| [配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/CONFIGURATION.md) | 参数、数据库备份、升级和恢复 |
+| [玩法说明](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/docs/GAMEPLAY.md) | UID、伙伴养成、阵容、对战、队伍与收集 |
+| [变更记录](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/CHANGELOG.md) | 版本变化 |
+
+## 许可证
 
 本项目采用 [MIT License](LICENSE)。
