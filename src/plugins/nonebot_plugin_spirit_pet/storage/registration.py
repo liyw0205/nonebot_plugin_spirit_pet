@@ -24,6 +24,10 @@ def _legacy_schema(current_schema: str, version: int) -> str:
     )
     if version == 18:
         body = body.replace(REGISTRATION_COLUMN, "")
+    elif version == 19:
+        body = body.replace(REGISTRATION_COLUMN, "", 1)
+        last_column = "    last_pvp INTEGER,\n"
+        body = body.replace(last_column, last_column + REGISTRATION_COLUMN, 1)
     return schema[:match.start(1)] + body + schema[match.end(1):]
 
 

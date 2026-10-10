@@ -41,6 +41,13 @@ def schema19_store(tmp_path):
     return store
 
 
+def test_schema19_fixture_matches_alter_table_registration_column_order(tmp_path):
+    store = schema19_store(tmp_path)
+    with closing(sqlite3.connect(store.path)) as conn:
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(players)")]
+    assert columns[-1] == "registered_at"
+
+
 def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_path):
     store = schema19_store(tmp_path)
     with closing(sqlite3.connect(store.path)) as conn:
