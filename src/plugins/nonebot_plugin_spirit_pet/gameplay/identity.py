@@ -52,7 +52,7 @@ def profile(ctx: Context, arg: str) -> Reply:
 
 def rename(ctx: Context, arg: str) -> Reply:
     if not arg:
-        return profile(ctx, arg)
+        return Reply("修改道号", ("发送新道号完成修改，例如：灵宠道号 青云。",), ("我的灵宠",))
     player = ctx.player()
     if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9]{2,12}", arg):
         raise GameError("道号限 2-12 个汉字、英文字母或数字。")

@@ -3,8 +3,15 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import nonebot
+import pytest
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
-from nonebot.adapters.qq.event import C2CMessageCreateEvent, GroupAtMessageCreateEvent
+from nonebot.adapters.qq.event import (
+    C2CMessageCreateEvent,
+    C2CMsgReceiveEvent,
+    GroupAtMessageCreateEvent,
+    GroupMessageCreateEvent,
+    GroupMsgReceiveEvent,
+)
 
 from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.core.config import Config
@@ -23,14 +30,14 @@ def onebot_event(text="灵宠帮助", message_id=1):
     })
 
 
-def qq_event(user_id="12345", group=True, text="灵宠帮助", message_id="2"):
+def qq_event(user_id="12345", group=True, text="灵宠帮助", message_id="2", event_class=None):
     data = {
         "id": message_id, "content": text, "timestamp": "2026-10-07T00:00:00+08:00",
         "author": {"id": user_id, "user_openid": user_id, "member_openid": user_id,
                    "bot": False, "member_role": "member"},
         "group_id": "group", "group_openid": "group",
     }
-    cls = GroupAtMessageCreateEvent if group else C2CMessageCreateEvent
+    cls = event_class or (GroupAtMessageCreateEvent if group else C2CMessageCreateEvent)
     return cls.model_validate(data)
 
 
@@ -124,6 +131,70 @@ def test_real_qq_group_and_c2c_event_contracts():
         assert event.get_user_id() == "12345"
         assert event.get_plaintext() == "灵宠帮助"
     assert nonebot.get_driver().config.driver == "~fastapi+~httpx+~websockets"
+
+
+def test_qq_at_message_and_full_group_message_share_the_same_safe_event_key():
+    bot = SimpleNamespace(self_id="app", adapter=SimpleNamespace(get_name=lambda: "QQ"))
+    at_message = qq_event(message_id="same-id", text="我的灵宠")
+    full_message = qq_event(
+        message_id="same-id", text="我的灵宠", event_class=GroupMessageCreateEvent,
+    )
+
+    async def run():
+        assert await handlers._is_command(at_message, at_message.get_message())
+        assert await handlers._is_command(full_message, full_message.get_message())
+
+    asyncio.run(run())
+    assert handlers._operation_id(bot, at_message) == handlers._operation_id(bot, full_message)
+
+
+def test_duplicate_qq_event_shapes_replay_one_committed_command(tmp_path, monkeypatch):
+    store = Store(tmp_path / "qq-event-dedup.db")
+    store.initialize()
+    service = Game(store, Config())
+    monkeypatch.setattr(handlers, "game", service)
+    monkeypatch.setattr(handlers, "config", Config())
+    bot = SimpleNamespace(
+        self_id="app", adapter=SimpleNamespace(get_name=lambda: "QQ"), send=AsyncMock(),
+    )
+    at_message = qq_event(message_id="same-sign", text="灵宠签到")
+    full_message = qq_event(
+        message_id="same-sign", text="灵宠签到", event_class=GroupMessageCreateEvent,
+    )
+
+    async def run():
+        await handlers._run(bot, qq_event(message_id="adopt-first"), "灵宠领养 青鸾")
+        await handlers._run(bot, at_message, "灵宠签到")
+        await handlers._run(bot, full_message, "灵宠签到")
+
+    asyncio.run(run())
+    player = sql(store, "SELECT stones, sign_day FROM players WHERE user_id='12345'")[0]
+    assert player["stones"] == service.content.rules.starter_stones + 200
+    assert player["sign_day"]
+    assert bot.send.await_count == 3
+    assert bot.send.call_args_list[1].args[1] == bot.send.call_args_list[2].args[1]
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        GroupMsgReceiveEvent.model_validate({
+            "timestamp": "2026-10-07T00:00:00+08:00",
+            "group_openid": "group", "op_member_openid": "member",
+        }),
+        C2CMsgReceiveEvent.model_validate({
+            "timestamp": "2026-10-07T00:00:00+08:00", "openid": "member",
+        }),
+    ],
+    ids=["group-receive-notice", "c2c-receive-notice"],
+)
+def test_qq_receive_lifecycle_notification_is_not_a_command_message(event):
+    assert not handlers._is_message_event(event)
+
+    async def run():
+        assert not await handlers._is_command(event, None)
+
+    asyncio.run(run())
 
 
 def test_team_approval_uses_shared_identity_across_real_adapter_events(tmp_path, monkeypatch):

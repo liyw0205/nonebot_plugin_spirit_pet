@@ -2,6 +2,18 @@
 
 日期：2026-10-09（UTC+8）。D1、D2、D3 均为 `passed`，覆盖既有完整玩法与本轮多宠合同。QQ 与 Termux 真机仍为 `waiting_external`，正式发布为 `blocked`。本记录不代表平台实号验收或发布授权。
 
+## QQ 消息体验补充交付（2026-10-10）
+
+本轮基准为 `develop` 的 `a515ec9`，交付源码由包含本节的提交标识；下方“验证状态”及 D1-D3 章节保留 2026-10-09 的历史运行证据，不代表本轮源码重新全量通过。只读上游审查已完成，D1-D3 仍为 `passed`，当前没有活动的本地开发 goal。
+
+- “我的灵宠”按概况、成长、状态、战斗、进阶分组；原生 Markdown 的改名蓝字在道号行，关闭蓝字时提供单个改名按钮。帮助为总览和八个玩法子页，分类蓝字随分类行展示，键盘使用自然标签；可见用法和提示不写固定斜杠前缀，payload 按配置保留自定义或空前缀。
+- 已安装 QQ adapter `1.7.3` 的 `GroupAtMessageCreateEvent`、`GroupMessageCreateEvent` 使用同一会话/消息键；`C2CMsgReceiveEvent`、`GroupMsgReceiveEvent` 为生命周期通知，不执行业务命令。参考 xiu2 的 `qq_compat/context.py`、`lifecycle.py` 与 `adapter_compat.py` 区分消息与生命周期。同键输入只结算一次；既有事务重放仍可再次回复，不承诺消息发送 exactly-once。
+- 复用本轮已运行结果：`tests/test_messaging.py` 为 `19 passed`；`tests/test_information.py -k 'status_shows or help or rename_entry or plugin_usage'` 为 `6 passed`；`tests/test_commands.py` 的两类群消息键、重复事务与接收通知排除用例为 `4 passed`。覆盖 Markdown、蓝字、按钮 payload、自定义/空前缀与显式拒绝降级；回调 ACK 路径未改，本轮未新增 ACK 运行结果。没有重复 OneBot 共享业务长链、全量 pytest、WS 或仿真。
+- `/root/spirit-pet-qq-test-20261010` 是独立安装副本，没有 Git 元数据；2026-10-10 只读核对其 handler、formatter、帮助源码与 `a515ec9` 一致，尚不含本轮改动。观察到两个以该目录为工作目录的 Python 进程，但未核实它们的入口或内存中的源码版本。未读取凭据、修改配置、部署、重启或发送 QQ 消息，也未操作 xiu2。
+- 审阅 `/root/stress_test.py` 后未执行压测：当前文件默认每批 `40` 个用户任务、`60` 秒；按用户要求设为 `50` 时，每个任务最多四条，约五秒最多 `1000` 条，不是每秒仅 `50` 条。服务/数据库隔离、RAM 基线和硬内存上限未确认；脚本原命令集也不代表 pet 工作负载，响应按群 ID 关联，未据此产出 pet 吞吐结论。后续仅在独立临时库和隔离服务、硬内存限制、无 xiu3 并行压测成立后短测并记录 RSS/延迟。
+
+提交与独立远端核验的精确 SHA 另记于本机 `/tmp/pet-progress-20261010.md`。源码交付不等于部署更新或真实 QQ 验收；QQ 官方呈现/权限及 Termux 仍为 `waiting_external`，正式发布为 `blocked`。
+
 ## 验证状态
 
 验证对象为 `develop` 工作区，基准 HEAD 为 `4f9b2160859cc9c0f9b9140a424fa9cfa5cb4661`，包含既有未提交改动与本轮新增文件；没有提交、推送、合并或发版。所有运行门禁完成后仅调整文档，运行文件清单再次校验通过。

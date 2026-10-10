@@ -14,28 +14,71 @@ def element_line(ctx: Context, species: Species) -> str:
     return f"主属性：{ctx.content.elements[species.primary_element].name} · 副属性：{'、'.join(secondary) or '无'}"
 
 
+_HELP_SECTIONS = {
+    "结契": (
+        "灵宠领养 青鸾 · 灵宠召唤 1 · 灵宠列表",
+        "灵宠出战 编号（也可用灵宠阵容） · 灵宠切换 编号",
+        "灵宠封存 编号 · 灵宠封存库 · 灵宠复原 编号",
+    ),
+    "成长": (
+        "我的灵宠 · 灵宠签到 · 灵宠互动 编号 · 灵宠喂养 编号",
+        "灵宠修炼 编号 · 灵宠合修 编号 · 灵宠突破 编号 · 灵宠进化 编号",
+    ),
+    "血脉与道具": (
+        "灵宠血脉 · 灵宠分支 分支名 · 灵宠共鸣 页",
+        "灵宠共鸣 查看 名称 · 灵宠共鸣 激活 名称 · 灵宠共鸣 停用",
+        "灵宠图鉴 · 灵宠排行",
+        "灵宠背包 · 灵宠商店 · 灵宠购买 灵粮 3 · 灵宠使用 回元丹 1",
+    ),
+    "秘境与关卡": (
+        "灵宠历练 路线 · 灵宠奇闻 页 · 灵宠奇闻榜 · 灵宠秘境",
+        "灵宠挑战 名称 · 灵宠任务 · 灵宠领奖 任务名 · 灵宠关卡",
+        "灵宠挑战关卡 名称 · 灵宠组队关卡 名称",
+    ),
+    "对战与赛季": (
+        "灵宠论剑 · 灵宠论剑 道号 · 灵宠切磋 道号",
+        "灵宠赛季 · 灵宠匹配 · 灵宠论剑榜 · 灵宠赛季奖励",
+        "灵宠赛季领奖 赛季号 · 灵宠战报 页",
+    ),
+    "灵物与灵术": (
+        "灵宠装备 · 灵宠装备 灵器 · 灵宠套装 · 灵宠强化 灵器",
+        "灵宠卸装 灵器 · 灵宠装备图鉴 · 灵宠工坊 · 灵宠打造 材料",
+        "灵宠分解 材料 数量 · 灵宠技能 · 灵宠技能图鉴",
+        "灵宠学习 技能 · 灵宠携带 技能 · 灵宠卸技 技能",
+    ),
+    "组队与派遣": (
+        "灵宠组队 · 灵宠入队 道号 · 灵宠邀请 道号 · 灵宠队伍",
+        "灵宠队务 · 灵宠队伍同意 道号 · 灵宠队伍拒绝 道号 · 灵宠队伍撤回 道号",
+        "灵宠准备 · 灵宠取消准备 · 灵宠踢人 道号 · 灵宠转让 道号",
+        "灵宠退队 · 灵宠解散 · 灵宠组队挑战 关卡",
+        "灵宠委托 · 灵宠派遣 任务 · 灵宠行程",
+        "灵宠归来 行程号 · 灵宠召回 行程号",
+    ),
+    "身份与收集": (
+        "我的道号 · 灵宠道号 新道号",
+        "灵宠收集 页 · 灵宠成就 页 · 灵宠成就领奖 成就名",
+    ),
+}
+
+
 def help_game(ctx: Context, arg: str) -> Reply:
-    return Reply("灵宠仙途", (
-        "结契：灵宠领养 青鸾 / 灵宠召唤 1 / 灵宠列表 / 灵宠出战 编号 [编号] [编号] / 灵宠切换 编号 / 灵宠封存 编号 / 灵宠封存库 / 灵宠复原 编号",
-        "成长：我的灵宠 / 灵宠签到 / 灵宠互动 [编号] / 灵宠喂养 [编号] / 灵宠修炼 [编号] / 灵宠合修 编号 / 灵宠突破 [编号] / 灵宠进化 [编号]",
-        "血脉：灵宠血脉 / 灵宠分支 分支名",
-        "道具：灵宠背包 / 灵宠商店 / 灵宠购买 灵粮 3 / 灵宠使用 回元丹 1",
-        "秘境：灵宠历练 [路线] / 灵宠奇闻 [页] / 灵宠奇闻榜 / 灵宠秘境 / 灵宠挑战 青岚林 / 灵宠任务 / 灵宠领奖 任务名",
-        "关卡：灵宠关卡 / 灵宠挑战关卡 编号或名称 / 灵宠组队关卡 编号或名称",
-        "对战：灵宠论剑 / 灵宠论剑 道号 / 灵宠切磋 道号",
-        "赛季：灵宠赛季 / 灵宠匹配 / 灵宠论剑榜 / 灵宠赛季奖励 / 灵宠赛季领奖 赛季号",
-        "灵物：灵宠装备 / 灵宠装备 青岚翎 / 灵宠套装 / 灵宠强化 灵器 / 灵宠卸装 灵器 / 灵宠装备图鉴",
-        "工坊：灵宠工坊 / 灵宠打造 青岚翎 / 灵宠分解 青岚翎 +0 1",
-        "灵术：灵宠技能 / 灵宠技能图鉴 / 灵宠学习 风刃术 / 灵宠携带 风刃术 / 灵宠卸技 风刃术",
-        "组队：灵宠组队 / 灵宠入队 队长道号 / 灵宠邀请 道号 / 灵宠队伍",
-        "审批：灵宠队务 / 灵宠队伍同意 道号 / 灵宠队伍拒绝 道号 / 灵宠队伍撤回 道号",
-        "管理：灵宠队伍 道号 / 灵宠踢人 道号 / 灵宠转让 道号 / 灵宠退队 / 灵宠解散",
-        "出征：灵宠准备 / 灵宠取消准备 / 灵宠组队挑战 上古灵殿",
-        "派遣：灵宠委托 / 灵宠派遣 名称 / 灵宠行程 / 灵宠归来 行程号 / 灵宠召回 行程号",
-        "其他：我的道号 / 灵宠道号 新道号 / 灵宠图鉴 / 灵宠排行",
-        "收集与战报：灵宠收集 [页] / 灵宠成就 [页] / 灵宠成就领奖 成就名 / 灵宠战报 [页]",
-        "共鸣：灵宠共鸣 / 灵宠共鸣 查看 名称 / 灵宠共鸣 激活 名称 / 灵宠共鸣 停用",
-    ), ("灵宠领养 青鸾", "我的灵宠", "灵宠秘境", "灵宠任务"))
+    section = arg.strip()
+    if section:
+        lines = _HELP_SECTIONS.get(section)
+        if lines is None:
+            available = "、".join(_HELP_SECTIONS)
+            raise GameError(f"未找到该帮助分类，可查看：{available}。")
+        commands = ("灵宠帮助",) + tuple(
+            f"灵宠帮助 {name}" for name in _HELP_SECTIONS if name != section
+        )
+        return Reply(f"帮助 · {section}", lines, commands)
+
+    overview = tuple(f"{name}：发送灵宠帮助 {name} 查看" for name in _HELP_SECTIONS)
+    return Reply(
+        "灵宠仙途",
+        ("总览：按玩法查看短帮助，不必记住固定前缀。",) + overview,
+        ("灵宠帮助 成长", "灵宠帮助 结契", "灵宠帮助 秘境与关卡", "灵宠帮助 组队与派遣"),
+    )
 
 
 def status(ctx: Context, arg: str) -> Reply:
@@ -43,11 +86,11 @@ def status(ctx: Context, arg: str) -> Reply:
     roster = ctx.repo.active_pets(ctx.user_id)
     expedition = ctx.repo.active_expedition(pet.pet_id)
     activity = ()
-    commands = ("灵宠突破", "灵宠进化", "灵宠互动", "灵宠喂养", "灵宠修炼", "灵宠行程")
+    commands = ("灵宠道号", "灵宠修炼", "灵宠互动", "灵宠突破", "灵宠进化")
     if expedition is not None:
         state = "外出中" if ctx.now < expedition["finishes_at"] else "已完成，待领取"
         activity = (f"行程：{expedition['task_name']} · {state}。",)
-        commands = ("灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
+        commands = ("灵宠道号", "灵宠行程", "灵宠列表", "灵宠装备", "灵宠技能")
     fighter = combatant(ctx)
     stats = fighter.stats
     selected_resonance = ctx.repo.player_resonance(player.user_id)
@@ -88,20 +131,25 @@ def status(ctx: Context, arg: str) -> Reply:
         + "、".join(f"{ctx.content.items[key].name} {amount}" for key, amount in evolution.items.items())
     )
     return Reply(pet.name, (
+        "概况",
         f"道号：{player.dao_name}",
+        f"当前出战：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
         *activity,
-        f"出战阵容：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
-        f"编号 {pet.pet_id} · 种族：{ctx.content.species[pet.species_id].name}",
+        "成长",
+        f"编号：{pet.pet_id} · 种族：{ctx.content.species[pet.species_id].name}",
         f"类别：{ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
-        f"天赋神通：{talent.name} · {talent.description}",
         f"境界：{ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉：{bloodline.name}",
         branch_line,
+        f"天赋神通：{talent.name} · {talent.description}",
         f"修为：{pet.exp} · 灵石：{player.stones}",
+        "状态",
         f"精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
         bond_guard,
         f"连续陪伴：当前 {active_bond_streak(player, ctx.now)} 天 · 最佳 {player.best_bond_streak} 天",
+        "战斗",
         f"气血：{stats.hp} · 攻击：{stats.attack} · 防御：{stats.defense} · 速度：{stats.speed}",
         f"战斗共鸣：{resonance_status}",
+        "进阶",
         breakthrough, evolve_line,
     ), commands)
 

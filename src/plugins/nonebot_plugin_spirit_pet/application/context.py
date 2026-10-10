@@ -23,7 +23,7 @@ class Context:
     def player(self, user_id: str | None = None) -> Player:
         player = self.repo.player(user_id or self.user_id)
         if player is None:
-            raise GameError("尚未结契，请先发送 /灵宠领养 青鸾。")
+            raise GameError("尚未结契，请先发送“灵宠领养 青鸾”。")
         return player
 
     def pet(self, user_id: str | None = None) -> Pet:

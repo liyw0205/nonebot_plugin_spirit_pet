@@ -24,10 +24,10 @@ class Game:
             raise ValueError("user ID and operation ID are required")
         command = ACTIONS.get(action)
         if command is None:
-            raise GameError("未知指令，请发送 /灵宠帮助。")
+            raise GameError("未知指令，请发送“灵宠帮助”查看可用入口。")
         argument = argument.strip()
         if argument and not command.arguments:
-            raise GameError("该指令不接受参数，请发送 /灵宠帮助。")
+            raise GameError("该指令不接受参数，请发送“灵宠帮助”查看用法。")
         timestamp = int(time.time()) if now is None else now
 
         def run(conn):

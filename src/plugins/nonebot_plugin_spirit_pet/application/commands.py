@@ -18,7 +18,7 @@ class Command:
 
 
 ACTIONS = {
-    "help": Command(information.help_game),
+    "help": Command(information.help_game, True),
     "identity": Command(identity.profile),
     "dao_name": Command(identity.rename, True),
     "status": Command(information.status),

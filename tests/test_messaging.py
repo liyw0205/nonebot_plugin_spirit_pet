@@ -29,9 +29,66 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     fallback, message = _qq_segments(reply, config)
 
     assert "【山海小宠】" in fallback
-    assert "[我的灵宠](mqqapi://aio/inlinecmd?" in message["markdown"][0].data["markdown"].content
+    assert "[查看灵宠](mqqapi://aio/inlinecmd?" in message["markdown"][0].data["markdown"].content
     assert len(message["keyboard"]) == 1
-    assert message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0].action.data == "/我的灵宠"
+    button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert button.render_data.label == "查看灵宠"
+    assert button.action.data == "/我的灵宠"
+
+
+def test_help_categories_get_inline_blue_links_and_unprefixed_labels():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "灵宠仙途",
+        ("总览：选择一个玩法分类", "成长：查看灵宠养成", "组队与派遣：查看协作玩法"),
+        ("灵宠帮助 成长", "灵宠帮助 结契", "灵宠帮助 秘境与关卡", "灵宠帮助 组队与派遣"),
+    )
+    _, message = _qq_segments(
+        reply,
+        Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+    )
+    markdown = message["markdown"][0].data["markdown"].content
+    assert "[成长](mqqapi://aio/inlinecmd?" in markdown
+    assert "[组队与派遣](mqqapi://aio/inlinecmd?" in markdown
+    assert "**推荐入口**" not in markdown
+    assert "/灵宠" not in markdown
+    assert parse_qs(urlparse(markdown.split("[成长](")[1].split(")")[0]).query)["command"] == [
+        "!灵宠帮助 成长"
+    ]
+    buttons = message["keyboard"][0].data["keyboard"].content.rows[0].buttons
+    assert buttons[0].render_data.label == "成长指南"
+    assert buttons[0].action.data == "!灵宠帮助 成长"
+    assert all(not button.render_data.label.startswith("/") for button in buttons)
+
+    _, no_prefix_message = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix=""),
+    )
+    no_prefix_button = no_prefix_message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert no_prefix_button.action.data == "灵宠帮助 成长"
+
+
+def test_status_places_dao_edit_link_in_the_identity_line():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "青鸾",
+        ("概况", "道号：青云", "状态", "精力：90/100"),
+        ("灵宠道号", "灵宠修炼", "灵宠互动", "灵宠突破"),
+    )
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    markdown = message["markdown"][0].data["markdown"].content
+    assert "**道号**：青云 · [修改道号](mqqapi://aio/inlinecmd?" in markdown
+    assert "**下一步**" not in markdown
+    assert len(message["keyboard"]) == 0
+    assert "**概况**\n**道号**：青云" in markdown
+    assert "**道号**：青云" in markdown and "\n\n**状态**\n> 精力：90/100" in markdown
+
+    _, no_blue_link_message = _qq_segments(
+        reply,
+        Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
+    )
+    button = no_blue_link_message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert button.render_data.label == "修改道号"
+    assert button.action.data == "/灵宠道号"
 
 
 @pytest.mark.parametrize("command,encoded", [
