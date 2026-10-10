@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 REPOSITORY="https://github.com/liyw0205/nonebot_plugin_spirit_pet"
+RELEASE_ASSET="$REPOSITORY/releases/latest/download/project.tar.gz"
+RELEASE_PROXIES=("https://gh-proxy.com/")
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
 ACTION=install
 if (($#)) && [[ $1 == install || $1 == uninstall ]]; then
@@ -26,6 +28,7 @@ if [[ -f $SCRIPT_DIR/../pyproject.toml && -f $SCRIPT_DIR/../requirements.txt && 
 fi
 
 DIRECTORY=
+SOURCE_MODE=release
 YES=0
 NO_START=0
 SKIP_SYSTEM=0
@@ -35,6 +38,11 @@ while (($#)); do
         --directory)
             (($# >= 2)) || { printf 'Missing value for --directory\n' >&2; exit 2; }
             DIRECTORY=$2
+            shift 2
+            ;;
+        --source)
+            (($# >= 2)) || { printf 'Missing value for --source\n' >&2; exit 2; }
+            SOURCE_MODE=$2
             shift 2
             ;;
         --yes)
@@ -50,8 +58,8 @@ while (($#)); do
             shift
             ;;
         --help|-h)
-            printf 'Usage: %s [install|uninstall] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
-            printf 'The action is optional; install is the default. Existing project files are preserved.\n'
+            printf 'Usage: %s [install|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
+            printf 'Install defaults to the latest GitHub Release; --source checkout uses this local repository. Existing project files are preserved.\n'
             exit 0
             ;;
         *)
@@ -63,11 +71,20 @@ done
 
 case "$ACTION" in
     install|uninstall) ;;
-    *) printf 'Usage: %s [install|uninstall] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0" >&2; exit 2 ;;
+    *) printf 'Usage: %s [install|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0" >&2; exit 2 ;;
+esac
+case "$SOURCE_MODE" in
+    release|checkout) ;;
+    *) printf 'Invalid source mode: %s (expected release or checkout)\n' "$SOURCE_MODE" >&2; exit 2 ;;
 esac
 
 if [[ -z $DIRECTORY ]]; then
-    if [[ -n $SOURCE_ROOT ]]; then DIRECTORY=$SOURCE_ROOT; else DIRECTORY=$DEFAULT_DIRECTORY; fi
+    if [[ $SOURCE_MODE == checkout ]]; then
+        [[ -n $SOURCE_ROOT ]] || { printf 'spirit-pet: --source checkout requires a project checkout\n' >&2; exit 1; }
+        DIRECTORY=$SOURCE_ROOT
+    else
+        DIRECTORY=$DEFAULT_DIRECTORY
+    fi
 fi
 [[ $DIRECTORY == /* ]] || DIRECTORY=$PWD/$DIRECTORY
 
@@ -152,6 +169,20 @@ canonical_directory() {
     fi
 }
 
+download_release_candidate() {
+    local url=$1 archive="$TMP_DIR/source.tar.gz" extract_dir="$TMP_DIR/extracted" pyproject
+    rm -f -- "$archive"
+    rm -rf -- "$extract_dir"
+    mkdir -p -- "$extract_dir" || return 1
+    curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
+        "$url" -o "$archive" || return 1
+    tar -tzf "$archive" >/dev/null 2>&1 || return 1
+    tar -xzf "$archive" -C "$extract_dir" || return 1
+    pyproject=$(find "$extract_dir" -mindepth 1 -maxdepth 5 -name pyproject.toml -print -quit)
+    [[ -n $pyproject && -f ${pyproject%/pyproject.toml}/requirements.txt && -f ${pyproject%/pyproject.toml}/.env.example ]] || return 1
+    SOURCE_ROOT=${pyproject%/pyproject.toml}
+}
+
 download_source() {
     command -v curl >/dev/null 2>&1 || {
         ((SKIP_SYSTEM == 0)) || fail '未找到 curl；移除 --skip-system 后可尝试安装系统依赖'
@@ -162,13 +193,12 @@ download_source() {
         install_system_dependencies
     }
     TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spirit-pet.XXXXXX")
-    curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' \
-        "$REPOSITORY/archive/refs/heads/main.tar.gz" -o "$TMP_DIR/source.tar.gz"
-    tar -xzf "$TMP_DIR/source.tar.gz" -C "$TMP_DIR"
-    local pyproject
-    pyproject=$(find "$TMP_DIR" -mindepth 2 -maxdepth 3 -name pyproject.toml -print -quit)
-    [[ -n $pyproject ]] || fail '源码归档无效，未找到 pyproject.toml'
-    SOURCE_ROOT=${pyproject%/pyproject.toml}
+    local proxy
+    for proxy in "${RELEASE_PROXIES[@]}"; do
+        if download_release_candidate "$proxy$RELEASE_ASSET"; then return; fi
+        printf '发布资产代理不可用或归档无效，尝试回退。\n' >&2
+    done
+    download_release_candidate "$RELEASE_ASSET" || fail 'GitHub Release 发布资产下载失败或归档无效；请检查 latest Release 是否包含 project.tar.gz'
 }
 
 prepare_project() {
@@ -182,7 +212,11 @@ prepare_project() {
         first_entry=$(find "$DIRECTORY" -mindepth 1 -maxdepth 1 -print -quit)
         [[ -z $first_entry ]] || fail "拒绝覆盖非空目录：$DIRECTORY"
     fi
-    if [[ -z $SOURCE_ROOT ]]; then download_source; fi
+    if [[ $SOURCE_MODE == checkout ]]; then
+        [[ -n $SOURCE_ROOT ]] || fail '--source checkout requires a project checkout'
+    else
+        download_source
+    fi
     local entry name
     for entry in "$SOURCE_ROOT"/* "$SOURCE_ROOT"/.[!.]* "$SOURCE_ROOT"/..?*; do
         [[ -e $entry || -L $entry ]] || continue

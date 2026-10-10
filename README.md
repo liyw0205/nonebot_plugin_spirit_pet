@@ -40,7 +40,8 @@
 
 提供 Linux/Termux Bash 一键安装入口。脚本可从零安装 Python 运行环境、依赖和 `xiupet` 命令，并通过 NoneBot CLI 的 `nb run` 启动；安装、卸载和进程管理均由 Bash 实现。
 
-- 完整仓库：Linux/Termux `bash scripts/install.sh install`。
+- 安装最新正式版：Linux/Termux `bash scripts/install.sh install`；安装器先尝试已核验的 GitHub Release 代理，失败时回退官方 Release 资产。
+- 从本地 checkout 安装开发源码：`bash scripts/install.sh install --source checkout --directory "$HOME/spirit-pet-dev"`。
 - 管理已安装实例：`xiupet start|stop|restart|status|logs|install|uninstall`。`xiupet install` 只使用本地项目重装依赖，不更新源码，也不会自动重启；现有 `.env` 和存档保留。独立安装目录卸载时会删除整个目录；源码仓库卸载只移除运行环境并保留源码、配置和存档。
 - 单文件下载入口、安装选项和首次配置见下方安装教程。
 
@@ -52,7 +53,10 @@ NapCat 只是可选的 OneBot V11 实现，不是插件或反向 WS 的必要依
 
 两个适配器共用同一个 SQLite 数据库。**用户 ID 完全相同才是同一玩家，不同 ID 就是不同的人**；不增加平台前缀，不绑定，不推测 OpenID 与 QQ 号的关系。
 
-本项目当前不发布 pip 包。推送 `vMAJOR.MINOR.PATCH` 标签时，GitHub Actions 会先运行测试和安装冒烟，再创建 GitHub Release；在首个正式标签发布前，请使用源码安装入口，不要将 `develop` 视为稳定版。
+本项目当前不发布 pip 包。稳定版由 `vMAJOR.MINOR.PATCH` tag 发布，并附带
+`project.tar.gz`；默认安装只取最新 Release 资产，不回退到分支源码。在首个正式
+Release 建立前，请显式使用本地 checkout 模式。完整约定见
+[发布资产与回退约定](docs/release-distribution.md)。
 
 ## 项目文档
 

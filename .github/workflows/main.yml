@@ -47,7 +47,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install from checkout
-        run: bash scripts/install.sh --directory "$RUNNER_TEMP/spirit pet" --yes --no-start
+        run: bash scripts/install.sh --source checkout --directory "$RUNNER_TEMP/spirit pet" --yes --no-start
       - name: Verify isolated runtime
         run: |
           "$RUNNER_TEMP/spirit pet/.venv/bin/python" "$RUNNER_TEMP/spirit pet/scripts/smoke_test.py"
@@ -69,7 +69,9 @@ jobs:
       - name: Validate release tag
         run: |
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - name: Build source archive
+        run: git archive --format=tar.gz --output=project.tar.gz HEAD
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" project.tar.gz --verify-tag --generate-notes

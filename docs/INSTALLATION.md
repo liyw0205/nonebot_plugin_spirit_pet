@@ -1,15 +1,33 @@
 # 安装与启动
 
+## 发布资产与回退约定
+
+稳定发布 tag 固定为 `vMAJOR.MINOR.PATCH`，正式 Release 资产固定为
+`project.tar.gz`。默认安装从
+`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`
+获取资产，先尝试已核验的 `gh-proxy.com`，失败或归档无效后再直连官方地址。
+
+核验时本仓库尚无正式 Release 资产；资产缺失或官方 URL 下载失败时安装停止，不会改取
+`main` 分支归档。需要安装未发布的开发源码时使用 `--source checkout`。代理透传验证使用
+xiu2 `v1.0.0` 的 `project.tar.gz`，下载 SHA-256 与 GitHub Release API 摘要一致；pet 自身
+资产发布后仍需核验其实际响应。
+
 [返回仓库](../README.md) · [安装后连接机器人](CONNECTIONS.md)
 
-支持 Python 3.10+。Linux/Termux 安装、卸载和 `xiupet` 进程管理均由 Bash 完成。没有 Python 环境时，脚本会尝试使用系统包管理器安装 Python；Python 仅用于建立虚拟环境、安装依赖和执行 NoneBot CLI。默认源码来自 GitHub 官方 HTTPS 地址；已核对历史候选代理的当前响应，但代理不保证未来内容完整性，因此安装器不自动切换第三方镜像。
+支持 Python 3.10+。Linux/Termux 安装、卸载和 `xiupet` 进程管理均由 Bash 完成。没有 Python 环境时，脚本会尝试使用系统包管理器安装 Python；Python 仅用于建立虚拟环境、安装依赖和执行 NoneBot CLI。独立安装默认获取 GitHub 最新 Release 的 `project.tar.gz`，先尝试已核验字节一致的 `gh-proxy.com`，失败后回退 GitHub 官方资产地址；不会切换到其他未验证代理。
 
 ## Linux 一键安装
 
-完整仓库内直接执行：
+默认安装最新正式版：
 
 ```bash
 bash scripts/install.sh install
+```
+
+在本地 checkout 中安装当前开发源码时显式选择：
+
+```bash
+bash scripts/install.sh install --source checkout --directory "$HOME/spirit-pet-dev"
 ```
 
 `install` 是默认动作，也可以把选项写在动作名前：
@@ -18,7 +36,7 @@ bash scripts/install.sh install
 bash scripts/install.sh --directory "$HOME/spirit-pet" --yes --no-start
 ```
 
-单独下载入口时，脚本会从 GitHub 获取完整源码归档：
+有正式 Release 后，可单独下载入口并获取最新 Release 资产：
 
 ```sh
 curl -fL --proto '=https' --proto-redir '=https' \
@@ -27,7 +45,7 @@ curl -fL --proto '=https' --proto-redir '=https' \
 bash install-spirit-pet.sh install --directory "$HOME/spirit-pet"
 ```
 
-完整仓库内默认使用当前源码目录；单独下载脚本默认安装到 `~/spirit-pet`，并从 GitHub `main` 分支获取源码。安装会创建 `.venv`、安装 `nb-cli==1.5.0` 和 `requirements.txt`，并从 `.env.example` 生成配置。不会要求预先准备 Python 虚拟环境。
+单独下载脚本默认安装到 `~/spirit-pet`，并从最新 GitHub Release 获取 `project.tar.gz`；本地 checkout 仅在显式传入 `--source checkout` 时使用。安装会创建 `.venv`、安装 `nb-cli==1.5.0` 和 `requirements.txt`，并从 `.env.example` 生成配置。不会要求预先准备 Python 虚拟环境。
 
 Linux 自动安装系统依赖需要 root 或 sudo；Termux 使用 `pkg`。脚本支持 apt、dnf、yum、apk、pacman、zypper 和 Homebrew。准备好 Python、curl 和 tar 时可传 `--skip-system`，缺少依赖会报错且不会修改系统。
 
@@ -36,7 +54,8 @@ Linux 自动安装系统依赖需要 root 或 sudo；Termux 使用 `pkg`。脚�
 | 参数 | 作用 |
 | --- | --- |
 | `install` / `uninstall` | 操作类型，默认 `install` |
-| `--directory PATH` | 安装目录；仓库内默认为当前仓库，单独下载脚本默认为 `~/spirit-pet` |
+| `--source release\|checkout` | 源码来源，默认 `release`；`checkout` 使用脚本所在的本地项目仓库 |
+| `--directory PATH` | 安装目录；默认 `~/spirit-pet`；checkout 模式未指定目录时使用本地仓库 |
 | `--yes` | 确认卸载，供非交互终端使用 |
 | `--no-start` | 安装后不以前台方式启动 |
 | `--skip-system` 或 `SPIRIT_PET_SKIP_SYSTEM=1` | 不通过系统包管理器安装依赖 |
@@ -61,7 +80,7 @@ xiupet uninstall
 
 ## 源码版本与发布
 
-独立安装脚本固定下载 `main` 分支；完整 Git checkout 使用当前目录源码。当前不发布 pip 包，正式版本由维护者推送 `vMAJOR.MINOR.PATCH` 标签触发 GitHub Actions 测试门禁和 GitHub Release。Release 附带 GitHub 自动生成的源码归档；创建首个标签前，本项目尚无稳定版 Release。不要通过重复运行安装器覆盖正在使用的源码；源码更新需按当前版本的变更说明制定并验证更新步骤。
+推送 `vMAJOR.MINOR.PATCH` 标签会触发 GitHub Actions 测试门禁；通过后 workflow 用 `git archive` 从该 tag 检出内容生成 `project.tar.gz` 并附加到 GitHub Release。重复运行安装器会保留已有项目源码，不会覆盖或升级现有代码；它适用于新目录安装，源码更新需按当前版本的变更说明制定并验证更新步骤。
 
 ## 手动安装
 

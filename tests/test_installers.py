@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tarfile
 
 import pytest
 
@@ -48,6 +49,40 @@ def fake_python(tmp_path):
     return binary, nb
 
 
+def fake_release_curl(tmp_path, archive):
+    binary = tmp_path / "curl"
+    binary.write_text(
+        "#!/bin/sh\n"
+        "output=\nurl=\n"
+        "while [ $# -gt 0 ]; do\n"
+        "  case \"$1\" in\n"
+        "    -o) output=$2; shift 2 ;;\n"
+        "    https://*) url=$1; shift ;;\n"
+        "    *) shift ;;\n"
+        "  esac\n"
+        "done\n"
+        "printf '%s\\n' \"$url\" >> \"$SPIRIT_PET_TEST_CURL_LOG\"\n"
+        "case \"$url\" in\n"
+        "  *gh-proxy.com/*)\n"
+        "    case \"${SPIRIT_PET_TEST_PROXY_FAILURE:-}\" in\n"
+        "      curl) exit 22 ;;\n"
+        "      invalid) printf 'not a tarball\\n' > \"$output\"; exit 0 ;;\n"
+        "    esac\n"
+        "    ;;\n"
+        "esac\n"
+        "cp \"$SPIRIT_PET_TEST_RELEASE_ARCHIVE\" \"$output\"\n",
+        encoding="utf-8",
+    )
+    binary.chmod(0o755)
+    return binary
+
+
+def make_release_archive(project, archive_path):
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for entry in project.iterdir():
+            archive.add(entry, arcname=entry.name)
+
+
 def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
@@ -57,6 +92,7 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
     assert "[install|uninstall]" in result.stdout
+    assert "--source release|checkout" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
     assert "does not update project source" in manager_help.stdout
@@ -69,6 +105,61 @@ def test_removed_branch_option_is_rejected_before_python_or_network_access():
     )
     assert result.returncode == 2
     assert "Unknown option: --branch=dev" in result.stderr
+
+
+def test_invalid_source_mode_is_rejected_before_python_or_network_access():
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts/install.sh"), "--source", "main"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert "expected release or checkout" in result.stderr
+
+
+@pytest.mark.parametrize("proxy_failure", [None, "curl", "invalid"])
+def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
+    source_project, tmp_path, proxy_failure,
+):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, nb = fake_python(tmp_path)
+    curl_dir = tmp_path / "curl-bin"
+    curl_dir.mkdir()
+    archive = tmp_path / "project.tar.gz"
+    make_release_archive(source_project, archive)
+    fake_release_curl(curl_dir, archive)
+    destination = tmp_path / "release install"
+    curl_log = tmp_path / "curl.log"
+    environment = {
+        **os.environ,
+        "PATH": f"{curl_dir}{os.pathsep}{os.environ['PATH']}",
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_PYTHON": str(python),
+        "SPIRIT_PET_TEST_NB": str(nb),
+        "SPIRIT_PET_TEST_CURL_LOG": str(curl_log),
+        "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
+        "SPIRIT_PET_BIN_DIR": str(tmp_path / "commands"),
+    }
+    if proxy_failure:
+        environment["SPIRIT_PET_TEST_PROXY_FAILURE"] = proxy_failure
+    result = subprocess.run(
+        [
+            "bash", str(source_project / "scripts/install.sh"), "install",
+            "--directory", str(destination), "--yes", "--no-start",
+        ],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    urls = curl_log.read_text(encoding="utf-8").splitlines()
+    proxy_url = "https://gh-proxy.com/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    official_url = "https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    if proxy_failure:
+        assert urls == [proxy_url, official_url]
+    else:
+        assert urls == [proxy_url]
+    assert (destination / "pyproject.toml").is_file()
+    assert (destination / "scripts/xiupet.sh").is_file()
 
 
 def test_install_copies_source_creates_env_and_shell_command_then_preserves_config(source_project, tmp_path):
@@ -85,7 +176,7 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
         "SPIRIT_PET_BIN_DIR": str(bin_dir),
         "SPIRIT_PET_SKIP_SYSTEM": "1",
     }
-    command = ["bash", str(source_project / "scripts/install.sh"), "install", "--directory", str(destination), "--yes", "--no-start"]
+    command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"]
     result = subprocess.run(command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
     assert (destination / ".venv/bin/nb").is_file()
@@ -105,7 +196,7 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     save = data_dir / "player.db"
     save.write_bytes(b"existing player save")
     option_first_command = [
-        "bash", str(source_project / "scripts/install.sh"), "--directory", str(destination), "--yes", "--no-start",
+        "bash", str(source_project / "scripts/install.sh"), "--source", "checkout", "--directory", str(destination), "--yes", "--no-start",
     ]
     result = subprocess.run(option_first_command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -153,7 +244,7 @@ def test_missing_python_is_prepared_by_apt_before_install(source_project, tmp_pa
     }
     env.pop("SPIRIT_PET_SKIP_SYSTEM", None)
     result = subprocess.run(
-        ["bash", str(source_project / "scripts/install.sh"), "install", "--directory", str(destination), "--yes", "--no-start"],
+        ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"],
         capture_output=True, text=True, env=env,
     )
     assert result.returncode == 0, result.stdout + result.stderr
