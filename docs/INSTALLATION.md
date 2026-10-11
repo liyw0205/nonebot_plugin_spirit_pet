@@ -1,6 +1,6 @@
 # 安装与启动
 
-本文适用于 [develop 源码](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop)。默认 `main` 是旧版本，不包含当前 UID 与交互功能。当前正式 Release 下载入口返回 404，请先使用下面的 checkout 安装，不依赖尚未发布的 `project.tar.gz`。
+本文适用于仓库 `main` 分支的当前源码，包含稳定 UID、双适配器接入和完整的灵宠交互。
 
 [用户说明](../README.md) · [安装后连接机器人](CONNECTIONS.md) · [配置与备份](CONFIGURATION.md)
 
@@ -9,7 +9,7 @@
 先准备 Bash、Git 和 curl。Debian/Ubuntu 可执行 `sudo apt install -y bash git curl`，Termux 执行 `pkg install -y bash git curl`。安装器会按需准备 Python 3.10+、venv 和 tar；Linux 自动安装系统依赖需要 root 或 sudo，Termux 使用 `pkg`。
 
 ```bash
-git clone --branch develop --single-branch \
+git clone --branch main --single-branch \
   https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
 cd "$HOME/spirit-pet"
 bash scripts/install.sh install --source checkout --directory "$PWD" --no-start
@@ -29,13 +29,13 @@ xiupet logs --lines 100
 
 ## 安装选项
 
-真实入口为仓库的 [scripts/install.sh](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/develop/scripts/install.sh)：
+真实入口为仓库的 [scripts/install.sh](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/scripts/install.sh)：
 
 | 参数 | 作用 |
 | --- | --- |
 | `install` / `update` / `uninstall` | 动作，默认 `install`；`update` 只接受 Release 来源 |
 | `--source checkout` | 安装脚本所在的本地源码；本教程必须显式指定 |
-| `--source release` | 获取最新正式 Release，脚本默认值；当前资产尚不存在 |
+| `--source release` | 获取最新 Release，脚本默认值；归档必须包含 `pyproject.toml`、`requirements.txt` 和 `.env.example` |
 | `--directory PATH` | 目标目录；checkout 未指定时使用本地仓库，release 默认 `~/spirit-pet` |
 | `--no-start` | 安装后不启动 |
 | `--skip-system` 或 `SPIRIT_PET_SKIP_SYSTEM=1` | 已有 Python、venv、curl、tar 时跳过系统包管理器 |
@@ -56,7 +56,7 @@ bash scripts/install.sh install --source checkout \
 
 ## 手动安装
 
-先按上方命令克隆 `develop`。已有 Python 3.10+ 时，在源码目录执行：
+先按上方命令克隆 `main`。已有 Python 3.10+ 时，在源码目录执行：
 
 ```bash
 python3 -m venv .venv
@@ -86,18 +86,18 @@ if [ ! -f .env ]; then cp .env.example .env; fi
 ```bash
 cd "$HOME/spirit-pet"
 xiupet stop
-git pull --ff-only origin develop
+git pull --ff-only origin main
 xiupet install
 xiupet start
 ```
 
 有本地修改或分支分歧时先处理差异，不强制覆盖源码。更新后若启动失败，查看日志并保留迁移备份，按源码与数据库版本成对回滚，不清空数据库。首次迁移可能生成备份，需为数据库目录预留空间。
 
-## 正式 Release 发布后
+## Release 安装与更新
 
-正式版本采用 `vMAJOR.MINOR.PATCH`，Release 必须实际附带 `project.tar.gz`。当前没有这份安装资产；以下方式仅在发布后使用，不能替代当前 checkout 教程。
+Release 版本采用 `vMAJOR.MINOR.PATCH`，归档名称为 `project.tar.gz`。Release 安装会保留现有配置、存档和运行数据。
 
-正式资产存在后，安装器的 `--source release` 会读取最新 Release，先尝试 `gh-proxy.com`，失败或归档无效时回退官方地址；全部失败就停止，不换成 `main` 归档。固定版本应先检出实际存在的 tag 再使用 checkout 安装，默认 release 模式不固定版本。
+安装器的 `--source release` 会读取最新 Release，先尝试 `gh-proxy.com`，失败或归档无效时回退官方地址；两处均失败就停止，不改用分支归档。固定版本应先检出实际存在的 tag，再使用 checkout 安装；默认 Release 模式不固定版本。
 
 `xiupet update` 只接受来源标记为 `release` 的受管理安装，拒绝 checkout、缺来源标记及未知来源目录。更新先停止实例，再替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并安装依赖；保留 `.env`、`data/`、`.xiupet/`、`.venv`、日志与命令链接。完成后需手动 `xiupet start`；源码替换或依赖安装失败会尝试恢复旧源码。
 
@@ -105,4 +105,4 @@ xiupet start
 
 当前 UID 版本使用 schema 20。新空库可初始化；结构匹配的 schema 18/19 在启动前分别生成并验证备份后迁移，保留平台关联、灵宠、资源、队伍和进度。schema 18 先补注册时间进入 19，再迁移 UID 进入 20；无法确认的历史注册时间显示“未记录”。旧版玩家道号不再作为当前交互入口，UID 用于切磋和组队，灵宠自己的名字保留。
 
-schema 1-17、未来版本、结构不匹配和未版本化的非空库会被拒绝。安装器不清空数据库；升级失败应保留现有库与备份，按 [升级与回滚](CONFIGURATION.md#升级与回滚) 处理。
+schema 1-17、高于 20 的版本、结构不匹配和未版本化的非空库会被拒绝。安装器不清空数据库；升级失败应保留现有库与备份，按 [升级与回滚](CONFIGURATION.md#升级与回滚) 处理。

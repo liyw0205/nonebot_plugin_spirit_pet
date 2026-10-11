@@ -1,6 +1,6 @@
 # 连接机器人
 
-本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID 版本。默认 `main` 的旧版源码可能没有本文中的指令和界面，请按 [develop 安装教程](INSTALLATION.md) 部署。
+本文适用于当前源码的 UID 版本。按 [安装教程](INSTALLATION.md) 部署后，可接入 OneBot V11 或 QQ 官方机器人。
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 

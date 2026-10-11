@@ -1,6 +1,6 @@
 # 配置与排错
 
-本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID / schema 20 版本。默认 `main` 的旧版源码可能没有这些配置和迁移，请按 [develop 安装教程](INSTALLATION.md) 部署。
+本文说明当前 UID / schema 20 版本的配置、备份和排错方式。安装步骤见 [安装教程](INSTALLATION.md)。
 
 安装器首次安装会从 `.env.example` 生成 `.env`；手动安装时执行 `cp .env.example .env`。不要只复制成 `.env.dev` 而遗漏 `ENVIRONMENT=dev` 的入口配置。已有 `.env.dev` / `.env.prod` 时 NoneBot 会读取所选环境文件，同名项可能覆盖 `.env`，请清理重复项。安装与更新保留已有配置，修改后重启生效。
 
@@ -40,7 +40,7 @@ QQ 默认 `text` 模式不要求富消息权限。`native` 需要原生 Markdown
 | QQ adapter requires HTTPClient | DRIVER 缺少 `~httpx` 或 `~aiohttp` |
 | 本地能连、其他机器不能连 | HOST 是否为 `0.0.0.0`，防火墙和端口是否正确 |
 | OneBot 401/403/1008 | token 是否一致、客户端是否带 X-Self-ID、是否重复连接同 bot |
-| 反向 WS 404 | 路径是 `/onebot/v11/ws`，不是 WebUI 端口或 `/qq/webhook` |
+| 反向 WS 无法连接 | 路径是 `/onebot/v11/ws`，不是 WebUI 端口或 `/qq/webhook` |
 | QQ 群消息无响应 | `c2c_group_at_messages`、群权限、测试成员/群白名单、是否 @bot；普通群消息另需平台授权和订阅 |
 | QQ WS 无权连接 | 按开放平台要求改用 Webhook，不反复修改 OneBot 配置 |
 | QQ Webhook 失败 | HTTPS 证书、回调订阅、AppID/AppSecret、验签请求是否被代理保留 |
@@ -48,8 +48,7 @@ QQ 默认 `text` 模式不要求富消息权限。`native` 需要原生 Markdown
 | 按钮/蓝字无法显示 | 客户端版本及 QQ 审核权限；纯文本命令仍可操作 |
 | 游戏突然像新服 | 是否换了工作目录或 SPIRIT_PET_DB 指向另一文件 |
 | 两端人物不一致 | 同一存档内后台身份不同就是不同玩家；游戏内以 UID 交互，不提供自动绑定 |
-| Release 下载 404 | 当前无可用 `project.tar.gz` Release，按安装教程使用 `develop` checkout |
-| xiupet update 拒绝更新 | Git checkout 用 `git pull --ff-only origin develop` 后执行 `xiupet install`，该管理命令只更新 Release 安装 |
+| xiupet update 拒绝更新 | Git checkout 用 `git pull --ff-only origin main` 后执行 `xiupet install`，该管理命令只更新 Release 安装 |
 | 更新后进程没有运行 | `xiupet install` 与 `xiupet update` 完成后保持停止，检查成功后执行 `xiupet start` |
 
 Docker/容器中的 `127.0.0.1` 指向容器本身，不一定是 NoneBot 所在主机。本项目不要求使用容器。
@@ -70,12 +69,12 @@ cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
 
 当前版本使用 **schema 20**。空库初始化为当前版本；schema 18 先自动备份并迁移注册时间到 19，schema 19 再自动备份并为玩家分配稳定 UID 到 20。平台用户关联、灵宠、装备、资源、队伍和进度保留，不会清空玩家数据。历史注册时间仅从可核实的首次成功领养回复恢复，无记录或有歧义时显示“未记录”。自动备份位于原库旁，名称含 `schema18-backup` 或 `schema19-backup`。
 
-18 → 19 → 20 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、未来版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志与来源代码，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
+18 → 19 → 20 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、高于 20 的版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志与来源代码，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
 
 Git checkout 按以下顺序更新源码与依赖，再启动：
 
 ```bash
-git pull --ff-only origin develop
+git pull --ff-only origin main
 xiupet install
 xiupet start
 ```

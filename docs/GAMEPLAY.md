@@ -1,6 +1,6 @@
 # 玩法说明
 
-本文适用于 [`develop` 分支](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop) 的 UID 版本；[在线玩法文档](GAMEPLAY.md) 与 [玩法源码](https://github.com/liyw0205/nonebot_plugin_spirit_pet/tree/develop/src/plugins/nonebot_plugin_spirit_pet/gameplay) 均以该分支为准。默认 `main` 的旧版源码可能没有这些指令，请按 [develop 安装教程](INSTALLATION.md) 部署。
+本文说明当前源码提供的 UID 玩法和指令；对应安装步骤见 [安装教程](INSTALLATION.md)。
 
 命令可带管理员配置的前缀，也可不带，参数前留空格。QQ 群 @ 接入一般先 @机器人，普通群消息需平台另行授权与订阅。按钮以点击者的身份执行，需要参数的入口先填入命令，补齐后再发送。
 
