@@ -13,7 +13,7 @@ from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.application.commands import COMMANDS
 from nonebot_plugin_spirit_pet.core.config import Config
 
-from .team_support import NAMES, USERS, create_players, memberships, requests
+from .team_support import UIDS, USERS, create_players, memberships, requests
 
 
 def team_replies(play):
@@ -21,28 +21,28 @@ def team_replies(play):
     replies = [play("team_create", user=USERS[0])]
     for index in range(1, 6):
         if index % 2:
-            replies.append(play("team_join", NAMES[0], user=USERS[index]))
+            replies.append(play("team_join", UIDS[0], user=USERS[index]))
         else:
-            replies.append(play("team_invite", NAMES[index], user=USERS[0]))
+            replies.append(play("team_invite", UIDS[index], user=USERS[0]))
     replies.extend((
         play("team_requests", user=USERS[0]),
         play("team_requests", "分页 2", user=USERS[0]),
-        play("team_requests", NAMES[1], user=USERS[0]),
-        play("team_requests", NAMES[0], user=USERS[1]),
-        play("team_requests", NAMES[2], user=USERS[0]),
-        play("team_requests", NAMES[0], user=USERS[2]),
-        play("team_accept", NAMES[1], user=USERS[0]),
-        play("team_reject", NAMES[3], user=USERS[0]),
-        play("team_withdraw", NAMES[2], user=USERS[0]),
+        play("team_requests", UIDS[1], user=USERS[0]),
+        play("team_requests", UIDS[0], user=USERS[1]),
+        play("team_requests", UIDS[2], user=USERS[0]),
+        play("team_requests", UIDS[0], user=USERS[2]),
+        play("team_accept", UIDS[1], user=USERS[0]),
+        play("team_reject", UIDS[3], user=USERS[0]),
+        play("team_withdraw", UIDS[2], user=USERS[0]),
         play("team_status", user=USERS[0]),
         play("team_status", user=USERS[1]),
-        play("team_status", NAMES[1], user=USERS[0]),
-        play("team_status", NAMES[0], user=USERS[1]),
-        play("team_kick", NAMES[1], user=USERS[0]),
+        play("team_status", UIDS[1], user=USERS[0]),
+        play("team_status", UIDS[0], user=USERS[1]),
+        play("team_kick", UIDS[1], user=USERS[0]),
     ))
-    play("team_join", NAMES[0], user=USERS[1])
-    play("team_accept", NAMES[1], user=USERS[0])
-    replies.append(play("team_transfer", NAMES[1], user=USERS[0]))
+    play("team_join", UIDS[0], user=USERS[1])
+    play("team_accept", UIDS[1], user=USERS[0])
+    replies.append(play("team_transfer", UIDS[1], user=USERS[0]))
     replies.append(play("team_leave", user=USERS[0]))
     replies.append(play("team_disband", user=USERS[1]))
     return replies
@@ -57,7 +57,7 @@ def keyboard_buttons(message):
 
 @pytest.mark.parametrize("mode", ["native", "template"])
 @pytest.mark.parametrize("prefix", ["/", "!", ""])
-def test_actual_team_replies_preserve_all_buttons_and_command_arguments(play, monkeypatch, mode, prefix):
+def test_actual_team_replies_preserve_uid_button_payloads(play, monkeypatch, mode, prefix):
     config = Config(
         spirit_pet_qq_mode=mode,
         spirit_pet_qq_template_id="test.team-template",
@@ -69,15 +69,15 @@ def test_actual_team_replies_preserve_all_buttons_and_command_arguments(play, mo
     for reply in team_replies(play):
         fallback, message = _qq_segments(reply, config)
         buttons = keyboard_buttons(message)
-        assert len(buttons) == len(reply.commands) <= 8
-        assert [button.render_data.label for button in buttons] == list(reply.commands)
+        assert len(buttons) <= 4
         assert len({button.id for button in buttons}) == len(buttons)
         assert "private-platform-account" not in fallback
         assert "private-platform-account" not in str(message)
-        for command, button in zip(reply.commands, buttons):
+        for button in buttons:
+            command = button.action.data.removeprefix(prefix)
+            assert command in reply.commands
             name, _, argument = command.partition(" ")
             expected = COMMANDS[name], argument
-            assert button.action.data == prefix + command
             assert button.action.type == 2
             assert button.action.enter is True and button.action.reply is True
             assert handlers._parse(button.action.data) == expected
@@ -85,14 +85,13 @@ def test_actual_team_replies_preserve_all_buttons_and_command_arguments(play, mo
         markdown = message["markdown"][0].data["markdown"]
         if mode == "native":
             links = re.findall(r"\]\((mqqapi://[^)]+)\)", markdown.content)
-            assert len(links) == len(reply.commands)
-            for command, link in zip(reply.commands, links):
+            inline_commands = {action.command for action in reply.inline_commands}
+            for link in links:
                 query = parse_qs(urlparse(link).query)
-                assert query == {
-                    "command": [prefix + command],
-                    "enter": [str(not command.endswith((" ", "\t"))).lower()],
-                    "reply": ["false"],
-                }
+                command = query["command"][0].removeprefix(prefix)
+                assert command in inline_commands
+                assert query["enter"] == [str(not command.endswith((" ", "\t"))).lower()]
+                assert query["reply"] == ["false"]
                 assert handlers._parse(query["command"][0]) == handlers._parse(prefix + command)
         else:
             assert markdown.custom_template_id == config.spirit_pet_qq_template_id
@@ -125,11 +124,11 @@ def test_qq_approval_button_roundtrip_enforces_actor_and_message_dedupe(game, pl
     play("team_create", user=USERS[0])
     now = int(time.time())
     if kind == "apply":
-        play("team_join", NAMES[0], user=USERS[1], now=now)
-        recipient, sender, target = 0, 1, NAMES[1]
+        play("team_join", UIDS[0], user=USERS[1], now=now)
+        recipient, sender, target = 0, 1, UIDS[1]
     else:
-        play("team_invite", NAMES[1], user=USERS[0], now=now)
-        recipient, sender, target = 1, 0, NAMES[0]
+        play("team_invite", UIDS[1], user=USERS[0], now=now)
+        recipient, sender, target = 1, 0, UIDS[0]
     config = Config(spirit_pet_qq_mode=mode, spirit_pet_qq_template_id="test.team-template")
     monkeypatch.setattr(handlers, "config", config)
     monkeypatch.setattr(handlers, "game", game[0])

@@ -7,7 +7,7 @@ from nonebot_plugin_spirit_pet.domain.content import Stats
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay.combat import Fighter, enemy_fighter, fight
 
-from .support import items, pet, player, sql
+from .support import items, pet, player, sql, uid_label
 
 
 def test_enemy_signature_skill_uses_configured_interval(game):
@@ -98,8 +98,6 @@ def test_all_target_skill_finishes_locked_targets_after_counter_kills_caster():
 def two_players(play):
     play("adopt", "青鸾")
     play("adopt", "玄狐", user="u2")
-    play("dao_name", "青云")
-    play("dao_name", "赤霄", user="u2")
 
 
 def ranked_players(game, play):
@@ -112,8 +110,8 @@ def setup_team(game, play):
     sql(game[1], "UPDATE pets SET layer=5")
     play("team_create")
     team_id = sql(game[1], "SELECT team_id FROM teams")[0]["team_id"]
-    play("team_join", "青云", user="u2")
-    play("team_accept", "赤霄")
+    play("team_join", "UID 10000", user="u2")
+    play("team_accept", "UID 10001")
     return team_id
 
 
@@ -157,8 +155,8 @@ def test_pvp_directly_resolves_and_only_charges_challenger_once(game, play):
     ranked_players(game, play)
     sql(game[1], "UPDATE pets SET layer=10,bloodline=4,affinity=100 WHERE user_id='u1'")
     before = player(game[1], "u2"), pet(game[1], "u2")
-    result = play("pvp", "赤霄", op="ranked-once")
-    assert play("pvp", "赤霄", op="ranked-once") == result
+    result = play("pvp", "UID 10001", op="ranked-once")
+    assert play("pvp", "UID 10001", op="ranked-once") == result
     assert result.title == "论剑结算"
     assert pet(game[1])["energy"] == 80
     assert (player(game[1], "u2"), pet(game[1], "u2")) == before
@@ -170,13 +168,13 @@ def test_pvp_directly_resolves_and_only_charges_challenger_once(game, play):
     ]
     assert "论剑扬名：1/1" in play("quests").text()
     with pytest.raises(GameError):
-        play("pvp", "赤霄")
+        play("pvp", "UID 10001")
 
 
 def test_ranked_loss_does_not_advance_the_daily_pvp_quest(game, play):
     ranked_players(game, play)
     sql(game[1], "UPDATE pets SET layer=10,bloodline=4,affinity=100 WHERE user_id='u2'")
-    play("pvp", "赤霄")
+    play("pvp", "UID 10001")
     assert sql(game[1], "SELECT winner_id FROM pvp_results") == [{"winner_id": "u2"}]
     assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='pvp_once'")
 
@@ -185,7 +183,7 @@ def test_pvp_validates_challenger_resources_before_settling(game, play):
     ranked_players(game, play)
     sql(game[1], "UPDATE pets SET energy=0 WHERE user_id='u1'")
     with pytest.raises(GameError, match="精力不足"):
-        play("pvp", "赤霄")
+        play("pvp", "UID 10001")
     assert pet(game[1], "u2")["energy"] == 100
     assert not sql(game[1], "SELECT * FROM pvp_results")
 
@@ -194,17 +192,17 @@ def test_self_unknown_and_instant_named_spar(game, play):
     two_players(play)
     play("adopt", user="u3")
     with pytest.raises(GameError, match="自己"):
-        play("pvp", "青云")
-    with pytest.raises(GameError, match="不存在"):
+        play("pvp", "UID 10000")
+    with pytest.raises(GameError, match="有效的 UID"):
         play("pvp", "missing")
-    assert play("spar", "赤霄").title == "切磋结算"
-    assert play("spar", "赤霄", user="u3").title == "切磋结算"
+    assert play("spar", "UID 10001").title == "切磋结算"
+    assert play("spar", "UID 10001", user="u3").title == "切磋结算"
 
 
 def test_spar_has_no_resources_ratings_rewards_or_cooldown(game, play):
     two_players(play)
     before = [(player(game[1], user), pet(game[1], user), items(game[1], user)) for user in ("u1", "u2")]
-    assert play("spar", "赤霄").title == "切磋结算"
+    assert play("spar", "UID 10001").title == "切磋结算"
     after = [(player(game[1], user), pet(game[1], user), items(game[1], user)) for user in ("u1", "u2")]
     assert after == before
     assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='pvp_once'")
@@ -212,10 +210,10 @@ def test_spar_has_no_resources_ratings_rewards_or_cooldown(game, play):
 
 def test_daily_pvp_pair_limit_is_symmetric(game, play):
     ranked_players(game, play)
-    play("pvp", "赤霄")
+    play("pvp", "UID 10001")
     with pytest.raises(GameError, match="今日已结算"):
-        play("pvp", "青云", user="u2", now=1_800_001_000)
-    play("spar", "青云", user="u2", now=1_800_001_000)
+        play("pvp", "UID 10000", user="u2", now=1_800_001_000)
+    play("spar", "UID 10000", user="u2", now=1_800_001_000)
 
 
 def test_team_requires_two_members_all_ready_and_leader(game, play):
@@ -242,7 +240,7 @@ def test_team_requires_two_members_all_ready_and_leader(game, play):
         {"user_id": "u2", "achievement_id": "team_first_victory"},
     ]
     assert not any(row["ready_pet_id"] for row in sql(game[1], "SELECT * FROM team_members"))
-    assert "青云" in play("team_status").title
+    assert "UID 10000" in play("team_status").title
 
 
 def test_team_failure_rolls_back_every_member(game, play):
@@ -271,11 +269,11 @@ def test_team_capacity_leave_disband_and_concurrent_last_slot(game, play):
     team_id = setup_team(game, play)
     for user in ("u3", "u4"):
         play("adopt", user=user)
-        play("team_join", "青云", user=user)
+        play("team_join", "UID 10000", user=user)
 
     def join(user):
         try:
-            game[0].execute("u1", "team_accept", player(game[1], user)["dao_name"],
+            game[0].execute("u1", "team_accept", uid_label(game[1], user),
                             f"accept-{user}", 1_800_000_000)
             return True
         except GameError:
@@ -297,7 +295,7 @@ def test_concurrent_ranked_challenges_only_charge_once(game, play):
 
     def accept(index):
         try:
-            game[0].execute("u1", "pvp", "赤霄", f"ranked-{index}", 1_800_000_000)
+            game[0].execute("u1", "pvp", "UID 10001", f"ranked-{index}", 1_800_000_000)
             return True
         except GameError:
             return False

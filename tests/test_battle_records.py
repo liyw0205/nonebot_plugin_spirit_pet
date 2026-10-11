@@ -7,7 +7,7 @@ from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay.battle_records import _member_text
 
 from .support import pet, player, sql
-from .test_arena_matching import NOW, register
+from .test_arena_matching import NOW, register, uid
 
 
 def test_legacy_report_snapshot_remains_readable_without_showing_old_player_dao_name():
@@ -16,20 +16,20 @@ def test_legacy_report_snapshot_remains_readable_without_showing_old_player_dao_
     assert "旧道号" not in text
 
 
-def test_report_is_immutable_after_rename_and_loadout_changes(game, play):
+def test_report_is_immutable_after_loadout_changes(game, play):
     register(game, play)
     attacker_pet_id = pet(game[1], "private-0")["pet_id"]
     sql(game[1], "UPDATE pets SET affinity=100 WHERE pet_id=?", (attacker_pet_id,))
     sql(game[1], "INSERT INTO equipment(pet_id,slot,item_id) VALUES (?,'weapon','wind_feather')", (attacker_pet_id,))
     sql(game[1], "INSERT INTO learned_skills(pet_id,skill_id,equipped) VALUES (?,'wind_slash',1)",
         (attacker_pet_id,))
-    result = play("pvp", "道友01", user="private-0", now=NOW, op="report-once")
+    result = play("pvp", uid(1), user="private-0", now=NOW, op="report-once")
     row = sql(game[1], "SELECT battle_id,snapshot,battle_log FROM battle_records")[0]
     snapshot = json.loads(row["snapshot"])
     assert snapshot["version"] == 3
     assert snapshot["scenario"] == {"id": "2028-01", "name": "2028-01 赛季"}
-    assert snapshot["teams"][0]["members"][0]["dao_name"] == "道友00"
-    assert snapshot["teams"][1]["members"][0]["dao_name"] == "道友01"
+    assert snapshot["teams"][0]["members"][0]["uid"] == uid(0)
+    assert snapshot["teams"][1]["members"][0]["uid"] == uid(1)
     assert snapshot["teams"][0]["members"][0]["realm_name"]
     assert snapshot["teams"][0]["members"][0]["layer"] == 1
     assert snapshot["teams"][0]["members"][0]["bloodline_name"]
@@ -42,11 +42,9 @@ def test_report_is_immutable_after_rename_and_loadout_changes(game, play):
     sql(game[1], "UPDATE pets SET name='全新宠名' WHERE pet_id=?", (attacker_pet_id,))
     sql(game[1], "UPDATE learned_skills SET equipped=0,level=4,proficiency=99 WHERE pet_id=?", (attacker_pet_id,))
     sql(game[1], "DELETE FROM equipment WHERE pet_id=?", (attacker_pet_id,))
-    play("dao_name", "改名后的道号", user="private-1", now=NOW + 1)
     detail = play("battle_reports", f"查看 {row['battle_id']}", user="private-0", now=NOW + 1)
-    assert "道友01" in detail.text()
+    assert uid(1) in detail.text()
     assert "场景：2028-01 赛季" in detail.text()
-    assert "改名后的道号" not in detail.text()
     assert "全新宠名" not in detail.text()
     assert "风刃术" in detail.text()
     assert "青岚翎" in detail.text()
@@ -77,11 +75,11 @@ def test_pve_report_snapshots_enemy_signature_skill(game, play):
 
 def test_report_detail_requires_participation_and_survives_team_leave(game, play):
     register(game, play)
-    report = play("spar", "道友01", user="private-0", now=NOW, op="spar-report")
+    report = play("spar", uid(1), user="private-0", now=NOW, op="spar-report")
     battle_id = sql(game[1], "SELECT battle_id FROM battle_records WHERE kind='spar'")[0]["battle_id"]
     play("team_create", user="private-0", now=NOW + 1)
-    play("team_join", "道友00", user="private-1", now=NOW + 1)
-    play("team_accept", "道友01", user="private-0", now=NOW + 1)
+    play("team_join", uid(0), user="private-1", now=NOW + 1)
+    play("team_accept", uid(1), user="private-0", now=NOW + 1)
     play("team_leave", user="private-1", now=NOW + 1)
     assert play("battle_reports", f"查看 {battle_id}", user="private-1", now=NOW + 2).title.startswith("战报 #")
     with pytest.raises(GameError, match="不是该场战斗的参与者"):
@@ -92,13 +90,13 @@ def test_report_detail_requires_participation_and_survives_team_leave(game, play
 def test_report_operation_is_idempotent_and_history_paginates(game, play):
     register(game, play)
     for index in range(6):
-        play("spar", "道友01", user="private-0", now=NOW + index, op=f"spar-{index}")
+        play("spar", uid(1), user="private-0", now=NOW + index, op=f"spar-{index}")
     first = play("battle_reports", user="private-0", now=NOW + 10)
     second = play("battle_reports", "分页 2", user="private-0", now=NOW + 10)
     assert first.title == "灵宠战报 1/2"
     assert second.title == "灵宠战报 2/2"
     assert len(sql(game[1], "SELECT * FROM battle_records WHERE kind='spar'")) == 6
-    play("spar", "道友01", user="private-0", now=NOW + 20, op="spar-0")
+    play("spar", uid(1), user="private-0", now=NOW + 20, op="spar-0")
     assert len(sql(game[1], "SELECT * FROM battle_records WHERE kind='spar'")) == 6
     with pytest.raises(GameError, match="页"):
         play("battle_reports", "分页 3", user="private-0", now=NOW + 10)
@@ -107,8 +105,8 @@ def test_report_operation_is_idempotent_and_history_paginates(game, play):
 def test_pve_and_team_battle_reports_keep_each_participant_permission(game, play):
     register(game, play)
     play("team_create", user="private-0", now=NOW)
-    play("team_join", "道友00", user="private-1", now=NOW)
-    play("team_accept", "道友01", user="private-0", now=NOW)
+    play("team_join", uid(0), user="private-1", now=NOW)
+    play("team_accept", uid(1), user="private-0", now=NOW)
     play("team_ready", user="private-0", now=NOW)
     play("team_ready", user="private-1", now=NOW)
     play("team_challenge", user="private-0", now=NOW, op="team-report")
@@ -148,7 +146,7 @@ def test_permanent_battle_operation_replay_after_cache_expiry(game, play):
 
 def test_report_detail_pages_preserve_snapshot_and_full_combat_log(game, play):
     register(game, play)
-    play("pvp", "道友01", user="private-0", now=NOW, op="paged-detail")
+    play("pvp", uid(1), user="private-0", now=NOW, op="paged-detail")
     row = sql(game[1], "SELECT battle_id FROM battle_records WHERE operation_id='paged-detail'")[0]
     battle_id = row["battle_id"]
     snapshot = json.loads(sql(game[1], "SELECT snapshot FROM battle_records WHERE battle_id=?", (battle_id,))[0]["snapshot"])
@@ -164,8 +162,8 @@ def test_report_detail_pages_preserve_snapshot_and_full_combat_log(game, play):
     assert first.title.endswith("1/3")
     assert second.title.endswith("2/3")
     assert "场景：" not in first.text()
-    assert "道友00" in first.text() and "道友00" in second.text()
+    assert uid(0) in first.text() and uid(0) in second.text()
     assert "完整战斗事件 19" in play(
         "battle_reports", f"详情 {battle_id} 3", user="private-0", now=NOW + 1,
     ).text()
-    assert snapshot["teams"][0]["members"][0]["dao_name"] == "道友00"
+    assert snapshot["teams"][0]["members"][0]["uid"] == uid(0)

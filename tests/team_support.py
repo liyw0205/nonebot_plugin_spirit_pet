@@ -8,20 +8,19 @@ from .support import items, pet, player, sql
 
 NOW = 1_800_000_000
 USERS = tuple(f"private-platform-account-{index}" for index in range(6))
-NAMES = ("青云", "赤霄", "月华", "玄霜", "流火", "澄澜")
+UIDS = tuple(f"UID {10000 + index}" for index in range(6))
 
 
 def create_players(play, count=4):
     for index in range(count):
         play("adopt", "青鸾", user=USERS[index])
-        play("dao_name", NAMES[index], user=USERS[index])
 
 
 def create_team(play, leader=0, members=()):
     play("team_create", user=USERS[leader])
     for member in members:
-        play("team_join", NAMES[leader], user=USERS[member])
-        play("team_accept", NAMES[member], user=USERS[leader])
+        play("team_join", UIDS[leader], user=USERS[member])
+        play("team_accept", UIDS[member], user=USERS[leader])
 
 
 def memberships(store):

@@ -15,9 +15,8 @@ NOW = 1_800_000_000
 DURATION = 3600
 
 
-def prepare(game, play, user="u1", name="青云"):
+def prepare(game, play, user="u1"):
     play("adopt", "青鸾", user=user)
-    play("dao_name", name, user=user)
     sql(game[1], "UPDATE players SET stones=100000 WHERE user_id=?", (user,))
     sql(game[1], "UPDATE pets SET realm=1, bloodline=1, exp=10000, energy=80 WHERE user_id=?", (user,))
     with closing(game[1].connect()) as conn:
@@ -80,11 +79,11 @@ def test_same_actions_remain_available_without_occupation(game, play, action, ar
 @pytest.mark.parametrize("elapsed", [0, DURATION, DURATION + 1])
 def test_busy_attacker_cannot_start_either_direct_battle_mode(game, play, mode, elapsed):
     prepare(game, play)
-    prepare(game, play, "u2", "赤霄")
+    prepare(game, play, "u2")
     occupy(game)
     before = snapshot(game)
     with pytest.raises(GameError, match="外出|派遣|待领取"):
-        play(mode, "赤霄", now=NOW + elapsed)
+        play(mode, "UID 10001", now=NOW + elapsed)
     assert snapshot(game) == before
 
 
@@ -92,7 +91,7 @@ def test_busy_attacker_cannot_start_either_direct_battle_mode(game, play, mode, 
 @pytest.mark.parametrize("elapsed", [0, DURATION, DURATION + 1])
 def test_busy_defender_mirror_can_fight_without_mutating_resources_or_occupation(game, play, mode, elapsed):
     prepare(game, play)
-    prepare(game, play, "u2", "赤霄")
+    prepare(game, play, "u2")
     play("team_create", user="u2")
     play("team_ready", user="u2")
     occupy(game, "u2")
@@ -100,7 +99,7 @@ def test_busy_defender_mirror_can_fight_without_mutating_resources_or_occupation
     sql(game[1], "UPDATE pets SET energy=0, energy_updated=? WHERE user_id='u2'", (NOW - 10000,))
     sql(game[1], "UPDATE players SET last_pvp=? WHERE user_id='u2'", (NOW + elapsed,))
     before = snapshot(game)
-    reply = play(mode, "赤霄", now=NOW + elapsed)
+    reply = play(mode, "UID 10001", now=NOW + elapsed)
     assert reply.title == ("论剑结算" if mode == "pvp" else "切磋结算")
     assert "镜像" in reply.text()
     after = snapshot(game)
@@ -122,10 +121,10 @@ def test_busy_defender_mirror_can_fight_without_mutating_resources_or_occupation
 
 def test_team_battle_rechecks_all_pets_even_with_stale_ready_rows(game, play):
     prepare(game, play)
-    prepare(game, play, "u2", "赤霄")
+    prepare(game, play, "u2")
     play("team_create")
-    play("team_join", "青云", user="u2")
-    play("team_accept", "赤霄")
+    play("team_join", "UID 10000", user="u2")
+    play("team_accept", "UID 10001")
     play("team_ready")
     play("team_ready", user="u2")
     occupy(game, "u2")
@@ -144,7 +143,10 @@ def test_status_and_pet_list_show_occupation_without_releasing_it(game, play, el
         reply = play(action, now=NOW + elapsed)
         assert label in reply.text()
         assert "采灵药" in reply.text()
-        assert "灵宠行程" in reply.commands
+        if action == "status":
+            assert "灵宠行程" in reply.commands
+        else:
+            assert "我的灵宠" in reply.commands
     assert sql(game[1], "SELECT * FROM expeditions") == before
     with closing(game[1].connect()) as conn:
         row = Repository(conn).active_expedition(pet(game[1])["pet_id"])
@@ -153,7 +155,7 @@ def test_status_and_pet_list_show_occupation_without_releasing_it(game, play, el
 
 @pytest.mark.parametrize("action,arg", [
     ("equipment", ""), ("skills", ""), ("lineage_catalog", ""), ("catalog", "青鸾"),
-    ("quests", ""), ("bag", ""), ("shop", ""), ("dao_name", "归元"),
+    ("quests", ""), ("bag", ""), ("shop", ""), ("identity", ""),
     ("buy", "灵粮"), ("craft", "青岚翎"), ("salvage", "青岚翎"),
     ("summon", "1"), ("use", "青藤灵卵"),
     ("team_status", ""), ("team_unready", ""), ("team_disband", ""),

@@ -89,15 +89,15 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠学习 风刃术") == ("learn", "风刃术")
     assert handlers._parse("灵宠身份") is None
     for command, action, arg in (
-        ("灵宠入队", "team_join", "青云"),
-        ("灵宠邀请", "team_invite", "赤霄"),
+        ("灵宠入队", "team_join", "UID 10000"),
+        ("灵宠邀请", "team_invite", "UID 10001"),
         ("灵宠队务", "team_requests", "分页 2"),
-        ("灵宠队伍", "team_status", "赤霄"),
-        ("灵宠队伍同意", "team_accept", "赤霄"),
-        ("灵宠队伍拒绝", "team_reject", "赤霄"),
-        ("灵宠队伍撤回", "team_withdraw", "青云"),
-        ("灵宠踢人", "team_kick", "赤霄"),
-        ("灵宠转让", "team_transfer", "赤霄"),
+        ("灵宠队伍", "team_status", "UID 10001"),
+        ("灵宠队伍同意", "team_accept", "UID 10001"),
+        ("灵宠队伍拒绝", "team_reject", "UID 10001"),
+        ("灵宠队伍撤回", "team_withdraw", "UID 10000"),
+        ("灵宠踢人", "team_kick", "UID 10001"),
+        ("灵宠转让", "team_transfer", "UID 10001"),
     ):
         assert handlers._parse(f"/{command} {arg}") == (action, arg)
         assert handlers._parse(f"{command}之后聊天") is None
@@ -221,7 +221,7 @@ def test_team_approval_uses_shared_identity_across_real_adapter_events(tmp_path,
         reply = str(qq.send.call_args.args[1])
         assert "加入队伍" in reply and "UID 10000" in reply and "UID 10001" in reply
         assert "12345" not in reply and "member-openid" not in reply
-        await handlers._run(qq, event, "灵宠队伍同意 赤霄")
+        await handlers._run(qq, event, "灵宠队伍同意 UID 10002")
         assert str(qq.send.call_args.args[1]) == reply
         assert {row["user_id"] for row in sql(store, "SELECT * FROM team_members")} == {"12345", "member-openid"}
         assert not sql(store, "SELECT * FROM team_requests")

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
-from .team_support import NAMES, NOW, USERS, create_players, memberships, requests
+from .team_support import UIDS, NOW, USERS, create_players, memberships, requests
 
 
 def test_team_request_configuration_defaults():
@@ -54,8 +54,8 @@ def test_minimum_configured_ttl_drives_runtime_expiry_without_default_fallback(g
     create_players(play, count=2)
     play("team_create", user=USERS[0])
     action, sender, argument, recipient, target = (
-        ("team_join", 1, NAMES[0], 0, NAMES[1]) if kind == "apply"
-        else ("team_invite", 0, NAMES[1], 1, NAMES[0])
+        ("team_join", 1, UIDS[0], 0, UIDS[1]) if kind == "apply"
+        else ("team_invite", 0, UIDS[1], 1, UIDS[0])
     )
     play(action, argument, user=USERS[sender])
     assert requests(game[1])[0]["expires_at"] == NOW + 1

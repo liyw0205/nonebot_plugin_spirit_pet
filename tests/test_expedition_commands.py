@@ -47,13 +47,16 @@ def test_expedition_views_buttons_and_blue_links_roundtrip(game, play, mode):
     for reply in replies:
         _, message = _qq_segments(reply, Config(spirit_pet_qq_mode=mode, spirit_pet_qq_template_id="test.expedition"))
         buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows for button in row.buttons]
-        assert len(buttons) == len(reply.commands) <= 8
-        for command, button in zip(reply.commands, buttons):
-            assert button.action.data == "/" + command
+        assert len(buttons) <= 4
+        for button in buttons:
+            command = button.action.data.removeprefix("/")
+            assert command in reply.commands
             assert handlers._parse(button.action.data) == handlers._parse(command)
         if mode == "native":
             links = re.findall(r"\]\((mqqapi://[^)]+)\)", message["markdown"][0].data["markdown"].content)
-            assert [parse_qs(urlparse(link).query)["command"][0] for link in links] == ["/" + cmd for cmd in reply.commands]
+            inline_commands = {action.command for action in reply.inline_commands}
+            assert {parse_qs(urlparse(link).query)["command"][0].removeprefix("/") for link in links} \
+                <= inline_commands
 
 
 @pytest.mark.parametrize("mode", ["text", "native", "template"])

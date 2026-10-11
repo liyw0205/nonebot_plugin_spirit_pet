@@ -4,7 +4,7 @@ import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
-from .support import items, pet, player, sql
+from .support import items, pet, player, sql, uid_label
 
 
 def test_route_catalog_shows_choices_and_reward_ranges_without_spending_resources(game, play):
@@ -221,10 +221,10 @@ def test_adventure_rank_orders_unique_discoveries_and_hides_user_ids(game, play)
         )
 
     reply = play("adventure_rank", now=now + 1)
-    names = [player(game[1], user_id)["dao_name"] for user_id in ("u2", "u3", "u1")]
+    labels = [uid_label(game[1], user_id) for user_id in ("u2", "u3", "u1")]
 
     assert reply.title == "山海奇闻榜"
-    assert [line.split(". ", 1)[1].split(" · ", 1)[0] for line in reply.lines] == names
+    assert [line.split(". ", 1)[1].split(" · ", 1)[0] for line in reply.lines] == labels
     assert "奇闻 2/14" in reply.lines[0]
     assert "奇闻 1/14" in reply.lines[2]
     assert all(user_id not in reply.text() for user_id in ("u1", "u2", "u3"))

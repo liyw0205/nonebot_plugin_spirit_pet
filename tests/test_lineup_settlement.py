@@ -3,7 +3,7 @@ import pytest
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import items, player, sql
-from .test_arena_matching import NOW, register
+from .test_arena_matching import NOW, register, uid
 from .test_battles import setup_team
 
 SPECIES = ("qingluan", "xuanhu", "baize")
@@ -62,7 +62,7 @@ def test_ranked_pvp_rejects_lineup_spanning_realms(game, play):
     play("lineup", " ".join(str(pet_id) for pet_id in pet_ids), user="private-0")
 
     with pytest.raises(GameError, match="同一大境界"):
-        play("pvp", "道友01", user="private-0", now=NOW)
+        play("pvp", uid(1), user="private-0", now=NOW)
     with pytest.raises(GameError, match="同一大境界"):
         play("match", user="private-0", now=NOW)
     assert not sql(game[1], "SELECT * FROM pvp_results")
@@ -76,8 +76,8 @@ def test_mixed_realm_defender_is_rejected_and_hidden_from_matching(game, play):
     play("lineup", " ".join(str(pet_id) for pet_id in pet_ids), user="private-1")
 
     match = play("match", user="private-0", now=NOW)
-    assert "灵宠论剑 道友01" not in match.commands
-    assert "灵宠论剑 道友02" in match.commands
+    assert f"灵宠论剑 {uid(1)}" not in match.commands
+    assert f"灵宠论剑 {uid(2)}" in match.commands
     with pytest.raises(GameError, match="不同大境界"):
-        play("pvp", "道友01", user="private-0", now=NOW)
+        play("pvp", uid(1), user="private-0", now=NOW)
     assert not sql(game[1], "SELECT * FROM pvp_results")

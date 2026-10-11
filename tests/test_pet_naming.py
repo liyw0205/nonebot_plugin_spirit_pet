@@ -18,7 +18,7 @@ def test_unregistered_naming_uses_first_adoption_guidance_without_writing(game, 
         play("pet_name")
     reply = rejected.value.reply
     assert reply is not None
-    assert "首次领养" in reply.text()
+    assert "开始领养" in reply.text()
     assert not sql(game[1], "SELECT * FROM players")
 
 
@@ -74,13 +74,13 @@ def test_naming_rejects_unsafe_names(game, play, arg):
 def test_naming_links_are_contextual_blue_links_and_onebot_text_is_readable(game, play):
     pytest.importorskip("nonebot.adapters.qq")
     play("adopt", "青鸾")
-    reply = play("pet_list")
+    reply = play("status")
     fallback, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
     markdown = message["markdown"][0].data["markdown"].content
-    link = re.search(r"\[改名\]\((mqqapi://[^)]+)\)", markdown)
+    link = re.search(r"\[给灵宠改名\]\((mqqapi://[^)]+)\)", markdown)
     assert link is not None
     assert parse_qs(urlparse(link.group(1)).query)["command"] == ["/灵宠命名 1 "]
-    assert "改名（灵宠命名 1）" in fallback
+    assert "给灵宠改名（/灵宠命名 1）" in fallback
 
     _, status_message = _qq_segments(play("status"), Config(spirit_pet_qq_mode="native"))
     status_markdown = status_message["markdown"][0].data["markdown"].content

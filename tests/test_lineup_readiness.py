@@ -133,7 +133,7 @@ def test_team_status_shows_only_the_teammates_selected_participant(game, play):
     before = sql(game[1], "SELECT * FROM pets ORDER BY pet_id")
 
     status = play("team_status")
-    detail = play("team_status", "赤霄")
+    detail = play("team_status", "UID 10001")
 
     assert "队友首宠" in status.text() + detail.text()
     assert "队友后宠二" not in status.text() + detail.text()

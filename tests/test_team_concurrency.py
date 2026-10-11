@@ -4,7 +4,7 @@ from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import items, pet, player, sql
 from .team_support import (
-    NAMES,
+    UIDS,
     NOW,
     USERS,
     command,
@@ -21,11 +21,11 @@ def test_concurrent_approval_of_last_slot_admits_exactly_one(game, play):
     create_players(play)
     create_team(play, members=(1,))
     for candidate in (2, 3):
-        play("team_join", NAMES[0], user=USERS[candidate])
+        play("team_join", UIDS[0], user=USERS[candidate])
     before = resources(game[1], USERS[:4])
 
     results = race(game[0], [
-        command(0, "team_accept", NAMES[index], f"last-slot-{index}")
+        command(0, "team_accept", UIDS[index], f"last-slot-{index}")
         for index in (2, 3)
     ])
 
@@ -43,11 +43,11 @@ def test_two_teams_cannot_approve_the_same_candidate(game, play):
     create_team(play, leader=0)
     create_team(play, leader=1)
     for leader in (0, 1):
-        play("team_join", NAMES[leader], user=USERS[2])
+        play("team_join", UIDS[leader], user=USERS[2])
     before = resources(game[1], USERS[:3])
 
     results = race(game[0], [
-        command(leader, "team_accept", NAMES[2], f"competing-team-{leader}")
+        command(leader, "team_accept", UIDS[2], f"competing-team-{leader}")
         for leader in (0, 1)
     ])
 
@@ -66,7 +66,7 @@ def test_two_teams_cannot_approve_the_same_candidate(game, play):
 def test_request_redelivery_and_approval_redelivery_do_not_mutate_twice(game, play, request_action):
     create_players(play, count=2)
     create_team(play)
-    sender, argument, recipient = (1, NAMES[0], 0) if request_action == "team_join" else (0, NAMES[1], 1)
+    sender, argument, recipient = (1, UIDS[0], 0) if request_action == "team_join" else (0, UIDS[1], 1)
     request_event = command(sender, request_action, argument, "same-request")
     created = race(game[0], [request_event] * 4)
     assert all(result == created[0] for result in created)
@@ -75,7 +75,7 @@ def test_request_redelivery_and_approval_redelivery_do_not_mutate_twice(game, pl
     with pytest.raises(GameError):
         play(request_action, argument, user=USERS[sender])
 
-    accept_arg = NAMES[1] if request_action == "team_join" else NAMES[0]
+    accept_arg = UIDS[1] if request_action == "team_join" else UIDS[0]
     accept_event = command(recipient, "team_accept", accept_arg, "same-approval")
     accepted = race(game[0], [accept_event] * 4)
     assert all(result == accepted[0] for result in accepted)
@@ -99,11 +99,11 @@ def test_different_events_cannot_consume_a_request_twice(game, play, request_act
     create_players(play, count=2)
     create_team(play)
     if request_action == "team_join":
-        play(request_action, NAMES[0], user=USERS[1])
-        recipient, target = 0, NAMES[1]
+        play(request_action, UIDS[0], user=USERS[1])
+        recipient, target = 0, UIDS[1]
     else:
-        play(request_action, NAMES[1], user=USERS[0])
-        recipient, target = 1, NAMES[0]
+        play(request_action, UIDS[1], user=USERS[0])
+        recipient, target = 1, UIDS[0]
 
     results = race(game[0], [
         command(recipient, "team_accept", target, f"distinct-approval-{index}")
@@ -123,7 +123,7 @@ def test_membership_change_and_expedition_settle_atomically(game, play, change, 
     for user in USERS[:3]:
         play("team_ready", user=user)
     before = resources(game[1], USERS[:3])
-    mutation = command(1 if change == "team_leave" else 0, change, NAMES[1] if change == "team_kick" else "", "roster-change")
+    mutation = command(1 if change == "team_leave" else 0, change, UIDS[1] if change == "team_kick" else "", "roster-change")
     battle = command(0, "team_challenge", "上古灵殿", "racing-expedition")
     commands = [battle, mutation] if battle_first else [mutation, battle]
 
@@ -164,7 +164,7 @@ def test_failed_expedition_racing_roster_change_preserves_every_resource(game, p
 
     results = race(game[0], [
         command(0, "team_challenge", "上古灵殿", "failed-expedition"),
-        command(1 if change == "team_leave" else 0, change, NAMES[1] if change == "team_kick" else "", "concurrent-change"),
+        command(1 if change == "team_leave" else 0, change, UIDS[1] if change == "team_kick" else "", "concurrent-change"),
     ])
 
     assert isinstance(results[0], GameError)

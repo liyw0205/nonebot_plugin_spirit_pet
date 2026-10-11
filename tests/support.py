@@ -6,6 +6,16 @@ def player(store, user="u1"):
         return dict(conn.execute("SELECT * FROM players WHERE user_id=?", (user,)).fetchone())
 
 
+def player_uid(store, user="u1"):
+    with closing(store.connect()) as conn:
+        row = conn.execute("SELECT id FROM player_identity WHERE user_id=?", (user,)).fetchone()
+        return int(row["id"]) + 9999
+
+
+def uid_label(store, user="u1"):
+    return f"UID {player_uid(store, user)}"
+
+
 def pet(store, user="u1"):
     with closing(store.connect()) as conn:
         return dict(conn.execute(

@@ -17,7 +17,7 @@ def test_exact_ids_share_database_but_different_ids_do_not(game, play):
     fresh.initialize()
     entry = Game(fresh, Config())
     assert entry.execute("123", "status", "", "qq-status").title == "青鸾"
-    with pytest.raises(GameError, match="尚未结契"):
+    with pytest.raises(GameError, match="还没有灵宠伙伴"):
         play("status", user="openid-123")
     assert len(sql(fresh, "SELECT * FROM players")) == 1
 

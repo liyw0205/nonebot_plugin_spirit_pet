@@ -57,7 +57,7 @@ def build_fighters(store: Store, content: Catalog, config: Config, species_ids: 
             for index, species_id in enumerate(species_ids):
                 species = content.species[species_id]
                 user_id = f"simulation-{index}"
-                owner = repo.create_player(user_id, f"模拟道友{index}", 0)
+                owner = repo.create_player(user_id, 0, 0)
                 pet = repo.create_pet(user_id, species_id, species.name, species.initial_affinity, 0)
                 owner.active_pet_id = pet.pet_id
                 pet.realm = realm

@@ -5,32 +5,32 @@ import pytest
 from nonebot_plugin_spirit_pet.domain.content import Stats
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
-from .support import items, pet, player, sql
+from .support import items, pet, player, sql, uid_label
 
 
 NOW = 1_800_000_000
 
 
-def account(play, user, dao):
+def account(game, play, user):
     play("adopt", "青鸾", user=user)
-    play("dao_name", dao, user=user)
+    return uid_label(game[1], user)
 
 
 def setup_team(game, play, users=("u1", "u2")):
     for index, user in enumerate(users):
-        account(play, user, f"道友{index + 1}")
+        account(game, play, user)
     play("team_create", user=users[0])
     for user in users[1:]:
-        leader_name = player(game[1], users[0])["dao_name"]
-        member_name = player(game[1], user)["dao_name"]
-        play("team_join", leader_name, user=user)
-        play("team_accept", member_name, user=users[0])
+        leader_uid = uid_label(game[1], users[0])
+        member_uid = uid_label(game[1], user)
+        play("team_join", leader_uid, user=user)
+        play("team_accept", member_uid, user=users[0])
     for user in users:
         play("team_ready", user=user)
 
 
 def test_catalog_lists_personal_clear_unlock_state_and_details(game, play):
-    account(play, "u1", "青云")
+    account(game, play, "u1")
     listing = play("stage_catalog")
     assert "1. 青木试锋 · 可挑战" in listing.text()
     assert "2. 月影追猎 · 未解锁" in listing.text()
@@ -55,7 +55,7 @@ def test_unregistered_player_can_browse_without_creating_an_account(game, play):
 
 
 def test_stage_listing_detail_and_first_clear_are_transactional_and_durable(game, play):
-    account(play, "u1", "青云")
+    account(game, play, "u1")
     listing = play("stage_catalog")
     assert "青木试锋" in listing.text()
     detail = play("stage_catalog", "青木试锋")
@@ -94,7 +94,7 @@ def test_stage_listing_detail_and_first_clear_are_transactional_and_durable(game
 
 
 def test_failed_stage_consumes_action_resources_but_never_advances_or_rewards(game, play):
-    account(play, "u1", "青云")
+    account(game, play, "u1")
     service = game[0]
     enemy = service.content.enemies["wood_guard"]
     enemies = dict(service.content.enemies)
@@ -151,16 +151,16 @@ def test_team_first_clear_rewards_only_newcomer_and_completed_member_can_assist(
         for user in ("u1", "u2")
     }
 
-    account(play, "u3", "流云")
-    play("team_join", player(game[1], "u1")["dao_name"], user="u3")
-    play("team_accept", player(game[1], "u3")["dao_name"], user="u1")
+    account(game, play, "u3")
+    play("team_join", uid_label(game[1], "u1"), user="u3")
+    play("team_accept", uid_label(game[1], "u3"), user="u1")
     sql(game[1], "UPDATE players SET last_pve=NULL WHERE user_id IN ('u1','u2','u3')")
     sql(game[1], "UPDATE pets SET energy=100 WHERE user_id IN ('u1','u2','u3')")
     for user in ("u1", "u2", "u3"):
         play("team_ready", user=user)
     assisted = play("team_stage_challenge", "1", user="u1", op="team-stage-assist")
     assert assisted.title == "关卡首通"
-    assert "流云首通" in assisted.text()
+    assert "UID 10002" in assisted.text()
     for user in ("u1", "u2"):
         assert (pet(game[1], user)["exp"], player(game[1], user)["stones"], items(game[1], user)) == first_rewards[user]
     assert len(sql(game[1], "SELECT * FROM pve_stage_progress WHERE stage_id='stage_01'")) == 3

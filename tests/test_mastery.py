@@ -172,13 +172,12 @@ def test_pve_awards_once_while_friendly_spar_awards_nothing(game, play):
     assert play("challenge", "青岚林", op="mastery-pve") == battle
     assert skill(game) == after
     prepare(game, play, "u2")
-    play("dao_name", "对战道友", user="u2")
     before_other = skill(game, "u2")
-    result = play("spar", "对战道友", op="friendly-mastery")
+    result = play("spar", "UID 10001", op="friendly-mastery")
     assert result.title == "切磋结算"
     assert skill(game) == after
     assert skill(game, "u2") == before_other
-    assert play("spar", "对战道友", op="friendly-mastery") == result
+    assert play("spar", "UID 10001", op="friendly-mastery") == result
     assert skill(game) == after and skill(game, "u2") == before_other
 
 
@@ -186,7 +185,6 @@ def test_ranked_pvp_awards_only_active_challenger_once(game, play, monkeypatch):
     prepare(game, play)
     prepare(game, play, "u2")
     sql(game[1], "UPDATE pets SET realm=1")
-    play("dao_name", "对战道友", user="u2")
     captured = []
 
     def observe(left, right, rng, elements):
@@ -196,7 +194,7 @@ def test_ranked_pvp_awards_only_active_challenger_once(game, play, monkeypatch):
 
     monkeypatch.setattr(arena_battles, "fight", observe)
     before_other = skill(game, "u2")
-    battle = play("pvp", "对战道友", op="ranked-mastery")
+    battle = play("pvp", "UID 10001", op="ranked-mastery")
     assert battle.title == "论剑结算"
     rows = [skill(game, user) for user in ("u1", "u2")]
     attacker_casts = captured[0].skill_uses[0][rows[0]["pet_id"]]["wind_slash"]
@@ -204,7 +202,7 @@ def test_ranked_pvp_awards_only_active_challenger_once(game, play, monkeypatch):
     assert attacker_casts > 0 and defender_casts > 0
     assert total_proficiency(game, rows[0]) == attacker_casts * game[0].content.rules.skill_proficiency_per_use
     assert rows[1] == before_other
-    assert play("pvp", "对战道友", op="ranked-mastery") == battle
+    assert play("pvp", "UID 10001", op="ranked-mastery") == battle
     assert len(captured) == 1
     assert [skill(game, user) for user in ("u1", "u2")] == rows
 
@@ -225,8 +223,8 @@ def test_team_distributes_mastery_by_pet_without_crossing_skill_accounts(game, p
     prepare(game, play)
     prepare(game, play, "u2", "玄狐", "赤焰术")
     play("team_create")
-    play("team_join", player(game[1])["dao_name"], user="u2")
-    play("team_accept", player(game[1], "u2")["dao_name"])
+    play("team_join", "UID 10000", user="u2")
+    play("team_accept", "UID 10001")
     play("team_ready")
     play("team_ready", user="u2")
     battles = capture_pve(monkeypatch, 1)

@@ -16,13 +16,12 @@ from nonebot_plugin_spirit_pet.core.config import Config
 from .support import pet, sql
 
 USERS = ("private-arena-first", "private-arena-second")
-NAMES = ("青云道友", "归元道友")
+UIDS = ("UID 10000", "UID 10001")
 
 
 def prepare(game, play, now):
-    for user, name in zip(USERS, NAMES):
+    for user in USERS:
         play("adopt", "青鸾", user=user, now=now)
-        play("dao_name", name, user=user, now=now)
     sql(game[1], "UPDATE pets SET realm=1")
 
 
@@ -47,7 +46,7 @@ def event(user, command, message_id, group):
 
 @pytest.mark.parametrize("mode", ["native", "template"])
 @pytest.mark.parametrize("prefix", ["/", "!", ""])
-def test_real_arena_views_preserve_names_and_season_ids_in_buttons_and_links(game, play, monkeypatch, mode, prefix):
+def test_real_arena_views_preserve_uids_and_season_ids_in_buttons_and_links(game, play, monkeypatch, mode, prefix):
     now = 1_800_000_000
     prepare(game, play, now)
     config = Config(
@@ -56,37 +55,36 @@ def test_real_arena_views_preserve_names_and_season_ids_in_buttons_and_links(gam
     )
     monkeypatch.setattr(handlers, "config", config)
     replies = [play(action, user=USERS[0], now=now) for action in ("season", "season_rewards", "pvp_rank", "match")]
-    replies.append(play("pvp", NAMES[1], user=USERS[0], now=now))
+    replies.append(play("pvp", UIDS[1], user=USERS[0], now=now))
     replies.append(play("pvp", user=USERS[1], now=now))
-    replies.append(play("spar", NAMES[0], user=USERS[1], now=now))
+    replies.append(play("spar", UIDS[0], user=USERS[1], now=now))
     exposed = set()
     for reply in replies:
         fallback, message = _qq_segments(reply, config)
         keyboard = buttons(message)
-        assert len(keyboard) == len(reply.commands) <= 8
+        assert len(keyboard) <= 4
         assert "private-arena" not in fallback + str(message)
-        for command, button in zip(reply.commands, keyboard):
+        for button in keyboard:
+            command = button.action.data.removeprefix(prefix)
+            assert command in reply.commands
             name, _, argument = command.partition(" ")
             expected = (COMMANDS[name], argument)
-            assert button.render_data.label == command
             assert button.action.type == 2
             assert button.action.enter and button.action.reply
-            assert button.action.data == prefix + command
             assert handlers._parse(button.action.data) == expected
             exposed.add(expected[0])
             if expected[0] == "pvp":
-                assert argument in NAMES
+                assert argument in UIDS
         markdown = message["markdown"][0].data["markdown"]
         if mode == "native":
             links = re.findall(r"\]\((mqqapi://[^)]+)\)", markdown.content)
-            assert len(links) == len(reply.commands)
-            for command, link in zip(reply.commands, links):
+            inline_commands = {action.command for action in reply.inline_commands}
+            for link in links:
                 query = parse_qs(urlparse(link).query)
-                assert query == {
-                    "command": [prefix + command],
-                    "enter": [str(not command.endswith((" ", "\t"))).lower()],
-                    "reply": ["false"],
-                }
+                command = query["command"][0].removeprefix(prefix)
+                assert command in inline_commands
+                assert query["enter"] == [str(not command.endswith((" ", "\t"))).lower()]
+                assert query["reply"] == ["false"]
                 assert handlers._parse(query["command"][0]) == handlers._parse(prefix + command)
         else:
             assert markdown.custom_template_id == "test.arena-template"
@@ -110,10 +108,10 @@ def test_qq_direct_challenge_roundtrip_only_charges_actor_and_deduplicates(game,
     _, message = _qq_segments(candidates, config)
     challenge = next(
         button.action.data for button in buttons(message)
-        if handlers._parse(button.action.data) == ("pvp", NAMES[1])
+        if handlers._parse(button.action.data) == ("pvp", UIDS[1])
     )
     if battle_mode == "spar":
-        challenge = "/灵宠切磋 " + NAMES[1]
+        challenge = "/灵宠切磋 " + UIDS[1]
     bot = SimpleNamespace(
         self_id="arena-test-app", adapter=SimpleNamespace(get_name=lambda: "QQ"), send=AsyncMock(),
     )

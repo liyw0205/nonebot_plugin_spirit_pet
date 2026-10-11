@@ -158,7 +158,7 @@ def test_ranked_pvp_awards_mastery_to_each_attacking_pet_only(game, play, monkey
     play("lineup", " ".join(str(pet_id) for pet_id in defender), user="u2")
     monkeypatch.setattr(arena_battles, "fight", scripted_battle)
 
-    result = play("pvp", "赤霄", op="lineup-pvp-mastery")
+    result = play("pvp", "UID 10001", op="lineup-pvp-mastery")
 
     assert result.title == "论剑结算"
     per_use = game[0].content.rules.skill_proficiency_per_use
@@ -278,7 +278,7 @@ def test_dispatched_second_pet_blocks_dungeon_and_arena_until_dropped_from_lineu
     play("lineup", " ".join(str(pet_id) for pet_id in attacker))
     dispatch(game[1], "u1", attacker[1])
 
-    for action, arg in (("challenge", "青岚林"), ("pvp", "赤霄")):
+    for action, arg in (("challenge", "青岚林"), ("pvp", "UID 10001")):
         with pytest.raises(GameError, match="派遣"):
             play(action, arg, op=f"busy-{action}")
     # 报错必须指向被派遣的第二只，而不是首位灵宠。
@@ -290,7 +290,7 @@ def test_dispatched_second_pet_blocks_dungeon_and_arena_until_dropped_from_lineu
 
     play("lineup", f"{attacker[0]} {attacker[2]}")
     assert play("challenge", "青岚林", op="swap-pve").title == "秘境获胜"
-    assert play("pvp", "赤霄", op="swap-pvp").title == "论剑结算"
+    assert play("pvp", "UID 10001", op="swap-pvp").title == "论剑结算"
     assert energies(game[1], attacker) == [60, 100, 60]
 
 
@@ -356,12 +356,11 @@ def test_member_and_leader_changes_clear_the_whole_team_ready_state(game, play):
     leader_pets = armed_roster(game, play)
     play("lineup", " ".join(str(pet_id) for pet_id in leader_pets))
     play("adopt", "玄狐", user="u3")
-    play("dao_name", "月华", user="u3")
     play("team_ready")
     play("team_ready", user="u2")
 
-    play("team_join", "青云", user="u3")
-    play("team_accept", "月华")
+    play("team_join", "UID 10000", user="u3")
+    play("team_accept", "UID 10002")
     assert all(row["ready_pet_id"] is None and row["ready_pet_ids"] == "" for row in ready_rows(game[1]))
 
     play("team_ready")
@@ -371,7 +370,7 @@ def test_member_and_leader_changes_clear_the_whole_team_ready_state(game, play):
     assert rows["u1"]["ready_pet_ids"] == json.dumps(leader_pets)
     assert sum(row["ready_pet_id"] is not None for row in ready_rows(game[1])) == 3
 
-    play("team_transfer", "赤霄")
+    play("team_transfer", "UID 10001")
     assert all(row["ready_pet_id"] is None and row["ready_pet_ids"] == "" for row in ready_rows(game[1]))
 
 
@@ -380,9 +379,8 @@ def test_team_battle_allows_five_pets_and_rejects_a_sixth(game, play):
     leader_pets = armed_roster(game, play)
     play("lineup", " ".join(str(pet_id) for pet_id in leader_pets))
     play("adopt", "玄狐", user="u3")
-    play("dao_name", "月华", user="u3")
-    play("team_join", "青云", user="u3")
-    play("team_accept", "月华")
+    play("team_join", "UID 10000", user="u3")
+    play("team_accept", "UID 10002")
     sql(game[1], "UPDATE pets SET layer=5")
     for user in ("u1", "u2", "u3"):
         play("team_ready", user=user)
@@ -394,7 +392,6 @@ def test_team_battle_allows_five_pets_and_rejects_a_sixth(game, play):
 
     # max_team_size 目前为 3，四名成员的队伍无法通过指令组出；直接写入成员行以驱动五只上限守卫。
     play("adopt", "青鸾", user="u4")
-    play("dao_name", "流火", user="u4")
     sql(game[1], "INSERT INTO team_members(user_id, team_id) VALUES ('u4', ?)", (team_id,))
     for user in ("u1", "u2", "u3", "u4"):
         play("team_ready", user=user)
@@ -410,19 +407,18 @@ def test_team_battle_allows_five_pets_and_rejects_a_sixth(game, play):
 def test_three_pet_arena_report_snapshots_members_and_limits_access(game, play):
     two_players(play)
     play("adopt", "玄狐", user="u3")
-    play("dao_name", "月华", user="u3")
     attacker = armed_roster(game, play, tag="甲", realm=1)
     defender = armed_roster(game, play, user="u2", tag="乙", realm=1)
     play("lineup", " ".join(str(pet_id) for pet_id in attacker))
     play("lineup", " ".join(str(pet_id) for pet_id in defender), user="u2")
 
-    play("pvp", "赤霄", op="report-pvp")
+    play("pvp", "UID 10001", op="report-pvp")
     rows = sql(game[1], "SELECT battle_id, kind, snapshot FROM battle_records")
     assert len(rows) == 1 and rows[0]["kind"] == "pvp"
     snapshot = json.loads(rows[0]["snapshot"])
     assert [len(team["members"]) for team in snapshot["teams"]] == [3, 3]
     assert [member["pet_name"] for member in snapshot["teams"][0]["members"]] == ["甲1", "甲2", "甲3"]
-    assert [member["dao_name"] for member in snapshot["teams"][0]["members"]] == ["青云"] * 3
+    assert [member["uid"] for member in snapshot["teams"][0]["members"]] == ["UID 10000"] * 3
 
     participants = sql(game[1], "SELECT user_id, side, permission FROM battle_participants ORDER BY side, user_id")
     assert len(participants) == len({(row["user_id"], row["side"]) for row in participants}) == 2
@@ -446,8 +442,8 @@ def test_spar_fights_with_full_lineups_and_charges_neither_side(game, play):
         game[1], "SELECT pet_id, skill_id, level, proficiency FROM learned_skills ORDER BY pet_id")
     players_before = sql(game[1], "SELECT user_id, last_pvp, last_pve, stones FROM players ORDER BY user_id")
 
-    result = play("spar", "赤霄", op="spar-full")
-    assert result.lines[0].startswith("青云的3宠阵容 对 赤霄的3宠阵容镜像")
+    result = play("spar", "UID 10001", op="spar-full")
+    assert result.lines[0].startswith("UID 10000的3宠阵容 对 UID 10001的3宠阵容镜像")
     snapshot = json.loads(sql(game[1], "SELECT snapshot FROM battle_records")[0]["snapshot"])
     assert [len(team["members"]) for team in snapshot["teams"]] == [3, 3]
 

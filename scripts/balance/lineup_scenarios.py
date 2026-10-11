@@ -56,7 +56,7 @@ def lineup_fixture(store, content, config, scenario):
             for index, roster in enumerate(scenario.rosters):
                 user_id = f"lineup-simulation-{index}"
                 users.append(user_id)
-                repo.create_player(user_id, f"lineup-sim-{index + 1}", 0)
+                repo.create_player(user_id, 0, SIMULATION_NOW)
                 ctx = Context(repo, content, config, Random(0), user_id, SIMULATION_NOW, "lineup-fixture")
                 owned = []
                 for species_id in roster:

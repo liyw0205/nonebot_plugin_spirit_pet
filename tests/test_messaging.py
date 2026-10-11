@@ -91,7 +91,8 @@ def test_item_and_recipe_details_link_related_queries_in_context(play):
         url = next(url for link_label, url in re.findall(r"\[([^\]]+)\]\((mqqapi://[^)]+)\)", markdown)
                    if link_label == label)
         assert parse_qs(urlparse(url).query)["command"] == ["!" + command]
-        assert markdown.index(f"[{label}]") < markdown.rfind("\n\n")
+        line = next(line for line in markdown.splitlines() if f"[{label}]" in line)
+        assert " · [" in line and f"- [{label}]" not in markdown
         button_payloads = [
             button.action.data
             for row in message["keyboard"][0].data["keyboard"].content.rows
@@ -102,12 +103,12 @@ def test_item_and_recipe_details_link_related_queries_in_context(play):
 
 def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     pytest.importorskip("nonebot.adapters.qq")
-    reply = Reply("山海小宠", ("精力 100/100", "亲密 20/100"))
+    reply = Reply("山海小宠", ("精力 100/100", "亲密 20/100"), ("我的灵宠",))
     config = Config(spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=True)
     fallback, message = _qq_segments(reply, config)
 
     assert "【山海小宠】" in fallback
-    assert "[查看灵宠](mqqapi://aio/inlinecmd?" in message["markdown"][0].data["markdown"].content
+    assert "mqqapi://" not in message["markdown"][0].data["markdown"].content
     assert len(message["keyboard"]) == 1
     button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
     assert button.render_data.label == "查看灵宠"
@@ -296,4 +297,4 @@ def test_real_qq_send_retains_message_id_and_increments_fallback_sequence():
     first, second = bot.post_group_messages.call_args_list
     assert first.kwargs["msg_id"] == second.kwargs["msg_id"] == "incoming"
     assert first.kwargs["msg_seq"] == 1 and second.kwargs["msg_seq"] == 2
-    assert first.kwargs["msg_type"] == 2 and second.kwargs["msg_type"] == 0
+    assert first.kwargs["msg_type"] == second.kwargs["msg_type"] == 2

@@ -61,7 +61,7 @@ def test_lineage_catalog_can_inspect_species_before_adoption(game, play):
     assert "青木鸾脉" in reply.text()
     assert "不可更换" in reply.text()
     assert reply.commands == ("灵宠图鉴 青鸾",)
-    with pytest.raises(GameError, match="尚未结契"):
+    with pytest.raises(GameError, match="还没有灵宠伙伴"):
         play("lineage_catalog")
     play("adopt", "青鸾")
     assert pet(game[1])["lineage_id"] is None

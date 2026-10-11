@@ -55,6 +55,10 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
     def pets(user):
         return read("SELECT * FROM pets WHERE user_id=? ORDER BY pet_id", (str(user),))
 
+    def uid(user):
+        identity_id = read("SELECT id FROM player_identity WHERE user_id=?", (str(user),))[0]["id"]
+        return f"UID {identity_id + 9999}"
+
     def mastery():
         return read("SELECT * FROM learned_skills ORDER BY pet_id, skill_id")
 
@@ -96,7 +100,7 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
             for member, (user, pet_id) in zip(members, selected):
                 row = read("SELECT * FROM pets WHERE pet_id=?", (pet_id,))[0]
                 assert member["pet_name"] == row["name"]
-                assert member["dao_name"] == names[users.index(user)]
+                assert member["uid"] == uid(user)
                 assert member["species_id"] == row["species_id"]
                 assert member["realm"] == row["realm"] and member["layer"] == row["layer"]
                 assert set(member["stats"]) == {"hp", "attack", "defense", "speed"}
@@ -115,9 +119,8 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
     with patch(f"{plugin_package}.application.game.time.time", return_value=now), \
          patch.object(handlers.game, "rng", _MinimumRandom()), \
          patch.object(adventure, "fight", observed_fight), patch.object(arena, "fight", observed_fight):
-        for index, (user, name) in enumerate(zip(users, names)):
-            exchange(user, 100 + index * 10, "灵宠领养 青鸾", "灵契初成")
-            exchange(user, 101 + index * 10, f"灵宠道号 {name}", "道号已定")
+        for index, user in enumerate(users):
+            exchange(user, 100 + index * 10, "灵宠领养 青鸾", "领养成功")
             write("UPDATE players SET stones=10000 WHERE user_id=?", (str(user),))
             if index != 2:
                 exchange(user, 102 + index * 10, "灵宠召唤 2", "山海召唤")
@@ -155,8 +158,8 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
 
         exchange(users[0], 152, "灵宠组队", "灵契小队")
         for index, user in enumerate(users[1:3]):
-            exchange(user, 153 + index * 2, f"灵宠入队 {names[0]}", "入队申请已提交")
-            exchange(users[0], 154 + index * 2, f"灵宠队伍同意 {names[index + 1]}", "加入队伍")
+            exchange(user, 153 + index * 2, f"灵宠入队 {uid(users[0])}", "入队申请已提交")
+            exchange(users[0], 154 + index * 2, f"灵宠队伍同意 {uid(user)}", "加入队伍")
         for index, user in enumerate(users[:3]):
             exchange(user, 157 + index, "灵宠准备", "出征准备")
         expected_ready = {str(user): rosters[user] if index == 0 else rosters[user][:1] for index, user in enumerate(users[:3])}
@@ -207,8 +210,8 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
             defender_before = pets(users[3])
             defender_ready = read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),))
             before_skills = mastery()
-            exchange(users[0], 167, "灵宠匹配", names[3])
-            ranked_reply = exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算")
+            exchange(users[0], 167, "灵宠匹配", uid(users[3]))
+            ranked_reply = exchange(users[0], 168, f"灵宠论剑 {uid(users[3])}", "论剑结算")
             assert pets(users[3]) == defender_before
             assert read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),)) == defender_ready
             assert [row["energy"] for row in pets(users[0])] == [32, 17, 32]
@@ -219,19 +222,19 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
             assert read("SELECT last_pvp FROM players WHERE user_id=?", (str(users[3]),)) == [{"last_pvp": None}]
             assert read("SELECT ready_pet_id FROM team_members WHERE user_id=?", (str(users[0]),)) == [{"ready_pet_id": None}]
             ranked_state = resource_state()
-            assert exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算") == ranked_reply
+            assert exchange(users[0], 168, f"灵宠论剑 {uid(users[3])}", "论剑结算") == ranked_reply
             assert resource_state() == ranked_state
 
             spar_before = resource_state()
             spar_skills = mastery()
-            spar_reply = exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算")
+            spar_reply = exchange(users[0], 169, f"灵宠切磋 {uid(users[3])}", "切磋结算")
             assert resource_state() == spar_before
             spar = last_record("spar")
             check_snapshot(spar, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
                                  [(users[3], pet_id) for pet_id in rosters[users[3]]]], spar_skills)
             assert all(battles[-1].skill_uses[side].get(pet_id, {}).get("spirit_wave", 0) > 0
                        for side, user in enumerate((users[0], users[3])) for pet_id in rosters[user])
-            assert exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算") == spar_reply
+            assert exchange(users[0], 169, f"灵宠切磋 {uid(users[3])}", "切磋结算") == spar_reply
             assert resource_state() == spar_before
             exchange(users[0], 170, "灵宠战报", "三灵队长1、三灵队长2、三灵队长3")
             exchange(users[1], 171, f"灵宠战报 查看 {team['battle_id']}", "上古灵殿")
@@ -247,8 +250,8 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
             for message_id, command, reply, expected in (
                 (151, "灵宠挑战 青岚林", solo_reply, "秘境获胜"),
                 (163, "灵宠组队挑战 上古灵殿", team_reply, "秘境获胜"),
-                (168, f"灵宠论剑 {names[3]}", ranked_reply, "论剑结算"),
-                (169, f"灵宠切磋 {names[3]}", spar_reply, "切磋结算"),
+                (168, f"灵宠论剑 {uid(users[3])}", ranked_reply, "论剑结算"),
+                (169, f"灵宠切磋 {uid(users[3])}", spar_reply, "切磋结算"),
             ):
                 assert exchange(users[0], message_id, command, expected) == reply
                 assert resource_state() == replay_before
@@ -308,7 +311,7 @@ def main():
                     return text
 
                 for message_id, command, expected in [
-                    (1, "灵宠领养 青鸾", "灵契初成"),
+                    (1, "灵宠领养 青鸾", "领养成功"),
                     (2, "灵宠签到", "灵石 +200"),
                     (2, "灵宠签到", "灵石 +200"),
                     (3, "我的灵宠", "灵石：300"),
@@ -340,23 +343,23 @@ def main():
                                 "WHERE p.user_id='12345' AND i.item_id='forge_ore'"
                             ).fetchone()
                 for user_id, message_id, command, expected in [
-                    (12345, 21, "灵宠道号 青云道友", "道号已定"),
-                    (67890, 22, "灵宠领养 玄狐", "灵契初成"),
-                    (67890, 23, "灵宠道号 归元道友", "道号已定"),
+                    (12345, 21, "我的信息", "UID：10000"),
+                    (67890, 22, "灵宠领养 玄狐", "领养成功"),
+                    (67890, 23, "我的信息", "UID：10001"),
                     (12345, 24, "灵宠组队", "灵契小队"),
-                    (67890, 25, "灵宠入队 青云道友", "入队申请已提交"),
-                    (67890, 26, "灵宠队伍同意 青云道友", "只能由队长审批"),
-                    (12345, 27, "灵宠队务 归元道友", "队务详情"),
-                    (12345, 28, "灵宠队伍同意 归元道友", "加入队伍"),
-                    (12345, 28, "灵宠队伍同意 归元道友", "加入队伍"),
+                    (67890, 25, "灵宠入队 UID 10000", "入队申请已提交"),
+                    (67890, 26, "灵宠队伍同意 UID 10000", "只能由队长审批"),
+                    (12345, 27, "灵宠队务 UID 10001", "队务详情"),
+                    (12345, 28, "灵宠队伍同意 UID 10001", "加入队伍"),
+                    (12345, 28, "灵宠队伍同意 UID 10001", "加入队伍"),
                     (67890, 29, "灵宠准备", "出征准备"),
                     (12345, 30, "灵宠准备", "出征准备"),
-                    (12345, 31, "灵宠转让 归元道友", "队长交接"),
+                    (12345, 31, "灵宠转让 UID 10001", "队长交接"),
                     (12345, 32, "灵宠队伍", "未准备"),
                     (12345, 33, "灵宠解散", "仅队长"),
-                    (67890, 34, "灵宠踢人 青云道友", "移出队伍"),
-                    (67890, 35, "灵宠邀请 青云道友", "队伍邀请已发起"),
-                    (12345, 36, "灵宠队伍同意 归元道友", "加入队伍"),
+                    (67890, 34, "灵宠踢人 UID 10000", "移出队伍"),
+                    (67890, 35, "灵宠邀请 UID 10000", "队伍邀请已发起"),
+                    (12345, 36, "灵宠队伍同意 UID 10001", "加入队伍"),
                     (67890, 37, "灵宠解散", "小队解散"),
                 ]:
                     exchange(user_id, message_id, command, expected)
@@ -401,15 +404,15 @@ def main():
                     assert skill and (skill[0] > 1 or skill[1] > 0)
                     before_duel_items = conn.execute("SELECT * FROM inventory ORDER BY user_id, item_id").fetchall()
                 with patch(f"{plugin_package}.application.game.time.time", return_value=finishes_at):
-                    exchange(12345, 46, "灵宠切磋 归元道友", "切磋结算")
-                    exchange(12345, 46, "灵宠切磋 归元道友", "切磋结算")
+                    exchange(12345, 46, "灵宠切磋 UID 10001", "切磋结算")
+                    exchange(12345, 46, "灵宠切磋 UID 10001", "切磋结算")
                     with closing(sqlite3.connect(database)) as conn:
                         before_duel_energy = dict(conn.execute(
                             "SELECT p.user_id, t.energy FROM players p JOIN pets t ON p.active_pet_id=t.pet_id"
                         ))
                         assert before_duel_energy == {"12345": 40, "67890": 100}
-                    exchange(67890, 47, "灵宠切磋 归元道友", "自己")
-                    exchange(12345, 48, "灵宠论剑 归元道友", "凝气")
+                    exchange(67890, 47, "灵宠切磋 UID 10001", "自己")
+                    exchange(12345, 48, "灵宠论剑 UID 10001", "凝气")
                     with closing(sqlite3.connect(database)) as conn:
                         assert dict(conn.execute(
                             "SELECT p.user_id, t.energy FROM players p JOIN pets t ON p.active_pet_id=t.pet_id"
@@ -420,9 +423,9 @@ def main():
                     exchange(12345, 49, "灵宠匹配", "论剑候选")
                     with closing(sqlite3.connect(database)) as conn:
                         assert conn.execute("SELECT energy FROM pets WHERE pet_id=1").fetchone()[0] == 52
-                    exchange(12345, 50, "灵宠论剑 归元道友", "论剑结算")
-                    exchange(12345, 50, "灵宠论剑 归元道友", "论剑结算")
-                    exchange(12345, 51, "灵宠论剑 归元道友", "调息")
+                    exchange(12345, 50, "灵宠论剑 UID 10001", "论剑结算")
+                    exchange(12345, 50, "灵宠论剑 UID 10001", "论剑结算")
+                    exchange(12345, 51, "灵宠论剑 UID 10001", "调息")
                     exchange(12345, 52, "灵宠赛季", "论剑赛季")
                     exchange(67890, 53, "灵宠论剑", "论剑榜")
                     for message_id in range(46, 54):

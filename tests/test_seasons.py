@@ -32,7 +32,6 @@ def register(play, count=5):
     for index in range(count):
         user = OWNER if index == 0 else f"private-opponent-{index}"
         play("adopt", "青鸾", user=user, now=JAN)
-        play("dao_name", f"道友{index}", user=user, now=JAN)
 
 
 def invoke(game, handler, arg="", now=JAN, user=OWNER, operation=None):
@@ -298,7 +297,7 @@ def test_historical_ranking_and_catalog_are_paginated_and_id_free(game, play):
     next_board = invoke(game, seasons.rank, "2028-01 分页 2", now=now)
     assert "1/5" in board.title and "2/5" in next_board.title
     assert len(board.lines) <= 5 and len(next_board.lines) <= 5
-    assert "道友23" in board.text() and "道友23" not in next_board.text()
+    assert "UID 10023" in board.text() and "UID 10023" not in next_board.text()
     for reply in (first, second, board, next_board):
         assert OWNER not in reply.text() and "private-opponent" not in reply.text()
     with pytest.raises(GameError, match="页"):
@@ -330,12 +329,14 @@ def test_current_board_buttons_are_named_challenges_and_fit_qq_keyboard(game, pl
     for page in range(1, 4):
         reply = invoke(game, seasons.rank, f"分页 {page}")
         assert len(reply.commands) <= 8
-        assert "灵宠论剑 道友0" not in reply.commands
+        assert "灵宠论剑 UID 10000" not in reply.commands
         challenges = [command for command in reply.commands if command.startswith("灵宠论剑 ")]
         assert challenges and all(command.removeprefix("灵宠论剑 ") in reply.text() for command in challenges)
         _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
-        assert len([button for row in message["keyboard"][0].data["keyboard"].content.rows
-                    for button in row.buttons]) == len(reply.commands)
+        buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows
+                   for button in row.buttons]
+        assert len(buttons) == 4
+        assert all(button.action.data.removeprefix("/") in reply.commands for button in buttons)
 
 
 def test_large_reward_tier_catalog_uses_reachable_bounded_pages(game, play):

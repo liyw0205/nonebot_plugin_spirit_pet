@@ -23,10 +23,8 @@ TASKS = (("采灵药", "herb_gathering", 25, 0), ("寻锻矿", "ore_survey", 30,
 
 def register(play, other=False):
     play("adopt", "青鸾", user=OWNER)
-    play("dao_name", "云行", user=OWNER)
     if other:
         play("adopt", "玄狐", user=OTHER)
-        play("dao_name", "月明", user=OTHER)
 
 
 def journeys(store, user=OWNER):
@@ -457,12 +455,12 @@ def test_departure_racing_battle_never_overspends_or_partially_charges(game, pla
     sql(game[1], "UPDATE pets SET layer=5")
     if battle == "pvp":
         sql(game[1], "UPDATE pets SET realm=1")
-        command = (OWNER, "pvp", "月明", "racing-battle", NOW)
+        command = (OWNER, "pvp", "UID 10001", "racing-battle", NOW)
         cost, initial = 20, 40
     elif battle == "team":
         play("team_create", user=OWNER)
-        play("team_join", "云行", user=OTHER)
-        play("team_accept", "月明", user=OWNER)
+        play("team_join", "UID 10000", user=OTHER)
+        play("team_accept", "UID 10001", user=OWNER)
         play("team_ready", user=OWNER)
         play("team_ready", user=OTHER)
         command = (OWNER, "team_challenge", "上古灵殿", "racing-battle", NOW)
@@ -499,7 +497,7 @@ def test_defender_departure_and_mirror_battle_both_succeed_without_double_charge
     before_other = player(game[1], OTHER), pet(game[1], OTHER), items(game[1], OTHER)
     results = race(game[0], [
         (OTHER, "expedition_start", "采灵药", "defender-departure", NOW),
-        (OWNER, battle, "月明", "mirror-battle", NOW),
+        (OWNER, battle, "UID 10001", "mirror-battle", NOW),
     ])
     assert all(not isinstance(result, GameError) for result in results)
     assert results[1].title == ("论剑结算" if battle == "pvp" else "切磋结算")

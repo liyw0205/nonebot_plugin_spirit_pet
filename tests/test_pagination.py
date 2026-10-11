@@ -123,7 +123,9 @@ def test_qq_page_and_detail_sizes_stay_within_readability_budget(game, play, act
         # These are project readability budgets, not claimed QQ platform limits.
         assert len(plain) <= 1200
         assert len(markdown) <= 4000
-        assert sum(len(row.buttons) for row in keyboard.rows) == len(reply.commands) <= 8
+        buttons = [button for row in keyboard.rows for button in row.buttons]
+        assert len(buttons) <= 4
+        assert all(button.action.data.removeprefix("/") in reply.commands for button in buttons)
         fallback, template = _qq_segments(reply, Config(
             spirit_pet_qq_mode="template", spirit_pet_qq_template_id="test-template",
         ))
