@@ -28,7 +28,7 @@ def test_default_expeditions_have_distinct_materials_and_progressive_gates():
         ("ore_survey", "寻锻矿", 1, 30, "forge_ore"),
         ("essence_search", "探血髓", 2, 40, "bloodline_essence"),
     )
-    assert set(content.expeditions) == {entry[0] for entry in expected}
+    assert {entry[0] for entry in expected} <= set(content.expeditions)
     for identifier, name, realm, energy, material in expected:
         expedition = content.expeditions[identifier]
         assert expedition.name == name
@@ -39,6 +39,31 @@ def test_default_expeditions_have_distinct_materials_and_progressive_gates():
         assert 0 < expedition.reward.exp.maximum <= 50
         assert 0 < expedition.reward.stones.maximum <= 40
         assert set(expedition.model_dump()) == {"id", "name", "description", "min_realm", "energy", "reward"}
+
+
+def test_high_realm_expeditions_offer_distinct_existing_item_uses():
+    content = Catalog.load()
+    expected = (
+        ("jindan_alchemy", "赤霞炼丹", "jindan", 50, "breakthrough_pill"),
+        ("yuanying_stargazing", "归墟观星", "yuanying", 60, "book_storm_dive"),
+        ("huashen_nether_egg", "幽庭觅卵", "huashen", 70, "egg_molian"),
+        ("dujie_heaven_relic", "天门寻器", "dujie", 80, "stone_core"),
+    )
+    assert set(content.expeditions) == {
+        "herb_gathering", "ore_survey", "essence_search",
+        *(entry[0] for entry in expected),
+    }
+    uses = []
+    for identifier, name, realm, energy, item in expected:
+        expedition = content.expeditions[identifier]
+        assert (expedition.name, expedition.min_realm, expedition.energy) == (name, realm, energy)
+        assert set(expedition.reward.items) == {item}
+        assert expedition.reward.items[item].minimum == 0
+        assert expedition.reward.items[item].maximum == 1
+        assert expedition.reward.exp.minimum < expedition.reward.exp.maximum
+        assert expedition.reward.stones.minimum < expedition.reward.stones.maximum
+        uses.append(content.items[item].kind)
+    assert uses == ["breakthrough", "skill_book", "pet_egg", "equipment"]
 
 
 def test_unknown_expedition_realm_is_rejected(expedition_dir):

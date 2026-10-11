@@ -34,5 +34,53 @@
       "stones": {"minimum": 20, "maximum": 40},
       "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
     }
+  },
+  {
+    "id": "jindan_alchemy",
+    "name": "赤霞炼丹",
+    "description": "深入赤霞火脉，寻回炼制破境丹所需的火候灵材。",
+    "min_realm": "jindan",
+    "energy": 50,
+    "reward": {
+      "exp": {"minimum": 120, "maximum": 180},
+      "stones": {"minimum": 80, "maximum": 140},
+      "items": {"breakthrough_pill": {"minimum": 0, "maximum": 1}}
+    }
+  },
+  {
+    "id": "yuanying_stargazing",
+    "name": "归墟观星",
+    "description": "在归墟星台辨认古诀，带回可供灵宠参悟的残卷。",
+    "min_realm": "yuanying",
+    "energy": 60,
+    "reward": {
+      "exp": {"minimum": 180, "maximum": 260},
+      "stones": {"minimum": 120, "maximum": 200},
+      "items": {"book_storm_dive": {"minimum": 0, "maximum": 1}}
+    }
+  },
+  {
+    "id": "huashen_nether_egg",
+    "name": "幽庭觅卵",
+    "description": "穿行冥帝旧庭，护送一枚沉睡的灵卵脱离险地。",
+    "min_realm": "huashen",
+    "energy": 70,
+    "reward": {
+      "exp": {"minimum": 260, "maximum": 360},
+      "stones": {"minimum": 180, "maximum": 280},
+      "items": {"egg_molian": {"minimum": 0, "maximum": 1}}
+    }
+  },
+  {
+    "id": "dujie_heaven_relic",
+    "name": "天门寻器",
+    "description": "在九霄天门拾取无主灵器，带回可供灵宠佩戴的山心石。",
+    "min_realm": "dujie",
+    "energy": 80,
+    "reward": {
+      "exp": {"minimum": 360, "maximum": 480},
+      "stones": {"minimum": 260, "maximum": 380},
+      "items": {"stone_core": {"minimum": 0, "maximum": 1}}
+    }
   }
 ]

@@ -7,8 +7,8 @@
 - 分支：`main` 为公开安装、正式 Release 与集成分支；`develop` 为唯一活动开发分支。两者已同步到当前主线提交；普通开发推送 `develop`，审查后普通合入 `main`，不 force/reset、不移动旧 tag，历史分支和 worktree 保留。
 - 已完成：D1-D3、同族合修、共鸣交互、QQ 命令蓝链及 `v0.1.0` 正式 Release。Release tag 为 `v0.1.0`，资产为 `project.tar.gz`。
 - 验收边界：QQ 机器人连接/鉴权、QQ 客户端 Markdown/按钮/蓝字呈现、Termux 设备验收分别记录；未实测项不由 OneBot 或 mock 结果替代。
-- 实际部署：目标实例完成备份并升级验证后填写实际源码 SHA、Release 和备份路径；`.env`、`data/` 与 SQLite 存档必须保留。
-- 下一有限任务：保留前三境既有三项委托；为金丹、元婴、化神、渡劫各补至少一项不同用途的离线委托，沿用单行程、出发奖励快照、原宠占用和幂等，不新增 schema 或离线战斗。
+- 实际部署：`/root/spirit-pet-qq-test-20261010` 已由 legacy managed 显式转换为 `v0.1.1` Release 管理，源码提交 `eaa1d0ae4781d8dd89a2ec0dc197bc99f9f4e2a1`，`.env`、`data/` 与 schema 20 SQLite 存档保留并验证；备份位于 `/root/spirit-pet-qq-test-20261010/.xiupet/backups/release-v0.1.1-eaa1d0a-20261011T140412Z`。当前实例 PID、QQ READY 与短启动日志已核对，发布前不重复重启。
+- 当前切片结果：前三境既有三项委托不变；金丹、元婴、化神、渡劫各新增一项不同用途委托，复用单行程、出发奖励快照、原宠占用和幂等，无 schema 或离线战斗变更。定向内容/命令/行程合同 `107 passed`。下一步仅审查并普通合入 `main`，Release 更新后按既有备份/转换流程再部署。
 
 ## D1-D3 交付清单
 
@@ -43,6 +43,7 @@
 - [x] 同族合修入口闭环：名册/成长帮助进入空参伙伴预览，每页两位，显示精力、行程、共享调息；编号执行原子双宠成长，并提供查看成长入口。复用 schema 20、Repository 和既有成本/冷却/每日任务规则，不新增迁移。QQ 按语义保留少量动作与辅助蓝链，OneBot/QQ 降级可读。
 - [x] 合修和消息短合同 `31 passed`，包含唯一 OneBot handler 短业务链、QQ payload/前缀/去重/预填、条件拒绝、并发及重启重投。细节见 [开发指南](DEVELOPMENT.md#同族合修入口垂直切片2026-10-11已完成)。本轮交付 `main` 提交，不更新部署；既有 D1-D3 和外部验收状态不变，历史全量证据不表述为本轮重跑。
 - [x] 灵宠共鸣交互闭环：目录详情、状态动作和启停后的回看入口接入 `Reply.inline_commands`；QQ 详情使用行内蓝字、翻页使用少量按钮，OneBot/降级保留可读命令。既有规则、schema20 和战斗快照不变；共鸣定向合同 `13 passed`，未部署或发送真实 QQ。
+- [x] 高境界离线委托内容：保留前三境委托，新增金丹 `jindan_alchemy`、元婴 `yuanying_stargazing`、化神 `huashen_nether_egg`、渡劫 `dujie_heaven_relic`，分别覆盖破境丹、技能书、灵卵、装备用途；沿用现有行程与奖励快照，不新增 schema 或离线战斗。内容、命令与行程合同定向 `107 passed`。
 
 ## 已实现范围：可运行的开发版
 

@@ -190,7 +190,7 @@ ID、名称、说明、`min_realm` 和 `encounters` 均必填，不接受额外�
 - 仅允许 id、name、description、min_realm、energy、reward 六个字段，且全部必填；ID 和名称在本表中分别唯一，数组不能为空。
 - `min_realm` 引用现有大境界 ID；`energy` 为 1-100 的整数，是出发成本，不是宠物当前精力。
 - `reward` 复用前述奖励区间结构；物品 ID 必须存在，所有数量非负且 minimum 不大于 maximum，不接受数字字符串。
-- 初版包含 `herb_gathering`（采灵药，启灵，25 精力）、`ore_survey`（寻锻矿，凝气，30 精力）、`essence_search`（探血髓，筑基，40 精力），分别提供灵粮、锻灵矿、血脉精华。
+- 现有前三境委托保持不变：`herb_gathering`（采灵药，启灵，25 精力）、`ore_survey`（寻锻矿，凝气，30 精力）、`essence_search`（探血髓，筑基，40 精力），分别提供灵粮、锻灵矿、血脉精华。新增 `jindan_alchemy`（赤霞炼丹，金丹，50 精力，破境丹）、`yuanying_stargazing`（归墟观星，元婴，60 精力，技能书）、`huashen_nether_egg`（幽庭觅卵，化神，70 精力，灵卵）和 `dujie_heaven_relic`（天门寻器，渡劫，80 精力，装备），均沿用现有物品与奖励快照规则。
 - 行程秒数统一来自 `.env` 中的 `SPIRIT_PET_EXPEDITION_DURATION`，默认 3600。此 JSON 不允许 duration、duration_seconds、started_at、finishes_at、settled_at 等时间字段。
 
 每次派遣绑定的宠物、操作号、开始/完成时间、抽取后的实际奖励快照和领取状态属于 SQLite 的行程记录。奖励范围是静态定义，实际抽取结果是运行数据，不能写回内容目录。派遣时固定奖励快照，之后修改任务名称、时长配置或奖励区间，不应追溯改写既有行程。
