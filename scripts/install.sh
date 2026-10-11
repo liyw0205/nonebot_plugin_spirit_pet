@@ -12,7 +12,7 @@ RELEASE_PROXIES=(
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
 SOURCE_MARKER=.xiupet-source
 ACTION=install
-if (($#)) && [[ $1 =~ ^(install|update|uninstall|start|stop|restart|status|logs|login)$ ]]; then
+if (($#)) && [[ $1 =~ ^(install|update|convert|uninstall|start|stop|restart|status|logs|login)$ ]]; then
     ACTION=$1
     shift
 fi
@@ -121,7 +121,7 @@ while (($#)); do
             shift
             ;;
         -h|--help)
-            printf 'Usage: %s [install|update|uninstall|start|stop|restart|status|logs|login] [TARGET] [options]\n' "$0"
+            printf 'Usage: %s [install|update|convert|uninstall|start|stop|restart|status|logs|login] [TARGET] [options]\n' "$0"
             printf 'Options: --source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH\n'
             printf 'Compatibility aliases: --directory PATH and --source release|checkout.\n'
             exit 0
@@ -147,9 +147,10 @@ while (($#)); do
 done
 
 case "$ACTION" in
-    install|update|uninstall|start|stop|restart|status|logs|login) ;;
+    install|update|convert|uninstall|start|stop|restart|status|logs|login) ;;
     *) printf 'Invalid action: %s\n' "$ACTION" >&2; exit 2 ;;
 esac
+if [[ $ACTION == convert && $SOURCE_MODE == auto ]]; then SOURCE_MODE=release; fi
 case "$SOURCE_MODE" in
     auto) [[ -n $SOURCE_PATH || -n $SOURCE_ROOT ]] && SOURCE_MODE=source || SOURCE_MODE=release ;;
     source|release) ;;
@@ -165,6 +166,10 @@ if [[ $SOURCE_MODE == source && -n $SOURCE_PATH ]]; then
 fi
 if [[ $ACTION == update && $SOURCE_MODE != release ]]; then
     printf 'spirit-pet: update only accepts Release sources; checkout installs are never overwritten\n' >&2
+    exit 2
+fi
+if [[ $ACTION == convert && $SOURCE_MODE != release ]]; then
+    printf 'spirit-pet: convert requires a Release source\n' >&2
     exit 2
 fi
 
@@ -410,6 +415,17 @@ prepare_update() {
     replace_release_sources || fail 'Release 源码替换失败；已尝试恢复原源码'
 }
 
+prepare_conversion() {
+    canonical_directory
+    [[ -f $DIRECTORY/.xiupet-managed ]] || fail 'convert 只接受已有受管理安装'
+    [[ ! -e $DIRECTORY/.git ]] || fail '拒绝转换 Git checkout；请保留源码目录并单独部署 Release'
+    [[ ! -f $DIRECTORY/$SOURCE_MARKER || $(<"$DIRECTORY/$SOURCE_MARKER") != release ]] || fail '安装已由 Release 管理；请使用 xiupet update'
+    [[ -f $DIRECTORY/pyproject.toml && -f $DIRECTORY/requirements.txt ]] || fail '旧安装缺少项目或依赖定义，不能安全转换'
+    download_source
+    [[ -d $SOURCE_ROOT/src && -d $SOURCE_ROOT/scripts ]] || fail 'Release 归档缺少 src/ 或 scripts/'
+    replace_release_sources || fail 'Release 转换失败；已尝试恢复原源码'
+}
+
 ensure_env() {
     if [[ ! -f $DIRECTORY/.env ]]; then
         cp "$DIRECTORY/.env.example" "$DIRECTORY/.env"
@@ -450,7 +466,13 @@ remove_xiupet() {
 }
 
 install_project() {
-    if [[ $ACTION == update ]]; then prepare_update; else prepare_project; fi
+    if [[ $ACTION == update ]]; then
+        prepare_update
+    elif [[ $ACTION == convert ]]; then
+        prepare_conversion
+    else
+        prepare_project
+    fi
     ensure_python
     local venv=${VENV_PATH:-$DIRECTORY/.venv}
     [[ $venv == /* ]] || venv=$PWD/$venv
@@ -485,6 +507,17 @@ install_project() {
         UPDATE_ACTIVE=0
         printf 'Release 更新完成：%s\n' "$DIRECTORY"
         printf '机器人未启动；使用 xiupet start 手动启动。\n'
+        return
+    fi
+    if [[ $ACTION == convert ]]; then
+        printf '%s\n' release > "$DIRECTORY/$SOURCE_MARKER.tmp"
+        mv -- "$DIRECTORY/$SOURCE_MARKER.tmp" "$DIRECTORY/$SOURCE_MARKER"
+        UPDATE_COMMITTED=1
+        rm -rf -- "$UPDATE_DIR"
+        UPDATE_DIR=
+        UPDATE_ACTIVE=0
+        printf '旧安装已显式转换为 Release 管理：%s\n' "$DIRECTORY"
+        printf 'Release 转换完成；机器人未启动，使用 xiupet start 手动启动。\n'
         return
     fi
     ensure_env
@@ -536,7 +569,10 @@ if [[ $ACTION == start || $ACTION == stop || $ACTION == restart || $ACTION == st
     control_args+=("${CONTROL_ARGS[@]}")
     ((YES)) && control_args+=(--yes)
     exec bash "$DIRECTORY/scripts/xiupet.sh" "${control_args[@]}"
-elif [[ $ACTION == install || $ACTION == update ]]; then
+elif [[ $ACTION == install || $ACTION == update || $ACTION == convert ]]; then
+    if [[ $ACTION == convert && -f $DIRECTORY/scripts/xiupet.sh ]]; then
+        bash "$DIRECTORY/scripts/xiupet.sh" stop
+    fi
     install_project
 else
     uninstall_project

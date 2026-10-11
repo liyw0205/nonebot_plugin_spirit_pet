@@ -36,6 +36,7 @@ def fake_python(tmp_path):
         "#!/bin/sh\n"
         "if [ \"$1\" = --version ] && [ -n \"${SPIRIT_PET_TEST_PYTHON_MARKER:-}\" ] && [ ! -f \"$SPIRIT_PET_TEST_PYTHON_MARKER\" ]; then exit 1; fi\n"
         "if [ \"$1\" = --version ]; then printf 'Python 3.12.0\\n'; exit 0; fi\n"
+        "if [ \"$1 $2\" = '-m pip' ] && [ \"${SPIRIT_PET_TEST_FAIL_PIP:-0}\" = 1 ]; then exit 1; fi\n"
         "if [ \"$1\" = -m ] && [ \"$2\" = venv ]; then\n"
         "  mkdir -p \"$3/bin\"\n"
         "  printf 'home = fake\\n' > \"$3/pyvenv.cfg\"\n"
@@ -92,12 +93,12 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
         assert result.returncode == 0, result.stderr
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
-    assert "[install|update|uninstall|start|stop|restart|status|logs|login]" in result.stdout
+    assert "[install|update|convert|uninstall|start|stop|restart|status|logs|login]" in result.stdout
     assert "--source-mode auto|release|source" in result.stdout
     assert "--target PATH" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
-    assert "install|update|uninstall|start|stop|restart|status|logs|login" in manager_help.stdout
+    assert "install|update|convert|uninstall|start|stop|restart|status|logs|login" in manager_help.stdout
     assert "QQ 官方机器人授权" in manager_help.stdout
 
 
@@ -351,6 +352,68 @@ def test_release_update_refuses_checkout_without_download_or_stopping(source_pro
     assert "development source will not be overwritten" in result.stderr
     assert source_file.read_bytes() == original_source
     assert not (source_project / ".xiupet/pid").exists()
+
+
+@pytest.mark.parametrize("fail_pip", [False, True])
+def test_convert_legacy_managed_install_requires_real_release_and_preserves_user_data(
+    source_project, tmp_path, fail_pip,
+):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, _ = fake_python(tmp_path)
+    curl_dir = tmp_path / "curl-bin"
+    curl_dir.mkdir()
+    archive = tmp_path / "project.tar.gz"
+    marker_source = source_project / "src/plugins/nonebot_plugin_spirit_pet/legacy.py"
+    marker_source.write_text("RELEASE_CODE = True\n", encoding="utf-8")
+    make_release_archive(source_project, archive)
+    fake_release_curl(curl_dir, archive)
+
+    destination = tmp_path / "legacy managed install"
+    (destination / "src").mkdir(parents=True)
+    (destination / "scripts").mkdir()
+    (destination / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    (destination / "pyproject.toml").write_text("OLD_PROJECT = True\n", encoding="utf-8")
+    (destination / "requirements.txt").write_text("old-dependency\n", encoding="utf-8")
+    (destination / "src/old.py").write_text("OLD_CODE = True\n", encoding="utf-8")
+    (destination / "scripts/old.sh").write_text("OLD_SCRIPT=1\n", encoding="utf-8")
+    (destination / ".env").write_text("PRIVATE_CONFIG=preserve\n", encoding="utf-8")
+    (destination / "data").mkdir()
+    (destination / "data/player.db").write_bytes(b"player save")
+
+    environment = {
+        **os.environ,
+        "PATH": f"{curl_dir}{os.pathsep}{os.environ['PATH']}",
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_PYTHON": str(python),
+        "SPIRIT_PET_TEST_NB": str(tmp_path / "unused-nb"),
+        "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
+    }
+    if fail_pip:
+        environment["SPIRIT_PET_TEST_FAIL_PIP"] = "1"
+    result = subprocess.run(
+        [
+            "bash", str(ROOT / "scripts/install.sh"), "convert", "--target", str(destination),
+            "--mirror", "direct", "--yes",
+        ],
+        capture_output=True, text=True, env=environment,
+    )
+    if fail_pip:
+        assert result.returncode != 0
+        assert not (destination / ".xiupet-source").exists()
+        assert (destination / "src/old.py").read_text(encoding="utf-8") == "OLD_CODE = True\n"
+        assert (destination / "scripts/old.sh").read_text(encoding="utf-8") == "OLD_SCRIPT=1\n"
+        assert not (destination / "src/plugins/nonebot_plugin_spirit_pet/legacy.py").exists()
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert (destination / ".xiupet-source").read_text(encoding="ascii") == "release\n"
+        assert (destination / "src/plugins/nonebot_plugin_spirit_pet/legacy.py").is_file()
+        assert not (destination / "src/old.py").exists()
+        assert not (destination / "scripts/old.sh").exists()
+    assert (destination / ".env").read_text(encoding="utf-8") == "PRIVATE_CONFIG=preserve\n"
+    assert (destination / "data/player.db").read_bytes() == b"player save"
+    assert not list(destination.glob(".xiupet-update.*"))
 
 
 def test_missing_python_is_prepared_by_apt_before_install(source_project, tmp_path):

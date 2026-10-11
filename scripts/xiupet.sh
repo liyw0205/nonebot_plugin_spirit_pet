@@ -42,13 +42,13 @@ refresh_paths() {
 }
 
 usage() {
-    printf '用法：xiupet <install|update|uninstall|start|stop|restart|status|logs|login> [选项]\n'
+    printf '用法：xiupet <install|update|convert|uninstall|start|stop|restart|status|logs|login> [选项]\n'
     printf '选项：--source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH --lines N\n'
     printf 'QQ 官方机器人授权：xiupet login [--timeout SEC] [--interval SEC]\n'
 }
 
 ACTION=status
-if (($#)) && [[ $1 =~ ^(install|update|uninstall|start|stop|restart|status|logs|login)$ ]]; then ACTION=$1; shift; fi
+if (($#)) && [[ $1 =~ ^(install|update|convert|uninstall|start|stop|restart|status|logs|login)$ ]]; then ACTION=$1; shift; fi
 while (($#)); do
     case "$1" in
         --target)
@@ -70,7 +70,7 @@ while (($#)); do
     esac
 done
 refresh_paths
-case "$ACTION" in install|update|uninstall|start|stop|restart|status|logs|login) ;; *) fail "未知动作：$ACTION" ;; esac
+case "$ACTION" in install|update|convert|uninstall|start|stop|restart|status|logs|login) ;; *) fail "未知动作：$ACTION" ;; esac
 case "$SOURCE_MODE" in auto|release|source) ;; *) fail "不支持的源码模式：$SOURCE_MODE" ;; esac
 case "$MIRROR" in direct|accelerated|custom) ;; *) fail "不支持的镜像模式：$MIRROR" ;; esac
 [[ $LOG_LINES =~ ^[1-9][0-9]*$ ]] || fail '--lines 必须是正整数'
@@ -113,7 +113,7 @@ stop() {
 run_installer() {
     local action=$1 installer="$PROJECT/scripts/install.sh" effective_mode=$SOURCE_MODE
     [[ -f $installer ]] || fail "Installer not found: $installer"
-    [[ $action == update ]] && effective_mode=release
+    [[ $action == update || $action == convert ]] && effective_mode=release
     local -a args=("$action" --target "$PROJECT" --source "$SOURCE_ROOT" --source-mode "$effective_mode" --mirror "$MIRROR" --venv "$VENV" --no-start)
     [[ -n $MIRROR_URL ]] && args+=(--mirror-url "$MIRROR_URL")
     ((YES)) && args+=(--yes)
@@ -142,6 +142,7 @@ case "$ACTION" in
     logs) if [[ -f $LOG_FILE ]]; then tail -n "$LOG_LINES" "$LOG_FILE"; else printf 'No log file yet: %s\n' "$LOG_FILE"; fi ;;
     install) stop; run_installer install ;;
     update) require_release_install; stop; run_installer update ;;
+    convert) stop; run_installer convert ;;
     uninstall) stop; YES=1; run_installer uninstall ;;
     login) login ;;
 esac
