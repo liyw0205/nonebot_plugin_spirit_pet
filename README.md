@@ -13,31 +13,22 @@
 
 ## 安装
 
-Linux 与 Termux 需要 Bash、Git 和 curl。Debian/Ubuntu 可执行：
+Linux 与 Termux 需要 Bash 和 curl。Debian/Ubuntu 可执行：
 
 ```bash
-sudo apt install -y bash git curl
+sudo apt install -y bash curl
 ```
 
 Termux 可执行：
 
 ```bash
-pkg install -y bash git curl
+pkg install -y bash curl
 ```
 
-克隆 `main` 并运行项目安装器：
+使用 `main` 上的安装器部署最新正式 Release：
 
 ```bash
-git clone --branch main --single-branch \
-  https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
-cd "$HOME/spirit-pet"
-bash scripts/install.sh install --source-mode source --source "$PWD" --target "$PWD" --no-start
-```
-
-也可直接安装最新正式 Release：
-
-```bash
-bash scripts/install.sh install --source-mode release --target "$HOME/spirit-pet" --no-start
+bash <(curl -fsSL https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh) install --source-mode release --target "$HOME/spirit-pet" --no-start
 ```
 
 安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet`，首次安装会从 `.env.example` 创建 `.env`。填写配置后启动：
@@ -127,15 +118,20 @@ xiupet uninstall
 xiupet login
 ```
 
-从 `main` 更新源码前先停止实例、备份 `.env` 和数据库：
+### 更新正式 Release
+
+先停止实例，备份 `.env` 和数据库，再更新并启动。数据库备份细节见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md#升级与回滚)。
 
 ```bash
 cd "$HOME/spirit-pet"
 xiupet stop
-git pull --ff-only origin main
-xiupet install
+cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
+.venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+xiupet update
 xiupet start
 ```
+
+`xiupet update` 下载最新正式 Release 的 `project.tar.gz`（`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`），只替换程序文件，保留 `.env` 和 `data/`。
 
 默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 20；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，玩家、灵宠、资源和进度都会保留。schema 1-17、高于 20 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。使用 SQLite Online Backup API 做一致性备份和恢复，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
 

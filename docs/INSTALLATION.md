@@ -6,13 +6,10 @@
 
 ## Linux / Termux 快速安装
 
-先准备 Bash、Git 和 curl。Debian/Ubuntu 可执行 `sudo apt install -y bash git curl`，Termux 执行 `pkg install -y bash git curl`。安装器会按需准备 Python 3.10+、venv 和 tar；Linux 自动安装系统依赖需要 root 或 sudo，Termux 使用 `pkg`。
+先准备 Bash 和 curl。Debian/Ubuntu 可执行 `sudo apt install -y bash curl`，Termux 执行 `pkg install -y bash curl`。安装器会按需准备 Python 3.10+、venv 和 tar；Linux 自动安装系统依赖需要 root 或 sudo，Termux 使用 `pkg`。
 
 ```bash
-git clone --branch main --single-branch \
-  https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
-cd "$HOME/spirit-pet"
-bash scripts/install.sh install --source-mode source --source "$PWD" --target "$PWD" --no-start
+bash <(curl -fsSL https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh) install --source-mode release --target "$HOME/spirit-pet" --no-start
 ```
 
 首次安装创建 `.venv`，安装 `nb-cli==1.5.0` 与 `requirements.txt`，从 `.env.example` 生成 `.env`。重复安装保留源码、现有 `.env` 与存档。按 [接入教程](CONNECTIONS.md) 填写机器人配置后启动：
@@ -47,18 +44,18 @@ xiupet logs --lines 100
 
 脚本支持 apt、dnf、yum、apk、pacman、zypper、Homebrew 与 Termux `pkg`。指定 `--skip-system` 后缺少依赖会明确报错，不自动安装系统组件。
 
-可从 `main` 源码目录复制到一个全新空目录安装：
+也可从本地 `main` 源码目录复制到一个全新空目录安装：
 
 ```bash
 bash scripts/install.sh install --source-mode source --source "$PWD" \
   --target "$HOME/spirit-pet-instance" --no-start
 ```
 
-副本不包含源仓库的 `.git`、`.env`、数据库与虚拟环境，拥有自己的配置与存档。已有项目目录会保留源码，重复 `install` 不会覆盖已有源码。源码目录的更新应从 `main` 获取并再次执行 `xiupet install`；`xiupet update` 只用于正式 Release 安装。
+副本不包含源仓库的 `.git`、`.env`、数据库与虚拟环境，拥有自己的配置与存档。已有项目目录会保留源码，重复 `install` 不会覆盖已有源码。此方式用于本地源码部署，不受 `xiupet update` 的正式 Release 更新流程支持；普通部署请使用上方正式 Release 安装方式。
 
 ## 手动安装
 
-先按上方命令克隆 `main`。已有 Python 3.10+ 时，在源码目录执行：
+手动安装适用于本地源码目录。已有 Python 3.10+ 时，在项目目录执行：
 
 ```bash
 python3 -m venv .venv
@@ -82,27 +79,28 @@ if [ ! -f .env ]; then cp .env.example .env; fi
 
 默认日志为 `.xiupet/run.log`。源码仓库卸载只移除 `.venv`、运行状态和快捷链接，保留源码、`.env`、存档；安装器复制创建的独立受管理目录会整个删除，卸载前必须另存数据库和配置。也可显式运行 `bash scripts/install.sh uninstall --directory PATH --yes`。
 
-## 更新 `main` 源码安装
+## 更新正式 Release 安装
 
-先停止机器人，按 [配置与备份](CONFIGURATION.md#升级与回滚) 记录代码版本、备份 `.env` 和数据库，检查本地源码修改；然后在原 `main` 源码目录中更新：
+先停止机器人，按 [配置与备份](CONFIGURATION.md#升级与回滚) 备份 `.env` 和数据库，然后从项目目录更新并启动：
 
 ```bash
 cd "$HOME/spirit-pet"
 xiupet stop
-git pull --ff-only origin main
-xiupet install
+cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
+.venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+xiupet update
 xiupet start
 ```
 
-有本地修改时先处理差异，不强制覆盖源码。更新后若启动失败，查看日志并保留迁移备份，按源码与数据库版本成对回滚，不清空数据库。首次迁移可能生成备份，需为数据库目录预留空间。
+数据库路径以实际 `SPIRIT_PET_DB` 为准，备份目录需提前创建且目标文件不能已存在。更新会下载最新正式 Release 的 `project.tar.gz`，替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并安装依赖，保留 `.env`、`data/`、运行状态、虚拟环境、日志和命令链接。源码替换或依赖安装失败会尝试恢复旧程序文件；更新后若启动失败，查看日志并按源码与数据库版本成对回滚，不清空数据库。
 
 ## Release 安装与更新
 
 Release 版本采用 `vMAJOR.MINOR.PATCH`，归档名称为 `project.tar.gz`。Release 安装会保留现有配置、存档和运行数据。
 
-安装器的 `--source-mode release` 会读取最新正式 Release，按 `--mirror` 选择直连或加速地址；归档无效就停止，不改用分支归档。
+安装器的 `--source-mode release` 与 `xiupet update` 都读取 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，按 `--mirror` 选择直连或加速地址；归档无效就停止，不改用分支归档。
 
-`xiupet update` 只接受来源标记为 `release` 的受管理安装，拒绝源码目录、缺来源标记及未知来源目录。更新先停止实例，再替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并安装依赖；保留 `.env`、`data/`、`.xiupet/`、`.venv`、日志与命令链接。完成后需手动 `xiupet start`；源码替换或依赖安装失败会尝试恢复旧源码。
+`xiupet update` 只接受来源标记为 `release` 的受管理安装，拒绝源码目录、缺来源标记及未知来源目录。更新完成后保持停止，需手动 `xiupet start`。
 
 ## 存档升级
 
