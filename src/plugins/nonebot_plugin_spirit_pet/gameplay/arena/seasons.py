@@ -73,7 +73,7 @@ def status(ctx: Context, arg: str) -> Reply:
         commands.append("灵宠匹配")
     return Reply(f"论剑赛季 · {season.season_id}", (
         f"北京时间 {start} 至 {end}，{'已结束' if ended else '进行中'}；结束时刻起不再计分。",
-        f"{player.dao_name} · 积分 {state['rating']} · {state['wins']} 胜 {state['losses']} 负 {state['draws']} 平。",
+        f"{player.uid_label} · 积分 {state['rating']} · {state['wins']} 胜 {state['losses']} 负 {state['draws']} 平。",
         f"准入：双方同大境界且达到{realm}，分差不超过 {season.rules.max_rating_gap}；"
         f"每场挑战者精力 {season.rules.energy}，胜负转移最多 {season.rules.rating_delta} 分。",
         f"今日主动挑战 {state['today_matches']}/{season.rules.daily_matches} 场；平局占用场次但不增加奖励资格。",
@@ -154,7 +154,7 @@ def claim(ctx: Context, arg: str) -> Reply:
     for item_id, amount in tier.items.items():
         ctx.repo.add_item(ctx.user_id, item_id, amount)
     return Reply("赛季奖励已领取", (
-        f"{player.dao_name} · {season.season_id} · {tier.name} · 最终积分 {state['rating']}。",
+        f"{player.uid_label} · {season.season_id} · {tier.name} · 最终积分 {state['rating']}。",
         f"灵石 +{tier.stones}。",
         *(f"{ctx.content.items[item_id].name} +{amount}" for item_id, amount in tier.items.items()),
     ), ("灵宠赛季奖励", "灵宠赛季", "灵宠背包"))
@@ -179,21 +179,22 @@ def rank(ctx: Context, arg: str) -> Reply:
     if page > pages:
         raise GameError(f"该赛季论剑榜共 {pages} 页。")
     rows = conn.execute(
-        "SELECT p.dao_name, e.rating, e.wins, e.losses, e.draws FROM season_entries e "
-        "JOIN players p USING(user_id) WHERE e.season_id=? "
-        "ORDER BY e.rating DESC, e.wins DESC, p.dao_name COLLATE NOCASE LIMIT ? OFFSET ?",
+        "SELECT identity.id + 9999 AS uid, e.rating, e.wins, e.losses, e.draws FROM season_entries e "
+        "JOIN players p USING(user_id) JOIN player_identity identity USING(user_id) "
+        "WHERE e.season_id=? "
+        "ORDER BY e.rating DESC, e.wins DESC, identity.id LIMIT ? OFFSET ?",
         (season.season_id, RANK_PAGE_SIZE, (page - 1) * RANK_PAGE_SIZE),
     ).fetchall()
     viewer = ctx.repo.player(ctx.user_id)
-    commands = [f"灵宠论剑 {row['dao_name']}" for row in rows
-                if season.season_id == current.season_id and (viewer is None or row['dao_name'] != viewer.dao_name)]
+    commands = [f"灵宠论剑 UID {row['uid']}" for row in rows
+                if season.season_id == current.season_id and (viewer is None or row['uid'] != viewer.uid)]
     if page > 1:
         commands.append(f"灵宠论剑榜 {season.season_id} 分页 {page - 1}")
     if page < pages:
         commands.append(f"灵宠论剑榜 {season.season_id} 分页 {page + 1}")
     commands.append("灵宠匹配" if season.season_id == current.season_id else f"灵宠赛季 {season.season_id}")
     return Reply(f"论剑榜 · {season.season_id} {page}/{pages}", tuple(
-        f"{(page - 1) * RANK_PAGE_SIZE + index}. {row['dao_name']} · 积分 {row['rating']}"
+        f"{(page - 1) * RANK_PAGE_SIZE + index}. UID {row['uid']} · 积分 {row['rating']}"
         f" · {row['wins']} 胜 {row['losses']} 负 {row['draws']} 平"
         for index, row in enumerate(rows, 1)
     ) or ("该赛季暂无论剑战绩。",), tuple(commands))

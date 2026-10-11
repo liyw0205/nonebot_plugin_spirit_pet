@@ -23,6 +23,9 @@ def test_all_ten_layers_and_major_transition(game, play):
     assert reply.title == "大境界破境成功"
     assert (pet(game[1])["realm"], pet(game[1])["layer"]) == (1, 1)
     assert "凝气 1层" in play("status").text()
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='breakthrough_once'") == [
+        {"progress": 1},
+    ]
 
 
 def test_minor_cost_scales_with_major_realm(game, play):
@@ -40,13 +43,69 @@ def test_major_failure_and_assisting_pill(game, play):
     game[0].rng.random = lambda: 0.95
     before = player(game[1])["stones"]
     assert play("breakthrough").title == "破境未成"
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='breakthrough_once'")
     assert pet(game[1])["exp"] == 75
     assert pet(game[1])["layer"] == 10
     assert player(game[1])["stones"] == before - 50
     play("buy", "破境丹")
     sql(game[1], "UPDATE pets SET exp=100")
-    assert play("breakthrough", "破境丹").title == "大境界破境成功"
+    success = play("breakthrough", "破境丹", op="successful-breakthrough")
+    assert success.title == "大境界破境成功"
+    assert play("breakthrough", "破境丹", op="successful-breakthrough") == success
     assert items(game[1])["breakthrough_pill"] == 0
+    assert sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id='breakthrough_once'") == [
+        {"progress": 1, "claimed": 0},
+    ]
+    assert "破境有成：1/1（可领取）" in play("quests").text()
+
+
+def test_major_breakthrough_pity_accumulates_caps_and_resets(game, play, monkeypatch):
+    play("adopt", "玄狐")
+    sql(game[1], "UPDATE players SET stones=100000")
+    sql(game[1], "UPDATE pets SET layer=10, exp=100000")
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.92)
+    first = play("breakthrough")
+    assert first.title == "破境未成"
+    assert pet(game[1])["major_breakthrough_failures"] == 1
+    assert "下次成功率（不含破境丹）96%" in first.text()
+    status = play("status").text()
+    assert "成功率 96%" in status
+    assert "连续失败 1 次，积累 +5%" in status
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.97)
+    second = play("breakthrough")
+    assert second.title == "破境未成"
+    assert pet(game[1])["major_breakthrough_failures"] == 2
+    assert "下次成功率（不含破境丹）100%" in second.text()
+    assert "成功率 100%" in play("status").text()
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.999999)
+    success = play("breakthrough")
+    assert success.title == "大境界破境成功"
+    assert "积累的额外成功率 +10% 已清零" in success.text()
+    assert pet(game[1])["major_breakthrough_failures"] == 0
+    assert (pet(game[1])["realm"], pet(game[1])["layer"]) == (1, 1)
+
+
+def test_breakthrough_pill_adds_to_major_pity(game, play, monkeypatch):
+    play("adopt", "玄狐")
+    sql(game[1], "UPDATE players SET stones=100000")
+    sql(game[1], "UPDATE pets SET realm=5, layer=10, exp=100000")
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.62)
+    failed = play("breakthrough")
+    assert failed.title == "破境未成"
+    assert pet(game[1])["major_breakthrough_failures"] == 1
+    assert "下次成功率（不含破境丹）61%" in failed.text()
+    play("buy", "破境丹")
+
+    monkeypatch.setattr(game[0].rng, "random", lambda: 0.70)
+    success = play("breakthrough", "破境丹")
+    assert success.title == "大境界破境成功"
+    assert "积累的额外成功率 +5% 已清零" in success.text()
+    assert pet(game[1])["major_breakthrough_failures"] == 0
+    assert items(game[1]).get("breakthrough_pill", 0) == 0
 
 
 def test_pill_not_spent_on_small_breakthrough_or_insufficient_exp(game, play):

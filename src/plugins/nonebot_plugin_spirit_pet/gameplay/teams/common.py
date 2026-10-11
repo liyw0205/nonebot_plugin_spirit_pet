@@ -16,7 +16,7 @@ def require_member(ctx: Context) -> Row:
     ctx.player()
     member = membership(ctx)
     if member is None:
-        raise GameError("尚未加入队伍，可发送 灵宠组队 或 灵宠入队 队长道号。")
+        raise GameError("尚未加入队伍，可建立小队，或使用队长的 UID 申请入队。")
     return member
 
 
@@ -28,9 +28,9 @@ def require_leader(ctx: Context) -> Row:
 
 
 def named_player(ctx: Context, arg: str) -> Player:
-    player = ctx.repo.player_by_name(arg.strip())
+    player = ctx.repo.player_by_uid(arg)
     if player is None:
-        raise GameError("该道号不存在，请填写对方的道号。")
+        raise GameError("没有找到这位玩家，请填写有效的 UID。")
     return player
 
 
@@ -47,7 +47,7 @@ def require_room(ctx: Context, team_id: int) -> Row:
 
 
 def invalidate_team(ctx: Context, team_id: int) -> None:
-    ctx.repo.conn.execute("UPDATE team_members SET ready_pet_id=NULL WHERE team_id=?", (team_id,))
+    ctx.repo.invalidate_team_ready(team_id)
 
 
 def clear_candidate_requests(ctx: Context, user_id: str) -> None:

@@ -1,516 +1,448 @@
-import io
-from http.client import IncompleteRead
-import json
 import os
 from pathlib import Path
 import shutil
+import sqlite3
 import subprocess
-import sys
 import tarfile
-from types import SimpleNamespace
 
 import pytest
-from dotenv import dotenv_values
 
-from scripts import install_bootstrap as bootstrap
-from scripts.installer import dependencies, environment, setup
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def archive_bytes(extra=(), omit=()):
-    buffer = io.BytesIO()
-    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
-        for name in bootstrap.REQUIRED:
-            if name not in omit:
-                info = tarfile.TarInfo("project-main/" + name)
-                info.size = 4
-                archive.addfile(info, io.BytesIO(b"test"))
-        for info in extra:
-            if isinstance(info, tuple):
-                info, fileobj = info
-            else:
-                fileobj = io.BytesIO(b"")
-            archive.addfile(info, fileobj)
-    return buffer.getvalue()
-
-
 @pytest.fixture
-def project(tmp_path):
-    directory = tmp_path / "project with spaces"
-    for name in bootstrap.REQUIRED:
-        destination = directory / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        origin = ROOT / name
-        shutil.copy2(origin, destination)
-    return directory
-
-
-def test_five_download_sources_match_actual_upstream_mirrors():
-    assert bootstrap.SOURCES == (
-        ("GitHub", ""), ("gh-proxy.com", "https://gh-proxy.com/"),
-        ("gh.jasonzeng.dev", "https://gh.jasonzeng.dev/"),
-        ("git.yylx.win", "https://git.yylx.win/"), ("wget.la", "https://wget.la/"),
+def source_project(tmp_path):
+    project = tmp_path / "source project"
+    (project / "scripts").mkdir(parents=True)
+    (project / "src/plugins/nonebot_plugin_spirit_pet").mkdir(parents=True)
+    for name in ("pyproject.toml", "requirements.txt", ".env.example", "LICENSE"):
+        shutil.copy2(ROOT / name, project / name)
+    for name in ("install.sh", "xiupet.sh"):
+        shutil.copy2(ROOT / "scripts" / name, project / "scripts" / name)
+    shutil.copy2(
+        ROOT / "src/plugins/nonebot_plugin_spirit_pet/__init__.py",
+        project / "src/plugins/nonebot_plugin_spirit_pet/__init__.py",
     )
-    for script in ("install.sh", "install.ps1"):
-        text = (ROOT / "scripts" / script).read_text(encoding="utf-8")
-        for _, url in bootstrap.SOURCES[1:]:
-            assert url in text
-        assert "spirit-pet-installer-bootstrap-v1" in text
-        assert "ast.parse" in text
-
-
-def test_all_sources_are_probed_and_fastest_valid_archive_is_selected(tmp_path, capsys):
-    payloads = [archive_bytes(), b"<html>success</html>", archive_bytes(), archive_bytes(), archive_bytes()]
-    requested = []
-    ticks = iter([0, 0.8, 1, 2, 2.2, 3, 3.4, 4, 4.9])
-
-    class Response(io.BytesIO):
-        status = 200
-
-        def geturl(self):
-            return "https://example.test/project.tar.gz"
-
-    def opener(request, timeout):
-        requested.append(request.full_url)
-        assert timeout == 15
-        return Response(payloads[len(requested) - 1])
-
-    result = bootstrap.download_source("main", tmp_path, opener=opener, clock=lambda: next(ticks))
-    assert bootstrap.is_project(result)
-    assert len(requested) == 5
-    output = capsys.readouterr().out
-    assert "[2/5] gh-proxy.com: FAILED" in output
-    assert "Selected source: gh.jasonzeng.dev" in output
-
-
-def test_no_valid_source_fails_instead_of_using_html(tmp_path, capsys):
-    def unavailable(*args, **kwargs):
-        raise OSError("TLS unavailable")
-
-    with pytest.raises(RuntimeError, match="All five"):
-        bootstrap.download_source("main", tmp_path, opener=unavailable)
-    assert capsys.readouterr().out.count("FAILED") == 5
-    assert not (tmp_path / "source").exists()
-
-
-@pytest.mark.parametrize("name", [
-    "../outside", "/absolute", "project-main/../../escape", "project-main/a\\b", "project-main/C:drive",
-    "project-main/.. /outside", "project-main/a.", "project-main/NUL.txt", "project-main/CoM1",
-    "project-main/a?/b", "project-main/./scripts/xiupet.py", "project-main//scripts/xiupet.py",
-])
-def test_archive_rejects_unsafe_paths(name):
-    with pytest.raises(ValueError, match="unsafe"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo(name)]))
-
-
-@pytest.mark.parametrize("kind", [tarfile.SYMTYPE, tarfile.LNKTYPE, tarfile.FIFOTYPE, tarfile.CHRTYPE])
-def test_archive_rejects_links_and_special_files(kind):
-    info = tarfile.TarInfo("project-main/link")
-    info.type = kind
-    info.linkname = "/outside"
-    with pytest.raises(ValueError, match="unsafe"):
-        bootstrap.validate_archive(archive_bytes([info]))
-
-
-def test_archive_rejects_incomplete_duplicate_and_multiroot_content():
-    with pytest.raises(ValueError, match="missing"):
-        bootstrap.validate_archive(archive_bytes(omit=["pyproject.toml"]))
-    with pytest.raises(ValueError, match="duplicate"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/scripts/xiupet.py")]))
-    with pytest.raises(ValueError, match="duplicate"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("project-main/SCRIPTS/xiupet.py")]))
-    with pytest.raises(ValueError, match="one repository root"):
-        bootstrap.validate_archive(archive_bytes([tarfile.TarInfo("other/file")]))
-
-
-def test_archive_rejects_expansion_bombs_and_html(monkeypatch):
-    monkeypatch.setattr(bootstrap, "MAX_EXPANDED", 10)
-    with pytest.raises(ValueError, match="size limit"):
-        bootstrap.validate_archive(archive_bytes())
-    with pytest.raises(ValueError, match="not gzip"):
-        bootstrap.validate_archive(b"<html>200 OK</html>")
-
-
-def test_archive_rejects_declared_size_and_sparse_pax(monkeypatch):
-    monkeypatch.setattr(bootstrap, "MAX_EXPANDED", 100_000)
-    oversized = tarfile.TarInfo("project-main/huge.bin")
-    oversized.size = bootstrap.MAX_EXPANDED + 1
-    oversized_payload = io.BytesIO(b"x" * oversized.size)
-    with pytest.raises(ValueError, match="size limit"):
-        bootstrap.validate_archive(archive_bytes([(oversized, oversized_payload)]))
-    sparse = tarfile.TarInfo("project-main/sparse.bin")
-    sparse.size = 1
-    sparse.pax_headers = {"GNU.sparse.map": "0,1", "GNU.sparse.size": "104857601"}
-    with pytest.raises(ValueError, match="unsafe"):
-        bootstrap.validate_archive(archive_bytes([(sparse, io.BytesIO(b"x"))]))
-
-
-def test_truncated_http_response_does_not_skip_remaining_sources(tmp_path, capsys):
-    calls = []
-
-    def truncated(request, **kwargs):
-        calls.append(request.full_url)
-        raise IncompleteRead(b"partial", 100)
-
-    with pytest.raises(RuntimeError, match="All five"):
-        bootstrap.download_source("develop", tmp_path, opener=truncated)
-    assert len(calls) == 5
-    assert capsys.readouterr().out.count("FAILED, IncompleteRead:") == 5
-
-
-def test_source_copy_excludes_credentials_runtime_data_and_venv(project, tmp_path):
-    (project / ".env").write_text("SECRET=kept", encoding="utf-8")
-    (project / "data").mkdir()
-    (project / "data/game.db").write_bytes(b"live database")
-    target = tmp_path / "new installation"
-    bootstrap.prepare_project(project, target)
-    assert bootstrap.is_project(target)
-    assert not (target / ".env").exists()
-    assert not (target / "data").exists()
-    assert not (target / ".venv").exists()
-
-
-def test_existing_project_and_nonproject_directories_are_not_overwritten(project, tmp_path):
-    original = (project / "pyproject.toml").read_bytes()
-    bootstrap.prepare_project(tmp_path / "unused", project)
-    assert (project / "pyproject.toml").read_bytes() == original
-    unrelated = tmp_path / "personal"
-    unrelated.mkdir()
-    (unrelated / "notes.txt").write_text("keep", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="Refusing"):
-        bootstrap.prepare_project(project, unrelated)
-    assert (unrelated / "notes.txt").read_text(encoding="utf-8") == "keep"
-
-
-def test_git_update_fast_forwards_only_clean_current_branch(tmp_path):
-    calls = []
-    outputs = iter([
-        SimpleNamespace(stdout=""),
-        SimpleNamespace(stdout="develop\n"),
-        SimpleNamespace(stdout=""),
-    ])
-
-    def runner(command, **kwargs):
-        calls.append(command)
-        assert kwargs["check"]
-        return next(outputs)
-
-    bootstrap.update_checkout(tmp_path, runner=runner)
-    assert calls == [
-        ["git", "-C", str(tmp_path), "status", "--porcelain"],
-        ["git", "-C", str(tmp_path), "branch", "--show-current"],
-        ["git", "-C", str(tmp_path), "pull", "--ff-only"],
-    ]
-
-
-def test_git_update_refuses_local_changes_and_detached_head(tmp_path):
-    def dirty(command, **kwargs):
-        return SimpleNamespace(stdout=" M scripts/install.sh\n")
-
-    with pytest.raises(RuntimeError, match="local changes"):
-        bootstrap.update_checkout(tmp_path, runner=dirty)
-
-    outputs = iter([SimpleNamespace(stdout=""), SimpleNamespace(stdout="\n")])
-    with pytest.raises(RuntimeError, match="detached"):
-        bootstrap.update_checkout(tmp_path, runner=lambda *args, **kwargs: next(outputs))
-
-
-def test_git_update_pulls_real_fast_forward_from_upstream(tmp_path):
-    git = shutil.which("git")
-    if not git:
-        pytest.skip("git unavailable")
-
-    remote = tmp_path / "remote.git"
-    seed = tmp_path / "seed"
-    checkout = tmp_path / "checkout"
-
-    def git_run(*args, cwd=None):
-        subprocess.run([git, *args], cwd=cwd, check=True, capture_output=True, text=True)
-
-    git_run("init", "--bare", str(remote))
-    seed.mkdir()
-    git_run("init", "-b", "develop", cwd=seed)
-    git_run("config", "user.email", "installer-test@example.invalid", cwd=seed)
-    git_run("config", "user.name", "Installer Test", cwd=seed)
-    (seed / "version.txt").write_text("one\n", encoding="utf-8")
-    git_run("add", "version.txt", cwd=seed)
-    git_run("commit", "-m", "initial", cwd=seed)
-    git_run("remote", "add", "origin", str(remote), cwd=seed)
-    git_run("push", "-u", "origin", "develop", cwd=seed)
-    git_run("clone", "--branch", "develop", str(remote), str(checkout))
-
-    (seed / "version.txt").write_text("two\n", encoding="utf-8")
-    git_run("commit", "-am", "advance", cwd=seed)
-    git_run("push", cwd=seed)
-
-    bootstrap.update_checkout(checkout)
-    assert (checkout / "version.txt").read_text(encoding="utf-8") == "two\n"
-
-
-def test_bootstrap_sequence_creates_venv_then_pins_nb_cli_then_runs_setup(project, tmp_path, monkeypatch):
-    commands = []
-    monkeypatch.setattr(bootstrap, "run", lambda command, **kwargs: commands.append([str(part) for part in command]))
-    venv = tmp_path / "isolated env"
-    bootstrap.main(["--directory", str(project), "--venv", str(venv), "--yes", "--no-start"])
-    assert commands[0][:3] == [sys.executable, "-m", "venv"]
-    assert commands[0][-1] == str(venv)
-    assert "nb-cli==1.5.0" in commands[2]
-    assert "--upgrade" not in commands[2]
-    assert commands[3][1] == str(project / "scripts/installer/setup.py")
-    assert "--yes" in commands[3] and "--no-start" in commands[3]
-
-
-def test_develop_is_accepted_and_dev_is_rejected(project, tmp_path, monkeypatch):
-    commands = []
-    monkeypatch.setattr(bootstrap, "run", lambda command, **kwargs: commands.append(command))
-    bootstrap.main(["--directory", str(project), "--venv", str(tmp_path / "env"), "--branch", "develop", "--no-start"])
-    assert commands
-    with pytest.raises(SystemExit):
-        bootstrap.main(["--branch", "dev"])
-    monkeypatch.setenv("SPIRIT_PET_BRANCH", "dev")
-    with pytest.raises(SystemExit):
-        bootstrap.main([])
-
-
-def test_termux_shares_system_extensions_but_normal_venvs_do_not(project, tmp_path, monkeypatch):
-    commands = []
-    monkeypatch.setattr(bootstrap, "run", lambda command, **kwargs: commands.append(command))
-    monkeypatch.setattr(bootstrap.sys, "base_prefix", "/usr")
-    monkeypatch.setenv("SPIRIT_PET_PLATFORM", "termux")
-    bootstrap.main(["--directory", str(project), "--venv", str(tmp_path / "termux"), "--no-start"])
-    assert "--system-site-packages" in commands[0]
-    commands.clear()
-    monkeypatch.delenv("SPIRIT_PET_PLATFORM")
-    bootstrap.main(["--directory", str(project), "--venv", str(tmp_path / "linux"), "--no-start"])
-    assert "--system-site-packages" not in commands[0]
-
-
-def test_bootstrap_rejects_nonvenv_without_deleting_it(project, tmp_path, monkeypatch):
-    venv = tmp_path / "not a venv"
-    venv.mkdir()
-    (venv / "keep").write_text("original", encoding="utf-8")
-    monkeypatch.setattr(bootstrap, "run", lambda *args, **kwargs: pytest.fail("must not install"))
-    with pytest.raises(RuntimeError, match="refusing to replace"):
-        bootstrap.main(["--directory", str(project), "--venv", str(venv), "--no-start"])
-    assert (venv / "keep").read_text(encoding="utf-8") == "original"
-
-
-def test_dependency_install_uses_nb_commands_and_preserves_project_bytes(project):
-    commands = []
-    original = (project / "pyproject.toml").read_bytes()
-
-    def runner(command, **kwargs):
-        commands.append(command)
-        assert kwargs["check"]
-        assert kwargs["env"]["VIRTUAL_ENV"] == sys.prefix
-
-    dependencies.install_dependencies(project, runner=runner)
-    nb_commands = [command for command in commands if "install" in command and ("driver" in command or "adapter" in command)]
-    assert [command[-4:] for command in nb_commands] == [
-        ["driver", "install", "nonebot2[fastapi]", "--no-input"],
-        ["driver", "install", "nonebot2[httpx]", "--no-input"],
-        ["driver", "install", "nonebot2[websockets]", "--no-input"],
-        ["adapter", "install", "nonebot.adapters.onebot.v11", "--no-input"],
-        ["adapter", "install", "nonebot.adapters.qq", "--no-input"],
-    ]
-    assert all(command[:4] == [sys.executable, "-m", "nb_cli", "--python"] for command in nb_commands)
-    assert (project / "pyproject.toml").read_bytes() == original
-    assert any(command[1:4] == ["-m", "pip", "check"] for command in commands)
-
-
-def test_driver_zero_exit_does_not_hide_failed_installation(project):
-    def runner(command, **kwargs):
-        if command[-1] == "import nonebot.drivers.fastapi":
-            raise subprocess.CalledProcessError(1, command)
-
-    with pytest.raises(subprocess.CalledProcessError):
-        dependencies.install_dependencies(project, runner=runner)
-
-
-def test_shared_system_nonebot_packages_are_installed_locally_without_uninstall(tmp_path, monkeypatch):
-    local = tmp_path / "venv"
-    monkeypatch.setattr(dependencies.sys, "prefix", str(local))
-    installed = SimpleNamespace(version="2.5.0", locate_file=lambda _: tmp_path / "system" / "site-packages")
-    monkeypatch.setattr(dependencies, "distribution", lambda _: installed)
-    commands = []
-    dependencies.ensure_local_package("nonebot2", lambda command, **kwargs: commands.append(command), {})
-    assert commands[0][-3:] == ["--ignore-installed", "--no-deps", "nonebot2==2.5.0"]
-    assert "--force-reinstall" not in commands[0]
-    installed.locate_file = lambda _: local / "lib" / "site-packages"
-    dependencies.ensure_local_package("nonebot2", lambda command, **kwargs: commands.append(command), {})
-    assert len(commands) == 1
-
-
-def test_wrong_pyproject_format_stops_instead_of_rewriting(project):
-    path = project / "pyproject.toml"
-    path.write_text('[tool.nonebot]\nplugin_dirs=[]\n', encoding="utf-8")
-    with pytest.raises(RuntimeError, match="src/plugins"):
-        dependencies.validate_project(project)
-    assert path.read_text(encoding="utf-8") == '[tool.nonebot]\nplugin_dirs=[]\n'
-
-
-def test_configuration_is_private_generates_a_token_and_never_overwrites(project):
-    environment.configure(project, "127.0.0.1", 8090, unattended=True)
-    values = dotenv_values(project / ".env")
-    assert values["PORT"] == "8090"
-    assert values["HOST"] == "127.0.0.1"
-    assert len(values["ONEBOT_V11_ACCESS_TOKEN"]) >= 40
-    assert values["QQ_BOTS"] == "[]"
-    if os.name != "nt":
-        assert (project / ".env").stat().st_mode & 0o777 == 0o600
-    before = (project / ".env").read_bytes()
-    environment.configure(project, "0.0.0.0", 8080, unattended=True)
-    assert (project / ".env").read_bytes() == before
-
-
-def test_configuration_does_not_follow_dangling_symlink(project, tmp_path):
-    target = tmp_path / "must not create"
-    try:
-        (project / ".env").symlink_to(target)
-    except OSError:
-        pytest.skip("symlinks unavailable")
-    environment.configure(project, "0.0.0.0", 8080, unattended=True)
-    assert not target.exists()
-
-
-def test_qq_credentials_roundtrip_without_terminal_disclosure(project, monkeypatch, capsys):
-    answers = iter(["3", "12345", "2"])
-    secret = "quoted'\"secret\\value ${HOME} #\n"
-    monkeypatch.setattr(environment.sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    monkeypatch.setattr(environment.getpass, "getpass", lambda _: secret)
-    environment.configure(project, "127.0.0.1", 8080)
-    credentials = json.loads(dotenv_values(project / ".env")["QQ_BOTS"])
-    assert credentials == [{"id": "12345", "secret": secret, "intent": {"c2c_group_at_messages": True}, "use_websocket": False}]
-    assert secret not in capsys.readouterr().out
-
-
-def test_failed_configuration_does_not_leave_a_partial_env(project, monkeypatch):
-    def fail(*args, **kwargs):
-        raise RuntimeError("quoting failed")
-
-    monkeypatch.setattr("dotenv.set_key", fail)
-    with pytest.raises(RuntimeError, match="quoting failed"):
-        environment.configure(project, "127.0.0.1", 8080, unattended=True)
-    assert not (project / ".env").exists()
-    assert not list(project.glob(".spirit-pet-env-*"))
-
-
-def test_no_start_finishes_after_dependency_and_environment_configuration(project, monkeypatch):
-    calls = []
-    monkeypatch.setattr(setup, "install_dependencies", lambda path: calls.append("dependencies"))
-    monkeypatch.setattr(setup, "configure", lambda *args: calls.append("environment"))
-    monkeypatch.setattr(setup, "install_xiupet_command", lambda *args: calls.append("command"))
-    monkeypatch.setattr(setup, "show_start", lambda path: calls.append("instructions"))
-    monkeypatch.setattr(setup.subprocess, "run", lambda *args, **kwargs: calls.append("start"))
-    setup.main(["--directory", str(project), "--no-start"])
-    assert calls == ["dependencies", "environment", "command", "instructions"]
-    calls.clear()
-    setup.main(["--directory", str(project)])
-    assert calls == ["dependencies", "environment", "command", "instructions", "start"]
-
-
-def test_windows_restart_instruction_is_executable_with_spaces(project, monkeypatch, capsys):
-    environment.show_start(project)
-    output = capsys.readouterr().out
-    assert "xiupet start" in output
-    assert "nb run" in output
-
-
-@pytest.mark.parametrize("name", ["install.sh", "install_termux.sh"])
-def test_shell_entrypoints_have_valid_syntax(name):
-    if os.name == "nt" or not shutil.which("bash"):
-        pytest.skip("bash unavailable")
-    result = subprocess.run(["bash", "-n", str(ROOT / "scripts" / name)], capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-
-
-def test_help_does_not_install_system_packages():
-    if os.name == "nt" or not shutil.which("bash"):
-        pytest.skip("bash unavailable")
-    result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
-    assert result.returncode == 0
-    assert "Usage:" in result.stdout
-    assert "main|develop" in result.stdout
-
-
-def test_shell_rejects_bad_branch_before_system_install():
-    if os.name == "nt" or not shutil.which("bash"):
-        pytest.skip("bash unavailable")
-    result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--branch", "dev"], capture_output=True, text=True)
-    assert result.returncode == 1
-    assert "main or develop" in result.stderr
-
-
-def test_shell_installs_curl_with_python_when_linux_bootstrap_needs_it():
-    text = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
-    assert "! command -v curl" in text
-    assert "apt-get install -y python3 python3-venv python3-pip curl" in text
-    assert "yum install -y python3 python3-pip python3-virtualenv curl" in text
-    assert "apk add python3 py3-pip py3-virtualenv curl" in text
-
-
-def test_shell_bootstraps_missing_python_with_apt(tmp_path):
-    bash = shutil.which("bash")
-    if os.name == "nt" or not bash:
-        pytest.skip("bash unavailable")
-    marker = tmp_path / "python-installed"
-    log = tmp_path / "apt.log"
-    bindir = tmp_path / "bin"
-    bindir.mkdir()
-    python = bindir / "python3"
-    python.write_text(
+    return project
+
+
+def fake_python(tmp_path):
+    binary = tmp_path / "fake python"
+    nb = tmp_path / "fake nb"
+    nb.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    nb.chmod(0o755)
+    binary.write_text(
         "#!/bin/sh\n"
-        f"test -f '{marker}' || exit 1\n"
+        "if [ \"$1\" = --version ] && [ -n \"${SPIRIT_PET_TEST_PYTHON_MARKER:-}\" ] && [ ! -f \"$SPIRIT_PET_TEST_PYTHON_MARKER\" ]; then exit 1; fi\n"
+        "if [ \"$1\" = --version ]; then printf 'Python 3.12.0\\n'; exit 0; fi\n"
+        "if [ \"$1\" = -m ] && [ \"$2\" = venv ]; then\n"
+        "  mkdir -p \"$3/bin\"\n"
+        "  printf 'home = fake\\n' > \"$3/pyvenv.cfg\"\n"
+        "  cp \"$SPIRIT_PET_TEST_PYTHON\" \"$3/bin/python\"\n"
+        "  cp \"$SPIRIT_PET_TEST_NB\" \"$3/bin/nb\"\n"
+        "  cp \"$SPIRIT_PET_TEST_NB\" \"$3/bin/pip\"\n"
+        "fi\n"
         "exit 0\n",
         encoding="utf-8",
     )
-    apt = bindir / "apt-get"
-    apt.write_text(
+    binary.chmod(0o755)
+    return binary, nb
+
+
+def fake_release_curl(tmp_path, archive):
+    binary = tmp_path / "curl"
+    binary.write_text(
         "#!/bin/sh\n"
-        f"printf '%s\\n' \"$*\" >> '{log}'\n"
-        f"touch '{marker}'\n",
+        "output=\nurl=\n"
+        "while [ $# -gt 0 ]; do\n"
+        "  case \"$1\" in\n"
+        "    -o) output=$2; shift 2 ;;\n"
+        "    https://*) url=$1; shift ;;\n"
+        "    *) shift ;;\n"
+        "  esac\n"
+        "done\n"
+        "printf '%s\\n' \"$url\" >> \"$SPIRIT_PET_TEST_CURL_LOG\"\n"
+        "case \"$url\" in\n"
+        "  *gh-proxy.com/*)\n"
+        "    case \"${SPIRIT_PET_TEST_PROXY_FAILURE:-}\" in\n"
+        "      curl) exit 22 ;;\n"
+        "      invalid) printf 'not a tarball\\n' > \"$output\"; exit 0 ;;\n"
+        "    esac\n"
+        "    ;;\n"
+        "esac\n"
+        "cp \"$SPIRIT_PET_TEST_RELEASE_ARCHIVE\" \"$output\"\n",
         encoding="utf-8",
     )
-    fake_id = bindir / "id"
-    fake_id.write_text("#!/bin/sh\nprintf '0\\n'\n", encoding="utf-8")
-    python.chmod(0o755)
-    apt.chmod(0o755)
-    fake_id.chmod(0o755)
-    for name in ("dirname", "touch"):
-        executable = shutil.which(name)
-        if not executable:
-            pytest.skip(f"{name} unavailable")
-        (bindir / name).symlink_to(executable)
+    binary.chmod(0o755)
+    return binary
+
+
+def make_release_archive(project, archive_path):
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for entry in project.iterdir():
+            archive.add(entry, arcname=entry.name)
+
+
+def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    for name in ("install.sh", "xiupet.sh"):
+        result = subprocess.run(["bash", "-n", str(ROOT / "scripts" / name)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+    result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "[install|update|uninstall]" in result.stdout
+    assert "--source release|checkout" in result.stdout
+    manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
+    assert manager_help.returncode == 0
+    assert "install reinstalls dependencies from local files" in manager_help.stdout
+    assert "update fetches the latest Release source" in manager_help.stdout
+
+
+def test_removed_branch_option_is_rejected_before_python_or_network_access():
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts/install.sh"), "install", "--branch=dev"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert "Unknown option: --branch=dev" in result.stderr
+
+
+def test_invalid_source_mode_is_rejected_before_python_or_network_access():
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts/install.sh"), "--source", "main"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert "expected release or checkout" in result.stderr
+
+
+@pytest.mark.parametrize("proxy_failure", [None, "curl", "invalid"])
+def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
+    source_project, tmp_path, proxy_failure,
+):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, nb = fake_python(tmp_path)
+    curl_dir = tmp_path / "curl-bin"
+    curl_dir.mkdir()
+    archive = tmp_path / "project.tar.gz"
+    make_release_archive(source_project, archive)
+    fake_release_curl(curl_dir, archive)
+    destination = tmp_path / "release install"
+    curl_log = tmp_path / "curl.log"
+    environment = {
+        **os.environ,
+        "PATH": f"{curl_dir}{os.pathsep}{os.environ['PATH']}",
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_PYTHON": str(python),
+        "SPIRIT_PET_TEST_NB": str(nb),
+        "SPIRIT_PET_TEST_CURL_LOG": str(curl_log),
+        "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
+        "SPIRIT_PET_BIN_DIR": str(tmp_path / "commands"),
+    }
+    if proxy_failure:
+        environment["SPIRIT_PET_TEST_PROXY_FAILURE"] = proxy_failure
+    result = subprocess.run(
+        [
+            "bash", str(source_project / "scripts/install.sh"), "install",
+            "--directory", str(destination), "--yes", "--no-start",
+        ],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    urls = curl_log.read_text(encoding="utf-8").splitlines()
+    proxy_url = "https://gh-proxy.com/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    official_url = "https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    if proxy_failure:
+        assert urls == [proxy_url, official_url]
+    else:
+        assert urls == [proxy_url]
+    assert (destination / "pyproject.toml").is_file()
+    assert (destination / "scripts/xiupet.sh").is_file()
+    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "release\n"
+
+
+def test_install_copies_source_creates_env_and_shell_command_then_preserves_config(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, nb = fake_python(tmp_path)
+    destination = tmp_path / "installed bot"
+    bin_dir = tmp_path / "commands"
     env = {
         **os.environ,
-        "PATH": str(bindir),
-        "SPIRIT_PET_SKIP_SYSTEM": "0",
-        "SPIRIT_PET_PLATFORM": "",
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_PYTHON": str(python),
+        "SPIRIT_PET_TEST_NB": str(nb),
+        "SPIRIT_PET_BIN_DIR": str(bin_dir),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
     }
-    result = subprocess.run(
-        [bash, str(ROOT / "scripts/install.sh"), "--yes", "--no-start"],
-        capture_output=True,
-        text=True,
-        env=env,
+    command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"]
+    result = subprocess.run(command, capture_output=True, text=True, env=env)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "checkout\n"
+    assert (destination / ".venv/bin/nb").is_file()
+    config = (destination / ".env").read_text(encoding="utf-8")
+    assert "HOST=127.0.0.1" in config and "PORT=8080" in config
+    assert len(next(line.split("=", 1)[1] for line in config.splitlines() if line.startswith("ONEBOT_V11_ACCESS_TOKEN="))) == 64
+    command_file = bin_dir / "xiupet"
+    assert command_file.is_symlink() and os.readlink(command_file) == str(destination / "scripts/xiupet.sh")
+    assert os.access(command_file, os.X_OK)
+    status = subprocess.run([str(command_file), "status"], capture_output=True, text=True, env=env)
+    assert status.returncode == 1 and "xiupet is stopped" in status.stdout
+
+    sentinel = "PRIVATE_CONFIG=keep this exactly\n"
+    (destination / ".env").write_text(sentinel, encoding="utf-8")
+    data_dir = destination / "data"
+    data_dir.mkdir(parents=True)
+    save = data_dir / "player.db"
+    save.write_bytes(b"existing player save")
+    option_first_command = [
+        "bash", str(source_project / "scripts/install.sh"), "--source", "checkout", "--directory", str(destination), "--yes", "--no-start",
+    ]
+    result = subprocess.run(option_first_command, capture_output=True, text=True, env=env)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (destination / ".env").read_text(encoding="utf-8") == sentinel
+    assert save.read_bytes() == b"existing player save"
+
+    uninstall = subprocess.run(
+        ["bash", str(source_project / "scripts/install.sh"), "uninstall", "--directory", str(destination), "--yes"],
+        capture_output=True, text=True,
     )
-    assert result.returncode == 0, result.stderr
-    assert "python3 python3-venv python3-pip curl" in log.read_text(encoding="utf-8")
+    assert uninstall.returncode == 0, uninstall.stdout + uninstall.stderr
+    assert not destination.exists()
+    assert not command_file.exists()
 
 
-def test_powershell_bootstraps_python_without_winget():
-    text = (ROOT / "scripts/install.ps1").read_text(encoding="utf-8")
-    assert "python-3.12.10-amd64.exe" in text
-    assert "Get-AuthenticodeSignature" in text
-    assert "Python Software Foundation" in text
-    assert "if (-not $Python) { Install-Python }" in text
+@pytest.mark.parametrize("fail_dependencies", [False, True])
+def test_release_update_replaces_code_reinstalls_dependencies_and_preserves_runtime_state(
+    source_project, tmp_path, fail_dependencies,
+):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, _ = fake_python(tmp_path)
+    curl_dir = tmp_path / "curl-bin"
+    curl_dir.mkdir()
+    archive = tmp_path / "project.tar.gz"
+    release_module = source_project / "src/plugins/nonebot_plugin_spirit_pet/release_update.py"
+    release_module.write_text("RELEASE_CODE = True\n", encoding="utf-8")
+    (source_project / "requirements.txt").write_text("release-dependency==2\n", encoding="utf-8")
+    make_release_archive(source_project, archive)
+    fake_release_curl(curl_dir, archive)
+
+    destination = tmp_path / "managed install"
+    shutil.copytree(source_project, destination)
+    (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").unlink()
+    (destination / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    (destination / ".xiupet-source").write_text("release\n", encoding="ascii")
+    (destination / "src/obsolete.py").write_text("OLD_CODE = True\n", encoding="utf-8")
+    (destination / "requirements.txt").write_text("old-dependency==1\n", encoding="utf-8")
+    (destination / ".env").write_text("PRIVATE_CONFIG=unchanged\n", encoding="utf-8")
+    data_dir = destination / "data"
+    data_dir.mkdir()
+    database_path = data_dir / "players.sqlite3"
+    database = sqlite3.connect(database_path)
+    database.execute("PRAGMA journal_mode=WAL")
+    database.execute("CREATE TABLE player_state (player_id TEXT PRIMARY KEY, level INTEGER NOT NULL)")
+    database.execute("INSERT INTO player_state VALUES ('player-1', 17)")
+    database.commit()
+    backup_path = data_dir / "players.backup"
+    backup = sqlite3.connect(backup_path)
+    database.backup(backup)
+    backup.close()
+    wal_path = data_dir / "players.sqlite3-wal"
+    shm_path = data_dir / "players.sqlite3-shm"
+    wal_before = wal_path.read_bytes()
+    shm_before = shm_path.read_bytes()
+    runtime_dir = destination / ".xiupet"
+    runtime_dir.mkdir()
+    (runtime_dir / "run.log").write_text("runtime log\n", encoding="utf-8")
+    (runtime_dir / "custom-state").write_text("runtime state\n", encoding="utf-8")
+    external_logs = destination / "logs"
+    external_logs.mkdir()
+    (external_logs / "user.log").write_text("user log\n", encoding="utf-8")
+    venv_bin = destination / ".venv/bin"
+    venv_bin.mkdir(parents=True)
+    dependency_log = tmp_path / "dependency-installs.log"
+    venv_python = venv_bin / "python"
+    venv_python.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$*\" >> \"$SPIRIT_PET_TEST_DEPENDENCY_LOG\"\n"
+        "if [ \"${SPIRIT_PET_TEST_FAIL_DEPENDENCIES:-0}\" = 1 ] && [ \"$1 $2 $3\" = \"-m pip install\" ] && [ \"$4\" = \"nb-cli==1.5.0\" ]; then exit 1; fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    venv_python.chmod(0o755)
+    (venv_bin / "venv-sentinel").write_text("keep venv", encoding="utf-8")
+    command_file = tmp_path / "commands/xiupet"
+    command_file.parent.mkdir()
+    command_file.symlink_to(destination / "scripts/xiupet.sh")
+    (destination / ".xiupet-command").write_text(f"{command_file}\n", encoding="utf-8")
+
+    curl_log = tmp_path / "curl.log"
+    environment = {
+        **os.environ,
+        "PATH": f"{curl_dir}{os.pathsep}{os.environ['PATH']}",
+        "XIUPET_PROJECT": str(destination),
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_CURL_LOG": str(curl_log),
+        "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
+        "SPIRIT_PET_TEST_DEPENDENCY_LOG": str(dependency_log),
+        "SPIRIT_PET_SKIP_SYSTEM": "1",
+    }
+    if fail_dependencies:
+        environment["SPIRIT_PET_TEST_FAIL_DEPENDENCIES"] = "1"
+    result = subprocess.run(
+        ["bash", str(destination / "scripts/xiupet.sh"), "update"],
+        capture_output=True, text=True, env=environment,
+    )
+    assert (result.returncode != 0 if fail_dependencies else result.returncode == 0), result.stdout + result.stderr
+    assert (destination / ".env").read_text(encoding="utf-8") == "PRIVATE_CONFIG=unchanged\n"
+    assert database.execute("SELECT player_id, level FROM player_state").fetchone() == ("player-1", 17)
+    assert wal_path.read_bytes() == wal_before
+    assert shm_path.read_bytes() == shm_before
+    with sqlite3.connect(backup_path) as saved_database:
+        assert saved_database.execute("SELECT player_id, level FROM player_state").fetchone() == ("player-1", 17)
+    assert (runtime_dir / "run.log").read_text(encoding="utf-8") == "runtime log\n"
+    assert (runtime_dir / "custom-state").read_text(encoding="utf-8") == "runtime state\n"
+    assert (external_logs / "user.log").read_text(encoding="utf-8") == "user log\n"
+    assert (venv_bin / "venv-sentinel").read_text(encoding="utf-8") == "keep venv"
+    assert command_file.is_symlink()
+    assert os.readlink(command_file) == str(destination / "scripts/xiupet.sh")
+    assert (destination / ".xiupet-command").read_text(encoding="utf-8") == f"{command_file}\n"
+    assert not (runtime_dir / "pid").exists()
+    assert "-m pip install --upgrade pip" in dependency_log.read_text(encoding="utf-8")
+    assert f"-r {destination}/requirements.txt" in dependency_log.read_text(encoding="utf-8")
+    assert curl_log.read_text(encoding="utf-8").splitlines() == [
+        "https://gh-proxy.com/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
+    ]
+    assert not list(destination.glob(".xiupet-update.*"))
+    if fail_dependencies:
+        assert not (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").exists()
+        assert (destination / "src/obsolete.py").read_text(encoding="utf-8") == "OLD_CODE = True\n"
+        assert (destination / "requirements.txt").read_text(encoding="utf-8") == "old-dependency==1\n"
+        assert "Release 更新完成" not in result.stdout
+    else:
+        assert "Release 更新完成" in result.stdout
+        assert "未启动" in result.stdout
+        assert (destination / "src/plugins/nonebot_plugin_spirit_pet/release_update.py").is_file()
+        assert not (destination / "src/obsolete.py").exists()
+        assert (destination / "requirements.txt").read_text(encoding="utf-8") == "release-dependency==2\n"
+    database.close()
 
 
-def test_powershell_entrypoint_has_valid_syntax():
-    shell = shutil.which("pwsh") or shutil.which("powershell")
-    if not shell:
-        pytest.skip("PowerShell unavailable")
-    command = "$errors=$null; $tokens=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:SPIRIT_PET_TEST_SCRIPT, [ref]$tokens, [ref]$errors) | Out-Null; if ($errors) { $errors | Out-String | Write-Error; exit 1 }"
-    result = subprocess.run([shell, "-NoProfile", "-NonInteractive", "-Command", command], capture_output=True, text=True, env={**os.environ, "SPIRIT_PET_TEST_SCRIPT": str(ROOT / "scripts/install.ps1")})
-    assert result.returncode == 0, result.stderr
+def test_release_update_refuses_checkout_without_download_or_stopping(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    (source_project / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    (source_project / ".xiupet-source").write_text("checkout\n", encoding="ascii")
+    source_file = source_project / "src/plugins/nonebot_plugin_spirit_pet/__init__.py"
+    original_source = source_file.read_bytes()
+    environment = {**os.environ, "XIUPET_PROJECT": str(source_project)}
+    result = subprocess.run(
+        ["bash", str(source_project / "scripts/xiupet.sh"), "update"],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode != 0
+    assert "development source will not be overwritten" in result.stderr
+    assert source_file.read_bytes() == original_source
+    assert not (source_project / ".xiupet/pid").exists()
+
+
+def test_missing_python_is_prepared_by_apt_before_install(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    python, nb = fake_python(tmp_path)
+    marker = tmp_path / "python-installed"
+    package_log = tmp_path / "apt.log"
+    bin_dir = tmp_path / "commands"
+    bin_dir.mkdir()
+    apt = bin_dir / "apt-get"
+    apt.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$*\" >> \"$SPIRIT_PET_TEST_APT_LOG\"\n"
+        "touch \"$SPIRIT_PET_TEST_PYTHON_MARKER\"\n",
+        encoding="utf-8",
+    )
+    sudo = bin_dir / "sudo"
+    sudo.write_text("#!/bin/sh\nexec \"$@\"\n", encoding="utf-8")
+    apt.chmod(0o755)
+    sudo.chmod(0o755)
+    destination = tmp_path / "installed bot"
+    env = {
+        **os.environ,
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+        "SPIRIT_PET_PYTHON": str(python),
+        "SPIRIT_PET_TEST_PYTHON": str(python),
+        "SPIRIT_PET_TEST_NB": str(nb),
+        "SPIRIT_PET_TEST_PYTHON_MARKER": str(marker),
+        "SPIRIT_PET_TEST_APT_LOG": str(package_log),
+        "SPIRIT_PET_BIN_DIR": str(tmp_path / "commands-installed"),
+    }
+    env.pop("SPIRIT_PET_SKIP_SYSTEM", None)
+    result = subprocess.run(
+        ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"],
+        capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert marker.is_file()
+    assert "python3-venv" in package_log.read_text(encoding="utf-8")
+    assert (destination / ".venv/bin/nb").is_file()
+
+
+def test_uninstall_refuses_unmarked_directory_without_confirmation(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    result = subprocess.run(
+        ["bash", str(source_project / "scripts/install.sh"), "uninstall", "--directory", str(source_project)],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 1
+    assert "--yes" in result.stderr
+    assert (source_project / "pyproject.toml").is_file()
+
+
+def test_uninstall_removes_marked_install_without_python(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    (source_project / ".xiupet-managed").write_text("managed\n", encoding="ascii")
+    result = subprocess.run(
+        ["bash", str(source_project / "scripts/install.sh"), "uninstall", "--directory", str(source_project), "--yes"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not source_project.exists()
+
+
+def test_linux_management_command_uses_nb_and_can_start_stop_status(source_project, tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    environment = tmp_path / "env with spaces"
+    (environment / "bin").mkdir(parents=True)
+    executable = environment / "bin/nb"
+    executable.write_text("#!/bin/sh\nsleep 30\n", encoding="utf-8")
+    executable.chmod(0o755)
+    venv = source_project / ".venv"
+    (venv / "bin").mkdir(parents=True)
+    shutil.copy2(executable, venv / "bin/nb")
+    env = {**os.environ, "XIUPET_PROJECT": str(source_project)}
+
+    started = subprocess.run(["bash", str(source_project / "scripts/xiupet.sh"), "start"], capture_output=True, text=True, env=env)
+    assert started.returncode == 0, started.stdout + started.stderr
+    assert subprocess.run(["bash", str(source_project / "scripts/xiupet.sh"), "status"], capture_output=True, text=True, env=env).returncode == 0
+    stopped = subprocess.run(["bash", str(source_project / "scripts/xiupet.sh"), "stop"], capture_output=True, text=True, env=env, timeout=15)
+    assert stopped.returncode == 0, stopped.stdout + stopped.stderr
+    assert not (source_project / ".xiupet/pid").exists()
+
+
+def test_installer_and_management_command_are_bash_and_use_nb_cli():
+    shell_installer = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+    manager = (ROOT / "scripts/xiupet.sh").read_text(encoding="utf-8")
+    assert " -c " not in shell_installer
+    assert '"$PYTHON" -m venv' in shell_installer
+    assert '"$venv/bin/python" -m pip install' in shell_installer
+    assert '"$venv/bin/nb" run' in shell_installer
+    assert "python3" not in manager
+    assert '"$NB" run' in manager

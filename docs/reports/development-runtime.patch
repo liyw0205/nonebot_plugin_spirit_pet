@@ -1,0 +1,520 @@
+diff --git a/scripts/smoke_test.py b/scripts/smoke_test.py
+index 853c83e..4e8d538 100644
+--- a/scripts/smoke_test.py
++++ b/scripts/smoke_test.py
+@@ -1,5 +1,6 @@
+ """Run the actual ASGI app and a OneBot V11 client without NapCat or QQ credentials."""
+ 
++import importlib
+ import json
+ import os
+ import sqlite3
+@@ -16,6 +17,244 @@ from nonebot.adapters.qq import Adapter as QQAdapter
+ from starlette.websockets import WebSocketDisconnect
+ 
+ 
++class _MinimumRandom:
++    def randint(self, start, stop):
++        return start
++
++    def random(self):
++        return 0.0
++
++
++def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
++    """Verify one protocol flow against temporary persisted state and real combat."""
++    users = (41001, 41002, 41003, 41004)
++    names = ("三灵队长", "三灵队友", "单灵队友", "三灵镜像")
++    species = ("qingluan", "xuanhu", "baize")
++    handlers = importlib.import_module(f"{plugin_package}.adapters.handlers")
++    adventure = importlib.import_module(f"{plugin_package}.gameplay.adventure")
++    arena = importlib.import_module(f"{plugin_package}.gameplay.arena.battles")
++    battles = []
++
++    def read(statement, arguments=()):
++        with closing(sqlite3.connect(database)) as conn:
++            conn.row_factory = sqlite3.Row
++            return [dict(row) for row in conn.execute(statement, arguments)]
++
++    def write(statement, arguments=()):
++        with closing(sqlite3.connect(database)) as conn:
++            conn.execute(statement, arguments)
++            conn.commit()
++
++    original_fight = adventure.fight
++
++    def observed_fight(*args, **kwargs):
++        result = original_fight(*args, **kwargs)
++        battles.append(result)
++        return result
++
++    def pets(user):
++        return read("SELECT * FROM pets WHERE user_id=? ORDER BY pet_id", (str(user),))
++
++    def mastery():
++        return read("SELECT * FROM learned_skills ORDER BY pet_id, skill_id")
++
++    def items(user):
++        return {row["item_id"]: row["quantity"] for row in read("SELECT * FROM inventory WHERE user_id=?", (str(user),))}
++
++    def resource_state():
++        tables = ("players", "pets", "inventory", "learned_skills", "team_members", "quest_progress",
++                  "pvp_results", "season_entries")
++        return {table: read(f"SELECT * FROM {table} ORDER BY rowid") for table in tables}
++
++    def mastery_points(row):
++        return row["proficiency"] + sum(
++            handlers.game.content.skill_levels[level].required_proficiency
++            for level in range(1, row["level"])
++        )
++
++    def check_mastery(before, battle, participating):
++        old = {(row["pet_id"], row["skill_id"]): row for row in before}
++        cap = sum(level.required_proficiency or 0 for level in handlers.game.content.skill_levels.values())
++        for row in mastery():
++            key = row["pet_id"], row["skill_id"]
++            uses = battle.skill_uses[0].get(row["pet_id"], {}).get(row["skill_id"], 0)
++            gained = uses * handlers.game.content.rules.skill_proficiency_per_use if row["pet_id"] in participating else 0
++            assert mastery_points(row) == min(cap, mastery_points(old[key]) + gained), (row, uses)
++        assert all(battle.skill_uses[0].get(pet_id, {}).get("spirit_wave", 0) > 0 for pet_id in participating)
++
++    def last_record(kind):
++        return read("SELECT * FROM battle_records WHERE initiator_id=? AND kind=? ORDER BY battle_id DESC LIMIT 1",
++                    (str(users[0]), kind))[0]
++
++    def check_snapshot(record, expected_sides, before_mastery):
++        snapshot = json.loads(record["snapshot"])
++        assert snapshot["version"] == 3
++        previous = {(row["pet_id"], row["skill_id"]): row for row in before_mastery}
++        for side, selected in enumerate(expected_sides):
++            members = snapshot["teams"][side]["members"]
++            assert len(members) == len(selected)
++            for member, (user, pet_id) in zip(members, selected):
++                row = read("SELECT * FROM pets WHERE pet_id=?", (pet_id,))[0]
++                assert member["pet_name"] == row["name"]
++                assert member["dao_name"] == names[users.index(user)]
++                assert member["species_id"] == row["species_id"]
++                assert member["realm"] == row["realm"] and member["layer"] == row["layer"]
++                assert set(member["stats"]) == {"hp", "attack", "defense", "speed"}
++                assert member["primary_element"] and member["elements"]
++                skill = member["skills"][0]
++                old = previous[pet_id, "spirit_wave"]
++                assert (skill["id"], skill["level"], skill["proficiency"]) == ("spirit_wave", old["level"], old["proficiency"])
++                assert "equipment" in member and "equipment_sets" in member and "resonance" in member
++        participants = read("SELECT user_id, side FROM battle_participants WHERE battle_id=? ORDER BY side, user_id",
++                            (record["battle_id"],))
++        expected = sorted({(str(user), side) for side, selected in enumerate(expected_sides) for user, _ in selected},
++                          key=lambda item: (item[1], item[0]))
++        assert [(row["user_id"], row["side"]) for row in participants] == expected
++        assert json.loads(record["battle_log"])
++
++    with patch(f"{plugin_package}.application.game.time.time", return_value=now), \
++         patch.object(handlers.game, "rng", _MinimumRandom()), \
++         patch.object(adventure, "fight", observed_fight), patch.object(arena, "fight", observed_fight):
++        for index, (user, name) in enumerate(zip(users, names)):
++            exchange(user, 100 + index * 10, "灵宠领养 青鸾", "灵契初成")
++            exchange(user, 101 + index * 10, f"灵宠道号 {name}", "道号已定")
++            write("UPDATE players SET stones=10000 WHERE user_id=?", (str(user),))
++            if index != 2:
++                exchange(user, 102 + index * 10, "灵宠召唤 2", "山海召唤")
++
++        rosters = {}
++        # Prerequisites only: all mutations under test still enter through commands.
++        for user in users:
++            rosters[user] = [row["pet_id"] for row in pets(user)]
++            for index, pet_id in enumerate(rosters[user]):
++                write("UPDATE pets SET species_id=?, name=?, realm=1, energy=100, energy_updated=? WHERE pet_id=?",
++                      (species[index], f"{names[users.index(user)]}{index + 1}", now, pet_id))
++                write("INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, 'spirit_wave', 1)", (pet_id,))
++            exchange(user, 140 + users.index(user), "灵宠出战 " + " ".join(map(str, rosters[user])), "灵宠出战阵容")
++
++        slots_before = read("SELECT * FROM active_pet_slots ORDER BY user_id, slot")
++        exchange(users[0], 150, "灵宠出战", "三灵队长3")
++        assert read("SELECT * FROM active_pet_slots ORDER BY user_id, slot") == slots_before
++        assert read("SELECT active_pet_id FROM players WHERE user_id=?", (str(users[0]),))[0]["active_pet_id"] == rosters[users[0]][0]
++
++        before = pets(users[0]), mastery(), read("SELECT stones FROM players WHERE user_id=?", (str(users[0]),))[0]["stones"]
++        before_items = items(users[0])
++        solo_reply = exchange(users[0], 151, "灵宠挑战 青岚林", "秘境获胜")
++        assert [row["energy"] for row in pets(users[0])] == [80, 80, 80]
++        assert [row["exp"] - old["exp"] for row, old in zip(pets(users[0]), before[0])] == [35, 0, 0]
++        assert read("SELECT stones FROM players WHERE user_id=?", (str(users[0]),))[0]["stones"] - before[2] == 40
++        assert items(users[0]).get("forge_ore", 0) - before_items.get("forge_ore", 0) == 1
++        assert items(users[0]).get("bloodline_essence", 0) - before_items.get("bloodline_essence", 0) == 1
++        assert read("SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='pve_once'", (str(users[0]),)) == [{"progress": 1}]
++        check_mastery(before[1], battles[-1], rosters[users[0]])
++        solo = last_record("pve")
++        check_snapshot(solo, [[(users[0], pet_id) for pet_id in rosters[users[0]]]], before[1])
++        after_solo = resource_state()
++        assert exchange(users[0], 151, "灵宠挑战 青岚林", "秘境获胜") == solo_reply
++        assert resource_state() == after_solo
++
++        exchange(users[0], 152, "灵宠组队", "灵契小队")
++        for index, user in enumerate(users[1:3]):
++            exchange(user, 153 + index * 2, f"灵宠入队 {names[0]}", "入队申请已提交")
++            exchange(users[0], 154 + index * 2, f"灵宠队伍同意 {names[index + 1]}", "加入队伍")
++        for index, user in enumerate(users[:3]):
++            exchange(user, 157 + index, "灵宠准备", "出征准备")
++        expected_ready = {str(user): rosters[user] if index == 0 else rosters[user][:1] for index, user in enumerate(users[:3])}
++        ready = read("SELECT user_id, ready_pet_ids FROM team_members ORDER BY user_id")
++        assert {row["user_id"]: json.loads(row["ready_pet_ids"]) for row in ready} == expected_ready
++        exchange(users[0], 160, f"灵宠修炼 {rosters[users[0]][1]}", "吐纳修炼")
++        ready = read("SELECT user_id, ready_pet_id FROM team_members ORDER BY user_id")
++        assert [row["ready_pet_id"] is None for row in ready] == [True, False, False]
++        assert [row["energy"] for row in pets(users[0])] == [80, 65, 80]
++        rejected_before = resource_state()
++        exchange(users[0], 161, "灵宠组队挑战 上古灵殿", "全体成员准备")
++        assert resource_state() == rejected_before
++        exchange(users[0], 162, "灵宠准备", "出征准备")
++
++        with patch(f"{plugin_package}.application.game.time.time", return_value=now + 600):
++            before = {user: pets(user) for user in users[:3]}
++            before_items = {user: items(user) for user in users[:3]}
++            before_skills = mastery()
++            stones = {row["user_id"]: row["stones"] for row in read("SELECT user_id, stones FROM players")}
++            team_reply = exchange(users[0], 163, "灵宠组队挑战 上古灵殿", "秘境获胜")
++            selected = [(user, pet_id) for user in users[:3] for pet_id in expected_ready[str(user)]]
++            assert len(selected) == 5
++            for user in users[:3]:
++                for row, old in zip(pets(user), before[user]):
++                    fought = row["pet_id"] in expected_ready[str(user)]
++                    assert row["energy"] == min(100, old["energy"] + 2) - (30 if fought else 0)
++                    assert row["exp"] - old["exp"] == (70 if row["pet_id"] == rosters[user][0] else 0)
++                assert read("SELECT stones FROM players WHERE user_id=?", (str(user),))[0]["stones"] - stones[str(user)] == 90
++                assert items(user).get("forge_ore", 0) - before_items[user].get("forge_ore", 0) == 2
++                assert items(user).get("bloodline_essence", 0) - before_items[user].get("bloodline_essence", 0) == 1
++                progress = read("SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='pve_once'", (str(user),))[0]["progress"]
++                assert progress == 1
++            check_mastery(before_skills, battles[-1], [pet_id for _, pet_id in selected])
++            team = last_record("pve")
++            check_snapshot(team, [selected], before_skills)
++            assert all(row["ready_pet_id"] is None for row in read("SELECT ready_pet_id FROM team_members"))
++            after_team = resource_state()
++            assert exchange(users[0], 163, "灵宠组队挑战 上古灵殿", "秘境获胜") == team_reply
++            assert resource_state() == after_team
++
++            # A stale, empty-energy defender is still a read-only three-pet mirror.
++            exchange(users[3], 175, "灵宠组队", "灵契小队")
++            exchange(users[3], 176, "灵宠准备", "出征准备")
++            for pet_id in rosters[users[3]]:
++                write("UPDATE pets SET energy=0, energy_updated=? WHERE pet_id=?", (now - 3600, pet_id))
++            for index, user in enumerate(users[:3]):
++                exchange(user, 164 + index, "灵宠准备", "出征准备")
++            defender_before = pets(users[3])
++            defender_ready = read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),))
++            before_skills = mastery()
++            exchange(users[0], 167, "灵宠匹配", names[3])
++            ranked_reply = exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算")
++            assert pets(users[3]) == defender_before
++            assert read("SELECT * FROM team_members WHERE user_id=?", (str(users[3]),)) == defender_ready
++            assert [row["energy"] for row in pets(users[0])] == [32, 17, 32]
++            check_mastery(before_skills, battles[-1], rosters[users[0]])
++            ranked = last_record("pvp")
++            check_snapshot(ranked, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
++                                    [(users[3], pet_id) for pet_id in rosters[users[3]]]], before_skills)
++            assert read("SELECT last_pvp FROM players WHERE user_id=?", (str(users[3]),)) == [{"last_pvp": None}]
++            assert read("SELECT ready_pet_id FROM team_members WHERE user_id=?", (str(users[0]),)) == [{"ready_pet_id": None}]
++            ranked_state = resource_state()
++            assert exchange(users[0], 168, f"灵宠论剑 {names[3]}", "论剑结算") == ranked_reply
++            assert resource_state() == ranked_state
++
++            spar_before = resource_state()
++            spar_skills = mastery()
++            spar_reply = exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算")
++            assert resource_state() == spar_before
++            spar = last_record("spar")
++            check_snapshot(spar, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
++                                 [(users[3], pet_id) for pet_id in rosters[users[3]]]], spar_skills)
++            assert all(battles[-1].skill_uses[side].get(pet_id, {}).get("spirit_wave", 0) > 0
++                       for side, user in enumerate((users[0], users[3])) for pet_id in rosters[user])
++            assert exchange(users[0], 169, f"灵宠切磋 {names[3]}", "切磋结算") == spar_reply
++            assert resource_state() == spar_before
++            exchange(users[0], 170, "灵宠战报", "三灵队长1、三灵队长2、三灵队长3")
++            exchange(users[1], 171, f"灵宠战报 查看 {team['battle_id']}", "上古灵殿")
++            exchange(users[3], 172, f"灵宠战报 查看 {ranked['battle_id']}", "战报")
++            exchange(users[3], 173, f"灵宠战报 查看 {team['battle_id']}", "不是该场战斗的参与者")
++
++        saved_records = read("SELECT * FROM battle_records WHERE initiator_id=? ORDER BY battle_id", (str(users[0]),))
++        write("DELETE FROM operations WHERE user_id=?", (str(users[0]),))
++        # Replay after cache expiry, changed lineup and a future cooldown boundary.
++        with patch(f"{plugin_package}.application.game.time.time", return_value=now + 8 * 86400):
++            exchange(users[0], 174, f"灵宠出战 {rosters[users[0]][2]}", "灵宠出战阵容")
++            replay_before = resource_state()
++            for message_id, command, reply, expected in (
++                (151, "灵宠挑战 青岚林", solo_reply, "秘境获胜"),
++                (163, "灵宠组队挑战 上古灵殿", team_reply, "秘境获胜"),
++                (168, f"灵宠论剑 {names[3]}", ranked_reply, "论剑结算"),
++                (169, f"灵宠切磋 {names[3]}", spar_reply, "切磋结算"),
++            ):
++                assert exchange(users[0], message_id, command, expected) == reply
++                assert resource_state() == replay_before
++            assert read("SELECT * FROM battle_records WHERE initiator_id=? ORDER BY battle_id", (str(users[0]),)) == saved_records
++
++
+ def main():
+     root = Path(__file__).resolve().parents[1]
+     os.chdir(root)
+@@ -66,6 +305,7 @@ def main():
+                         assert text == responses[message_id]
+                     responses[message_id] = text
+                     ws.send_json({"status": "ok", "retcode": 0, "data": {"message_id": message_id + 100}, "echo": request["echo"]})
++                    return text
+ 
+                 for message_id, command, expected in [
+                     (1, "灵宠领养 青鸾", "灵契初成"),
+@@ -219,7 +459,8 @@ def main():
+                     ).fetchone()[0] == 1
+                 for message_id in range(54, 60):
+                     assert "12345" not in responses[message_id]
+-        print("PASS: plugin load, WS authentication, collection, achievements, resonance, skills, PVE, stages, battle reports, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons and redelivery")
++                run_multi_pet_chain(database, exchange, plugin_package, now=finishes_at + 1)
++        print("PASS: plugin load, WS authentication, collection, achievements, resonance, skills, PVE, stages, battle reports, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons, multi-pet protocol chain and redelivery")
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/adventure.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/adventure.py
+index 0762f18..b395190 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/adventure.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/adventure.py
+@@ -191,13 +191,17 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
+     lines = [f"{dungeon.name} · {battle.rounds} 回合", *battle.lines]
+     by_user = {user_id: ctx.player(user_id) for user_id in user_ids}
+     for user_id, pet in selected:
+-        player = by_user[user_id]
+         pet.energy -= dungeon.energy
+-        player.last_pve = ctx.now
+-        lines.extend(award_mastery(ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {})))
+-        if battle.winner == 0:
++        by_user[user_id].last_pve = ctx.now
++        lines.extend(award_mastery(
++            ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
++        ))
++    if battle.winner == 0:
++        # 掉落和每日任务按参战成员结算一次；多宠阵容只提高战力，不叠加单位时间收益。
++        for user_id in user_ids:
+             advance(ctx, "pve", user_id)
+-            lines.append(f"{player.dao_name}的{pet.name}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
++            names = "、".join(pet.name for owner, pet in selected if owner == user_id)
++            lines.append(f"{by_user[user_id].dao_name}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+     for user_id in user_ids:
+         ctx.repo.invalidate_ready(user_id)
+     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/battles.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/battles.py
+index 707403a..a675f76 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/battles.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/battles.py
+@@ -58,7 +58,9 @@ def pvp(ctx: Context, arg: str) -> Reply:
+     ctx.repo.invalidate_ready(ctx.user_id)
+     mastery_lines = []
+     for pet in ctx.active_pets(ctx.user_id):
+-        mastery_lines.extend(award_mastery(ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {})))
++        mastery_lines.extend(award_mastery(
++            ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
++        ))
+     reply = Reply("论剑结算", (
+         f"{ctx.player().dao_name}的{len(attackers)}宠阵容 挑战 {target.dao_name}的{len(defenders)}宠阵容镜像"
+         f" · {battle.rounds} 回合", *battle.lines, *scores, *mastery_lines,
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/eligibility.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/eligibility.py
+index 22d7de1..cc45670 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/eligibility.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/eligibility.py
+@@ -14,6 +14,8 @@ def check_participant(ctx: Context, season: Season, user_id: str) -> Pet:
+     for active in pets:
+         if active.realm < minimum:
+             raise GameError(f"{active.name}境界不足，论剑需达到{ctx.content.realms[minimum].name}。")
++    if len({active.realm for active in pets}) > 1:
++        raise GameError("论剑按出战阵容的大境界匹配，请先用 灵宠出战 改为同一大境界的灵宠。")
+     ctx.check_action(player, pet, "pvp", season.rules.energy, ctx.config.spirit_pet_pvp_cooldown)
+     for extra in pets[1:]:
+         ctx.require_idle_pet(extra)
+@@ -40,6 +42,8 @@ def check_ranked(ctx: Context, season: Season, first: str, second: str) -> tuple
+     if not target_pets:
+         raise GameError("该道友尚未选择出战灵宠。")
+     right = target_pets[0]
++    if any(active.realm != right.realm for active in target_pets):
++        raise GameError(f"{target.dao_name}的出战阵容处于不同大境界，当前不能参与论剑。")
+     if left.realm != right.realm:
+         raise GameError("论剑双方需处于相同大境界。")
+     if abs(rating(ctx, season, first) - rating(ctx, season, second)) > season.rules.max_rating_gap:
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/matching.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/matching.py
+index 51e5c71..d698e72 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/matching.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/arena/matching.py
+@@ -19,6 +19,9 @@ def candidates(ctx: Context, arg: str) -> Reply:
+         "FROM players p JOIN pets t ON t.pet_id=p.active_pet_id "
+         "LEFT JOIN season_entries e ON e.user_id=p.user_id AND e.season_id=:season "
+         "WHERE p.user_id!=:me AND t.realm=:realm "
++        "AND NOT EXISTS (SELECT 1 FROM active_pet_slots s "
++        "JOIN pets member ON member.pet_id=s.pet_id "
++        "WHERE s.user_id=p.user_id AND member.realm!=t.realm) "
+         "AND ABS(COALESCE(e.rating,:initial)-:rating)<=:gap "
+         "AND (SELECT COUNT(*) FROM pvp_results r WHERE r.season_id=:season AND r.day=:day "
+         "AND ((r.challenger_id=:me AND r.target_id=p.user_id) "
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/companionship.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/companionship.py
+index 3100b89..f08d4ef 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/companionship.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/companionship.py
+@@ -38,8 +38,7 @@ def bond(ctx: Context, arg: str) -> Reply:
+     player.current_bond_streak = streak
+     player.best_bond_streak = max(player.best_bond_streak, streak)
+     pet.affinity += gained
+-    if pet.pet_id == player.active_pet_id:
+-        ctx.repo.invalidate_ready(ctx.user_id)
++    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+     advance(ctx, "bond")
+     affinity = f"亲密 +{gained}（{pet.affinity}/100）；每日互动次数已用尽。" if gained else (
+         "亲密已满，本次陪伴不再增加；每日互动次数已用尽。"
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/cultivation.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/cultivation.py
+index 9bfa696..49de5db 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/cultivation.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/cultivation.py
+@@ -23,8 +23,7 @@ def train(ctx: Context, arg: str) -> Reply:
+     pet.exp += gained
+     pet.energy -= rules.training_energy
+     player.last_train = ctx.now
+-    if pet.pet_id == player.active_pet_id:
+-        ctx.repo.invalidate_ready(ctx.user_id)
++    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+     advance(ctx, "train")
+     return Reply("吐纳修炼", (
+         f"{pet.name}（编号 {pet.pet_id}）吸纳天地灵气。",
+@@ -145,8 +144,7 @@ def breakthrough(ctx: Context, arg: str) -> Reply:
+         ctx.repo.consume_item(ctx.user_id, item_id, amount)
+     player.stones -= stones
+     chance = breakthrough_chance(pet, cost, bonus)
+-    if pet.pet_id == player.active_pet_id:
+-        ctx.repo.invalidate_ready(ctx.user_id)
++    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+     if ctx.rng.random() < chance:
+         previous_failures = pet.major_breakthrough_failures
+         pet.exp -= exp
+@@ -190,8 +188,7 @@ def evolve(ctx: Context, arg: str) -> Reply:
+         ctx.repo.consume_item(ctx.user_id, item_id, amount)
+     pet.exp -= cost.exp
+     player.stones -= cost.stones
+-    if pet.pet_id == player.active_pet_id:
+-        ctx.repo.invalidate_ready(ctx.user_id)
++    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+     if ctx.rng.random() >= cost.chance:
+         return Reply("进化未成", ("血脉未改变，本次修为、灵石和材料已消耗。",))
+     pet.bloodline += 1
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/economy.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/economy.py
+index 887c647..01f5724 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/economy.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/economy.py
+@@ -96,8 +96,7 @@ def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
+     pet.affinity += affinity
+     if item.id == "spirit_food":
+         advance(ctx, "feed")
+-    if pet.pet_id == ctx.player().active_pet_id:
+-        ctx.repo.invalidate_ready(ctx.user_id)
++    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+     return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
+         f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
+     ))
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/mastery.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/mastery.py
+index 0725684..fff9a0b 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/mastery.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/mastery.py
+@@ -17,12 +17,16 @@ def progress_text(ctx: Context, level: int, proficiency: int) -> str:
+     return f"{level}级 · {detail}"
+ 
+ 
+-def award_mastery(ctx: Context, user_id: str, uses: dict[str, int]) -> tuple[str, ...]:
++def award_mastery(
++    ctx: Context, user_id: str, uses: dict[str, int], *, pet_id: int,
++) -> tuple[str, ...]:
+     if any(type(count) is not int or count < 0 for count in uses.values()):
+         raise ValueError("skill use counts must be nonnegative integers")
+     if not any(uses.values()):
+         return ()
+-    pet = ctx.pet(user_id)
++    pet = ctx.repo.pet(pet_id)
++    if pet.user_id != user_id:
++        raise ValueError("mastery pet must belong to the participant")
+     rows = ctx.repo.conn.execute(
+         "SELECT skill_id, level, proficiency FROM learned_skills "
+         "WHERE pet_id=? AND equipped=1 ORDER BY skill_id", (pet.pet_id,),
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/pve_stages.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/pve_stages.py
+index dc1431c..dadab70 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/pve_stages.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/pve_stages.py
+@@ -210,7 +210,9 @@ def challenge(ctx: Context, arg: str) -> Reply:
+     _settle_cost(ctx, user_ids, stage)
+     lines = [f"第{stage.order}关 · {stage.name} · {battle.rounds} 回合", *battle.lines]
+     for user_id, pet in selected:
+-        lines.extend(award_mastery(ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {})))
++        lines.extend(award_mastery(
++            ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
++        ))
+ 
+     if battle.winner == 0:
+         for user_id in user_ids:
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/gameplay/teams/party.py b/src/plugins/nonebot_plugin_spirit_pet/gameplay/teams/party.py
+index 3cfcf3e..f0f6cc3 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/gameplay/teams/party.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/gameplay/teams/party.py
+@@ -50,6 +50,8 @@ def status(ctx: Context, arg: str) -> Reply:
+     others = []
+     for row in rows:
+         active = ctx.repo.active_pets(row["user_id"])
++        if row["user_id"] != member["leader_id"]:
++            active = active[:1]
+         pet = active[0] if active else _active_pet(ctx, row["user_id"])
+         role = "队长" if row["user_id"] == member["leader_id"] else "队员"
+         ready_ids = _ready_ids(row)
+@@ -79,6 +81,8 @@ def _member_detail(ctx: Context, member, dao_name: str) -> Reply:
+     if row is None:
+         raise GameError("该道友不在你的队伍中。")
+     active = ctx.repo.active_pets(row["user_id"])
++    if row["user_id"] != member["leader_id"]:
++        active = active[:1]
+     pet = active[0] if active else _active_pet(ctx, row["user_id"])
+     role = "队长" if row["user_id"] == member["leader_id"] else "队员"
+     ready_ids = _ready_ids(row)
+diff --git a/src/plugins/nonebot_plugin_spirit_pet/storage/repository.py b/src/plugins/nonebot_plugin_spirit_pet/storage/repository.py
+index 49f8011..4cdbd7a 100644
+--- a/src/plugins/nonebot_plugin_spirit_pet/storage/repository.py
++++ b/src/plugins/nonebot_plugin_spirit_pet/storage/repository.py
+@@ -157,6 +157,18 @@ class Repository:
+             "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE user_id=?", (user_id,),
+         )
+ 
++    def invalidate_pet_ready(self, user_id: str, pet_id: int) -> None:
++        member = self.conn.execute(
++            "SELECT t.leader_id FROM team_members m JOIN teams t USING(team_id) "
++            "WHERE m.user_id=? AND m.ready_pet_id IS NOT NULL", (user_id,),
++        ).fetchone()
++        if member is None:
++            return
++        pets = self.active_pets(user_id)
++        participants = pets if member["leader_id"] == user_id else pets[:1]
++        if any(pet.pet_id == pet_id for pet in participants):
++            self.invalidate_ready(user_id)
++
+     def invalidate_team_ready(self, team_id: int) -> None:
+         self.conn.execute(
+             "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE team_id=?", (team_id,),
+diff --git a/tests/test_mastery.py b/tests/test_mastery.py
+index cfb8774..de8c106 100644
+--- a/tests/test_mastery.py
++++ b/tests/test_mastery.py
+@@ -32,7 +32,8 @@ def award(game, uses, user="u1", operation="mastery", fail=False):
+     def execute(conn):
+         repo = Repository(conn)
+         ctx = Context(repo, service.content, service.config, service.rng, user, 1_800_000_000, operation)
+-        lines = award_mastery(ctx, user, uses)
++        pet_id = repo.active_pets(user)[0].pet_id
++        lines = award_mastery(ctx, user, uses, pet_id=pet_id)
+         if fail:
+             raise RuntimeError("abort battle settlement")
+         repo.save()
+diff --git a/tests/test_runtime.py b/tests/test_runtime.py
+index 2c0c11f..480aacd 100644
+--- a/tests/test_runtime.py
++++ b/tests/test_runtime.py
+@@ -21,3 +21,4 @@ def test_actual_nonebot_reverse_websocket_roundtrip():
+     )
+     assert result.returncode == 0, result.stdout + result.stderr
+     assert "PASS:" in result.stdout
++    assert "multi-pet protocol chain" in result.stdout

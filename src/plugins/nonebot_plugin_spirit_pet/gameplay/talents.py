@@ -78,7 +78,7 @@ def after_hit(unit: Fighter, target: Fighter, damage: int) -> tuple[str, ...]:
         return ()
     events = []
     talent = unit.talent
-    if talent and talent.kind == "lifesteal":
+    if unit.hp > 0 and talent and talent.kind == "lifesteal":
         healing = min(unit.stats.hp - unit.hp, max(1, int(damage * talent.power)))
         if healing:
             unit.hp += healing

@@ -1,0 +1,12 @@
+10-09 23:14:04 [SUCCESS] nonebot | NoneBot is initializing...
+124 scenarios, 12400 battles; 0 issues
+lineages=54/54; effects=7/7
+seed=20261007; content_sha256=f9d32d0fb7864e6fa85dc9c15a328de7f2b82e5f0b3ffc1e9e52558498628458
+ice_seal: wins=100/100; casts=300; activations=100
+poison_sapping: wins=100/100; casts=1324; activations=1267
+earthen_ward: wins=0/100; casts=4000; activations=4000
+pure_breath: wins=0/100; casts=1421; activations=1347
+spirit_dispel: wins=0/100; casts=100; activations=100
+battle_chant: wins=0/100; casts=592; activations=592
+mountain_taunt: wins=89/100; casts=615; activations=334
+spirit_wave: wins=0/100; casts=644; activations=0

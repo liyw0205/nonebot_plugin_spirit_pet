@@ -1,0 +1,30 @@
+[
+  {
+    "id": "sky_wind",
+    "name": "青岚风铃",
+    "description": "借风而行，攻速兼备。",
+    "items": ["wind_feather", "spirit_bell"],
+    "bonuses": {"attack": 4, "speed": 8}
+  },
+  {
+    "id": "stone_guard",
+    "name": "山岳镇魂",
+    "description": "厚土承身，稳守灵台。",
+    "items": ["earth_shell", "stone_core"],
+    "bonuses": {"hp": 30, "defense": 6}
+  },
+  {
+    "id": "venom_edge",
+    "name": "幽鳞蚀锋",
+    "description": "毒锋相合，出手更快更狠。",
+    "items": ["poison_scale", "poison_thorn"],
+    "bonuses": {"attack": 6, "speed": 3}
+  },
+  {
+    "id": "root_silk",
+    "name": "木灵缚甲",
+    "description": "灵丝护体，根木生息。",
+    "items": ["silk_cocoon", "living_root"],
+    "bonuses": {"hp": 35, "defense": 4}
+  }
+]

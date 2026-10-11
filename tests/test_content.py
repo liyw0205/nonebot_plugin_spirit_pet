@@ -36,8 +36,8 @@ def test_default_content_is_complete():
 
 @pytest.mark.parametrize("filename", [
     "pets.json", "items.json", "realms.json", "layers.json", "bloodlines.json",
-    "adventures.json", "quests.json", "pools.json", "enemies.json", "dungeons.json",
-    "equipment.json", "skills.json", "elements.json", "categories.json",
+    "adventures.json", "exploration_routes.json", "quests.json", "pools.json", "enemies.json", "dungeons.json",
+    "equipment.json", "equipment_sets.json", "skills.json", "elements.json", "categories.json",
 ])
 @pytest.mark.parametrize("field", ["created_at", "cooldown", "last_login", "timestamp"])
 def test_static_data_rejects_runtime_fields(content_dir, filename, field):
@@ -57,6 +57,12 @@ def test_unknown_reward_item_fails_early(content_dir):
         "ghost_item": {"minimum": 1, "maximum": 2},
     }))
     with pytest.raises(ValueError, match="unknown reward items"):
+        Catalog.load(content_dir)
+
+
+def test_exploration_encounter_requires_a_display_name(content_dir):
+    edit(content_dir, "adventures.json", lambda data: data[0].pop("name"))
+    with pytest.raises(ValidationError, match="name"):
         Catalog.load(content_dir)
 
 
@@ -99,6 +105,29 @@ def test_unknown_dungeon_enemy(content_dir):
         Catalog.load(content_dir)
 
 
+def test_exploration_routes_reject_unknown_and_duplicate_encounters(content_dir):
+    edit(content_dir, "exploration_routes.json", lambda data: data[0]["encounters"].__setitem__(0, "unknown"))
+    with pytest.raises(ValueError, match="unknown exploration route encounters"):
+        Catalog.load(content_dir)
+
+    shutil.copytree(DATA_DIR, content_dir, dirs_exist_ok=True)
+    edit(content_dir, "exploration_routes.json", lambda data: data[1]["encounters"].append("spring"))
+    with pytest.raises(ValueError, match="exactly one route"):
+        Catalog.load(content_dir)
+
+
+def test_exploration_route_rejects_unknown_realm(content_dir):
+    edit(content_dir, "exploration_routes.json", lambda data: data[0].update({"min_realm": "unknown"}))
+    with pytest.raises(ValueError, match="unknown exploration route realm"):
+        Catalog.load(content_dir)
+
+
+def test_every_realm_requires_an_exploration_route(content_dir):
+    edit(content_dir, "exploration_routes.json", lambda data: data[-1].update({"min_realm": "huashen"}))
+    with pytest.raises(ValueError, match="missing exploration routes for realms"):
+        Catalog.load(content_dir)
+
+
 def test_content_rejects_implicit_numeric_coercion(content_dir):
     edit(content_dir, "pets.json", lambda data: data[0].update({"initial_affinity": "12"}))
     with pytest.raises(ValidationError):
@@ -117,6 +146,28 @@ def test_content_rejects_implicit_numeric_coercion(content_dir):
 def test_invalid_battle_content_rejected_at_startup(content_dir, filename, change):
     edit(content_dir, filename, change)
     with pytest.raises(ValueError):
+        Catalog.load(content_dir)
+
+
+@pytest.mark.parametrize("change,error", [
+    (lambda rows: rows[0].update({"items": ["wind_feather", "frost_beak"]}), "distinct slots"),
+    (lambda rows: rows[0].update({"items": ["unknown", "spirit_bell"]}), "unknown equipment set items"),
+])
+def test_equipment_sets_are_validated(content_dir, change, error):
+    edit(content_dir, "equipment_sets.json", change)
+    with pytest.raises(ValueError, match=error):
+        Catalog.load(content_dir)
+
+
+@pytest.mark.parametrize("change,error", [
+    (lambda enemy: enemy.update(signature_skill="unknown", skill_every=3), "unknown enemy signature skill"),
+    (lambda enemy: enemy.update(signature_skill="fireball"), "configured together"),
+    (lambda enemy: enemy.update(signature_skill="ice_lance", skill_every=3), "incompatible with enemy elements"),
+    (lambda enemy: enemy.update(signature_skill="thunder_roar", skill_every=3), "incompatible with enemy elements"),
+])
+def test_enemy_signature_skill_content_is_validated(content_dir, change, error):
+    edit(content_dir, "enemies.json", lambda rows: change(rows[0]))
+    with pytest.raises((ValueError, ValidationError), match=error):
         Catalog.load(content_dir)
 
 

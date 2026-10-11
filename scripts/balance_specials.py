@@ -50,7 +50,7 @@ def main():
           f"effects={covered['effects_triggered']}/{covered['effects_expected']}")
     print(f"seed={args.seed}; content_sha256={report['content_sha256']}")
     for row in report["scenarios"]:
-        if row["category"] == "effect" and row["variant"] == "selected":
+        if row["category"] in {"effect", "skill"} and row["variant"] == "selected":
             print(f"{row['subject']}: wins={row['wins']}/{row['trials']}; "
                   f"casts={row['tracked_skill_casts']}; activations={row['actual_effect_activations']}")
     for issue in report["issues"]:

@@ -45,13 +45,13 @@ def join(ctx: Context, arg: str) -> Reply:
     leader = named_player(ctx, arg)
     team = ctx.repo.conn.execute("SELECT team_id FROM teams WHERE leader_id=?", (leader.user_id,)).fetchone()
     if team is None:
-        raise GameError("该道号当前没有带队。")
+        raise GameError("该 UID 当前没有带队。")
     require_room(ctx, team["team_id"])
     _create(ctx, team["team_id"], ctx.user_id, "apply")
     return Reply("入队申请已提交", (
-        f"{player.dao_name}申请加入{leader.dao_name}的队伍，须由队长同意。",
+        f"{player.uid_label}申请加入{leader.uid_label}的队伍，须由队长同意。",
         f"申请 {ctx.config.spirit_pet_team_request_ttl} 秒后失效，不预留名额，不消耗资源。",
-    ), (f"灵宠队务 {leader.dao_name}", f"灵宠队伍撤回 {leader.dao_name}"))
+    ), (f"灵宠队务 {leader.uid_label}", f"灵宠队伍撤回 {leader.uid_label}"))
 
 
 def invite(ctx: Context, arg: str) -> Reply:
@@ -64,10 +64,10 @@ def invite(ctx: Context, arg: str) -> Reply:
     require_room(ctx, member["team_id"])
     _create(ctx, member["team_id"], candidate.user_id, "invite")
     return Reply("队伍邀请已发起", (
-        f"{ctx.player().dao_name}邀请{candidate.dao_name}加入队伍，须由受邀道友同意。",
+        f"{ctx.player().uid_label}邀请{candidate.uid_label}加入队伍，须由受邀道友同意。",
         f"邀请 {ctx.config.spirit_pet_team_request_ttl} 秒后失效，不预留名额，不消耗资源。",
         "邀请保存在对方的队务中，不会向其他群或私聊主动推送。",
-    ), (f"灵宠队务 {candidate.dao_name}", f"灵宠队伍撤回 {candidate.dao_name}"))
+    ), (f"灵宠队务 {candidate.uid_label}", f"灵宠队伍撤回 {candidate.uid_label}"))
 
 
 def _request(ctx: Context, arg: str) -> Row:
@@ -85,7 +85,7 @@ def _request(ctx: Context, arg: str) -> Row:
 
 def _opponent(ctx: Context, request: Row) -> str:
     user_id = request["leader_id"] if request["candidate_id"] == ctx.user_id else request["candidate_id"]
-    return ctx.player(user_id).dao_name
+    return ctx.player(user_id).uid_label
 
 
 def _decider(request: Row) -> str:
@@ -103,8 +103,8 @@ def _require_decider(ctx: Context, request: Row) -> None:
 def accept(ctx: Context, arg: str) -> Reply:
     request = _request(ctx, arg)
     _require_decider(ctx, request)
-    candidate_name = ctx.player(request["candidate_id"]).dao_name
-    leader_name = ctx.player(request["leader_id"]).dao_name
+    candidate_name = ctx.player(request["candidate_id"]).uid_label
+    leader_name = ctx.player(request["leader_id"]).uid_label
     add_member(ctx, request["team_id"], request["candidate_id"])
     _prune(ctx)
     return Reply("加入队伍", (
@@ -156,7 +156,7 @@ def _detail(ctx: Context, arg: str) -> Reply:
     commands.append("灵宠队务")
     return Reply("队务详情", (
         _summary(ctx, request),
-        f"队长：{ctx.player(request['leader_id']).dao_name}；候选道友：{ctx.player(request['candidate_id']).dao_name}。",
+        f"队长：{ctx.player(request['leader_id']).uid_label}；候选道友：{ctx.player(request['candidate_id']).uid_label}。",
         "待处理记录不预留名额；同意时仍须队伍未满且候选道友未加入其他队伍。",
     ), tuple(commands))
 
@@ -166,7 +166,7 @@ def inbox(ctx: Context, arg: str) -> Reply:
     explicit_page = re.fullmatch(r"分页\s+([0-9]+)", arg)
     if explicit_page:
         page = quantity(explicit_page[1], 999)
-    elif arg and (not arg.isascii() or not arg.isdigit() or ctx.repo.player_by_name(arg) is not None):
+    elif arg and (not arg.isascii() or not arg.isdigit() or int(arg) >= 10000):
         return _detail(ctx, arg)
     else:
         page = quantity(arg or "1", 999)

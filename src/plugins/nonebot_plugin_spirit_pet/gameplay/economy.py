@@ -1,9 +1,10 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, named
 from ..utils.energy import add_energy
 from ..utils.pagination import paginate
 from ..utils.time import beijing_day
+from .pet_targets import selected_pet
 from .quests import advance
 from .rewards import grant
 
@@ -14,6 +15,7 @@ def sign(ctx: Context, arg: str) -> Reply:
     if player.sign_day >= today:
         raise GameError("今日已领取仙缘，明日再来。（每日北京时间 00:00 刷新）")
     player.sign_day = today
+    advance(ctx, "sign")
     return Reply("今日仙缘", grant(ctx, ctx.content.rules.daily_reward))
 
 
@@ -40,11 +42,19 @@ def shop(ctx: Context, arg: str) -> Reply:
         if item.kind == "equipment":
             gear = ctx.content.equipment[item.equipment_id]
             commands.extend((f"灵宠装备图鉴 {gear.name}", f"灵宠工坊 {item.name}"))
+            links = (
+                InlineCommand(1, "查看装备图鉴", f"灵宠装备图鉴 {gear.name}"),
+                InlineCommand(1, "查看打造配方", f"灵宠工坊 {item.name}"),
+            )
         elif item.kind == "skill_book":
-            commands.append(f"灵宠技能图鉴 {ctx.content.skills[item.skill_id].name}")
+            skill_name = ctx.content.skills[item.skill_id].name
+            commands.append(f"灵宠技能图鉴 {skill_name}")
+            links = (InlineCommand(1, "查看灵术图鉴", f"灵宠技能图鉴 {skill_name}"),)
+        else:
+            links = ()
         return Reply(f"山海灵坊 · {item.name}", (
             f"售价：{item.price} 灵石。", item.description,
-        ), (*commands, "灵宠商店", "灵宠背包"))
+        ), (*commands, "灵宠商店", "灵宠背包"), links)
     page = paginate(available.values(), arg, "山海灵坊", "灵宠商店")
     return Reply(f"山海灵坊 {page.number}/{page.total}", tuple(
         f"{item.name}：{item.price} 灵石 · {item.description}"
@@ -76,6 +86,10 @@ def use(ctx: Context, arg: str) -> Reply:
     if item.kind != "consumable":
         raise GameError("材料用于进化；破境丹用于突破；装备与秘笈请用灵宠装备、灵宠学习。")
     pet = ctx.pet()
+    return _use_consumable(ctx, item, amount, pet)
+
+
+def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
     ctx.require_idle_pet(pet)
     effects = item.effects
     if not effects.exp and (not effects.energy or pet.energy == 100) and (
@@ -90,11 +104,12 @@ def use(ctx: Context, arg: str) -> Reply:
     pet.affinity += affinity
     if item.id == "spirit_food":
         advance(ctx, "feed")
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
         f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
     ))
 
 
 def feed(ctx: Context, arg: str) -> Reply:
-    return use(ctx, "spirit_food")
+    pet = selected_pet(ctx, arg, "喂养")
+    return _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet)

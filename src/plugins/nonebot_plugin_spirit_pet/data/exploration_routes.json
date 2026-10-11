@@ -1,0 +1,51 @@
+[
+  {
+    "id": "spirit_spring",
+    "name": "灵泉修行",
+    "description": "寻泉静修，偏重修为与基础补给。",
+    "min_realm": "qiling",
+    "encounters": ["spring", "mountain"]
+  },
+  {
+    "id": "starfall_valley",
+    "name": "星谷采集",
+    "description": "搜寻草木与矿脉，适合积累锻造材料。",
+    "min_realm": "ningqi",
+    "encounters": ["valley", "meteor"]
+  },
+  {
+    "id": "ancient_cave",
+    "name": "古洞寻珍",
+    "description": "深入遗迹探宝，可能发现稀有血脉材料。",
+    "min_realm": "zhuji",
+    "encounters": ["cave", "treasury"]
+  },
+  {
+    "id": "ember_vein",
+    "name": "赤霞寻脉",
+    "description": "沿火脉踏查旧矿，稳步积累锻灵矿与修为。",
+    "min_realm": "jindan",
+    "encounters": ["ember_refining", "golden_cave"]
+  },
+  {
+    "id": "primordial_ruins",
+    "name": "归墟拾遗",
+    "description": "探访沉没古境，在遗迹与灵木间搜寻珍材。",
+    "min_realm": "yuanying",
+    "encounters": ["primordial_root", "azure_mirror"]
+  },
+  {
+    "id": "void_frontier",
+    "name": "太虚巡界",
+    "description": "巡行虚空边界，参悟剑痕并收集高阶灵材。",
+    "min_realm": "huashen",
+    "encounters": ["void_sword", "nether_soul"]
+  },
+  {
+    "id": "tribulation_clouds",
+    "name": "劫云问道",
+    "description": "踏入九霄劫云，在天门之前磨砺道心。",
+    "min_realm": "dujie",
+    "encounters": ["thunder_altar", "heavenly_gate"]
+  }
+]

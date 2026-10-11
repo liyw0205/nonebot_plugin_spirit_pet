@@ -1,3 +1,5 @@
+import json
+
 from ...application.context import Context
 from ...domain.models import GameError, Reply
 from ...domain.state import Pet
@@ -13,6 +15,13 @@ def _active_pet(ctx: Context, user_id: str) -> Pet:
     return ctx.repo.pet(player.active_pet_id)
 
 
+def _ready_ids(row) -> list[int]:
+    value = row["ready_pet_ids"] if "ready_pet_ids" in row.keys() else ""
+    if value:
+        return [int(item) for item in json.loads(value)]
+    return [int(row["ready_pet_id"])] if row["ready_pet_id"] is not None else []
+
+
 def create(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
     if membership(ctx):
@@ -21,7 +30,7 @@ def create(ctx: Context, arg: str) -> Reply:
     team_id = cursor.lastrowid
     add_member(ctx, team_id, ctx.user_id)
     return Reply("灵契小队", (
-        f"{player.dao_name}组建了小队，担任队长。",
+        f"{player.uid_label}组建了小队，担任队长。",
         f"队伍容量：1/{ctx.content.rules.max_team_size}。",
     ), ("灵宠队伍", "灵宠队务", "灵宠准备"))
 
@@ -31,23 +40,30 @@ def status(ctx: Context, arg: str) -> Reply:
     if arg:
         return _member_detail(ctx, member, arg)
     rows = ctx.repo.conn.execute(
-        "SELECT m.*, p.dao_name FROM team_members m JOIN players p USING(user_id) "
-        "WHERE m.team_id=? ORDER BY (m.user_id=?) DESC, p.dao_name",
+        "SELECT m.*, identity.id AS player_internal_id FROM team_members m "
+        "JOIN player_identity identity USING(user_id) "
+        "WHERE m.team_id=? ORDER BY (m.user_id=?) DESC, identity.id",
         (member["team_id"], member["leader_id"]),
     ).fetchall()
-    leader_name = ctx.player(member["leader_id"]).dao_name
+    leader_name = ctx.player(member["leader_id"]).uid_label
     lines = [f"队伍容量：{len(rows)}/{ctx.content.rules.max_team_size}。"]
     own_ready = False
     others = []
     for row in rows:
-        pet = _active_pet(ctx, row["user_id"])
+        active = ctx.repo.active_pets(row["user_id"])
+        if row["user_id"] != member["leader_id"]:
+            active = active[:1]
+        pet = active[0] if active else _active_pet(ctx, row["user_id"])
         role = "队长" if row["user_id"] == member["leader_id"] else "队员"
-        ready = row["ready_pet_id"] == pet.pet_id
-        lines.append(f"{role} {row['dao_name']} · {pet.name} · {'已准备' if ready else '未准备'}")
+        ready_ids = _ready_ids(row)
+        ready = ready_ids == [pet.pet_id] if role == "队员" else ready_ids == [item.pet_id for item in active]
+        roster = "、".join(item.name for item in active)
+        uid_label = f"UID {row['player_internal_id'] + 9999}"
+        lines.append(f"{role} {uid_label} · 出战 {roster} · {'已准备' if ready else '未准备'}")
         if row["user_id"] == ctx.user_id:
             own_ready = ready
         else:
-            others.append(row["dao_name"])
+            others.append(uid_label)
     commands = ["灵宠队务", "灵宠取消准备" if own_ready else "灵宠准备"]
     if member["leader_id"] == ctx.user_id:
         if len(rows) >= 2:
@@ -59,35 +75,51 @@ def status(ctx: Context, arg: str) -> Reply:
     return Reply(f"{leader_name}的小队", tuple(lines), tuple(commands))
 
 
-def _member_detail(ctx: Context, member, dao_name: str) -> Reply:
+def _member_detail(ctx: Context, member, uid: str) -> Reply:
+    player = ctx.repo.player_by_uid(uid)
+    if player is None:
+        raise GameError("没有找到这位玩家，请填写有效的 UID。")
     row = ctx.repo.conn.execute(
-        "SELECT m.*, p.dao_name FROM team_members m JOIN players p USING(user_id) "
-        "WHERE m.team_id=? AND p.dao_name=? COLLATE NOCASE", (member["team_id"], dao_name),
+        "SELECT m.* FROM team_members m WHERE m.team_id=? AND m.user_id=?",
+        (member["team_id"], player.user_id),
     ).fetchone()
     if row is None:
-        raise GameError("该道友不在你的队伍中。")
-    pet = _active_pet(ctx, row["user_id"])
+        raise GameError("这位玩家不在你的队伍中。")
+    active = ctx.repo.active_pets(row["user_id"])
+    if row["user_id"] != member["leader_id"]:
+        active = active[:1]
+    pet = active[0] if active else _active_pet(ctx, row["user_id"])
     role = "队长" if row["user_id"] == member["leader_id"] else "队员"
-    ready = row["ready_pet_id"] == pet.pet_id
+    ready_ids = _ready_ids(row)
+    ready = ready_ids == [item.pet_id for item in active] if role == "队长" else ready_ids == [pet.pet_id]
     commands = ["灵宠队伍", "灵宠队务"]
     if row["user_id"] == ctx.user_id:
         commands.append("灵宠取消准备" if ready else "灵宠准备")
     elif member["leader_id"] == ctx.user_id:
-        commands.extend((f"灵宠踢人 {row['dao_name']}", f"灵宠转让 {row['dao_name']}"))
-    return Reply(f"队员名帖 · {row['dao_name']}", (
-        f"队伍：{ctx.player(member['leader_id']).dao_name}的小队。",
-        f"身份：{role}。", f"出战灵宠：{pet.name} · {'已准备' if ready else '未准备'}。",
+        commands.extend((f"灵宠踢人 {player.uid_label}", f"灵宠转让 {player.uid_label}"))
+    return Reply(f"队员名帖 · {player.uid_label}", (
+        f"队伍：{ctx.player(member['leader_id']).uid_label}的小队。",
+        f"身份：{role}。", f"出战灵宠：{'、'.join(item.name for item in active)} · {'已准备' if ready else '未准备'}。",
     ), tuple(commands))
 
 
 def ready(ctx: Context, arg: str) -> Reply:
-    require_member(ctx)
-    pet = _active_pet(ctx, ctx.user_id)
-    ctx.require_idle_pet(pet)
-    ctx.repo.conn.execute("UPDATE team_members SET ready_pet_id=? WHERE user_id=?", (pet.pet_id, ctx.user_id))
+    member = require_member(ctx)
+    active = ctx.repo.active_pets(ctx.user_id)
+    if ctx.user_id != member["leader_id"]:
+        active = active[:1]
+    for pet in active:
+        ctx.require_idle_pet(pet)
+    if not active:
+        raise GameError("尚未选择出战灵宠。")
+    ctx.repo.conn.execute(
+        "UPDATE team_members SET ready_pet_id=?, ready_pet_ids=? WHERE user_id=?",
+        (active[0].pet_id, json.dumps([pet.pet_id for pet in active]), ctx.user_id),
+    )
     return Reply("出征准备", (
-        f"{pet.name}已准备。队长下一次组队挑战将消耗本宠的精力并共享 PVE 冷却。",
-        "战斗后、切宠或改变参战能力后准备失效；成员或队长变化后全队需重新准备。",
+        f"已准备 {len(active)} 只灵宠：{'、'.join(pet.name for pet in active)}。",
+        "组队战斗最多五只灵宠；队长最多三只，每位队友出战一只。",
+        "战斗后、切换阵容或改变参战能力后准备失效；成员或队长变化后全队需重新准备。",
     ), ("灵宠取消准备", "灵宠队伍"))
 
 
@@ -107,8 +139,13 @@ def challenge(ctx: Context, arg: str) -> Reply:
     ).fetchall()
     if len(rows) < 2:
         raise GameError("组队挑战至少需要两名玩家。")
+    from ..loadout import team_pets
+    selected = team_pets(ctx, [row["user_id"] for row in rows], member["leader_id"])
+    selected_by_user: dict[str, list[int]] = {}
+    for user_id, pet in selected:
+        selected_by_user.setdefault(user_id, []).append(pet.pet_id)
     for row in rows:
-        active_pet_id = ctx.player(row["user_id"]).active_pet_id
-        if active_pet_id is None or active_pet_id != row["ready_pet_id"]:
+        expected = selected_by_user.get(row["user_id"], [])
+        if _ready_ids(row) != expected:
             raise GameError("全体成员准备后才能挑战。")
-    return run_dungeon(ctx, dungeon, [row["user_id"] for row in rows])
+    return run_dungeon(ctx, dungeon, [row["user_id"] for row in rows], member["leader_id"])

@@ -48,7 +48,7 @@ def snapshot(game):
 
 
 BLOCKED_ACTIONS = (
-    ("train", ""), ("explore", ""), ("challenge", "青岚林"),
+    ("train", ""), ("explore", "灵泉修行"), ("challenge", "青岚林"),
     ("breakthrough", ""), ("evolve", ""), ("lineage_choose", "凌风鸾脉"),
     ("feed", ""), ("use", "回元丹"), ("use", "蕴灵丹"),
     ("equipment", "灵心铃"), ("unequip", "灵器"), ("enhance", "灵器"),
@@ -153,7 +153,7 @@ def test_status_and_pet_list_show_occupation_without_releasing_it(game, play, el
 
 @pytest.mark.parametrize("action,arg", [
     ("equipment", ""), ("skills", ""), ("lineage_catalog", ""), ("catalog", "青鸾"),
-    ("quests", ""), ("bag", ""), ("shop", ""), ("rename", "凌风"), ("dao_name", "归元"),
+    ("quests", ""), ("bag", ""), ("shop", ""), ("dao_name", "归元"),
     ("buy", "灵粮"), ("craft", "青岚翎"), ("salvage", "青岚翎"),
     ("summon", "1"), ("use", "青藤灵卵"),
     ("team_status", ""), ("team_unready", ""), ("team_disband", ""),

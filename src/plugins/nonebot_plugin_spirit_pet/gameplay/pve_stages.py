@@ -15,8 +15,8 @@ from ..domain.stage_content import Stage
 from ..gameplay.battle_records import capture_snapshot, record_battle
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
-from .combat import Fighter, fight
-from .loadout import combatant
+from .combat import Fighter, enemy_fighter, fight
+from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
@@ -63,10 +63,17 @@ def catalog(ctx: Context, arg: str) -> Reply:
         mode = "组队" if stage.team else "单人"
         reward = stage.reward
         enemy_names = "、".join(ctx.content.enemies[key].name for key in stage.enemies)
+        enemy_techniques = tuple(
+            f"{ctx.content.enemies[key].name}招式："
+            f"{ctx.content.skills[ctx.content.enemies[key].signature_skill].name}"
+            f"（每 {ctx.content.enemies[key].skill_every} 次行动施展）"
+            for key in stage.enemies if ctx.content.enemies[key].signature_skill
+        )
         return Reply(f"关卡 {stage.order} · {stage.name}", (
             stage.description,
             f"进度：{progress}",
             f"{mode} · {realm}起 · 精力 {stage.energy} · 敌手：{enemy_names}",
+            *enemy_techniques,
             f"首通奖励：修为 {reward.exp.minimum}-{reward.exp.maximum} · "
             f"灵石 {reward.stones.minimum}-{reward.stones.maximum}",
             *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
@@ -109,19 +116,19 @@ def _prior_reply(ctx: Context, stage: Stage) -> Reply | None:
     if row["kind"] != "pve_stage" or row["battle_key"] != stage.id:
         raise GameError("该战斗消息已被用于其他结算，不能复用。")
     data = json.loads(row["reply"])
-    return Reply(data["title"], tuple(data["lines"]), tuple(data["commands"]))
+    return Reply.from_data(data)
 
 
 def _require_previous(ctx: Context, stage: Stage, user_id: str) -> None:
     if stage.previous_id is not None and _progress(ctx, user_id, stage.previous_id) is None:
         previous = ctx.content.stages[stage.previous_id]
-        raise GameError(f"{ctx.player(user_id).dao_name}尚未通关前置关卡：{previous.name}。")
+        raise GameError(f"{ctx.player(user_id).uid_label}尚未通关前置关卡：{previous.name}。")
 
 
 def _active_team(ctx: Context) -> list[Row]:
     member = require_leader(ctx)
     rows = ctx.repo.conn.execute(
-        "SELECT m.*, p.dao_name FROM team_members m JOIN players p USING(user_id) "
+        "SELECT m.*, t.leader_id FROM team_members m JOIN teams t USING(team_id) "
         "WHERE m.team_id=? ORDER BY m.user_id", (member["team_id"],),
     ).fetchall()
     if len(rows) < 2:
@@ -134,32 +141,37 @@ def _participants(ctx: Context, stage: Stage) -> list[str]:
         return [ctx.user_id]
     rows = _active_team(ctx)
     user_ids = [row["user_id"] for row in rows]
+    selected = team_pets(ctx, user_ids, rows[0]["leader_id"])
+    expected: dict[str, list[int]] = {}
+    for user_id, pet in selected:
+        expected.setdefault(user_id, []).append(pet.pet_id)
     for row in rows:
-        player = ctx.player(row["user_id"])
-        pet = ctx.pet(row["user_id"])
-        if row["ready_pet_id"] is None or row["ready_pet_id"] != pet.pet_id:
-            raise GameError(f"{player.dao_name}尚未准备当前出战灵宠。")
+        ready = row["ready_pet_ids"]
+        actual = [int(item) for item in json.loads(ready)] if ready else (
+            [row["ready_pet_id"]] if row["ready_pet_id"] is not None else []
+        )
+        if actual != expected.get(row["user_id"], []):
+            raise GameError(f"{ctx.player(row['user_id']).uid_label}尚未准备当前出战灵宠。")
     return user_ids
 
 
 def _enemy_fighters(ctx: Context, stage: Stage) -> list[Fighter]:
-    return [
-        Fighter.create(
-            ctx.content.enemies[key].name,
-            ctx.content.enemies[key].stats,
-            tuple(ctx.content.enemies[key].elements),
-            primary_element=ctx.content.enemies[key].primary_element,
-        )
-        for key in stage.enemies
-    ]
+    return [enemy_fighter(ctx.content.enemies[key], ctx.content.skills) for key in stage.enemies]
 
 
 def _settle_cost(ctx: Context, user_ids: list[str], stage: Stage) -> None:
-    for user_id in user_ids:
+    member = ctx.repo.conn.execute(
+        "SELECT leader_id FROM teams JOIN team_members USING(team_id) WHERE team_members.user_id=?",
+        (ctx.user_id,),
+    ).fetchone()
+    selected = team_pets(ctx, user_ids, member["leader_id"] if member else None) if len(user_ids) > 1 else [
+        (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])
+    ]
+    for user_id, pet in selected:
         player = ctx.player(user_id)
-        pet = ctx.pet(user_id)
         pet.energy -= stage.energy
         player.last_pve = ctx.now
+    for user_id in user_ids:
         ctx.repo.invalidate_ready(user_id)
 
 
@@ -169,26 +181,37 @@ def challenge(ctx: Context, arg: str) -> Reply:
     if prior is not None:
         return prior
     user_ids = _participants(ctx, stage)
-    players = [ctx.player(user_id) for user_id in user_ids]
-    pets = [ctx.pet(user_id) for user_id in user_ids]
+    selected = team_pets(ctx, user_ids, _active_team(ctx)[0]["leader_id"]) if len(user_ids) > 1 else [
+        (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])
+    ]
     minimum = next(index for index, realm in enumerate(ctx.content.realms) if realm.id == stage.min_realm)
-    for player, pet in zip(players, pets):
+    checked_users = set()
+    for user_id, pet in selected:
+        player = ctx.player(user_id)
         _require_previous(ctx, stage, player.user_id)
         if pet.realm < minimum:
             raise GameError(f"{pet.name}境界不足，{stage.name}需要{ctx.content.realms[minimum].name}。")
-        ctx.check_action(player, pet, "pve", stage.energy, ctx.config.spirit_pet_pve_cooldown)
+        if user_id not in checked_users:
+            ctx.check_action(player, pet, "pve", stage.energy, ctx.config.spirit_pet_pve_cooldown)
+            checked_users.add(user_id)
+        else:
+            ctx.require_idle_pet(pet)
+            if pet.energy < stage.energy:
+                raise GameError(f"{pet.name}精力不足，需要 {stage.energy} 点。")
 
-    allies = [combatant(ctx, user_id, recover_energy=False) for user_id in user_ids]
+    allies = [combatant(ctx, user_id, recover_energy=False, pet_id=pet.pet_id) for user_id, pet in selected]
     enemies = _enemy_fighters(ctx, stage)
-    capture = capture_snapshot(ctx, (allies, enemies), (user_ids, []))
+    capture = capture_snapshot(ctx, (allies, enemies), ([user_id for user_id, _ in selected], []))
     battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
 
     # Costs and proficiency apply to every attempt, including a defeat.  The
     # progress insert and first-clear grants below remain in this transaction.
     _settle_cost(ctx, user_ids, stage)
     lines = [f"第{stage.order}关 · {stage.name} · {battle.rounds} 回合", *battle.lines]
-    for player, pet in zip(players, pets):
-        lines.extend(award_mastery(ctx, player.user_id, battle.skill_uses[0].get(pet.pet_id, {})))
+    for user_id, pet in selected:
+        lines.extend(award_mastery(
+            ctx, user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+        ))
 
     if battle.winner == 0:
         for user_id in user_ids:
@@ -205,7 +228,7 @@ def challenge(ctx: Context, arg: str) -> Reply:
         if first_clear_users:
             for user_id in first_clear_users:
                 reward = grant(ctx, stage.reward, user_id)
-                lines.append(f"{ctx.player(user_id).dao_name}首通{stage.name}：" + "，".join(reward))
+                lines.append(f"{ctx.player(user_id).uid_label}首通{stage.name}：" + "，".join(reward))
         else:
             lines.append("本队成员均已完成本关，本次为助战挑战，不重复发放首通奖励。")
         title = "关卡首通" if first_clear_users else "关卡助战胜利"

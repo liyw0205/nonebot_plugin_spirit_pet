@@ -156,6 +156,41 @@ def test_claim_boundary_credits_exactly_the_persisted_reward(game, play, offset)
         assert_reward(game[1], job, before)
 
 
+def test_claim_advances_daily_quest_and_permanent_expedition_achievement(game, play):
+    register(play)
+    play("expedition_start", "采灵药", user=OWNER, op="quest-departure")
+    job = journeys(game[1])[0]
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE user_id=? AND quest_id='expedition_once'", (OWNER,))
+
+    with pytest.raises(GameError, match="尚未完成"):
+        play("expedition_claim", str(job["job_id"]), user=OWNER, now=job["finishes_at"] - 1)
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE user_id=? AND quest_id='expedition_once'", (OWNER,))
+
+    play("expedition_claim", str(job["job_id"]), user=OWNER, now=job["finishes_at"])
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='expedition_once'", (OWNER,)) == [
+        {"progress": 1},
+    ]
+    with pytest.raises(GameError, match="已领取奖励"):
+        play("expedition_claim", str(job["job_id"]), user=OWNER, now=job["finishes_at"])
+    stones_before_quest = player(game[1], OWNER)["stones"]
+    quest = play("quests", user=OWNER, now=job["finishes_at"])
+    assert "山海归来：1/1（可领取）" in quest.text()
+    play("claim", "山海归来", user=OWNER, now=job["finishes_at"])
+    assert player(game[1], OWNER)["stones"] == stones_before_quest + 50
+    assert items(game[1], OWNER)["forge_ore"] == 1
+
+    entries = tuple(game[0].content.achievements.values())
+    first_return = next(entry for entry in entries if entry.id == "first_expedition_return")
+    page = entries.index(first_return) // 5 + 1
+    assert "初履山海 · 可领奖" in play("achievements", str(page), user=OWNER).text()
+    stones_before = player(game[1], OWNER)["stones"]
+    play("achievement_claim", "初履山海", user=OWNER, now=job["finishes_at"])
+    assert player(game[1], OWNER)["stones"] == stones_before + 200
+    assert sql(game[1], "SELECT achievement_id FROM achievement_claims WHERE user_id=?", (OWNER,)) == [
+        {"achievement_id": "first_expedition_return"},
+    ]
+
+
 @pytest.mark.parametrize("offset", [-1, 0, 1])
 def test_cancel_boundary_never_refunds_energy_or_grants_reward(game, play, offset):
     register(play)
@@ -173,6 +208,7 @@ def test_cancel_boundary_never_refunds_energy_or_grants_reward(game, play, offse
         assert world(game[1])["pets"] == before["pets"]
         assert world(game[1])["players"] == before["players"]
         assert world(game[1])["inventory"] == before["inventory"]
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE user_id=? AND quest_id='expedition_once'", (OWNER,))
 
 
 @pytest.mark.parametrize("action", ["expedition_claim", "expedition_cancel"])

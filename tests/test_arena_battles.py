@@ -17,7 +17,8 @@ from .test_arena_matching import NOW, register, seed_result
 
 def state(store):
     return {table: sql(store, f"SELECT * FROM {table} ORDER BY 1") for table in (
-        "players", "pets", "inventory", "learned_skills", "team_members", "season_entries", "pvp_results",
+        "players", "pets", "inventory", "learned_skills", "team_members", "season_entries",
+        "pvp_results", "quest_progress",
     )}
 
 
@@ -187,6 +188,7 @@ def test_cached_challenge_operation_cannot_be_reused_by_another_identity(game, p
 @pytest.mark.parametrize("table", ["pvp_results", "operations"])
 def test_failed_result_or_reply_commit_rolls_back_all_resource_and_rating_changes(game, play, table):
     register(game, play)
+    sql(game[1], "UPDATE pets SET layer=10,bloodline=4,affinity=100 WHERE user_id='private-0'")
     before = state(game[1])
     sql(game[1], f"CREATE TRIGGER fail_battle BEFORE INSERT ON {table} "
         "WHEN NEW.operation_id='failed-challenge' BEGIN SELECT RAISE(ABORT,'forced battle failure'); END")
@@ -195,6 +197,9 @@ def test_failed_result_or_reply_commit_rolls_back_all_resource_and_rating_change
     assert state(game[1]) == before
     sql(game[1], "DROP TRIGGER fail_battle")
     first = play("pvp", "道友01", user="private-0", now=NOW, op="failed-challenge")
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='pvp_once'") == [
+        {"progress": 1},
+    ]
     after = state(game[1])
     assert play("pvp", "道友01", user="private-0", now=NOW, op="failed-challenge") == first
     assert state(game[1]) == after

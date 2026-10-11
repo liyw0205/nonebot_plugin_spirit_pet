@@ -6,6 +6,10 @@ from .compatibility import check_requirements, requirement_text
 from .mastery import progress, progress_text
 
 
+def targeting_text(skill) -> str:
+    return "全体存活敌人" if skill.targeting == "all" else "单个目标"
+
+
 def learned(ctx: Context, pet_id: int) -> dict[str, int]:
     return dict(ctx.repo.conn.execute(
         "SELECT skill_id, equipped FROM learned_skills WHERE pet_id=? ORDER BY skill_id", (pet_id,),
@@ -33,12 +37,14 @@ def catalog(ctx: Context, arg: str) -> Reply:
         if book.price is not None:
             commands.append(f"灵宠商店 {book.name}")
         return Reply(f"万法灵谱 · {skill.name}", (
-            skill.description, f"适用：{requirement_text(ctx, skill.requirements)}。",
+            skill.description, f"目标：{targeting_text(skill)}。",
+            f"适用：{requirement_text(ctx, skill.requirements)}。",
             f"学习秘笈：{book.name}。",
         ), (*commands, "灵宠技能图鉴", "灵宠技能"))
     page = paginate(ctx.content.skills.values(), arg, "万法灵谱", "灵宠技能图鉴")
     return Reply(f"万法灵谱 {page.number}/{page.total}", tuple(
         f"{skill.name}：{skill.description} · {requirement_text(ctx, skill.requirements)}"
+        f" · 目标：{targeting_text(skill)}"
         f" · 需 {ctx.content.items[skill.book_item].name}"
         for skill in page.entries
     ), (*(f"灵宠技能图鉴 {skill.name}" for skill in page.entries), *page.navigation, "灵宠技能"))

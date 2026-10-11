@@ -2,9 +2,97 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
+from nonebot_plugin_spirit_pet.domain.battle_content import Skill, Talent
+from nonebot_plugin_spirit_pet.domain.content import Stats
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay.combat import Fighter, enemy_fighter, fight
 
 from .support import items, pet, player, sql
+
+
+def test_enemy_signature_skill_uses_configured_interval(game):
+    class FixedCombatRng:
+        def random(self):
+            return 0.5
+
+        def randint(self, start, stop):
+            return start
+
+    service = game[0]
+    definition = service.content.enemies["ember_wraith"].model_copy(update={
+        "stats": Stats(hp=1000, attack=1, defense=0, speed=10),
+    })
+    enemy = enemy_fighter(definition, service.content.skills)
+    ally = Fighter.create("测试灵宠", Stats(hp=10000, attack=1, defense=0, speed=1))
+
+    result = fight([ally], [enemy], FixedCombatRng())
+
+    casts = [line for line in result.history if "施展赤焰术攻击" in line]
+    normal_attacks = [line for line in result.history if line.startswith("焚天炎灵攻击")]
+    assert result.rounds == 40
+    assert len(casts) == 13
+    assert len(normal_attacks) == 27
+
+
+def test_all_target_skill_hits_each_living_enemy_and_counts_one_cast_per_action():
+    class FixedCombatRng:
+        def random(self):
+            return 0.5
+
+        def randint(self, start, stop):
+            return 100 if (start, stop) == (90, 110) else start
+
+    skill = Skill(
+        id="spirit_wave", name="灵潮荡阵", description="群攻", element=None,
+        requirements={"min_realm": "ningqi"}, kind="damage", targeting="all",
+        coefficient=0.65, book_item="book_spirit_wave",
+    )
+    caster = Fighter.create(
+        "灵宠", Stats(hp=100, attack=100, defense=0, speed=100), skills=(skill,), pet_id=1,
+    )
+    targets = [
+        Fighter.create(name, Stats(hp=100, attack=1, defense=0, speed=1))
+        for name in ("甲", "乙")
+    ]
+
+    result = fight([caster], targets, FixedCombatRng())
+
+    assert result.winner == 0
+    assert all(target.hp == 0 for target in targets)
+    assert result.skill_uses[0][1] == {"spirit_wave": 2}
+    assert sum("施展灵潮荡阵，攻击全体存活敌人" in line for line in result.history) == 2
+    for target in targets:
+        assert sum(f"灵潮荡阵命中{target.name}" in line for line in result.history) == 2
+
+
+def test_all_target_skill_finishes_locked_targets_after_counter_kills_caster():
+    class FixedCombatRng:
+        def random(self):
+            return 0.5
+
+        def randint(self, start, stop):
+            return 100 if (start, stop) == (90, 110) else start
+
+    skill = Skill(
+        id="spirit_wave", name="灵潮荡阵", description="群攻", element=None,
+        requirements={"min_realm": "ningqi"}, kind="damage", targeting="all",
+        coefficient=0.65, book_item="book_spirit_wave",
+    )
+    caster = Fighter.create(
+        "灵宠", Stats(hp=20, attack=100, defense=0, speed=100), skills=(skill,), pet_id=1,
+        talent=Talent(id="lifesteal", name="汲灵", description="吸血", kind="lifesteal", power=0.5),
+    )
+    counter = Fighter.create(
+        "反震甲", Stats(hp=100, attack=100, defense=0, speed=1),
+        talent=Talent(id="counter", name="反震", description="反击", kind="counter", power=1),
+    )
+    second = Fighter.create("后排", Stats(hp=100, attack=1, defense=0, speed=1))
+
+    result = fight([caster], [counter, second], FixedCombatRng())
+
+    assert caster.hp == 0
+    assert second.hp < second.stats.hp
+    assert any("灵潮荡阵命中后排" in line for line in result.history)
 
 
 def two_players(play):
@@ -34,6 +122,8 @@ def test_pve_rewards_and_redelivery(game, play):
     first = play("challenge", "青岚林", op="pve")
     assert first.title == "秘境获胜"
     assert play("challenge", "青岚林", op="pve") == first
+    with pytest.raises(GameError, match="成就尚未完成"):
+        play("achievement_claim", "并肩初捷")
     assert pet(game[1])["energy"] == 80
     assert items(game[1])["bloodline_essence"] == 1
     assert "斩破迷障：1/1" in play("quests").text()
@@ -56,15 +146,16 @@ def test_pve_realm_gate_and_loss_cost(game, play):
 
 def test_exploration_and_pve_have_independent_cooldowns(game, play):
     play("adopt")
-    play("explore")
+    play("explore", "灵泉修行")
     play("challenge", "青岚林")
     assert pet(game[1])["energy"] == 55
     with pytest.raises(GameError, match="调息"):
-        play("explore")
+        play("explore", "灵泉修行")
 
 
 def test_pvp_directly_resolves_and_only_charges_challenger_once(game, play):
     ranked_players(game, play)
+    sql(game[1], "UPDATE pets SET layer=10,bloodline=4,affinity=100 WHERE user_id='u1'")
     before = player(game[1], "u2"), pet(game[1], "u2")
     result = play("pvp", "赤霄", op="ranked-once")
     assert play("pvp", "赤霄", op="ranked-once") == result
@@ -73,8 +164,21 @@ def test_pvp_directly_resolves_and_only_charges_challenger_once(game, play):
     assert (player(game[1], "u2"), pet(game[1], "u2")) == before
     assert sorted(row["rating"] for row in sql(game[1], "SELECT rating FROM season_entries")) == [980, 1020]
     assert player(game[1])["stones"] == player(game[1], "u2")["stones"] == 100
+    assert sql(game[1], "SELECT winner_id FROM pvp_results") == [{"winner_id": "u1"}]
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='pvp_once'") == [
+        {"progress": 1},
+    ]
+    assert "论剑扬名：1/1" in play("quests").text()
     with pytest.raises(GameError):
         play("pvp", "赤霄")
+
+
+def test_ranked_loss_does_not_advance_the_daily_pvp_quest(game, play):
+    ranked_players(game, play)
+    sql(game[1], "UPDATE pets SET layer=10,bloodline=4,affinity=100 WHERE user_id='u2'")
+    play("pvp", "赤霄")
+    assert sql(game[1], "SELECT winner_id FROM pvp_results") == [{"winner_id": "u2"}]
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='pvp_once'")
 
 
 def test_pvp_validates_challenger_resources_before_settling(game, play):
@@ -103,6 +207,7 @@ def test_spar_has_no_resources_ratings_rewards_or_cooldown(game, play):
     assert play("spar", "赤霄").title == "切磋结算"
     after = [(player(game[1], user), pet(game[1], user), items(game[1], user)) for user in ("u1", "u2")]
     assert after == before
+    assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='pvp_once'")
 
 
 def test_daily_pvp_pair_limit_is_symmetric(game, play):
@@ -124,10 +229,18 @@ def test_team_requires_two_members_all_ready_and_leader(game, play):
     result = play("team_challenge", op="team-battle")
     assert result.title == "秘境获胜"
     assert play("team_challenge", op="team-battle") == result
+    assert sql(game[1], "SELECT user_id, progress FROM quest_progress WHERE quest_id='pve_once' ORDER BY user_id") == [
+        {"user_id": "u1", "progress": 1}, {"user_id": "u2", "progress": 1},
+    ]
     for user in ("u1", "u2"):
         assert pet(game[1], user)["energy"] == 70
         assert items(game[1], user)["bloodline_essence"] == 1
         assert player(game[1], user)["last_pve"] is not None
+        assert play("achievement_claim", "并肩初捷", user=user).title == "成就奖励已领取"
+    assert sql(game[1], "SELECT user_id, achievement_id FROM achievement_claims ORDER BY user_id") == [
+        {"user_id": "u1", "achievement_id": "team_first_victory"},
+        {"user_id": "u2", "achievement_id": "team_first_victory"},
+    ]
     assert not any(row["ready_pet_id"] for row in sql(game[1], "SELECT * FROM team_members"))
     assert "青云" in play("team_status").title
 

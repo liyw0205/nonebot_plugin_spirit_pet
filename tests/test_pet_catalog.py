@@ -30,6 +30,10 @@ def test_starters_and_obtainable_diverse_pet_roster():
     assert len(content.species) >= 20
     assert {entry.species for entry in content.pools["standard"].entries} == set(content.species)
     assert content.pools["standard"].entries[0].species == "qingluan"
+    assert content.pools["standard"].guaranteed_batch_size == 10
+    assert set(content.pools["standard"].guaranteed_species) == {
+        "xuanwu", "sanlinglu", "bingcan", "leize", "leitingdiao",
+    }
     assert len({pet.talent for pet in content.species.values()}) == len(content.species)
     for element in ("fire", "water", "wood", "metal", "earth", "ice", "poison"):
         pets = [pet for pet in content.species.values() if pet.primary_element == element]
@@ -112,6 +116,27 @@ def test_unused_summon_pool_does_not_establish_acquisition(catalog_dir):
         "entries": [{"species": "bifang", "weight": 1}],
     }))
     with pytest.raises(ValueError, match="no acquisition route"):
+        Catalog.load(catalog_dir)
+
+
+@pytest.mark.parametrize("change,error", [
+    (lambda pool: pool.update(guaranteed_batch_size=1), "batch guarantee"),
+    (lambda pool: pool.update(guaranteed_batch_size=11), "batch guarantee"),
+    (lambda pool: pool.update(guaranteed_species=["unknown"]), "summon guarantee"),
+    (lambda pool: pool.update(guaranteed_species=[entry["species"] for entry in pool["entries"]]),
+     "narrower than its summon pool"),
+])
+def test_summon_batch_guarantee_content_is_validated(catalog_dir, change, error):
+    edit(catalog_dir, "pools.json", lambda rows: change(rows[0]))
+    with pytest.raises((ValueError, ValidationError), match=error):
+        Catalog.load(catalog_dir)
+
+
+def test_batch_guarantee_species_must_be_in_its_pool(catalog_dir):
+    edit(catalog_dir, "pools.json", lambda rows: rows[0].update(entries=[
+        entry for entry in rows[0]["entries"] if entry["species"] != "xuanwu"
+    ]))
+    with pytest.raises(ValueError, match="must belong to the same pool"):
         Catalog.load(catalog_dir)
 
 

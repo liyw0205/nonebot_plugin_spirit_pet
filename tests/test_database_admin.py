@@ -4,9 +4,10 @@ import sqlite3
 import pytest
 
 from scripts.database_admin import backup_database, restore_database, verify_database
+from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION
 
 
-def make_database(path, *, version=11):
+def make_database(path, *, version=SCHEMA_VERSION):
     with closing(sqlite3.connect(path)) as conn:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("BEGIN")
@@ -23,14 +24,14 @@ def test_online_backup_preserves_committed_wal_data_and_schema(tmp_path):
     writer.execute("PRAGMA journal_mode=WAL")
     writer.execute("CREATE TABLE values_table(value TEXT NOT NULL)")
     writer.execute("INSERT INTO values_table VALUES ('committed in WAL')")
-    writer.execute("PRAGMA user_version=11")
+    writer.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
     writer.commit()
 
     try:
-        assert backup_database(source, destination) == 11
+        assert backup_database(source, destination) == SCHEMA_VERSION
     finally:
         writer.close()
-    assert verify_database(destination, expected_schema=11) == 11
+    assert verify_database(destination, expected_schema=SCHEMA_VERSION) == SCHEMA_VERSION
     with sqlite3.connect(destination) as conn:
         assert conn.execute("SELECT value FROM values_table").fetchone() == ("committed in WAL",)
 
@@ -66,10 +67,10 @@ def test_verify_is_read_only_and_checks_expected_schema(tmp_path):
     make_database(database)
     before = database.read_bytes()
 
-    assert verify_database(database, expected_schema=11) == 11
+    assert verify_database(database, expected_schema=SCHEMA_VERSION) == SCHEMA_VERSION
     assert database.read_bytes() == before
     with pytest.raises(RuntimeError, match="does not match expected version"):
-        verify_database(database, expected_schema=10)
+        verify_database(database, expected_schema=SCHEMA_VERSION - 1)
 
 
 def test_verify_rejects_foreign_key_violations(tmp_path):

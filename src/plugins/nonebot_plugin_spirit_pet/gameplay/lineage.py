@@ -67,7 +67,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 def choose(ctx: Context, arg: str) -> Reply:
     if not arg:
-        raise GameError("请指定血脉分支名称，可先查看 /灵宠血脉。")
+        raise GameError("请指定血脉分支名称，可先查看“灵宠血脉”。")
     player, pet = ctx.player(), ctx.pet()
     ctx.require_idle_pet(pet)
     if pet.lineage_id is not None:

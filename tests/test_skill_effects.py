@@ -61,6 +61,62 @@ def test_controlled_actions_consume_temporary_effect_duration():
     assert unit.effects.control_immunity == 1
 
 
+def test_full_affinity_resists_only_the_first_control_per_battle():
+    stun = active("stun", "enemy", duration=1)
+    caster = fighter("controller")
+    target = fighter("bonded", affinity=100)
+
+    first = apply(stun, caster, target)
+    assert "抵挡了一次控制" in first[0]
+    assert not target.effects.stunned
+    assert target.bond_protection_used
+
+    second = apply(stun, caster, target)
+    assert second == ("bonded受控，下一次行动跳过。",)
+    assert target.effects.stunned
+
+
+def test_bond_control_guard_requires_full_affinity():
+    stun = active("stun", "enemy", duration=1)
+    target = fighter("bonded", affinity=99)
+
+    events = apply(stun, fighter("controller"), target)
+
+    assert events == ("bonded受控，下一次行动跳过。",)
+    assert target.effects.stunned
+    assert not target.bond_protection_used
+
+
+def test_taunt_redirects_enemies_and_expires_after_its_own_actions():
+    class LastTarget:
+        def randint(self, start, stop):
+            return stop
+
+    taunter, ally = fighter("taunter"), fighter("ally")
+    taunt = active("taunt", duration=2)
+    apply(taunt, taunter)
+
+    assert effects.enemy_target(None, [taunter, ally], 1, LastTarget()) is taunter
+    taunter.turns += 1
+    effects.finish_action(taunter)
+    assert taunter.effects.taunt.remaining == 1
+    assert effects.enemy_target(None, [taunter, ally], 1, LastTarget()) is taunter
+    taunter.turns += 1
+    effects.finish_action(taunter)
+    assert taunter.effects.taunt is None
+    assert effects.enemy_target(None, [taunter, ally], 1, LastTarget()) is ally
+
+
+def test_dispel_removes_taunt_and_makes_its_target_eligible(game):
+    caster, target = fighter("caster"), fighter("target")
+    apply(active("taunt", duration=2), target)
+
+    events = apply(active("dispel", "enemy"), caster, target)
+
+    assert events == ("target的护盾、攻击增益与护阵已驱散。",)
+    assert target.effects.taunt is None
+
+
 def test_new_self_ward_lasts_its_full_following_actions_without_stacking():
     ward = active("ward", power=0.2, duration=2)
     unit = fighter()
@@ -153,10 +209,11 @@ def test_dispel_removes_both_shields_and_attack_buff_but_not_negative_effects():
     target.poison_damage, target.poison_turns = 5, 3
     apply(active("ward", power=0.2, duration=2), target)
     apply(active("empower", power=0.2, duration=2), target)
+    apply(active("taunt", duration=2), target)
     apply(active("weaken", "enemy", power=0.2, duration=2), caster, target)
     apply(active("dispel", "enemy"), caster, target)
     assert target.shield == 0
-    assert target.effects.ward is target.effects.empower is None
+    assert target.effects.ward is target.effects.empower is target.effects.taunt is None
     assert target.effects.weaken and target.poison_turns == 3
 
 

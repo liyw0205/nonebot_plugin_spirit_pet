@@ -1,0 +1,4 @@
+10-09 23:12:44 [SUCCESS] nonebot | NoneBot is initializing...
+10-09 23:12:44 [WARNING] nonebot | OneBot V11 | Missing Authorization Header
+10-09 23:12:46 [WARNING] nonebot | OneBot V11 | WebSocket for Bot 9000 closed by peer
+PASS: plugin load, WS authentication, collection, achievements, resonance, skills, PVE, stages, battle reports, crafting, lineages, teams, offline journeys, direct mirror battles, arena seasons, multi-pet protocol chain and redelivery

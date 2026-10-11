@@ -1,4 +1,3 @@
-from math import prod
 from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
@@ -71,8 +70,16 @@ class Equipment(Definition):
     bonuses: Bonuses
 
 
+class EquipmentSet(Definition):
+    id: Identifier
+    name: Name
+    description: str
+    items: list[Identifier] = Field(min_length=2, max_length=3)
+    bonuses: Bonuses
+
+
 class SkillEffect(Definition):
-    kind: Literal["stun", "weaken", "ward", "empower", "cleanse", "dispel"]
+    kind: Literal["stun", "weaken", "ward", "empower", "cleanse", "dispel", "taunt"]
     target: Literal["self", "ally", "enemy"]
     power: Annotated[float, Field(ge=0, le=0.8)] = 0
     duration: Annotated[int, Field(ge=0, le=3)] = 0
@@ -85,6 +92,9 @@ class SkillEffect(Definition):
         if self.kind == "stun":
             if self.power or self.duration != 1:
                 raise ValueError("stun must skip exactly one action without a power value")
+        elif self.kind == "taunt":
+            if self.power or self.duration <= 0:
+                raise ValueError("taunt requires a positive action duration without a power value")
         elif self.kind in {"cleanse", "dispel"}:
             if self.power or self.duration:
                 raise ValueError("instant removal effects cannot have power or duration")
@@ -100,12 +110,15 @@ class Skill(Definition):
     element: Identifier | None
     requirements: Requirement
     kind: Literal["damage", "heal", "utility"]
+    targeting: Literal["single", "all"] = "single"
     coefficient: Annotated[float, Field(ge=0, le=3)]
     book_item: Identifier
     effects: list[SkillEffect] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
     def check_skill(self):
+        if self.targeting == "all" and (self.kind != "damage" or self.effects):
+            raise ValueError("all-targeting skills must be effect-free damage skills")
         if self.kind == "utility":
             if self.coefficient or not self.effects:
                 raise ValueError("utility skills require effects and a zero coefficient")
@@ -117,62 +130,10 @@ class Skill(Definition):
         hostile = {effect.target == "enemy" for effect in self.effects}
         if len(hostile) > 1:
             raise ValueError("one skill cannot mix beneficial and hostile effects")
-        if self.kind == "damage" and False in hostile:
+        if self.kind == "damage" and False in hostile and not all(
+            effect.kind == "taunt" and effect.target == "self" for effect in self.effects
+        ):
             raise ValueError("damage skills may only carry hostile effects")
         if self.kind == "heal" and True in hostile:
             raise ValueError("healing skills may only carry beneficial effects")
         return self
-
-
-NamePart = Annotated[str, Field(pattern=r"^[\u4e00-\u9fffA-Za-z0-9]{1,4}$")]
-
-
-class DaoNames(Definition):
-    fields: dict[Identifier, Annotated[list[NamePart], Field(min_length=1)]] = Field(min_length=1)
-    templates: list[Annotated[list[Identifier], Field(min_length=1)]] = Field(min_length=1)
-
-    @model_validator(mode="after")
-    def check_name_space(self):
-        widths = {}
-        for field, entries in self.fields.items():
-            if len({entry.lower() for entry in entries}) != len(entries):
-                raise ValueError(f"duplicate dao name components: {field}")
-            if len({len(entry) for entry in entries}) != 1:
-                raise ValueError(f"dao name components must have a fixed width: {field}")
-            widths[field] = len(entries[0])
-        lengths = set()
-        for template in self.templates:
-            if any(field not in self.fields for field in template):
-                raise ValueError("unknown dao name field in template")
-            length = sum(widths[field] for field in template)
-            if not 2 <= length <= 12:
-                raise ValueError("dao name templates must produce 2-12 characters")
-            # Fixed field boundaries and disjoint lengths prove every output is unique.
-            if length in lengths:
-                raise ValueError("dao name templates must have different output lengths")
-            lengths.add(length)
-        if self.capacity < 10_000_000:
-            raise ValueError("dao name space requires at least 10000000 unique names")
-        return self
-
-    @property
-    def capacity(self) -> int:
-        return sum(prod(len(self.fields[field]) for field in template) for template in self.templates)
-
-    def name_at(self, index: int) -> str:
-        if type(index) is not int:
-            raise TypeError("dao name ordinal must be an integer")
-        if index < 0:
-            raise ValueError("dao name ordinal is out of range")
-        for template in self.templates:
-            size = prod(len(self.fields[field]) for field in template)
-            if index >= size:
-                index -= size
-                continue
-            parts = []
-            for field in reversed(template):
-                entries = self.fields[field]
-                index, offset = divmod(index, len(entries))
-                parts.append(entries[offset])
-            return "".join(reversed(parts))
-        raise ValueError("dao name ordinal is out of range")

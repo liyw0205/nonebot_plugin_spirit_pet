@@ -19,12 +19,13 @@ def test_special_matrix_preserves_basic_matrix_and_covers_every_new_definition(g
     content = game[0].content
     matrix = special_scenarios(content)
     assert len(scenarios(content)) == 626
-    assert len(matrix) == 120
+    assert len(matrix) == 124
     assert len({case.id for case in matrix}) == len(matrix)
     assert {case.subject for case in matrix if case.category == "lineage"} == set(content.lineages)
     assert {case.subject for case in matrix if case.category == "effect"} == {
         skill.id for skill in content.skills.values() if skill.effects
     }
+    assert {case.subject for case in matrix if case.category == "skill"} == {"spirit_wave"}
 
 
 def test_every_effect_is_cast_and_really_changes_state_in_actual_battle(game):
@@ -32,7 +33,7 @@ def test_every_effect_is_cast_and_really_changes_state_in_actual_battle(game):
     report = run_special_report(store, service.content, service.config, 2, 20261007)
     assert report["issues"] == []
     assert report["coverage"]["lineages_exercised"] == 54
-    assert report["coverage"]["effects_triggered"] == 6
+    assert report["coverage"]["effects_triggered"] == 7
     assert all(row["max_rounds"] <= 40 for row in report["scenarios"])
     for row in report["scenarios"]:
         assert row["wins"] + row["draws"] + row["losses"] == 2
@@ -98,6 +99,26 @@ def test_report_shows_real_primary_and_skill_element_matchups(game):
     assert actor["basic_matchups"] == [1.25]
     assert actor["skills"][0]["element"] == "ice"
     assert actor["skills"][0]["damage_matchups"] == [1.25]
+
+
+def test_area_skill_special_fixture_uses_selected_skill_and_multiple_targets(game):
+    service, store = game
+    case = next(case for case in special_scenarios(service.content)
+                if case.subject == "spirit_wave" and case.variant == "selected")
+    row = evaluate_special(store, service.content, service.config, case, 3, 17)
+    control = evaluate_special(
+        store,
+        service.content,
+        service.config,
+        next(case for case in special_scenarios(service.content)
+             if case.subject == "spirit_wave" and case.variant == "control"),
+        3,
+        17,
+    )
+    assert row["tracked_skill_casts"] > 0
+    assert control["tracked_skill_casts"] == 0
+    assert len(row["right_units"]) == 2
+    assert row["invalid_states"] == 0
 
 
 @pytest.mark.parametrize("species,realm,message", [("hanying", 0, "境界"), ("xuanhu", 1, "元素")])

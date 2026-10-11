@@ -86,7 +86,8 @@
   },
   {
     "id": "ember_wraith", "name": "焚天炎灵", "primary_element": "fire", "elements": ["fire"],
-    "stats": {"hp": 2100, "attack": 240, "defense": 120, "speed": 140}
+    "stats": {"hp": 2100, "attack": 240, "defense": 120, "speed": 140},
+    "signature_skill": "fireball", "skill_every": 3
   },
   {
     "id": "jade_warden", "name": "玄玉镇灵", "primary_element": "earth", "elements": ["earth", "metal"],
@@ -94,7 +95,8 @@
   },
   {
     "id": "frost_monarch", "name": "霜渊君主", "primary_element": "ice", "elements": ["ice"],
-    "stats": {"hp": 4500, "attack": 450, "defense": 240, "speed": 260}
+    "stats": {"hp": 4500, "attack": 450, "defense": 240, "speed": 260},
+    "signature_skill": "ice_seal", "skill_every": 8
   },
   {
     "id": "wood_colossus", "name": "古木法相", "primary_element": "wood", "elements": ["wood", "earth"],
@@ -102,18 +104,22 @@
   },
   {
     "id": "void_blade", "name": "太虚剑魄", "primary_element": "metal", "elements": ["metal", "wind"],
-    "stats": {"hp": 7400, "attack": 800, "defense": 450, "speed": 560}
+    "stats": {"hp": 7400, "attack": 800, "defense": 450, "speed": 560},
+    "signature_skill": "metal_edge", "skill_every": 7
   },
   {
     "id": "nether_emperor", "name": "幽冥帝影", "primary_element": "poison", "elements": ["poison", "fire"],
-    "stats": {"hp": 13000, "attack": 850, "defense": 480, "speed": 520}
+    "stats": {"hp": 13000, "attack": 850, "defense": 480, "speed": 520},
+    "signature_skill": "poison_sapping", "skill_every": 4
   },
   {
     "id": "tribulation_avatar", "name": "九霄劫灵", "primary_element": "thunder", "elements": ["thunder", "wind"],
-    "stats": {"hp": 12500, "attack": 1300, "defense": 700, "speed": 1000}
+    "stats": {"hp": 12500, "attack": 1300, "defense": 700, "speed": 1000},
+    "signature_skill": "thunder_bolt", "skill_every": 3
   },
   {
     "id": "sky_gate_guard", "name": "天门守望", "primary_element": "earth", "elements": ["earth", "thunder"],
-    "stats": {"hp": 22000, "attack": 1350, "defense": 750, "speed": 900}
+    "stats": {"hp": 22000, "attack": 1350, "defense": 750, "speed": 900},
+    "signature_skill": "earth_crush", "skill_every": 3
   }
 ]

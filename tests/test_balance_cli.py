@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.parametrize("script,expected", [("balance_report.py", 626), ("balance_specials.py", 120)])
+@pytest.mark.parametrize("script,expected", [("balance_report.py", 626), ("balance_specials.py", 124)])
 def test_balance_cli_exports_parseable_portable_reports(tmp_path, script, expected):
     root = Path(__file__).resolve().parents[1]
     csv_path = tmp_path / "report.csv"

@@ -6,20 +6,28 @@ from .common import Season, rating
 
 
 def check_participant(ctx: Context, season: Season, user_id: str) -> Pet:
-    player, pet = ctx.player(user_id), ctx.pet(user_id)
+    player, pets = ctx.player(user_id), ctx.active_pets(user_id)
+    pet = pets[0]
     minimum = next((index for index, realm in enumerate(ctx.content.realms) if realm.id == season.rules.min_realm), None)
     if minimum is None:
         raise GameError("赛季准入所需的境界定义缺失，请联系管理员恢复后重试。")
-    if pet.realm < minimum:
-        raise GameError(f"{player.dao_name}境界不足，论剑需达到{ctx.content.realms[minimum].name}。")
+    for active in pets:
+        if active.realm < minimum:
+            raise GameError(f"{active.name}境界不足，论剑需达到{ctx.content.realms[minimum].name}。")
+    if len({active.realm for active in pets}) > 1:
+        raise GameError("论剑按出战阵容的大境界匹配，请先用 灵宠出战 改为同一大境界的灵宠。")
     ctx.check_action(player, pet, "pvp", season.rules.energy, ctx.config.spirit_pet_pvp_cooldown)
+    for extra in pets[1:]:
+        ctx.require_idle_pet(extra)
+        if extra.energy < season.rules.energy:
+            raise GameError(f"{extra.name}精力不足，需要 {season.rules.energy} 点。")
     count = ctx.repo.conn.execute(
         "SELECT COUNT(*) FROM pvp_results WHERE season_id=? AND day=? "
         "AND challenger_id=?",
         (season.season_id, beijing_day(ctx.now), user_id),
     ).fetchone()[0]
     if count >= season.rules.daily_matches:
-        raise GameError(f"{player.dao_name}今日论剑次数已用尽。")
+        raise GameError(f"{player.uid_label}今日论剑次数已用尽。")
     return pet
 
 
@@ -30,9 +38,12 @@ def check_ranked(ctx: Context, season: Season, first: str, second: str) -> tuple
         raise GameError("该赛季已结束，请重新发起论剑。")
     left = check_participant(ctx, season, first)
     target = ctx.player(second)
-    if target.active_pet_id is None:
+    target_pets = ctx.repo.active_pets(second)
+    if not target_pets:
         raise GameError("该道友尚未选择出战灵宠。")
-    right = ctx.repo.pet(target.active_pet_id)
+    right = target_pets[0]
+    if any(active.realm != right.realm for active in target_pets):
+        raise GameError(f"{target.uid_label}的出战阵容处于不同大境界，当前不能参与论剑。")
     if left.realm != right.realm:
         raise GameError("论剑双方需处于相同大境界。")
     if abs(rating(ctx, season, first) - rating(ctx, season, second)) > season.rules.max_rating_gap:

@@ -6,17 +6,18 @@ from pydantic import TypeAdapter
 
 from nonebot_plugin_spirit_pet.content.catalog import Catalog
 from nonebot_plugin_spirit_pet.core.config import Config
-from nonebot_plugin_spirit_pet.gameplay.combat import Fighter, fight
+from nonebot_plugin_spirit_pet.gameplay.combat import enemy_fighter, fight
 from nonebot_plugin_spirit_pet.storage.database import Store
 
 from .scenarios import Scenario, build_fighters, scenarios
+
+HIGH_TIER_SOLO_WIN_RATE_FLOOR = 0.7
 
 
 def evaluate(store: Store, content: Catalog, config: Config, scenario: Scenario, runs: int, seed: int) -> dict:
     dungeon = content.dungeons[scenario.dungeon_id]
     blueprints = build_fighters(store, content, config, scenario.species, scenario.realm, scenario.profile)
-    enemies = [Fighter.create(enemy.name, enemy.stats, enemy.elements, primary_element=enemy.primary_element)
-               for enemy in (content.enemies[key] for key in dungeon.enemies)]
+    enemies = [enemy_fighter(content.enemies[key], content.skills) for key in dungeon.enemies]
     wins = draws = total_rounds = max_rounds = 0
     identity = hashlib.sha256(scenario.id.encode("utf-8")).digest()
     scenario_seed = seed ^ int.from_bytes(identity[:8], "big")
@@ -53,11 +54,15 @@ def audit(rows: list[dict], content: Catalog) -> list[str]:
             relevant = [row for row in rows if row["realm"] == realm.id and row["party_size"] == size]
             if not relevant:
                 issues.append(f"missing realm/party coverage: {realm.id}/{size}")
+    high_realms = {realm.id for realm in content.realms[-2:]}
     for row in rows:
         if row["max_rounds"] > 40:
             issues.append(f"round bound exceeded: {row['id']}")
         if row["profile"] == "prepared" and row["wins"] == 0:
             issues.append(f"prepared party never won in sampled trials: {row['id']}")
+        if (row["profile"] == "prepared" and row["party_size"] == 1 and row["realm"] in high_realms
+                and row["win_rate"] < HIGH_TIER_SOLO_WIN_RATE_FLOOR):
+            issues.append(f"high-tier prepared solo win rate below 70%: {row['id']}")
     return issues
 
 

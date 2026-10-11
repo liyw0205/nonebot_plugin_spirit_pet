@@ -1,4 +1,5 @@
 import asyncio
+import re
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
@@ -7,19 +8,96 @@ import pytest
 
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments, inline_command, qq_keyboard, send_reply
-from nonebot_plugin_spirit_pet.domain.models import Reply
+from nonebot_plugin_spirit_pet.domain.models import InlineCommand, Reply
 
 
-def test_qq_blue_link_uses_an_encoded_command_with_no_accidental_execution():
+def test_qq_blue_link_enters_a_complete_command():
     link = inline_command("灵宠修炼", "灵宠修炼")
     parsed = urlparse(link.removeprefix("[").split("](", 1)[1][:-1])
     assert parsed.scheme == "mqqapi"
     assert parsed.netloc == "aio"
     assert parse_qs(parsed.query) == {
         "command": ["/灵宠修炼"],
-        "enter": ["false"],
+        "enter": ["true"],
         "reply": ["false"],
     }
+
+
+def test_qq_blue_link_prefills_only_an_incomplete_parameter():
+    link = inline_command("选择伙伴", "灵宠出战 ")
+    params = parse_qs(urlparse(link.removeprefix("[").split("](", 1)[1][:-1]).query)
+    assert params == {"command": ["/灵宠出战 "], "enter": ["false"], "reply": ["false"]}
+
+
+def test_contextual_links_stay_with_their_sentence_and_replace_duplicate_buttons():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "选择伙伴",
+        ("先到名册看看伙伴。", "选好后填写出战编号。"),
+        ("灵宠列表", "灵宠出战 "),
+        (
+            InlineCommand(0, "查看名册", "灵宠列表"),
+            InlineCommand(1, "填写编号", "灵宠出战 "),
+        ),
+    )
+    fallback, message = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+    )
+    markdown = message["markdown"][0].data["markdown"].content
+    roster = markdown.index("[查看名册](mqqapi://")
+    select = markdown.index("[填写编号](mqqapi://")
+    first_line = markdown.index("先到名册看看伙伴。")
+    assert first_line < roster < markdown.index("\n", first_line)
+    assert markdown.index("选好后填写出战编号。") < select
+    urls = [url for _, url in re.findall(r"\[([^\]]+)\]\((mqqapi://[^)]+)\)", markdown)]
+    payloads = [parse_qs(urlparse(url).query)["command"][0] for url in urls]
+    assert payloads == ["!灵宠列表", "!灵宠出战 "]
+    assert not message["keyboard"]
+    assert "查看名册（!灵宠列表）" in fallback and "填写编号（!灵宠出战）" in fallback
+
+    _, no_links = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_qq_blue_links=False),
+    )
+    no_link_markdown = no_links["markdown"][0].data["markdown"].content
+    assert "查看名册（/灵宠列表）" in no_link_markdown
+    assert "mqqapi://" not in no_link_markdown
+
+
+def test_complete_same_family_keyboard_action_survives_contextual_blue_link():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "灵宠名册", ("伙伴列表。",), ("灵宠列表 2",),
+        (InlineCommand(0, "查看名册", "灵宠列表"),),
+    )
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    markdown = message["markdown"][0].data["markdown"].content
+    button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert "[查看名册](mqqapi://" in markdown
+    assert button.action.data == "/灵宠列表 2"
+    assert button.action.enter is True
+
+
+def test_item_and_recipe_details_link_related_queries_in_context(play):
+    pytest.importorskip("nonebot.adapters.qq")
+    for reply, command, label in (
+        (play("shop", "青岚翎"), "灵宠装备图鉴 青岚翎", "查看装备图鉴"),
+        (play("shop", "风刃术诀"), "灵宠技能图鉴 风刃术", "查看灵术图鉴"),
+        (play("recipe_catalog", "青岚翎 +3"), "灵宠装备图鉴 青岚翎", "查看装备属性"),
+    ):
+        _, message = _qq_segments(
+            reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+        )
+        markdown = message["markdown"][0].data["markdown"].content
+        url = next(url for link_label, url in re.findall(r"\[([^\]]+)\]\((mqqapi://[^)]+)\)", markdown)
+                   if link_label == label)
+        assert parse_qs(urlparse(url).query)["command"] == ["!" + command]
+        assert markdown.index(f"[{label}]") < markdown.rfind("\n\n")
+        button_payloads = [
+            button.action.data
+            for row in message["keyboard"][0].data["keyboard"].content.rows
+            for button in row.buttons
+        ]
+        assert "!" + command not in button_payloads
 
 
 def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
@@ -29,9 +107,63 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
     fallback, message = _qq_segments(reply, config)
 
     assert "【山海小宠】" in fallback
-    assert "[我的灵宠](mqqapi://aio/inlinecmd?" in message["markdown"][0].data["markdown"].content
+    assert "[查看灵宠](mqqapi://aio/inlinecmd?" in message["markdown"][0].data["markdown"].content
     assert len(message["keyboard"]) == 1
-    assert message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0].action.data == "/我的灵宠"
+    button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
+    assert button.render_data.label == "查看灵宠"
+    assert button.action.data == "/我的灵宠"
+
+
+def test_help_categories_get_inline_blue_links_and_unprefixed_labels(play):
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = play("help")
+    _, message = _qq_segments(
+        reply,
+        Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"),
+    )
+    markdown = message["markdown"][0].data["markdown"].content
+    assert "[成长](mqqapi://aio/inlinecmd?" in markdown
+    assert "[组队与派遣](mqqapi://aio/inlinecmd?" in markdown
+    assert "**推荐入口**" not in markdown
+    assert "/灵宠" not in markdown
+    assert parse_qs(urlparse(markdown.split("[成长](")[1].split(")")[0]).query)["command"] == [
+        "!灵宠帮助 成长"
+    ]
+    assert len(message["keyboard"]) == 0
+
+    _, no_prefix_message = _qq_segments(
+        reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix=""),
+    )
+    no_prefix_markdown = no_prefix_message["markdown"][0].data["markdown"].content
+    assert parse_qs(urlparse(no_prefix_markdown.split("[成长](")[1].split(")")[0]).query)["command"] == ["灵宠帮助 成长"]
+    assert len(no_prefix_message["keyboard"]) == 0
+
+
+def test_contextual_blue_link_deduplicates_keyboard_and_survives_keyboard_disabled():
+    pytest.importorskip("nonebot.adapters.qq")
+    reply = Reply(
+        "领养成功",
+        ("UID：10000", "初始灵宠：青鸾"),
+        ("我的灵宠", "我的信息"),
+        (InlineCommand(0, "查看我的信息", "我的信息"),),
+    )
+    _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native", spirit_pet_command_prefix="!"))
+    markdown = message["markdown"][0].data["markdown"].content
+    buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows for button in row.buttons]
+    assert [button.action.data for button in buttons] == ["!我的灵宠"]
+    assert markdown.count("[查看我的信息](mqqapi://") == 1
+    assert "!我的信息" not in [button.action.data for button in buttons]
+
+    _, keyboard_disabled = _qq_segments(
+        reply, Config(
+            spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=False,
+            spirit_pet_command_prefix="!",
+        ),
+    )
+    fallback_markdown = keyboard_disabled["markdown"][0].data["markdown"].content
+    assert not keyboard_disabled["keyboard"]
+    assert fallback_markdown.count("[查看我的信息](mqqapi://") == 1
+    assert "[查看灵宠]" in fallback_markdown
 
 
 @pytest.mark.parametrize("command,encoded", [
@@ -42,11 +174,10 @@ def test_qq_markdown_keyboard_and_raw_text_are_built_from_the_same_reply():
 def test_structured_arguments_survive_blue_links_and_keyboard(command, encoded):
     reply = Reply("灵物工坊", (), (command,))
     _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
-    markdown = message["markdown"][0].data["markdown"].content
-    assert encoded in markdown
     button = message["keyboard"][0].data["keyboard"].content.rows[0].buttons[0]
     assert button.action.data == "/" + command
     link = inline_command(command, command)
+    assert encoded in link
     assert parse_qs(urlparse(link.split("](")[1][:-1]).query)["command"] == ["/" + command]
 
 
@@ -72,6 +203,22 @@ def test_keyboard_is_created_only_for_known_safe_commands():
         inline_command("攻击", "灵宠签到\n恶意指令")
 
 
+@pytest.mark.parametrize(("command", "enter"), [
+    ("灵宠图鉴", True),
+    ("灵宠列表", True),
+    ("灵宠帮助 成长", True),
+    ("灵宠出战 12", True),
+    ("灵宠出战 ", False),
+])
+def test_keyboard_enters_complete_payloads_and_prefills_incomplete_ones(command, enter):
+    pytest.importorskip("nonebot.adapters.qq")
+    keyboard = qq_keyboard((command,))
+    button = keyboard.data["keyboard"].content.rows[0].buttons[0]
+    assert button.action.data == "/" + command
+    assert button.action.enter is enter
+    assert button.render_data.label == button.render_data.label.strip()
+
+
 def test_template_uses_configured_id_and_preserves_all_content():
     reply = Reply("灵宠", ("很长的文本" * 200,))
     config = Config(spirit_pet_qq_mode="template", spirit_pet_qq_template_id="123.456")
@@ -87,7 +234,8 @@ def test_onebot_never_gets_qq_segments():
     bot = SimpleNamespace(adapter=SimpleNamespace(get_name=lambda: "OneBot V11"), send=AsyncMock())
     reply = Reply("测试", ("灵石 +200",))
     asyncio.run(send_reply(bot, object(), reply, Config(spirit_pet_qq_mode="native")))
-    assert bot.send.call_args.args[1] == reply.text()
+    assert bot.send.call_args.args[1].startswith("【测试】\n灵石 +200")
+    assert "查看灵宠（/我的灵宠）" in bot.send.call_args.args[1]
 
 
 def test_native_markdown_escapes_untrusted_fields():
@@ -111,7 +259,9 @@ def test_qq_fallback_only_retries_explicit_rejections(status, retry):
     if retry:
         asyncio.run(action)
         assert bot.send.await_count == 2
-        assert "修为 +30" in bot.send.call_args.args[1]
+        retried = bot.send.call_args.args[1]
+        assert retried["markdown"][0].data["markdown"].content.startswith("**测试**")
+        assert "修为 \\+30" in retried["markdown"][0].data["markdown"].content
     else:
         with pytest.raises(ActionFailed):
             asyncio.run(action)

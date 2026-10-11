@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from dataclasses import asdict
 
@@ -16,7 +17,10 @@ class Repository:
 
     def player(self, user_id: str) -> Player | None:
         if user_id not in self.players:
-            row = self.conn.execute("SELECT * FROM players WHERE user_id=?", (user_id,)).fetchone()
+            row = self.conn.execute(
+                "SELECT p.*, identity.id AS internal_id FROM players p "
+                "JOIN player_identity identity USING(user_id) WHERE p.user_id=?", (user_id,),
+            ).fetchone()
             if row is None:
                 return None
             self.players[user_id] = Player(**dict(row))
@@ -27,7 +31,9 @@ class Repository:
             row = self.conn.execute("SELECT * FROM pets WHERE pet_id=?", (pet_id,)).fetchone()
             if row is None:
                 raise GameError("灵宠不存在。")
-            self.pets[pet_id] = Pet(**dict(row))
+            data = dict(row)
+            data["archived"] = bool(data["archived"])
+            self.pets[pet_id] = Pet(**data)
         return self.pets[pet_id]
 
     def active_expedition(self, pet_id: int) -> sqlite3.Row | None:
@@ -35,13 +41,26 @@ class Repository:
             "SELECT * FROM expeditions WHERE pet_id=? AND state='running'", (pet_id,),
         ).fetchone()
 
-    def player_by_name(self, dao_name: str) -> Player | None:
-        row = self.conn.execute("SELECT user_id FROM players WHERE dao_name=? COLLATE NOCASE", (dao_name,)).fetchone()
+    def player_by_uid(self, value: str | int) -> Player | None:
+        text = str(value).strip()
+        match = re.fullmatch(r"(?:UID\s*)?([0-9]+)", text, re.IGNORECASE)
+        if match is None:
+            return None
+        uid = int(match.group(1))
+        if not 10000 <= uid <= 9_223_372_036_854_785_806:
+            return None
+        row = self.conn.execute(
+            "SELECT user_id FROM player_identity WHERE id=?", (uid - 9999,),
+        ).fetchone()
         return self.player(row["user_id"]) if row else None
 
-    def create_player(self, user_id: str, dao_name: str, stones: int) -> Player:
-        self.conn.execute("INSERT INTO players(user_id, dao_name, stones) VALUES (?, ?, ?)", (user_id, dao_name, stones))
-        player = Player(user_id, dao_name, stones, None)
+    def create_player(self, user_id: str, stones: int, now: int) -> Player:
+        self.conn.execute(
+            "INSERT INTO players(user_id, stones, registered_at) VALUES (?, ?, ?)",
+            (user_id, stones, now),
+        )
+        cursor = self.conn.execute("INSERT INTO player_identity(user_id) VALUES (?)", (user_id,))
+        player = Player(user_id, cursor.lastrowid, stones, None, registered_at=now)
         self.players[user_id] = player
         return player
 
@@ -52,15 +71,83 @@ class Repository:
         )
         return self.pet(cursor.lastrowid)
 
+    def active_pets(self, user_id: str) -> list[Pet]:
+        """Return the persisted battle roster, with a safe legacy fallback."""
+        player = self.player(user_id)
+        rows = self.conn.execute(
+            "SELECT pet_id FROM active_pet_slots WHERE user_id=? ORDER BY slot", (user_id,),
+        ).fetchall()
+        if rows and player is not None and player.active_pet_id == rows[0]["pet_id"]:
+            return [self.pet(row["pet_id"]) for row in rows]
+        if player is None or player.active_pet_id is None:
+            return []
+        return [self.pet(player.active_pet_id)]
+
+    def set_active_pets(self, user_id: str, pet_ids: list[int]) -> None:
+        if not 1 <= len(pet_ids) <= 3:
+            raise GameError("出战阵容需要 1-3 只灵宠。")
+        if len(set(pet_ids)) != len(pet_ids):
+            raise GameError("同一只灵宠不能重复出战。")
+        placeholders = ",".join("?" for _ in pet_ids)
+        rows = self.conn.execute(
+            f"SELECT pet_id, species_id, archived FROM pets WHERE user_id=? AND pet_id IN ({placeholders})",
+            (user_id, *pet_ids),
+        ).fetchall()
+        by_id = {int(row["pet_id"]): row for row in rows}
+        if len(by_id) != len(pet_ids):
+            raise GameError("只能选择属于你的灵宠出战。")
+        if any(row["archived"] for row in by_id.values()):
+            raise GameError("封存灵宠不能出战，请先复原。")
+        if len({row["species_id"] for row in by_id.values()}) != len(pet_ids):
+            raise GameError("同一出战阵容不能包含重复宠物种类。")
+        self.conn.execute("DELETE FROM active_pet_slots WHERE user_id=?", (user_id,))
+        self.conn.executemany(
+            "INSERT INTO active_pet_slots(user_id, slot, pet_id) VALUES (?, ?, ?)",
+            [(user_id, slot, pet_id) for slot, pet_id in enumerate(pet_ids, 1)],
+        )
+        player = self.player(user_id)
+        if player is not None:
+            player.active_pet_id = pet_ids[0]
+
     def owned_pets(self, user_id: str) -> list[Pet]:
-        ids = self.conn.execute("SELECT pet_id FROM pets WHERE user_id=? ORDER BY pet_id", (user_id,))
+        ids = self.conn.execute(
+            "SELECT pet_id FROM pets WHERE user_id=? AND archived=0 ORDER BY pet_id", (user_id,),
+        )
         return [self.pet(row["pet_id"]) for row in ids]
+
+    def archived_pets(self, user_id: str, *, limit: int, offset: int) -> list[Pet]:
+        ids = self.conn.execute(
+            "SELECT pet_id FROM pets WHERE user_id=? AND archived=1 ORDER BY pet_id LIMIT ? OFFSET ?",
+            (user_id, limit, offset),
+        )
+        return [self.pet(row["pet_id"]) for row in ids]
+
+    def archived_pet_count(self, user_id: str) -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=1", (user_id,),
+        ).fetchone()[0])
 
     def inventory(self, user_id: str) -> dict[str, int]:
         return dict(self.conn.execute(
             "SELECT item_id, quantity FROM inventory WHERE user_id=? AND quantity>0 ORDER BY item_id",
             (user_id,),
         ))
+
+    def player_resonance(self, user_id: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT resonance_id, activated_at FROM player_resonance WHERE user_id=?", (user_id,),
+        ).fetchone()
+
+    def set_player_resonance(self, user_id: str, resonance_id: str, activated_at: int) -> None:
+        self.conn.execute(
+            "INSERT INTO player_resonance(user_id, resonance_id, activated_at) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET resonance_id=excluded.resonance_id, "
+            "activated_at=excluded.activated_at",
+            (user_id, resonance_id, activated_at),
+        )
+
+    def clear_player_resonance(self, user_id: str) -> None:
+        self.conn.execute("DELETE FROM player_resonance WHERE user_id=?", (user_id,))
 
     def add_item(self, user_id: str, item_id: str, amount: int) -> None:
         if amount < 0:
@@ -83,7 +170,26 @@ class Repository:
             raise GameError("道具数量不足。")
 
     def invalidate_ready(self, user_id: str) -> None:
-        self.conn.execute("UPDATE team_members SET ready_pet_id=NULL WHERE user_id=?", (user_id,))
+        self.conn.execute(
+            "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE user_id=?", (user_id,),
+        )
+
+    def invalidate_pet_ready(self, user_id: str, pet_id: int) -> None:
+        member = self.conn.execute(
+            "SELECT t.leader_id FROM team_members m JOIN teams t USING(team_id) "
+            "WHERE m.user_id=? AND m.ready_pet_id IS NOT NULL", (user_id,),
+        ).fetchone()
+        if member is None:
+            return
+        pets = self.active_pets(user_id)
+        participants = pets if member["leader_id"] == user_id else pets[:1]
+        if any(pet.pet_id == pet_id for pet in participants):
+            self.invalidate_ready(user_id)
+
+    def invalidate_team_ready(self, team_id: int) -> None:
+        self.conn.execute(
+            "UPDATE team_members SET ready_pet_id=NULL, ready_pet_ids='' WHERE team_id=?", (team_id,),
+        )
 
     def record_battle(
         self, *, operation_id: str, initiator_id: str, kind: str, battle_key: str, title: str,
@@ -185,13 +291,19 @@ class Repository:
         for pet in self.pets.values():
             self.conn.execute(
                 "UPDATE pets SET name=:name, realm=:realm, layer=:layer, bloodline=:bloodline, lineage_id=:lineage_id, "
-                "exp=:exp, affinity=:affinity, energy=:energy, energy_updated=:energy_updated "
+                "archived=:archived, exp=:exp, affinity=:affinity, "
+                "major_breakthrough_failures=:major_breakthrough_failures, "
+                "energy=:energy, energy_updated=:energy_updated "
                 "WHERE pet_id=:pet_id AND user_id=:user_id", asdict(pet),
             )
         for player in self.players.values():
+            values = asdict(player)
+            values.pop("internal_id")
             self.conn.execute(
-                "UPDATE players SET dao_name=:dao_name, stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
+                "UPDATE players SET stones=:stones, active_pet_id=:active_pet_id, sign_day=:sign_day, "
+                "last_bond_day=:last_bond_day, current_bond_streak=:current_bond_streak, "
+                "best_bond_streak=:best_bond_streak, "
                 "quest_day=:quest_day, last_train=:last_train, last_explore=:last_explore, "
                 "last_pve=:last_pve, last_pvp=:last_pvp WHERE user_id=:user_id",
-                asdict(player),
+                values,
             )

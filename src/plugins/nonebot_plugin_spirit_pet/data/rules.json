@@ -27,5 +27,9 @@
   "explore_energy": 25,
   "max_team_size": 3,
   "max_skill_slots": 2,
-  "skill_proficiency_per_use": 5
+  "skill_proficiency_per_use": 5,
+  "resonance_cost": {
+    "stones": 200,
+    "items": {"bloodline_essence": 1}
+  }
 }

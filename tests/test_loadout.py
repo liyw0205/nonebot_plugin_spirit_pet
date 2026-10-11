@@ -1,4 +1,5 @@
 from contextlib import closing
+import json
 
 import pytest
 
@@ -38,6 +39,60 @@ def test_equipment_real_stats_and_no_duplication_on_replay(game, play):
     play("unequip", "灵器", op="unequip")
     assert items(game[1])["wind_feather"] == 1
     assert stats(game) == before
+
+
+def test_equipment_set_requires_all_pieces_and_adds_combat_bonus(game, play):
+    rich(game, play)
+    before = stats(game)
+    play("buy", "青岚翎")
+    play("equipment", "青岚翎")
+    single = stats(game)
+    assert single.attack == before.attack + 6
+    assert "套装：青岚风铃 1/2 · 未激活" in play("equipment").text()
+
+    play("buy", "灵心铃")
+    play("equipment", "灵心铃")
+    full = stats(game)
+    assert full.attack == single.attack + 4
+    assert full.speed == single.speed + 2 + 8
+    assert "套装：青岚风铃 2/2 · 已激活" in play("equipment").text()
+    assert "灵宠套装" in play("equipment").commands
+
+    play("unequip", "饰品")
+    assert stats(game) == single
+
+
+def test_equipment_set_cannot_combine_pieces_across_pets(game, play):
+    rich(game, play)
+    play("buy", "青岚翎")
+    play("buy", "灵心铃")
+    play("equipment", "青岚翎")
+    play("summon")
+    second = sql(game[1], "SELECT MAX(pet_id) AS pet_id FROM pets")[0]["pet_id"]
+    play("switch", str(second))
+    play("equipment", "灵心铃")
+    assert "套装：青岚风铃 1/2 · 未激活" in play("equipment").text()
+
+
+def test_equipment_set_catalog_and_battle_snapshot(game, play):
+    rich(game, play)
+    detail = play("equipment_sets", "青岚风铃")
+    assert "青岚翎、灵心铃" in detail.text()
+    assert "攻击 +4 速度 +8" in detail.text()
+    page = play("equipment_sets")
+    assert "青岚风铃" in page.text()
+
+    play("buy", "青岚翎")
+    play("equipment", "青岚翎")
+    play("buy", "灵心铃")
+    play("equipment", "灵心铃")
+    reply = play("challenge", "青岚林", op="set-battle")
+    assert reply.title == "秘境获胜"
+    row = sql(game[1], "SELECT snapshot FROM battle_records WHERE operation_id='set-battle'")[0]
+    snapshot = json.loads(row["snapshot"])
+    assert snapshot["teams"][0]["members"][0]["equipment_sets"] == ["青岚风铃"]
+    detail = play("battle_reports", "查看 1")
+    assert "套装 青岚风铃" in detail.text()
 
 
 def test_element_and_species_category_equipment_restrictions(game, play):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from ..content.catalog import Catalog
-from ..domain.content import Stats
+from ..domain.content import Enemy, Stats
 from ..domain.battle_content import Element, Skill, Talent
 from ..domain.state import Pet
 from ..utils.elements import element_ancestors
@@ -41,17 +41,38 @@ class Fighter:
     poison_turns: int = 0
     effects: EffectState = field(default_factory=EffectState)
     turns: int = 0
+    resonance_name: str | None = None
+    equipment_sets: tuple[str, ...] = ()
+    skill_interval: int = 1
+    affinity: int | None = None
+    bond_protection_used: bool = False
 
     @classmethod
     def create(
         cls, name: str, stats: Stats, elements=(), skills=(), *, primary_element=None,
-        pet_id=None, talent=None, skill_multipliers=None,
+        pet_id=None, talent=None, skill_multipliers=None, resonance_name=None, skill_interval=1,
+        affinity=None, equipment_sets=(),
     ):
+        if type(skill_interval) is not int or skill_interval < 1:
+            raise ValueError("skill interval must be a positive integer")
+        if affinity is not None and (type(affinity) is not int or not 0 <= affinity <= 100):
+            raise ValueError("affinity must be between 0 and 100")
         return cls(
             name, stats, stats.hp, tuple(elements), tuple(skills),
             primary_element=primary_element,
             pet_id=pet_id, talent=talent, skill_multipliers=dict(skill_multipliers or {}),
+            resonance_name=resonance_name, equipment_sets=tuple(equipment_sets),
+            skill_interval=skill_interval, affinity=affinity,
         )
+
+
+def enemy_fighter(enemy: Enemy, skills: dict[str, Skill]) -> Fighter:
+    signature = skills[enemy.signature_skill] if enemy.signature_skill else None
+    return Fighter.create(
+        enemy.name, enemy.stats, tuple(enemy.elements), (signature,) if signature else (),
+        primary_element=enemy.primary_element,
+        skill_interval=enemy.skill_every or 1,
+    )
 
 
 @dataclass(frozen=True)
@@ -107,14 +128,20 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
 
 
 def _act(unit, allies, targets, rng, definitions, log):
-    skill = unit.skills[unit.actions % len(unit.skills)] if unit.skills else None
+    skill_due = unit.actions % unit.skill_interval == unit.skill_interval - 1
+    skill = unit.skills[unit.actions % len(unit.skills)] if unit.skills and skill_due else None
     unit.actions += 1
     multiplier = unit.skill_multipliers.get(skill.id, 1) if skill else 1
+    if skill and skill.targeting == "all":
+        _attack_all(unit, skill, targets, rng, definitions, log, multiplier)
+        return
     target = effects.enemy_target(skill, targets, multiplier, rng)
     planned = effects.plan(unit, skill, target, allies) if skill else ()
     if skill and skill.kind in {"heal", "utility"}:
+        healing_target = effects.heal_target(skill, unit, allies) if skill.kind == "heal" else unit
         healing = (
-            min(unit.stats.hp - unit.hp, max(1, int(unit.stats.hp * skill.coefficient * multiplier)))
+            min(healing_target.stats.hp - healing_target.hp,
+                max(1, int(healing_target.stats.hp * skill.coefficient * multiplier)))
             if skill.kind == "heal" else 0
         )
         if healing or planned:
@@ -122,8 +149,10 @@ def _act(unit, allies, targets, rng, definitions, log):
             if any(effect.target == "enemy" for effect in skill.effects) and talents.evades(target, rng):
                 _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的{skill.name}。")
                 return
-            unit.hp += healing
+            healing_target.hp += healing
             detail = f"，恢复 {healing} 气血" if healing else ""
+            if healing and healing_target is not unit:
+                detail = f"，为{healing_target.name}恢复 {healing} 气血"
             _record(log, f"{unit.name}施展{skill.name}{detail}。", *effects.apply(unit, skill, planned))
             return
         skill = None
@@ -147,6 +176,28 @@ def _act(unit, allies, targets, rng, definitions, log):
     _record(log, *talents.after_hit(unit, target, damage))
     if skill:
         _record(log, *effects.apply(unit, skill, planned))
+
+
+def _attack_all(unit, skill, targets, rng, definitions, log, multiplier):
+    _cast(unit, skill)
+    _record(log, f"{unit.name}施展{skill.name}，攻击全体存活敌人。")
+    for target in targets:
+        if target.hp <= 0:
+            continue
+        if talents.evades(target, rng):
+            _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的{skill.name}。")
+            continue
+        factor = effectiveness(skill.element, target.primary_element, definitions)
+        bonus, defense, talent_name = talents.attack_modifiers(unit, target, skill.element, definitions)
+        amount = max(1, int(effects.attack(unit) * rng.randint(90, 110) / 100
+                             * skill.coefficient * multiplier * factor * bonus) - defense)
+        damage, absorbed = talents.receive_damage(target, amount)
+        details = f"，天赋{talent_name}" if talent_name else ""
+        details += "，属性克制" if factor > 1 else ("，属性受克" if factor < 1 else "")
+        details += f"，护盾吸收 {absorbed}" if absorbed else ""
+        _record(log, f"{unit.name}的{skill.name}命中{target.name}，造成 {damage} 伤害{details}。")
+        _record(log, *talents.after_hit(unit, target, damage))
+    unit.attacks += 1
 
 
 def effectiveness(element: str | None, target: str | None, definitions: dict[str, Element]) -> float:

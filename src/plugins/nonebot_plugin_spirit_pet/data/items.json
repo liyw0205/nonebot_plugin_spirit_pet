@@ -276,5 +276,13 @@
   {
     "id": "book_battle_chant", "name": "战意灵歌诀", "description": "学习战意灵歌所需，凝气境通用增益灵术。",
     "kind": "skill_book", "price": 220, "skill_id": "battle_chant"
+  },
+  {
+    "id": "book_mountain_taunt", "name": "镇岳护阵诀", "description": "学习镇岳护阵所需，凝气境通用护阵灵术。",
+    "kind": "skill_book", "price": 220, "skill_id": "mountain_taunt"
+  },
+  {
+    "id": "book_spirit_wave", "name": "灵潮荡阵诀", "description": "学习灵潮荡阵所需，凝气境通用群攻灵术。",
+    "kind": "skill_book", "price": 260, "skill_id": "spirit_wave"
   }
 ]

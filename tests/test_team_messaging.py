@@ -88,7 +88,11 @@ def test_actual_team_replies_preserve_all_buttons_and_command_arguments(play, mo
             assert len(links) == len(reply.commands)
             for command, link in zip(reply.commands, links):
                 query = parse_qs(urlparse(link).query)
-                assert query == {"command": [prefix + command], "enter": ["false"], "reply": ["false"]}
+                assert query == {
+                    "command": [prefix + command],
+                    "enter": [str(not command.endswith((" ", "\t"))).lower()],
+                    "reply": ["false"],
+                }
                 assert handlers._parse(query["command"][0]) == handlers._parse(prefix + command)
         else:
             assert markdown.custom_template_id == config.spirit_pet_qq_template_id

@@ -18,6 +18,7 @@ def _units(units, opponents, content):
         "basic_matchups": [effectiveness(unit.primary_element, target.primary_element, content.elements)
                            for target in opponents],
         "skills": [{"id": skill.id, "kind": skill.kind, "element": skill.element,
+                    "targeting": skill.targeting,
                     "power_multiplier": unit.skill_multipliers[skill.id],
                     "damage_matchups": [effectiveness(skill.element, target.primary_element, content.elements)
                                         for target in opponents] if skill.kind == "damage" else None}
@@ -40,7 +41,7 @@ def evaluate_special(store, content, config, scenario, runs: int, seed: int) -> 
             draws += battle.winner == -1
             total_rounds += battle.rounds
             max_rounds = max(max_rounds, battle.rounds)
-            if scenario.category == "effect":
+            if scenario.category in {"effect", "skill"}:
                 casts += battle.skill_uses[0].get(left[0].pet_id, {}).get(scenario.subject, 0)
             for side, team in enumerate((left, right)):
                 remaining[side] += sum(unit.hp for unit in team) / sum(unit.stats.hp for unit in team)
@@ -107,8 +108,10 @@ def run_special_report(store, content, config, runs: int, seed: int, selected=No
         "scope": {
             "lineage": "Each lineage paired with its unselected control, same species/realm/minimum bloodline/gear/skills; "
                        "production loadout versus a real solo dungeon. Costs are assumed already paid.",
-            "effect": "Six controlled synthetic matchups at each skill's minimum realm; one selected skill versus basic "
-                      "attacks, compatible production gear and talents. Healing fixture starts after a one-HP venom hit.",
+            "effect": "Seven controlled synthetic matchups at each skill's minimum realm; one selected skill versus basic "
+                       "attacks, compatible production gear and talents. Healing fixture starts after a one-HP venom hit.",
+            "skill": "A two-versus-two minimum-realm fixture for each effect-free special skill; selected and basic-attack "
+                      "controls use the same production loadout and stable seed group.",
             "instrumentation": "Scoped single-process observer counts returned effect events only when the relevant "
                                "target state also changes; casts alone do not prove effect coverage.",
             "not_covered": ["all PvP species and loadout combinations", "cross-tier matchups", "all branch pairings",

@@ -1,109 +1,90 @@
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
 
 import pytest
 
-from nonebot_plugin_spirit_pet.domain.battle_content import DaoNames
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.storage.repository import Repository
 
 from .support import player, sql
 
 
-def test_generated_dao_names_unique_across_concurrent_adoptions(game):
+def test_concurrent_adoptions_allocate_unique_stable_uids(game):
     service, store = game
     with ThreadPoolExecutor(max_workers=4) as pool:
         replies = list(pool.map(
-            lambda index: service.execute(f"private-id-{index}", "adopt", "青鸾", f"new-{index}", 1000),
+            lambda index: service.execute(
+                f"opaque-platform-id-{index}", "adopt", "青鸾", f"adopt-{index}", 1_800_000_000,
+            ),
             range(12),
         ))
-    names = [row["dao_name"] for row in sql(store, "SELECT dao_name FROM players")]
-    assert len(names) == len(set(names)) == 12
-    assert all("private-id" not in reply.text() for reply in replies)
+
+    ids = [row["id"] for row in sql(store, "SELECT id FROM player_identity ORDER BY id")]
+    assert ids == list(range(1, 13))
+    assert {int(line.split("：", 1)[1]) for reply in replies for line in reply.lines if line.startswith("UID：")} == set(
+        range(10000, 10012)
+    )
+    assert all("opaque-platform-id" not in reply.text() for reply in replies)
 
 
-def test_name_collision_and_case_insensitive_uniqueness(game, play):
-    play("adopt")
-    play("adopt", user="u2")
-    play("dao_name", "Cloud")
-    before = player(game[1], "u2")["dao_name"]
-    with pytest.raises(GameError, match="已被使用"):
-        play("dao_name", "cloud", user="u2")
-    assert player(game[1], "u2")["dao_name"] == before
-    assert play("spar", "CLOUD", user="u2").title == "切磋结算"
+def test_concurrent_duplicate_adoption_allocates_one_uid_and_one_pet(game):
+    service, store = game
 
-
-def test_internal_ids_never_displayed_or_used_as_interaction_targets(game, play):
-    ids = ["private-openid-001", "private-openid-002"]
-    for user in ids:
-        play("adopt", user=user)
-    target_name = player(game[1], ids[1])["dao_name"]
-    with pytest.raises(GameError, match="道号不存在"):
-        play("spar", ids[1], user=ids[0])
-    replies = [play(action, user=ids[0]) for action in ("status", "identity", "rank", "pvp_rank", "help")]
-    replies.append(play("spar", target_name, user=ids[0]))
-    assert replies[-1].title == "切磋结算"
-    assert all(not any(user in reply.text() + " ".join(reply.commands) for user in ids) for reply in replies)
-
-
-def test_rename_changes_future_targets_but_not_completed_battle_replays(game, play):
-    play("adopt")
-    play("adopt", user="u2")
-    old = player(game[1], "u2")["dao_name"]
-    original = play("spar", old, op="before-rename")
-    assert original.title == "切磋结算"
-    play("dao_name", "听雨散人", user="u2")
-    assert play("spar", old, op="before-rename") == original
-    assert "听雨散人" in play("spar", "听雨散人").text()
-    with pytest.raises(GameError, match="道号不存在"):
-        play("spar", old)
-
-
-def test_concurrent_renames_to_same_name_one_wins(game, play):
-    play("adopt")
-    play("adopt", user="u2")
-
-    def rename(user):
+    def adopt(index):
         try:
-            game[0].execute(user, "dao_name", "唯一道号", f"rename-{user}", 1800000000)
-            return True
+            return service.execute("same-platform-user", "adopt", "青鸾", f"duplicate-{index}", 1_800_000_000)
         except GameError:
-            return False
+            return None
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        assert sum(pool.map(rename, ["u1", "u2"])) == 1
-
-
-def test_exhausted_candidate_pool_rolls_back_adoption_without_numeric_suffix(game, play):
-    game[0].content = replace(game[0].content, dao_names=DaoNames.model_construct(
-        fields={"first": ["青", "白"], "second": ["云", "月"]}, templates=[["first", "second"]],
-    ))
-    for index in range(4):
-        play("adopt", "青鸾", user=f"private-{index}")
-    names = [row["dao_name"] for row in sql(game[1], "SELECT dao_name FROM players")]
-    assert set(names) == {"青云", "青月", "白云", "白月"}
-    before = {table: sql(game[1], f"SELECT * FROM {table} ORDER BY 1")
-              for table in ("players", "pets", "inventory", "operations")}
-    with pytest.raises(GameError, match="道号.*用尽"):
-        play("adopt", "青鸾", user="private-overflow")
-    assert {table: sql(game[1], f"SELECT * FROM {table} ORDER BY 1") for table in before} == before
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        replies = list(pool.map(adopt, range(8)))
+    assert sum(reply is not None for reply in replies) == 1
+    assert len(sql(store, "SELECT * FROM players")) == 1
+    assert len(sql(store, "SELECT * FROM player_identity")) == 1
+    assert len(sql(store, "SELECT * FROM pets")) == 1
 
 
-def test_join_team_by_leader_name_and_hide_internal_ids(game, play):
-    play("adopt")
-    play("adopt", user="u2")
-    leader_name = player(game[1])["dao_name"]
-    play("team_create")
-    play("team_join", leader_name, user="u2")
-    play("team_accept", player(game[1], "u2")["dao_name"])
-    text = play("team_status").text()
-    assert leader_name in text and player(game[1], "u2")["dao_name"] in text
-    assert "u1" not in text and "u2" not in text
+def test_uid_lookup_drives_team_and_duel_interactions_without_platform_ids(game, play):
+    play("adopt", "青鸾", user="platform-one")
+    play("adopt", "玄狐", user="platform-two")
+    play("team_create", user="platform-one")
+
+    request = play("team_join", "UID 10000", user="platform-two")
+    assert "UID 10001申请加入UID 10000" in request.text()
+    play("team_accept", "10001", user="platform-one")
+    roster = play("team_status", user="platform-one").text()
+    assert "UID 10000" in roster and "UID 10001" in roster
+    assert "platform-one" not in roster and "platform-two" not in roster
+
+    duel = play("spar", "UID 10001", user="platform-one")
+    assert duel.title == "切磋结算"
+    assert "UID 10000" in duel.text() and "UID 10001" in duel.text()
+
+    with pytest.raises(GameError, match="有效的 UID"):
+        play("spar", "platform-two", user="platform-one")
 
 
-@pytest.mark.parametrize("name", ["a", "空 格", "[链接]", "名字太长1234567890"])
-def test_invalid_name_does_not_modify_identity(game, play, name):
-    play("adopt")
-    before = player(game[1])
-    with pytest.raises(GameError):
-        play("dao_name", name)
-    assert player(game[1]) == before
+def test_uid_mapping_is_internal_and_first_adoption_is_idempotent(game, play):
+    service, store = game
+    adopted = play("adopt", "青鸾", user="opaque-openid", now=1234567890, op="first-adoption")
+    assert "UID：10000" in adopted.text()
+    assert "初始灵宠：青鸾" in adopted.text()
+    assert "道号" not in adopted.text()
+    assert play("adopt", "青鸾", user="opaque-openid", now=1234567999, op="first-adoption") == adopted
+
+    info = play("identity", user="opaque-openid")
+    assert "UID：10000" in info.text()
+    assert "注册时间：2009-02-14 07:31:30（UTC+8）" in info.text()
+    assert "opaque-openid" not in info.text()
+    with pytest.raises(GameError, match="已与灵宠结契"):
+        play("adopt", "青鸾", user="opaque-openid", now=1234568000)
+    assert player(store, "opaque-openid")["registered_at"] == 1234567890
+    assert sql(store, "SELECT COUNT(*) AS count FROM player_identity")[0]["count"] == 1
+
+    from contextlib import closing
+
+    with closing(store.connect()) as conn:
+        repo = Repository(conn)
+        assert repo.player_by_uid(10000).user_id == "opaque-openid"
+        assert repo.player_by_uid("UID 10000").uid == 10000
+        assert repo.player_by_uid("opaque-openid") is None
+        assert repo.player_by_uid("9999") is None

@@ -1,6 +1,11 @@
 import pytest
 
+from nonebot_plugin_spirit_pet.application.commands import COMMANDS
+from nonebot_plugin_spirit_pet import __plugin_meta__
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay.help import _HELP_SECTIONS
+
+from .support import sql
 
 
 def test_status_shows_explicit_primary_secondary_and_talent(game, play):
@@ -12,6 +17,48 @@ def test_status_shows_explicit_primary_secondary_and_talent(game, play):
     talent = game[0].content.talents[species.talent]
     assert talent.name in reply.text() and talent.description in reply.text()
     assert "private-id-123" not in reply.text()
+
+
+def test_status_shows_bond_guard_unlock(game, play):
+    play("adopt", "青鸾")
+    assert "亲密达到 100 后解锁" in play("status").text()
+    sql(game[1], "UPDATE pets SET affinity=100")
+    assert "每场战斗首次受控时自动抵挡" in play("status").text()
+
+
+def test_help_has_category_overview_and_short_subpages(game, play):
+    overview = play("help")
+    contract = play("help", "结契")
+    assert "秘境与关卡：探访山海故事" in overview.text()
+    assert "灵宠领养 种族名" in contract.text()
+    assert "灵宠封存库" in contract.text()
+    assert contract.commands == overview.commands == ()
+    assert all(not line.lstrip().startswith("/") for line in (*overview.lines, *contract.lines))
+
+
+def test_help_categories_cover_registered_commands():
+    help_text = "灵宠帮助 " + "\n".join(
+        " ".join(entry) for section in _HELP_SECTIONS.values() for entry in section
+    )
+    missing = [name for name in COMMANDS if name not in help_text and name not in ("灵宠", "我的宠")]
+    assert not missing
+
+
+def test_plugin_usage_does_not_assume_a_command_prefix():
+    assert all(not item.strip().startswith("/") for item in __plugin_meta__.usage.split("·"))
+
+
+def test_player_info_is_account_scoped_and_dao_commands_are_not_public(game, play):
+    assert "身份与收集" in play("help").text()
+    unregistered = play("identity")
+    assert unregistered.title == "初遇灵宠"
+    assert unregistered.inline_commands[0].command == "灵宠领养 "
+    play("adopt", "青鸾")
+    reply = play("identity")
+    assert "UID：10000" in reply.text()
+    assert "注册时间：2027-01-15 16:00:00（UTC+8）" in reply.text()
+    assert "道号" not in reply.text()
+    assert "我的道号" not in COMMANDS and "灵宠道号" not in COMMANDS
 
 
 def test_catalog_pages_cover_every_species_once(game, play):
@@ -30,6 +77,7 @@ def test_catalog_pages_cover_every_species_once(game, play):
 
 
 def test_catalog_detail_contains_talent_stats_and_real_acquisition(game, play):
+    pool = game[0].content.pools["standard"]
     for species in game[0].content.species.values():
         reply = play("catalog", species.name)
         talent = game[0].content.talents[species.talent]
@@ -37,6 +85,7 @@ def test_catalog_detail_contains_talent_stats_and_real_acquisition(game, play):
         assert f"初始气血 {species.stats.hp}" in reply.text()
         assert ("初始可选" in reply.text()) == species.starter
         assert "召唤概率" in reply.text() or "孵化" in reply.text()
+        assert ("十连珍稀保底池" in reply.text()) == (species.id in pool.guaranteed_species)
         assert "召唤限定" not in reply.text()
 
 
