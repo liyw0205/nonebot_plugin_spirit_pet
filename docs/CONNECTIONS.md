@@ -4,25 +4,25 @@
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 
-安装默认最后以前台方式启动；用了 `--no-start` 时，在项目目录执行 `.venv/bin/nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
+安装默认保持停止；可在项目目录执行 `.venv/bin/nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
 
-安装器首次生成的 `.env` 已含随机 `ONEBOT_V11_ACCESS_TOKEN`，填写 OneBot 客户端时使用文件中的真实值，不必重新生成。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
+安装器首次生成的 `.env` 不设置 `ONEBOT_V11_ACCESS_TOKEN`。该变量仅在启用 OneBot 鉴权时手动配置；不启用鉴权可留空或省略，启用时客户端与服务端必须使用同一值。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
 
 ## 连接 OneBot V11 / NapCat 反向 WS
 
 这里的“反向 WebSocket”是 **OneBot V11 客户端连到 NoneBot WebSocket server**。NapCat 是常见但**可选**的一种 OneBot V11 客户端，不是插件、NoneBot 或协议接入的硬性依赖；其他兼容 OneBot V11 反向 WS 的实现使用相同地址即可。NoneBot 监听 `HOST:PORT/onebot/v11/ws`；**不要再**在 `.env` 配 `ONEBOT_V11_WS_URLS`，该项是另一个方向的正向连接配置。
 
-1. 在 `.env` 设定监听地址、端口，并选用长随机 token：
+1. 在 `.env` 设定监听地址和端口。只有启用鉴权时才填写 token：
 
    ```dotenv
    HOST=0.0.0.0
    PORT=8080
-   ONEBOT_V11_ACCESS_TOKEN=replace-with-your-own-random-token
+   # ONEBOT_V11_ACCESS_TOKEN=your-shared-token
    ```
 
    如果只在同一台电脑连接，可以将 `HOST` 设为 `127.0.0.1`。跨电脑连接时要使用 `0.0.0.0` 监听，允许防火墙 TCP 入站端口 `8080`，并只向可信局域网开放。切勿将无访问令牌的端口暴露到公网。
 
-   Token 使用 ASCII 随机字符串，不要直接填中文占位提示；可用 `openssl rand -hex 32` 或 `od -An -N32 -tx1 /dev/urandom | tr -d ' \n'` 生成。
+   未启用鉴权时删除或留空 `ONEBOT_V11_ACCESS_TOKEN`。启用鉴权时由部署方自行设置一个双方一致的 ASCII 值，不要把它提交到仓库。
 
 2. 在 **NapCat WebUI → 网络配置 → WebSocket 客户端**新增并启用连接，配置对应字段：
 
@@ -45,7 +45,7 @@
            "messagePostFormat": "array",
            "reportSelfMessage": false,
            "reconnectInterval": 5000,
-           "token": "replace-with-your-own-random-token",
+           "token": "your-shared-token",
            "heartInterval": 30000
          }
        ]
@@ -106,6 +106,16 @@ QQ 官方适配器是**独立的平台接入**，不是 NapCat OneBot 连接。N
    ```
 
    模板模式把完整结果作为文本参数传入，不假定模板允许动态 Markdown 或动态蓝字；蓝字可写进获批的模板正文，动态蓝字仅在 `native` 模式启用。模板参数长度限制与多行支持按平台审批结果确认，插件不会截断玩家结果。原生/模板富消息被明确拒绝（400/403/422）时退回纯文本一次；网络超时、限流和服务端错误不自动补发，避免重复消息。任何消息降级都不会重新结算游戏奖励。
+
+## QQ 授权辅助命令
+
+安装器会把 `scripts/qq_login.py` 放入实例运行目录。完成 QQ 开放平台的扫码绑定可执行：
+
+```bash
+xiupet login
+```
+
+命令会显示授权链接，成功后更新 `.env` 中的 `QQ_BOTS` 并保留 `.env.bak`。实例运行中会自动重启；未运行时下次 `xiupet start` 生效。该命令只用于 QQ 官方机器人授权，不是 OneBot 登录。
 
 
 ## 接通后的检查

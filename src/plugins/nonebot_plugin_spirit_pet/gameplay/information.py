@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.content import Species
-from ..domain.models import GameError, InlineCommand, Reply
+from ..domain.models import GameError, Reply
 from ..utils.arguments import named, quantity
 from .companionship import active_bond_streak
 from .cultivation import MAJOR_BREAKTHROUGH_PITY, breakthrough_chance
@@ -84,11 +84,7 @@ def status(ctx: Context, arg: str) -> Reply:
         "进阶",
         breakthrough, evolve_line,
     ]
-    detail_line = next(index for index, line in enumerate(lines) if line.startswith("编号："))
-    return Reply(
-        pet.name, tuple(lines), commands,
-        (InlineCommand(detail_line, "给灵宠改名", f"灵宠命名 {pet.pet_id} "),),
-    )
+    return Reply(pet.name, tuple(lines), commands)
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

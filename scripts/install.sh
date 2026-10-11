@@ -3,11 +3,16 @@ set -Eeuo pipefail
 
 REPOSITORY="https://github.com/liyw0205/nonebot_plugin_spirit_pet"
 RELEASE_ASSET="$REPOSITORY/releases/latest/download/project.tar.gz"
-RELEASE_PROXIES=("https://gh-proxy.com/")
+RELEASE_PROXIES=(
+    "https://gh-proxy.com/"
+    "https://ghfast.top/"
+    "https://ghproxy.vip/"
+    "https://gh-proxy.org/"
+)
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
 SOURCE_MARKER=.xiupet-source
 ACTION=install
-if (($#)) && [[ $1 == install || $1 == update || $1 == uninstall ]]; then
+if (($#)) && [[ $1 =~ ^(install|update|uninstall|start|stop|restart|status|logs|login)$ ]]; then
     ACTION=$1
     shift
 fi
@@ -29,22 +34,83 @@ if [[ -f $SCRIPT_DIR/../pyproject.toml && -f $SCRIPT_DIR/../requirements.txt && 
 fi
 
 DIRECTORY=
-SOURCE_MODE=release
+SOURCE_PATH=
+SOURCE_MODE=auto
+MIRROR=accelerated
+MIRROR_URL=
+VENV_PATH=
+INDEX_URL=${PIP_INDEX_URL:-}
+PYTHON_PATH=${SPIRIT_PET_PYTHON:-}
 YES=0
-NO_START=0
+NO_START=1
 SKIP_SYSTEM=0
+CONTROL_ARGS=()
 [[ ${SPIRIT_PET_SKIP_SYSTEM:-0} == 1 ]] && SKIP_SYSTEM=1
 while (($#)); do
     case "$1" in
-        --directory)
-            (($# >= 2)) || { printf 'Missing value for --directory\n' >&2; exit 2; }
+        --directory|--target)
+            (($# >= 2)) || { printf '%s 需要一个路径\n' "$1" >&2; exit 2; }
             DIRECTORY=$2
             shift 2
             ;;
         --source)
             (($# >= 2)) || { printf 'Missing value for --source\n' >&2; exit 2; }
+            if [[ $2 == release ]]; then
+                SOURCE_MODE=release
+            elif [[ $2 == checkout || $2 == source ]]; then
+                SOURCE_MODE=source
+            else
+                SOURCE_PATH=$2
+            fi
+            shift 2
+            ;;
+        --source-mode)
+            (($# >= 2)) || { printf 'Missing value for --source-mode\n' >&2; exit 2; }
             SOURCE_MODE=$2
             shift 2
+            ;;
+        --mirror)
+            (($# >= 2)) || { printf 'Missing value for --mirror\n' >&2; exit 2; }
+            MIRROR=$2
+            shift 2
+            ;;
+        --mirror-url)
+            (($# >= 2)) || { printf 'Missing value for --mirror-url\n' >&2; exit 2; }
+            MIRROR_URL=$2
+            shift 2
+            ;;
+        --venv)
+            (($# >= 2)) || { printf 'Missing value for --venv\n' >&2; exit 2; }
+            VENV_PATH=$2
+            shift 2
+            ;;
+        --index-url)
+            (($# >= 2)) || { printf 'Missing value for --index-url\n' >&2; exit 2; }
+            INDEX_URL=$2
+            shift 2
+            ;;
+        --python)
+            (($# >= 2)) || { printf 'Missing value for --python\n' >&2; exit 2; }
+            PYTHON_PATH=$2
+            shift 2
+            ;;
+        --run)
+            NO_START=0
+            shift
+            ;;
+        --lines)
+            (($# >= 2)) || { printf 'Missing value for --lines\n' >&2; exit 2; }
+            CONTROL_ARGS+=(--lines "$2")
+            shift 2
+            ;;
+        --timeout|--interval)
+            (($# >= 2)) || { printf '%s 需要一个值\n' "$1" >&2; exit 2; }
+            CONTROL_ARGS+=("$1" "$2")
+            shift 2
+            ;;
+        --skip-system)
+            SKIP_SYSTEM=1
+            shift
             ;;
         --yes)
             YES=1
@@ -54,38 +120,57 @@ while (($#)); do
             NO_START=1
             shift
             ;;
-        --skip-system)
-            SKIP_SYSTEM=1
-            shift
-            ;;
-        --help|-h)
-            printf 'Usage: %s [install|update|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0"
-            printf 'Install and update default to the latest GitHub Release; --source checkout is for new development installs. Existing project files are preserved.\n'
+        -h|--help)
+            printf 'Usage: %s [install|update|uninstall|start|stop|restart|status|logs|login] [TARGET] [options]\n' "$0"
+            printf 'Options: --source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH\n'
+            printf 'Compatibility aliases: --directory PATH and --source release|checkout.\n'
             exit 0
             ;;
-        *)
+        --)
+            shift
+            while (($#)); do
+                [[ -z $DIRECTORY ]] || { printf '只能指定一个目标目录\n' >&2; exit 2; }
+                DIRECTORY=$1
+                shift
+            done
+            ;;
+        -*)
             printf 'Unknown option: %s\n' "$1" >&2
             exit 2
+            ;;
+        *)
+            [[ -z $DIRECTORY ]] || { printf '只能指定一个目标目录\n' >&2; exit 2; }
+            DIRECTORY=$1
+            shift
             ;;
     esac
 done
 
 case "$ACTION" in
-    install|update|uninstall) ;;
-    *) printf 'Usage: %s [install|update|uninstall] [--source release|checkout] [--directory PATH] [--yes] [--no-start] [--skip-system]\n' "$0" >&2; exit 2 ;;
+    install|update|uninstall|start|stop|restart|status|logs|login) ;;
+    *) printf 'Invalid action: %s\n' "$ACTION" >&2; exit 2 ;;
 esac
 case "$SOURCE_MODE" in
-    release|checkout) ;;
-    *) printf 'Invalid source mode: %s (expected release or checkout)\n' "$SOURCE_MODE" >&2; exit 2 ;;
+    auto) [[ -n $SOURCE_PATH || -n $SOURCE_ROOT ]] && SOURCE_MODE=source || SOURCE_MODE=release ;;
+    source|release) ;;
+    *) printf 'Invalid source mode: %s (expected auto, release, or source)\n' "$SOURCE_MODE" >&2; exit 2 ;;
 esac
+case "$MIRROR" in
+    direct|accelerated|custom) ;;
+    *) printf 'Invalid mirror: %s (expected direct, accelerated, or custom)\n' "$MIRROR" >&2; exit 2 ;;
+esac
+if [[ $SOURCE_MODE == source && -n $SOURCE_PATH ]]; then
+    [[ -d $SOURCE_PATH ]] || { printf 'spirit-pet: 源码目录不存在：%s\n' "$SOURCE_PATH" >&2; exit 1; }
+    SOURCE_ROOT=$(CDPATH= cd -- "$SOURCE_PATH" && pwd -P)
+fi
 if [[ $ACTION == update && $SOURCE_MODE != release ]]; then
     printf 'spirit-pet: update only accepts Release sources; checkout installs are never overwritten\n' >&2
     exit 2
 fi
 
 if [[ -z $DIRECTORY ]]; then
-    if [[ $SOURCE_MODE == checkout ]]; then
-        [[ -n $SOURCE_ROOT ]] || { printf 'spirit-pet: --source checkout requires a project checkout\n' >&2; exit 1; }
+    if [[ $SOURCE_MODE == source ]]; then
+        [[ -n $SOURCE_ROOT ]] || { printf 'spirit-pet: --source-mode source requires a project checkout\n' >&2; exit 1; }
         DIRECTORY=$SOURCE_ROOT
     else
         DIRECTORY=$DEFAULT_DIRECTORY
@@ -126,8 +211,8 @@ install_system_dependencies() {
 
 find_python() {
     local candidate version major minor
-    if [[ -n ${SPIRIT_PET_PYTHON:-} ]]; then
-        candidate=$SPIRIT_PET_PYTHON
+    if [[ -n $PYTHON_PATH ]]; then
+        candidate=$PYTHON_PATH
         version=$("$candidate" --version 2>&1) || return 1
         [[ $version =~ ^Python[[:space:]]+([0-9]+)\.([0-9]+) ]] || return 1
         major=${BASH_REMATCH[1]}
@@ -232,11 +317,20 @@ download_source() {
         install_system_dependencies
     }
     TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spirit-pet.XXXXXX")
-    local proxy
-    for proxy in "${RELEASE_PROXIES[@]}"; do
-        if download_release_candidate "$proxy$RELEASE_ASSET"; then return; fi
-        printf '发布资产代理不可用或归档无效，尝试回退。\n' >&2
-    done
+    local url proxy
+    case "$MIRROR" in
+        direct) download_release_candidate "$RELEASE_ASSET" && return ;;
+        custom)
+            [[ -n $MIRROR_URL ]] || fail 'custom 镜像需要 --mirror-url'
+            download_release_candidate "$MIRROR_URL" && return
+            ;;
+        accelerated)
+            for proxy in "${RELEASE_PROXIES[@]}"; do
+                if download_release_candidate "$proxy$RELEASE_ASSET"; then return; fi
+                printf '发布资产镜像不可用或归档无效，尝试回退。\n' >&2
+            done
+            ;;
+    esac
     download_release_candidate "$RELEASE_ASSET" || fail 'GitHub Release 发布资产下载失败或归档无效；请检查 latest Release 是否包含 project.tar.gz'
 }
 
@@ -251,8 +345,12 @@ prepare_project() {
         first_entry=$(find "$DIRECTORY" -mindepth 1 -maxdepth 1 -print -quit)
         [[ -z $first_entry ]] || fail "拒绝覆盖非空目录：$DIRECTORY"
     fi
-    if [[ $SOURCE_MODE == checkout ]]; then
-        [[ -n $SOURCE_ROOT ]] || fail '--source checkout requires a project checkout'
+    if [[ $SOURCE_MODE == source ]]; then
+        if [[ -n $SOURCE_PATH ]]; then
+            [[ -d $SOURCE_PATH ]] || fail "源码目录不存在：$SOURCE_PATH"
+            SOURCE_ROOT=$(CDPATH= cd -- "$SOURCE_PATH" && pwd -P)
+        fi
+        [[ -n $SOURCE_ROOT ]] || fail '--source-mode source requires a project checkout'
     else
         download_source
     fi
@@ -315,9 +413,6 @@ prepare_update() {
 ensure_env() {
     if [[ ! -f $DIRECTORY/.env ]]; then
         cp "$DIRECTORY/.env.example" "$DIRECTORY/.env"
-        local token
-        token=$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')
-        printf '\nONEBOT_V11_ACCESS_TOKEN=%s\n' "$token" >> "$DIRECTORY/.env"
         chmod 600 "$DIRECTORY/.env"
     fi
 }
@@ -357,7 +452,11 @@ remove_xiupet() {
 install_project() {
     if [[ $ACTION == update ]]; then prepare_update; else prepare_project; fi
     ensure_python
-    local venv="$DIRECTORY/.venv"
+    local venv=${VENV_PATH:-$DIRECTORY/.venv}
+    [[ $venv == /* ]] || venv=$PWD/$venv
+    mkdir -p -- "$(dirname -- "$venv")"
+    VENV_PATH=$(CDPATH= cd -- "$(dirname -- "$venv")" 2>/dev/null && pwd -P)/$(basename -- "$venv")
+    venv=$VENV_PATH
     local -a venv_args=()
     case ${PREFIX:-} in
         */com.termux/files/usr) venv_args+=(--system-site-packages) ;;
@@ -369,8 +468,16 @@ install_project() {
             "$PYTHON" -m venv "${venv_args[@]}" "$venv" || fail '创建虚拟环境失败，请检查系统 Python 的 venv 支持'
         fi
     fi
-    "$venv/bin/python" -m pip install --upgrade pip
-    "$venv/bin/python" -m pip install 'nb-cli==1.5.0' -r "$DIRECTORY/requirements.txt"
+    local -a pip_args=()
+    [[ -z $INDEX_URL ]] || pip_args+=(--index-url "$INDEX_URL")
+    "$venv/bin/python" -m pip install "${pip_args[@]}" --upgrade pip
+    "$venv/bin/python" -m pip install "${pip_args[@]}" 'nb-cli==1.5.0' -r "$DIRECTORY/requirements.txt"
+    printf '%s\n' "$venv" > "$DIRECTORY/.xiupet-venv"
+    if [[ -f $DIRECTORY/scripts/qq_login.py ]]; then
+        mkdir -p "$DIRECTORY/.xiupet"
+        cp "$DIRECTORY/scripts/qq_login.py" "$DIRECTORY/.xiupet/qq_login.py"
+        chmod 600 "$DIRECTORY/.xiupet/qq_login.py"
+    fi
     if [[ $ACTION == update ]]; then
         UPDATE_COMMITTED=1
         rm -rf -- "$UPDATE_DIR"
@@ -421,7 +528,15 @@ uninstall_project() {
     fi
 }
 
-if [[ $ACTION == install || $ACTION == update ]]; then
+if [[ $ACTION == start || $ACTION == stop || $ACTION == restart || $ACTION == status || $ACTION == logs || $ACTION == login ]]; then
+    [[ -f $DIRECTORY/scripts/xiupet.sh ]] || fail "未找到管理脚本：$DIRECTORY/scripts/xiupet.sh"
+    control_args=("$ACTION" --target "$DIRECTORY" --source "${SOURCE_PATH:-$SOURCE_ROOT}" --source-mode "$SOURCE_MODE" --mirror "$MIRROR")
+    [[ -z $MIRROR_URL ]] || control_args+=(--mirror-url "$MIRROR_URL")
+    [[ -z $VENV_PATH ]] || control_args+=(--venv "$VENV_PATH")
+    control_args+=("${CONTROL_ARGS[@]}")
+    ((YES)) && control_args+=(--yes)
+    exec bash "$DIRECTORY/scripts/xiupet.sh" "${control_args[@]}"
+elif [[ $ACTION == install || $ACTION == update ]]; then
     install_project
 else
     uninstall_project

@@ -10,7 +10,7 @@
 | DRIVER | `~fastapi+~httpx+~websockets` | 服务端、HTTP 客户端、WS 客户端 |
 | HOST / PORT | `127.0.0.1` / `8080` | NoneBot 监听地址；URL 目标不能填 `0.0.0.0` |
 | LOG_LEVEL | `INFO` | 日志级别 |
-| ONEBOT_V11_ACCESS_TOKEN | 未设置 | 对外开放 OneBot 端口前设置随机令牌 |
+| ONEBOT_V11_ACCESS_TOKEN | 未设置 | 仅在启用 OneBot 鉴权时手动设置；不启用时可留空或省略 |
 | QQ_BOTS | `[]` | 官方机器人 JSON 数组，无账号也可启动 |
 | SPIRIT_PET_DB | `data/spirit_pet/spirit_pet.db` | 相对于启动目录，建议生产使用固定绝对路径 |
 | SPIRIT_PET_TRAIN_COOLDOWN | `300` | 修炼冷却秒数，最少 1 |
@@ -48,7 +48,7 @@ QQ 默认 `text` 模式不要求富消息权限。`native` 需要原生 Markdown
 | 按钮/蓝字无法显示 | 客户端版本及 QQ 审核权限；纯文本命令仍可操作 |
 | 游戏突然像新服 | 是否换了工作目录或 SPIRIT_PET_DB 指向另一文件 |
 | 两端人物不一致 | 同一存档内后台身份不同就是不同玩家；游戏内以 UID 交互，不提供自动绑定 |
-| xiupet update 拒绝更新 | Git checkout 用 `git pull --ff-only origin main` 后执行 `xiupet install`，该管理命令只更新 Release 安装 |
+| xiupet update 拒绝更新 | `main` 源码目录用 `git pull --ff-only origin main` 后执行 `xiupet install`，该管理命令只更新 Release 安装 |
 | 更新后进程没有运行 | `xiupet install` 与 `xiupet update` 完成后保持停止，检查成功后执行 `xiupet start` |
 
 Docker/容器中的 `127.0.0.1` 指向容器本身，不一定是 NoneBot 所在主机。本项目不要求使用容器。
@@ -71,7 +71,7 @@ cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
 
 18 → 19 → 20 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、高于 20 的版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志与来源代码，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
 
-Git checkout 按以下顺序更新源码与依赖，再启动：
+`main` 源码目录按以下顺序更新源码与依赖，再启动：
 
 ```bash
 git pull --ff-only origin main
@@ -79,7 +79,7 @@ xiupet install
 xiupet start
 ```
 
-`xiupet install` 只按现有源码更新环境，不拉取或覆盖项目源码。`xiupet update` 仅适用于 Release 管理的目录；不要把它用于 checkout 安装。首次升级后可用以下命令确认数据库版本，再查看 `xiupet logs` 和 `我的信息`：
+`xiupet install` 只按现有源码更新环境，不拉取或覆盖项目源码。`xiupet update` 仅适用于正式 Release 管理的目录；不要把它用于 `main` 源码安装。首次升级后可用以下命令确认数据库版本，再查看 `xiupet logs` 和 `我的信息`：
 
 ```bash
 .venv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.db --schema-version 20

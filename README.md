@@ -5,7 +5,7 @@
 ## 功能
 
 - 27 种灵宠，四种初始伙伴；召唤、十连保底、灵卵孵化、名册与封存库。
-- 固定 UID（从 10000 起）用于玩家之间的切磋、组队和队务；灵宠可独立命名与养成。
+- 固定 UID（从 10000 起）用于玩家之间的切磋、组队和队务；灵宠可独立养成，旧存档中的伙伴名字仍会保留展示。
 - 七个大境界、五阶血脉、54 条种族分支，以及签到、互动、喂养、修炼、突破和每日任务。
 - 元素与天赋、技能熟练度、三槽装备、强化、套装、打造和分解。
 - 一至三只不同种族的出战阵容；单人秘境、章节关卡、离线委托、收集和长期成就。
@@ -31,10 +31,16 @@ pkg install -y bash git curl
 git clone --branch main --single-branch \
   https://github.com/liyw0205/nonebot_plugin_spirit_pet.git "$HOME/spirit-pet"
 cd "$HOME/spirit-pet"
-bash scripts/install.sh install --source checkout --directory "$PWD" --no-start
+bash scripts/install.sh install --source-mode source --source "$PWD" --target "$PWD" --no-start
 ```
 
-安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet`，首次安装还会从 `.env.example` 创建 `.env` 并生成随机 OneBot 访问令牌。填写配置后启动：
+也可直接安装最新正式 Release：
+
+```bash
+bash scripts/install.sh install --source-mode release --target "$HOME/spirit-pet" --no-start
+```
+
+安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet`，首次安装会从 `.env.example` 创建 `.env`。填写配置后启动：
 
 ```bash
 xiupet start
@@ -66,11 +72,12 @@ HOST=127.0.0.1
 PORT=8080
 SPIRIT_PET_DB=data/spirit_pet/spirit_pet.db
 SPIRIT_PET_COMMAND_PREFIX=/
-ONEBOT_V11_ACCESS_TOKEN=replace-with-a-random-token
 QQ_BOTS='[]'
 ```
 
 `SPIRIT_PET_COMMAND_PREFIX` 不能包含空白，也可以设为空字符串；无前缀的完整中文命令始终可用。QQ 的 `text`、`native` 和 `template` 模式以及账号 JSON 配置见[机器人接入](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONNECTIONS.md)。Markdown、按钮和蓝字需要相应的平台权限与客户端支持，权限不足时使用普通文本命令。
+
+`ONEBOT_V11_ACCESS_TOKEN` 默认不设置，仅在启用 OneBot 鉴权时手动配置；启用时客户端与服务端填写同一值，不启用鉴权可留空或省略。
 
 OneBot V11 反向 WebSocket 地址为：
 
@@ -91,7 +98,6 @@ QQ 官方机器人使用开放平台的 AppID、AppSecret 和已获授权的事�
 灵宠帮助
 灵宠签到
 灵宠修炼
-灵宠命名 小青
 ```
 
 玩家之间的操作使用 UID，灵宠操作使用名册中的编号：
@@ -116,10 +122,12 @@ xiupet restart
 xiupet status
 xiupet logs --lines 100
 xiupet install
+xiupet update
 xiupet uninstall
+xiupet login
 ```
 
-更新当前 checkout 前先停止实例、备份 `.env` 和数据库，再从 `main` 更新：
+从 `main` 更新源码前先停止实例、备份 `.env` 和数据库：
 
 ```bash
 cd "$HOME/spirit-pet"

@@ -18,7 +18,7 @@ def source_project(tmp_path):
     (project / "src/plugins/nonebot_plugin_spirit_pet").mkdir(parents=True)
     for name in ("pyproject.toml", "requirements.txt", ".env.example", "LICENSE"):
         shutil.copy2(ROOT / name, project / name)
-    for name in ("install.sh", "xiupet.sh"):
+    for name in ("install.sh", "xiupet.sh", "qq_login.py"):
         shutil.copy2(ROOT / "scripts" / name, project / "scripts" / name)
     shutil.copy2(
         ROOT / "src/plugins/nonebot_plugin_spirit_pet/__init__.py",
@@ -92,12 +92,13 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
         assert result.returncode == 0, result.stderr
     result = subprocess.run(["bash", str(ROOT / "scripts/install.sh"), "--help"], capture_output=True, text=True)
     assert result.returncode == 0
-    assert "[install|update|uninstall]" in result.stdout
-    assert "--source release|checkout" in result.stdout
+    assert "[install|update|uninstall|start|stop|restart|status|logs|login]" in result.stdout
+    assert "--source-mode auto|release|source" in result.stdout
+    assert "--target PATH" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
-    assert "install reinstalls dependencies from local files" in manager_help.stdout
-    assert "update fetches the latest Release source" in manager_help.stdout
+    assert "install|update|uninstall|start|stop|restart|status|logs|login" in manager_help.stdout
+    assert "QQ 官方机器人授权" in manager_help.stdout
 
 
 def test_removed_branch_option_is_rejected_before_python_or_network_access():
@@ -111,11 +112,11 @@ def test_removed_branch_option_is_rejected_before_python_or_network_access():
 
 def test_invalid_source_mode_is_rejected_before_python_or_network_access():
     result = subprocess.run(
-        ["bash", str(ROOT / "scripts/install.sh"), "--source", "main"],
+        ["bash", str(ROOT / "scripts/install.sh"), "--source-mode", "main"],
         capture_output=True, text=True,
     )
     assert result.returncode == 2
-    assert "expected release or checkout" in result.stderr
+    assert "expected auto, release, or source" in result.stderr
 
 
 @pytest.mark.parametrize("proxy_failure", [None, "curl", "invalid"])
@@ -148,7 +149,7 @@ def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
     result = subprocess.run(
         [
             "bash", str(source_project / "scripts/install.sh"), "install",
-            "--directory", str(destination), "--yes", "--no-start",
+            "--source-mode", "release", "--directory", str(destination), "--yes", "--no-start",
         ],
         capture_output=True, text=True, env=environment,
     )
@@ -157,7 +158,7 @@ def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
     proxy_url = "https://gh-proxy.com/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
     official_url = "https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"
     if proxy_failure:
-        assert urls == [proxy_url, official_url]
+        assert urls == [proxy_url, "https://ghfast.top/https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz"]
     else:
         assert urls == [proxy_url]
     assert (destination / "pyproject.toml").is_file()
@@ -182,11 +183,12 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"]
     result = subprocess.run(command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "checkout\n"
+    assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "source\n"
     assert (destination / ".venv/bin/nb").is_file()
+    assert (destination / ".xiupet/qq_login.py").is_file()
     config = (destination / ".env").read_text(encoding="utf-8")
     assert "HOST=127.0.0.1" in config and "PORT=8080" in config
-    assert len(next(line.split("=", 1)[1] for line in config.splitlines() if line.startswith("ONEBOT_V11_ACCESS_TOKEN="))) == 64
+    assert "ONEBOT_V11_ACCESS_TOKEN=" not in config
     command_file = bin_dir / "xiupet"
     assert command_file.is_symlink() and os.readlink(command_file) == str(destination / "scripts/xiupet.sh")
     assert os.access(command_file, os.X_OK)
@@ -337,7 +339,7 @@ def test_release_update_refuses_checkout_without_download_or_stopping(source_pro
     if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
     (source_project / ".xiupet-managed").write_text("managed\n", encoding="ascii")
-    (source_project / ".xiupet-source").write_text("checkout\n", encoding="ascii")
+    (source_project / ".xiupet-source").write_text("source\n", encoding="ascii")
     source_file = source_project / "src/plugins/nonebot_plugin_spirit_pet/__init__.py"
     original_source = source_file.read_bytes()
     environment = {**os.environ, "XIUPET_PROJECT": str(source_project)}
@@ -437,6 +439,40 @@ def test_linux_management_command_uses_nb_and_can_start_stop_status(source_proje
     assert not (source_project / ".xiupet/pid").exists()
 
 
+def test_management_wrapper_forwards_unified_install_arguments(tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    project = tmp_path / "target"
+    scripts = project / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/xiupet.sh", scripts / "xiupet.sh")
+    log = tmp_path / "installer-args.log"
+    installer = scripts / "install.sh"
+    installer.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '%s\\n' \"$@\" > \"$SPIRIT_PET_TEST_INSTALL_ARGS\"\n",
+        encoding="utf-8",
+    )
+    installer.chmod(0o755)
+    environment = {**os.environ, "SPIRIT_PET_TEST_INSTALL_ARGS": str(log)}
+    result = subprocess.run(
+        [
+            "bash", str(scripts / "xiupet.sh"), "install",
+            "--target", str(project), "--source", str(ROOT), "--source-mode", "source",
+            "--mirror", "custom", "--mirror-url", "https://mirror.invalid/project.tar.gz",
+            "--venv", str(tmp_path / "custom-venv"), "--yes",
+        ],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    forwarded = log.read_text(encoding="utf-8").splitlines()
+    assert forwarded == [
+        "install", "--target", str(project), "--source", str(ROOT), "--source-mode", "source",
+        "--mirror", "custom", "--venv", str(tmp_path / "custom-venv"), "--no-start",
+        "--mirror-url", "https://mirror.invalid/project.tar.gz", "--yes",
+    ]
+
+
 def test_installer_and_management_command_are_bash_and_use_nb_cli():
     shell_installer = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     manager = (ROOT / "scripts/xiupet.sh").read_text(encoding="utf-8")
@@ -445,4 +481,4 @@ def test_installer_and_management_command_are_bash_and_use_nb_cli():
     assert '"$venv/bin/python" -m pip install' in shell_installer
     assert '"$venv/bin/nb" run' in shell_installer
     assert "python3" not in manager
-    assert '"$NB" run' in manager
+    assert 'exec "$2" run' in manager

@@ -118,17 +118,13 @@ def archive_list(ctx: Context, arg: str) -> Reply:
         f" · {ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉 {ctx.content.bloodlines[pet.bloodline].name}"
         for pet in selected
     )
-    inline_commands = tuple(
-        InlineCommand(index, "改名", f"灵宠命名 {pet.pet_id} ")
-        for index, pet in enumerate(selected)
-    )
     commands = [f"灵宠复原 {pet.pet_id}" for pet in selected]
     if page > 1:
         commands.append(f"灵宠封存库 {page - 1}")
     if page < pages:
         commands.append(f"灵宠封存库 {page + 1}")
     commands.append("灵宠列表")
-    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands), inline_commands)
+    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands))
 
 
 def _owned_pet_by_id(ctx: Context, arg: str):
