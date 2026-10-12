@@ -2,7 +2,7 @@ from sqlite3 import Row
 
 from ..application.context import Context
 from ..domain.expedition_state import RewardSnapshot
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
 from .quests import advance
@@ -21,13 +21,20 @@ def catalog(ctx: Context, arg: str) -> Reply:
             *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
               for key, bounds in reward.items.items()),
             "每人同时一项；完成后归来领奖，提前召回无奖励且不退精力。",
-        ), (f"灵宠派遣 {task.name}", "灵宠行程", "灵宠委托"))
+        ), (f"灵宠派遣 {task.name}", "灵宠行程", "灵宠委托"),
+            (InlineCommand(1, "出发派遣", f"灵宠派遣 {task.name}"),))
     page = paginate(tasks.values(), arg, "山海委托", "灵宠委托")
-    return Reply(f"山海委托 {page.number}/{page.total}", tuple(
+    lines = tuple(
         f"{task.name} · {next(r.name for r in ctx.content.realms if r.id == task.min_realm)}起"
         f" · 精力 {task.energy} · {ctx.config.spirit_pet_expedition_duration} 秒"
         for task in page.entries
-    ), (*(f"灵宠委托 {task.name}" for task in page.entries), *page.navigation, "灵宠行程"))
+    )
+    links = tuple(
+        InlineCommand(index, "查看详情", f"灵宠委托 {task.name}")
+        for index, task in enumerate(page.entries)
+    )
+    return Reply(f"山海委托 {page.number}/{page.total}", lines,
+                 (*(f"灵宠委托 {task.name}" for task in page.entries), *page.navigation, "灵宠行程"), links)
 
 
 def _owned(ctx: Context, arg: str) -> Row:
@@ -44,19 +51,23 @@ def _owned(ctx: Context, arg: str) -> Row:
 def _describe(ctx: Context, row: Row) -> Reply:
     pet = ctx.repo.pet(row["pet_id"])
     commands = []
+    links = ()
     if row["state"] == "running":
         if ctx.now >= row["finishes_at"]:
             state = "已完成，待归来领取；领取前仍占用灵宠。"
             commands.append(f"灵宠归来 {row['job_id']}")
+            links = (InlineCommand(1, "领取归来奖励", f"灵宠归来 {row['job_id']}"),)
         else:
             state = f"外出中，剩余 {row['finishes_at'] - ctx.now} 秒。"
             commands.append(f"灵宠召回 {row['job_id']}")
+            links = (InlineCommand(1, "提前召回", f"灵宠召回 {row['job_id']}"),)
         commands.append(f"灵宠行程 {row['job_id']}")
     else:
         state = "奖励已领取。" if row["state"] == "claimed" else "已提前召回，无奖励，已消耗精力不退。"
+        links = (InlineCommand(1, "查看委托目录", "灵宠委托"),)
     return Reply("灵宠行程", (
         f"行程 {row['job_id']} · {row['task_name']} · 灵宠：{pet.name}", state,
-    ), (*commands, "灵宠委托", "灵宠列表"))
+    ), (*commands, "灵宠委托", "灵宠列表"), links)
 
 
 def status(ctx: Context, arg: str) -> Reply:
@@ -65,7 +76,8 @@ def status(ctx: Context, arg: str) -> Reply:
         "SELECT * FROM expeditions WHERE user_id=? ORDER BY job_id DESC LIMIT 1", (ctx.user_id,),
     ).fetchone()
     if row is None:
-        return Reply("灵宠行程", ("尚无委托行程。",), ("灵宠委托", "灵宠列表"))
+        return Reply("灵宠行程", ("尚无委托行程。",), ("灵宠委托", "灵宠列表"),
+                     (InlineCommand(0, "查看委托目录", "灵宠委托"),))
     return _describe(ctx, row)
 
 

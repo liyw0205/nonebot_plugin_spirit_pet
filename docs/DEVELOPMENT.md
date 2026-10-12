@@ -46,6 +46,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_resonance.py tests/test_resonance_contract.py`：`13 passed`。覆盖既有成本、收集门槛、并发、准备失效和战斗隔离，以及目录/详情只读、持久化重放、OneBot handler、QQ 蓝字/按钮去重和前缀。没有跑全量、仿真、压测、真实 QQ 或部署。
 
+### 山海委托交互闭环（2026-10-12，已完成）
+
+高境界委托内容已随 `v0.1.2` 交付，但委托目录、详情与行程回复还没有行内蓝字：目录每页五条任务全部占用按钮位，第二页与翻页在 QQ native 键盘上不可达。本切片沿用合修/共鸣的控件约定补齐“目录→详情→派遣→行程→归来/召回”：目录每行任务名提供“查看详情”蓝字，蓝字命令不再进入按钮，翻页与“灵宠行程”保留少量主按钮；任务详情在门槛行提供“出发派遣”蓝字；行程状态行按剩余/待领/终态给出提前召回、领取奖励或查看目录的唯一蓝字。规则、schema 20、奖励快照与幂等不变；派发的“灵宠启程”回复不带状态性蓝字。
+
+定向命令 `./.venv/bin/pytest -q tests/test_expedition_interaction.py tests/test_expedition_commands.py tests/test_expedition_contract.py tests/test_expedition_content.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py`：`296 passed`。覆盖目录/详情/行程蓝字行位与命令归属、按钮与蓝字去重、翻页可达、同操作重投一致、OneBot/降级可读命令与前缀。未跑全量、仿真、压测、真实 QQ 或部署；QQ native 只验证 payload/标签，不宣称客户端实测。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
