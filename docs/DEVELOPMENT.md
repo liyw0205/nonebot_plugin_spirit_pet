@@ -52,6 +52,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_expedition_interaction.py tests/test_expedition_commands.py tests/test_expedition_contract.py tests/test_expedition_content.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py`：`296 passed`。覆盖目录/详情/行程蓝字行位与命令归属、按钮与蓝字去重、翻页可达、同操作重投一致、OneBot/降级可读命令与前缀。未跑全量、仿真、压测、真实 QQ 或部署；QQ native 只验证 payload/标签，不宣称客户端实测。
 
+### 每日任务交互闭环（2026-10-12，已完成）
+
+`灵宠任务` 回复把十条领取命令全部放进按钮，`_action_items` 截断后只有最靠前四条可点，且与任务状态无关：进行中/已领取任务占用按钮，真正的“可领取”任务反而可能没有入口。本切片沿用合修/共鸣/委托的控件约定：只给状态为“可领取”的任务在其状态行挂“领取奖励”蓝字（`InlineCommand`，命令 `灵宠领奖 <任务名>` 完整、直接执行），蓝字命令同时退出按钮集合，因此列表页不再出现固定按钮；行文本、进度、跨日刷新、每日一次领取与幂等重投规则不变，schema 20 不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_quest_interaction.py tests/test_game.py tests/test_messaging.py tests/test_player_experience.py tests/test_expedition_contract.py tests/test_expedition_occupancy.py`：`271 passed`。覆盖蓝字行位与任务名一一对应、可领取集合恰为蓝字集合、领取后蓝字与按钮清空、跨日清进度、QQ native/template payload 无按钮残留、OneBot 降级保留前缀可读命令。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.time import beijing_day
 from .rewards import grant
@@ -33,7 +33,9 @@ def quests(ctx: Context, arg: str) -> Reply:
         )
     }
     lines = []
-    for quest in ctx.content.quests.values():
+    links = []
+    claimable = []
+    for index, quest in enumerate(ctx.content.quests.values()):
         row = rows.get(quest.id)
         progress = row["progress"] if row else 0
         state = "已领取" if row and row["claimed"] else ("可领取" if progress >= quest.target else "进行中")
@@ -46,7 +48,11 @@ def quests(ctx: Context, arg: str) -> Reply:
             f"{quest.name}：{progress}/{quest.target}（{state}）"
             f" · 灵石 {reward.stones.minimum}-{reward.stones.maximum}，{items}"
         )
-    return Reply("每日任务", tuple(lines), tuple(f"灵宠领奖 {q.name}" for q in ctx.content.quests.values()))
+        if state == "可领取":
+            command = f"灵宠领奖 {quest.name}"
+            claimable.append(command)
+            links.append(InlineCommand(index, "领取奖励", command))
+    return Reply("每日任务", tuple(lines), tuple(claimable), tuple(links))
 
 
 def claim(ctx: Context, arg: str) -> Reply:
