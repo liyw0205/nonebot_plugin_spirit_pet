@@ -58,6 +58,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_quest_interaction.py tests/test_game.py tests/test_messaging.py tests/test_player_experience.py tests/test_expedition_contract.py tests/test_expedition_occupancy.py`：`271 passed`。覆盖蓝字行位与任务名一一对应、可领取集合恰为蓝字集合、领取后蓝字与按钮清空、跨日清进度、QQ native/template payload 无按钮残留、OneBot 降级保留前缀可读命令。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 封存库复原交互闭环（2026-10-12，已完成）
+
+封存库列表此前只把复原命令放进按钮，五条封存记录加翻页会超过按钮上限，第二页起复原入口在 QQ native 键盘不可达。本切片沿用名册/共鸣/委托的控件约定：每只封存灵宠在所在行挂“复原”蓝字（`InlineCommand`，命令 `灵宠复原 <编号>` 完整、直接执行），蓝字命令同时退出按钮集合，翻页与“灵宠列表”保留为少量主按钮；空封存库回复在提示行挂“查看灵宠名册”蓝字。封存/复原条件、行文本、分页、幂等与 OneBot/降级可读命令不变，schema 20 不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_pet_archive_interaction.py tests/test_pet_archive.py tests/test_hatching.py tests/test_messaging.py tests/test_commands.py tests/test_pet_catalog.py`：`112 passed`。覆盖蓝字行位与编号一一对应、按钮去重、两页翻页可达、空库入口、native/template payload、复原幂等重投与 OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

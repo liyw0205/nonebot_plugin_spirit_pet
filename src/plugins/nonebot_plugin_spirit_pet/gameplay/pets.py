@@ -112,11 +112,16 @@ def archive_list(ctx: Context, arg: str) -> Reply:
         raise GameError(f"封存库共 {pages} 页。")
     selected = ctx.repo.archived_pets(ctx.user_id, limit=5, offset=(page - 1) * 5)
     if not selected:
-        return Reply("灵宠封存库", ("尚无封存的灵宠。",), ("灵宠列表", "灵宠召唤"))
+        return Reply("灵宠封存库", ("尚无封存的灵宠。",), ("灵宠列表", "灵宠召唤"),
+                     (InlineCommand(0, "查看灵宠名册", "灵宠列表"),))
     lines = tuple(
         f"编号 {pet.pet_id}：{pet.name}（{ctx.content.species[pet.species_id].name}）"
         f" · {ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉 {ctx.content.bloodlines[pet.bloodline].name}"
         for pet in selected
+    )
+    links = tuple(
+        InlineCommand(index, "复原", f"灵宠复原 {pet.pet_id}")
+        for index, pet in enumerate(selected)
     )
     commands = [f"灵宠复原 {pet.pet_id}" for pet in selected]
     if page > 1:
@@ -124,7 +129,7 @@ def archive_list(ctx: Context, arg: str) -> Reply:
     if page < pages:
         commands.append(f"灵宠封存库 {page + 1}")
     commands.append("灵宠列表")
-    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands))
+    return Reply(f"灵宠封存库 {page}/{pages}", lines, tuple(commands), links)
 
 
 def _owned_pet_by_id(ctx: Context, arg: str):
