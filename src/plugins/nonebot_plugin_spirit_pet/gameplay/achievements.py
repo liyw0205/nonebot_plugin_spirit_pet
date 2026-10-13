@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from ..application.context import Context
 from ..domain.achievement_content import Achievement
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 
 COLLECTION_PAGE_SIZE = 9
@@ -144,23 +144,26 @@ def achievements(ctx: Context, arg: str) -> Reply:
         )
     }
     selected = entries[(page - 1) * ACHIEVEMENT_PAGE_SIZE:page * ACHIEVEMENT_PAGE_SIZE]
-    lines, commands = [], []
+    lines, commands, links = [], [], []
     for entry in selected:
         value = _metric(ctx, ctx.user_id, entry.metric) if player else 0
         claimed = entry.id in claims
         state = "已领取" if claimed else "可领奖" if value >= entry.target and player else "进行中"
+        status_line = len(lines)
         lines.extend((
             f"{entry.name} · {state} · {_progress(ctx, entry, value)}",
             entry.description,
         ))
         if value >= entry.target and not claimed and player:
-            commands.append(f"灵宠成就领奖 {entry.name}")
+            command = f"灵宠成就领奖 {entry.name}"
+            commands.append(command)
+            links.append(InlineCommand(status_line, "领取奖励", command))
     if page > 1:
         commands.append(f"灵宠成就 {page - 1}")
     if page < pages:
         commands.append(f"灵宠成就 {page + 1}")
     commands.append("灵宠收集")
-    return Reply(f"灵宠成就 {page}/{pages}", tuple(lines), tuple(commands))
+    return Reply(f"灵宠成就 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
 
 
 def _reply_from_row(row) -> Reply:

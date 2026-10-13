@@ -64,6 +64,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_pet_archive_interaction.py tests/test_pet_archive.py tests/test_hatching.py tests/test_messaging.py tests/test_commands.py tests/test_pet_catalog.py`：`112 passed`。覆盖蓝字行位与编号一一对应、按钮去重、两页翻页可达、空库入口、native/template payload、复原幂等重投与 OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 成就领奖交互闭环（2026-10-12，已完成）
+
+成就共 47 项、每页五项，可领奖命令此前只进按钮：与翻页/收集入口竞争四个按钮位，且只覆盖当前页最靠前的可领奖成就，其余可领奖成就在 QQ native 键盘上没有入口。本切片沿用任务/封存库的控件约定：每条状态为“可领奖”的成就在其状态行挂“领取奖励”蓝字（`InlineCommand`，命令 `灵宠成就领奖 <名称>` 完整、直接执行），蓝字命令同时退出按钮集合，翻页与“灵宠收集”保留为少量主按钮。成就条件、行文本、分页、永久凭证与奖励快照、幂等重投和 OneBot/降级可读命令不变，schema 20 不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_achievement_interaction.py tests/test_achievements.py tests/test_messaging.py tests/test_content.py`：`164 passed`。覆盖蓝字行位与可领奖集合一一对应、按钮去重、领取后蓝字清空、同操作幂等重投、native/template payload、OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
