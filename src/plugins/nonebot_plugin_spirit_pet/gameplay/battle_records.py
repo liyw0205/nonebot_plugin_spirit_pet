@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..gameplay.combat import Battle, Fighter
 from ..gameplay.effects import BOND_GUARD_AFFINITY
 from ..gameplay.equipment import loadout
@@ -252,7 +252,8 @@ def reports(ctx: Context, arg: str) -> Reply:
         ctx.user_id, limit=REPORT_PAGE_SIZE, offset=(page - 1) * REPORT_PAGE_SIZE,
     )
     lines = []
-    for row in rows:
+    links = []
+    for index, row in enumerate(rows):
         snapshot = json.loads(row["snapshot"])
         own = snapshot.get("teams", [])[row["side"]].get("members", []) if snapshot.get("teams") else []
         names = "、".join(member.get("pet_name", "未知灵宠") for member in own)
@@ -263,12 +264,16 @@ def reports(ctx: Context, arg: str) -> Reply:
             f"#{row['battle_id']} {_KIND_NAMES.get(row['kind'], row['kind'])}{context} · {row['title']} · "
             f"{_outcome(row, row['side'])} · {row['rounds']}回合 · {names}"
         )
+        links.append(InlineCommand(index, "查看详情", f"灵宠战报 查看 {row['battle_id']}"))
     commands = [f"灵宠战报 查看 {row['battle_id']}" for row in rows]
     if page > 1:
         commands.append(f"灵宠战报 分页 {page - 1}")
     if page < pages:
         commands.append(f"灵宠战报 分页 {page + 1}")
-    return Reply(f"灵宠战报 {page}/{pages}", tuple(lines) or ("尚无参与过的战斗。",), tuple(commands))
+    if not rows:
+        return Reply(f"灵宠战报 {page}/{pages}", ("尚无参与过的战斗。",), ("灵宠列表",),
+                     (InlineCommand(0, "查看灵宠名册", "灵宠列表"),))
+    return Reply(f"灵宠战报 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
 
 
 # Short aliases for integrations that prefer a verb matching their domain.
