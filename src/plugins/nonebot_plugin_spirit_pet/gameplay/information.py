@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.content import Species
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from .companionship import active_bond_streak
 from .cultivation import MAJOR_BREAKTHROUGH_PITY, breakthrough_chance
@@ -99,15 +99,19 @@ def catalog(ctx: Context, arg: str) -> Reply:
             f"初始气血 {stats.hp} · 攻击 {stats.attack} · 防御 {stats.defense} · 速度 {stats.speed}",
             f"初始亲密 {species.initial_affinity} · 修炼加成 {species.training_bonus:.0%}",
             acquisition(ctx, species),
-        ), ("灵宠图鉴", "灵宠召唤", "灵宠秘境"))
+        ), ("灵宠图鉴", "灵宠召唤", "灵宠秘境"),
+            (InlineCommand(5, "结契该族", f"灵宠领养 {species.name}"),) if species.starter
+            else (InlineCommand(5, "寻访该族", "灵宠召唤 "),))
     species_list = list(ctx.content.species.values())
     page = quantity(arg or "1", 999)
     pages = (len(species_list) + 4) // 5
     if page > pages:
         raise GameError(f"万灵图鉴共 {pages} 页。")
     lines = []
+    links = []
     for species in species_list[(page - 1) * 5:page * 5]:
         talent = ctx.content.talents[species.talent]
+        links.append(InlineCommand(len(lines), "查看详情", f"灵宠图鉴 {species.name}"))
         lines.extend((
             f"{species.name} · {ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
             f"天赋：{talent.name} · {species.description}", acquisition(ctx, species),
@@ -117,7 +121,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         actions.append(f"灵宠图鉴 {page - 1}")
     if page < pages:
         actions.append(f"灵宠图鉴 {page + 1}")
-    return Reply(f"万灵图鉴 {page}/{pages}", tuple(lines), tuple(actions))
+    return Reply(f"万灵图鉴 {page}/{pages}", tuple(lines), tuple(actions), tuple(links))
 
 
 def acquisition(ctx: Context, species: Species) -> str:

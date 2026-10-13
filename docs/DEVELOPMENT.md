@@ -76,6 +76,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_battle_report_interaction.py tests/test_battle_records.py tests/test_messaging.py`：`42 passed`。覆盖每行蓝字编号对应、两页翻页可达、按钮与蓝字去重、空列表入口、非参与者详情拒绝、native/template payload、OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 万灵图鉴交互闭环（2026-10-13，已完成）
+
+图鉴 27 族分六页浏览，但列表行没有直达详情的入口，详情也不给按获取途径的下一步。本切片沿用共鸣/委托/图鉴行蓝字的既有约定：`information.catalog` 列表每行种族挂“查看详情”蓝字（`灵宠图鉴 <种族>`，完整直接执行）；种族详情在获取途径行挂唯一下一步蓝字——初始可选族“结契该族”预填 `灵宠领养 <种族>`（仍会重新校验 starter 与未注册条件），非初始族“寻访该族”仅预填 `灵宠召唤 `（尾部空格按消息层约定只预填不发送，不替玩家决定召唤次数）。图鉴行文本、分页、领养/召唤规则、starter 限制与 OneBot/降级可读命令不变，schema 20 不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_catalog_interaction.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py`：`130 passed`。覆盖列表蓝字行位与种族名对应、初始/非初始详情蓝字区分与预填语义、末页详情可达、按钮与蓝字去重、native/template payload、OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署；QQ 客户端实际呈现仍属外部验收，不由本地 payload 合同替代。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
