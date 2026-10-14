@@ -94,6 +94,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_stage_interaction.py tests/test_pve_stages.py tests/test_stage_content.py`：`33 passed`。新增 `test_stage_interaction` 覆盖新号仅首关挂蓝字与行位、已通关与新开行各挂一行、锁定/未注册行不挂、第二页仅新开行挂蓝字且分页按钮保留、组队蓝字即注册入口且未组队干净拒绝、QQ native payload 与按钮零重复。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-pve 目标卡](goals/pet-pve.md)。
 
+### 山海秘境行内详情闭环（2026-10-14，已完成）
+
+秘境列表每条秘境的进入命令此前全部进按钮，`_action_items` 四条上限截断后第四、五行秘境在 QQ native 键盘不可达。本切片沿用万灵图鉴“查看详情”只读约定：`adventure.dungeons` 列表每页五条秘境各在所在行挂唯一“查看详情”蓝字（`InlineCommand`，命令 `灵宠秘境 <秘境名>`，完整、直接执行只读详情）；蓝字命令同时退出按钮集合，按钮只剩 `灵宠秘境` 分页导航。秘境详情回复、行文本、排序、分页、`灵宠挑战`/`灵宠组队挑战` 校验、掉落与永久战报幂等重放、schema 20 全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_dungeon_interaction.py tests/test_balance.py tests/test_adventure_routes.py tests/test_commands.py`：`38 passed`（含新增 `test_dungeon_interaction` 4 项）。新增测试覆盖首页五行蓝字行号/命令逐行对应、`reply.commands` 恰为分页导航、native markdown payload 与按钮零重复、第二页蓝字与上一页下一页按钮、详情首命令仍为挑战入口、降级文本含可读命令且无 `mqqapi://`。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-dungeon-list 目标卡](goals/pet-dungeon-list.md)。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

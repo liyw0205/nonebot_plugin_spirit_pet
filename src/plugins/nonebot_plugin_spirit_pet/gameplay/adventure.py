@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
 from .combat import enemy_fighter, fight
@@ -147,17 +147,24 @@ def dungeons(ctx: Context, arg: str) -> Reply:
     if page > pages:
         raise GameError(f"山海秘境共 {pages} 页。")
     selected = entries[(page - 1) * 5:page * 5]
-    commands = [f"灵宠秘境 {dungeon.name}" for dungeon in selected]
+    navigation = []
     if page > 1:
-        commands.append(f"灵宠秘境 {page - 1}")
+        navigation.append(f"灵宠秘境 {page - 1}")
     if page < pages:
-        commands.append(f"灵宠秘境 {page + 1}")
-    return Reply(f"山海秘境 {page}/{pages}", tuple(
+        navigation.append(f"灵宠秘境 {page + 1}")
+    lines = tuple(
         f"{dungeon.name}：{'组队' if dungeon.team else '单人'}"
         f" · {next(r.name for r in ctx.content.realms if r.id == dungeon.min_realm)}起"
         f" · 精力 {dungeon.energy}"
         for dungeon in selected
-    ), tuple(commands))
+    )
+    # Every listed dungeon links its own read-only detail entry, so all five rows
+    # stay reachable regardless of the four-button cap; buttons keep only pagination.
+    links = tuple(
+        InlineCommand(index, "查看详情", f"灵宠秘境 {dungeon.name}")
+        for index, dungeon in enumerate(selected)
+    )
+    return Reply(f"山海秘境 {page}/{pages}", lines, tuple(navigation), links)
 
 
 def challenge(ctx: Context, arg: str) -> Reply:
