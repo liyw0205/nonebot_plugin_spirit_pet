@@ -16,4 +16,4 @@ def hatch(ctx: Context, item: Item, amount: int) -> Reply:
     return Reply("灵卵孵化", (
         f"{item.name} -{amount}。",
         *(f"获得{pet.name}，灵宠编号 {pet.pet_id}。" for pet in pets),
-    ), ("灵宠列表", "我的灵宠"))
+    ), ("灵宠列表", "我的灵宠", "灵宠背包"))

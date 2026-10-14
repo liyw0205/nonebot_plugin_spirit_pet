@@ -32,6 +32,16 @@
     }
   },
   {
+    "id": "affinity_pill",
+    "name": "同心丹",
+    "description": "亲密 +20；亲密已满时不可使用。",
+    "kind": "consumable",
+    "price": 120,
+    "effects": {
+      "affinity": 20
+    }
+  },
+  {
     "id": "breakthrough_pill",
     "name": "破境丹",
     "description": "突破时指定使用，成功率提高 10 个百分点。",

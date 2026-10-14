@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, named
-from ..utils.energy import add_energy
+from ..utils.energy import add_energy, restore_energy
 from ..utils.pagination import paginate
 from ..utils.time import beijing_day
 from .pet_targets import selected_pet
@@ -19,6 +19,67 @@ def sign(ctx: Context, arg: str) -> Reply:
     return Reply("今日仙缘", grant(ctx, ctx.content.rules.daily_reward))
 
 
+def _active_pet_or_none(ctx: Context):
+    """The active pet with the same energy refresh `Context.pet` applies, or None."""
+    player = ctx.player()
+    if player.active_pet_id is None:
+        return None
+    pet = ctx.repo.pet(player.active_pet_id)
+    if pet.archived:
+        return None
+    restore_energy(pet, ctx.now, ctx.config.spirit_pet_energy_interval)
+    return pet
+
+
+def _recovery_available(effects, pet) -> bool:
+    return bool(effects.exp) or (bool(effects.energy) and pet.energy < 100) or (
+        bool(effects.affinity) and pet.affinity < 100
+    )
+
+
+def _can_use(ctx: Context, item) -> bool:
+    """Mirror `_use_consumable`'s guard so no surface offers a rejected action."""
+    pet = _active_pet_or_none(ctx)
+    if pet is None or ctx.repo.active_expedition(pet.pet_id) is not None:
+        return False
+    return _recovery_available(item.effects, pet)
+
+
+def _has_roster_room(ctx: Context) -> bool:
+    return len(ctx.repo.owned_pets(ctx.user_id)) + 1 <= ctx.config.spirit_pet_max_pets
+
+
+def _item_steps(ctx: Context, item) -> tuple[str, ...]:
+    """The runnable follow-up for a held item, or empty when nothing is safe to offer."""
+    if item.kind == "consumable":
+        if item.id == "spirit_food":
+            return ("灵宠喂养",) if _can_use(ctx, item) else ()
+        return (f"灵宠使用 {item.name} 1",) if _can_use(ctx, item) else ()
+    if item.kind == "pet_egg":
+        return (f"灵宠使用 {item.name} 1",) if _has_roster_room(ctx) else ()
+    if item.kind == "equipment":
+        return (f"灵宠装备图鉴 {ctx.content.equipment[item.equipment_id].name}",)
+    if item.kind == "skill_book":
+        return (f"灵宠技能图鉴 {ctx.content.skills[item.skill_id].name}",)
+    return ()
+
+
+_BAG_GROUPS = (
+    ("消耗品", ("consumable",)),
+    ("灵卵", ("pet_egg",)),
+    ("装备灵物", ("equipment",)),
+    ("灵术秘笈", ("skill_book",)),
+    ("材料与丹药", ("material", "breakthrough")),
+)
+_BAG_LABELS = {
+    "consumable": "使用", "pet_egg": "孵化", "equipment": "装备图鉴", "skill_book": "灵术图鉴",
+}
+
+
+def _bag_label(item, step: str) -> str:
+    return "喂养" if step.startswith("灵宠喂养") else _BAG_LABELS[item.kind]
+
+
 def bag(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
     inventory = ctx.repo.inventory(ctx.user_id)
@@ -26,12 +87,35 @@ def bag(ctx: Context, arg: str) -> Reply:
         "SELECT item_id, enhancement, quantity FROM unequipped_equipment "
         "WHERE user_id=? AND quantity>0 ORDER BY item_id, enhancement DESC", (ctx.user_id,),
     ).fetchall()
-    return Reply("乾坤袋", (
-        f"灵石：{player.stones}",
-        *(f"{ctx.content.items[key].name}：{value}" for key, value in inventory.items()),
-        *(f"{ctx.content.items[row['item_id']].name} +{row['enhancement']}：{row['quantity']}"
-          for row in reinforced),
-    ), ("灵宠商店", "灵宠喂养", "灵宠进化"))
+    lines = [f"灵石：{player.stones}"]
+    links = []
+    # Grouped by kind with each row's purpose, so the bag explains what is held and
+    # links the one next step that the business layer would actually accept.
+    for title, kinds in _BAG_GROUPS:
+        entries = [
+            (ctx.content.items[key], value) for key, value in inventory.items()
+            if ctx.content.items[key].kind in kinds
+        ]
+        if not entries:
+            continue
+        lines.append(title)
+        for item, amount in entries:
+            lines.append(f"{item.name}：{amount} · {item.description}")
+            steps = _item_steps(ctx, item)
+            if steps:
+                links.append(InlineCommand(len(lines) - 1, _bag_label(item, steps[0]), steps[0]))
+    if reinforced:
+        lines.append("强化装备")
+        for row in reinforced:
+            item = ctx.content.items[row["item_id"]]
+            lines.append(f"{item.name} +{row['enhancement']}：{row['quantity']} · {item.description}")
+            links.append(InlineCommand(
+                len(lines) - 1, "装备图鉴",
+                f"灵宠装备图鉴 {ctx.content.equipment[item.equipment_id].name}",
+            ))
+    if len(lines) == 1:
+        lines.append("乾坤袋空空如也，先去灵坊看看。")
+    return Reply("乾坤袋", tuple(lines), ("灵宠商店", "灵宠喂养", "灵宠进化"), tuple(links))
 
 
 def shop(ctx: Context, arg: str) -> Reply:
@@ -56,10 +140,19 @@ def shop(ctx: Context, arg: str) -> Reply:
             f"售价：{item.price} 灵石。", item.description,
         ), (*commands, "灵宠商店", "灵宠背包"), links)
     page = paginate(available.values(), arg, "山海灵坊", "灵宠商店")
-    return Reply(f"山海灵坊 {page.number}/{page.total}", tuple(
+    lines = tuple(
         f"{item.name}：{item.price} 灵石 · {item.description}"
         for item in page.entries
-    ), (*(f"灵宠商店 {item.name}" for item in page.entries), *page.navigation, "灵宠背包"))
+    )
+    # Each row links its own detail; the row command leaves the button set, so every
+    # listed item stays reachable under the four-button cap.
+    links = tuple(
+        InlineCommand(index, "查看详情", f"灵宠商店 {item.name}")
+        for index, item in enumerate(page.entries)
+    )
+    return Reply(
+        f"山海灵坊 {page.number}/{page.total}", lines, (*page.navigation, "灵宠背包"), links,
+    )
 
 
 def buy(ctx: Context, arg: str) -> Reply:
@@ -73,7 +166,9 @@ def buy(ctx: Context, arg: str) -> Reply:
         raise GameError("灵石不足。")
     player.stones -= cost
     ctx.repo.add_item(ctx.user_id, item.id, amount)
-    return Reply("灵坊购得", (f"{item.name} +{amount}，灵石 -{cost}。",))
+    return Reply("灵坊购得", (f"{item.name} +{amount}，灵石 -{cost}。",), (
+        "灵宠背包", *_item_steps(ctx, item), "灵宠商店",
+    ))
 
 
 def use(ctx: Context, arg: str) -> Reply:
@@ -105,9 +200,13 @@ def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
     if item.id == "spirit_food":
         advance(ctx, "feed")
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+    # Repeat only while another dose would still be accepted; the post-use values are
+    # read from the mutated pet, not a stale row.
+    repeat = ("灵宠喂养",) if item.id == "spirit_food" else (f"灵宠使用 {item.name} 1",)
+    steps = repeat if _recovery_available(effects, pet) else ()
     return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
         f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
-    ))
+    ), ("灵宠背包", *steps, "我的灵宠"))
 
 
 def feed(ctx: Context, arg: str) -> Reply:

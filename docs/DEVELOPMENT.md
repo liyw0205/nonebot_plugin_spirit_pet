@@ -114,6 +114,14 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_team_play_ux.py tests/test_team_management.py tests/test_team_requests.py tests/test_team_requests_contract.py tests/test_team_messaging.py tests/test_team_request_interaction.py tests/test_commands.py tests/test_team_concurrency.py tests/test_team_config.py`：`134 passed`（含新增 `test_team_play_ux` 7 项）。新增测试覆盖满员名册逐行蓝字与行位、按钮集合 ≤4 且互不重复且与蓝字零重叠、组队挑战入口仅在全员准备时出现且此时可执行、出战宠外出时不给准备入口、队员名帖保留队长动作与指南蓝字、流程回复均含指南下一步、名册 native payload 蓝字与按钮零重复。共享业务行为只跑一次；QQ 适配器契约 `test_team_messaging` 未改动即通过。`test_team_management` 与 `test_team_request_interaction` 的旧按钮形状断言按需原地更新。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 道具与灵坊闭环（2026-10-14，已完成）
+
+四个阶段一次交付：灵坊行内详情、乾坤袋分组与逐行动作、购买/使用/喂养/孵化连通、亲密消耗品内容补齐。此前 `economy.shop` 列表把每页五条 `灵宠商店 <物品名>` 全部塞进按钮，叠加分页与 `灵宠背包` 后受 `_action_items` 四条上限截断，第四、五行道具与翻页在 QQ native 键盘不可达；乾坤袋是纯只读平铺列表，没有逐行动作也没有用途说明；`buy`、`use`/`_use_consumable`、`feed` 的回复没有任何后续命令，道具闭环在购买与使用处断掉；消耗品只有精力与修为两类，缺亲密道具。
+
+现在 `economy.shop` 列表每行挂唯一“查看详情”蓝字（`InlineCommand`，命令 `灵宠商店 <物品名>`，既有详情入口），行命令退出按钮集合，按钮只剩 `灵宠商店` 翻页与 `灵宠背包`。`economy.bag` 按消耗品/灵卵/装备灵物/灵术秘笈/材料与丹药分组，每行补上道具用途（取 `description`），并按种类挂当前真能执行的一步：灵粮“喂养”、其他消耗品“使用”、灵卵在名册有名额时“孵化”、装备灵物“装备图鉴”、灵术秘笈“灵术图鉴”；材料与破境丹只给提示。门控与业务层一致：`_can_use` 复用 `Context.pet` 的精力恢复语义并检查 `active_expedition`，`_has_roster_room` 复用 `owned_pets` 与 `spirit_pet_max_pets`；`_use_consumable` 的重复动作按使用后的内存状态判断，不读旧行。`buy` 补 `灵宠背包` + 该道具下一步 + `灵宠商店`，`use`/`feed` 补 `灵宠背包` + 重复动作 + `我的灵宠`，`hatch` 补 `灵宠背包`。内容新增 `affinity_pill 同心丹`（消耗品，亲密 +20，120 灵石），使精力/修为/亲密各有一件灵坊道具；沿用既有消耗品路径，不新增 schema、事件或命令。定价、掉落、效果上限、每日任务事件与幂等重放全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_item_loop.py tests/test_player_experience.py tests/test_pagination.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_hatching.py tests/test_crafting.py tests/test_skill_effects.py tests/test_quest_interaction.py tests/test_forging.py tests/test_loadout.py` 与第二批 `tests/test_co_training_contract.py tests/test_effect_models.py tests/test_expedition_occupancy.py tests/test_game.py tests/test_lineages.py tests/test_lineup_readiness.py tests/test_mastery.py tests/test_pet_archive.py tests/test_progression.py tests/test_talents.py tests/test_targeted_care.py`：合计 `735 passed`（含新增 `test_item_loop` 9 项），无既有断言需要改动。新增测试覆盖灵坊逐行蓝字与行位、按钮只剩翻页与背包、乾坤袋分组与用途、消耗品按状态门控（外出/属性满不给入口）、灵卵名额门控、装备与秘笈只读图鉴、材料无可执行入口、购买/使用/喂养/孵化下一步、同心丹购买使用与满亲密拒绝。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
