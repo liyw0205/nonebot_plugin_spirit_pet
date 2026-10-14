@@ -4,6 +4,10 @@ from ...application.context import Context
 from ...domain.models import GameError
 from ...domain.state import Player
 
+# Every team surface points at the same guide section, so a player who enters the
+# invite/request flow from any step can read the whole 组队与派遣 chapter.
+TEAM_HELP = "灵宠帮助 组队与派遣"
+
 
 def membership(ctx: Context, user_id: str | None = None) -> Row | None:
     return ctx.repo.conn.execute(

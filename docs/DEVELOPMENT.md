@@ -106,6 +106,14 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_team_request_interaction.py tests/test_team_requests.py tests/test_team_management.py tests/test_commands.py`：`57 passed`（含新增 `test_team_request_interaction` 5 项）。新增测试覆盖满页四行蓝字行位与命令逐行对应、`reply.commands` 恰为分页导航、native markdown payload 与按钮零重复、第二页蓝字与上一页下一页按钮、空列表回退入口且无蓝字、详情审批方向与详情不挂蓝字、降级文本含可读命令且无 `mqqapi://`。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-team-request-row-actions 目标卡](goals/pet-team-request-row-actions.md)。
 
+### 队伍玩法体验里程碑（2026-10-14，已完成）
+
+三个阶段一次交付：小队名册逐行名帖、页面动作诚实化、邀请/申请/帮助连通。名册此前把每位其他成员的 `灵宠队伍 <UID>` 全部塞进按钮，叠加页面动作后受 `_action_items` 四条上限截断，成员多时后面成员的名帖在 QQ native 键盘不可达；同时名册对队长固定给出 `灵宠组队挑战 上古灵殿`（业务层要求全员已准备，未准备必被拒绝），`灵宠准备` 在出战宠外出派遣时也必被拒绝。
+
+现在 `party.status` 每位其他成员行挂唯一“查看名帖”蓝字（`InlineCommand`，命令 `灵宠队伍 <成员UID>`，只读名帖），容量行挂“组队指南”蓝字（`灵宠帮助 组队与派遣`），行命令退出按钮集合；`party._member_detail` 的身份行同样挂“组队指南”蓝字。页面动作按状态诚实给出：`灵宠组队挑战` 仅在至少两人且全员已准备时出现，`灵宠准备` 仅在出战宠齐全且均未外出派遣（`_can_ready`，与 `require_idle_pet` 同条件）时出现，已准备时给 `灵宠取消准备`；破坏性动作（踢人/转让/解散/退队）仍走按钮。`requests` 的建队、入队、邀请、同意、拒绝、撤回与空队务回退入口都补上 `灵宠帮助 组队与派遣` 下一步。共享常量 `TEAM_HELP` 定义在 `teams/common.py`。玩法规则、授权、过期、准备失效、幂等重放与 schema 20 全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_team_play_ux.py tests/test_team_management.py tests/test_team_requests.py tests/test_team_requests_contract.py tests/test_team_messaging.py tests/test_team_request_interaction.py tests/test_commands.py tests/test_team_concurrency.py tests/test_team_config.py`：`134 passed`（含新增 `test_team_play_ux` 7 项）。新增测试覆盖满员名册逐行蓝字与行位、按钮集合 ≤4 且互不重复且与蓝字零重叠、组队挑战入口仅在全员准备时出现且此时可执行、出战宠外出时不给准备入口、队员名帖保留队长动作与指南蓝字、流程回复均含指南下一步、名册 native payload 蓝字与按钮零重复。共享业务行为只跑一次；QQ 适配器契约 `test_team_messaging` 未改动即通过。`test_team_management` 与 `test_team_request_interaction` 的旧按钮形状断言按需原地更新。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -58,7 +58,11 @@ def test_create_and_status_show_names_capacity_and_only_authorized_actions(game,
         assert "灵宠队务" in reply.commands
         assert len(reply.commands) <= 8
     assert "灵宠解散" in leader.commands
-    assert "灵宠队伍 UID 10001" in leader.commands
+    # Member cards are row links now; the button set keeps only page-level actions.
+    assert not any(command.startswith("灵宠队伍 ") for command in leader.commands)
+    assert ("查看名帖", "灵宠队伍 UID 10001") in [
+        (link.label, link.command) for link in leader.inline_commands
+    ]
     detail = play("team_status", "UID 10001", user="leader-private")
     assert "灵宠踢人 UID 10001" in detail.commands
     assert "灵宠转让 UID 10001" in detail.commands
@@ -77,17 +81,26 @@ def test_capacity_five_keeps_every_member_detail_reachable_without_privilege_lea
         sql(game[1], "INSERT INTO team_members(user_id, team_id) VALUES (?, ?)", (user, team_id))
     reply = play("team_status", user="leader-private")
     assert "5/5" in reply.text()
-    assert len(reply.commands) == 8
+    # Full capacity keeps every member card reachable as a row link; buttons stay page-level.
+    assert len(reply.commands) <= 4
+    assert [link.command for link in reply.inline_commands] == [
+        "灵宠帮助 组队与派遣",
+        "灵宠队伍 UID 10001", "灵宠队伍 UID 10002",
+        "灵宠队伍 UID 10003", "灵宠队伍 UID 10004",
+    ]
     for name in ("UID 10001", "UID 10002", "UID 10003", "UID 10004"):
-        assert f"灵宠队伍 {name}" in reply.commands
         detail = play("team_status", name, user="leader-private")
         assert f"灵宠踢人 {name}" in detail.commands
         assert f"灵宠转让 {name}" in detail.commands
-        assert len(detail.commands) <= 8
+        assert len(detail.commands) <= 4
     member = play("team_status", user="member-private")
-    assert len(member.commands) == 8
+    assert len(member.commands) <= 4
+    assert [link.command for link in member.inline_commands] == [
+        "灵宠帮助 组队与派遣",
+        "灵宠队伍 UID 10000", "灵宠队伍 UID 10002",
+        "灵宠队伍 UID 10003", "灵宠队伍 UID 10004",
+    ]
     for name in ("UID 10000", "UID 10002", "UID 10003", "UID 10004"):
-        assert f"灵宠队伍 {name}" in member.commands
         detail = play("team_status", name, user="member-private")
         assert not any(command.startswith(("灵宠踢人", "灵宠转让", "灵宠解散")) for command in detail.commands)
     with pytest.raises(GameError, match="有效的 UID"):

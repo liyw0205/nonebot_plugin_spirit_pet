@@ -4,7 +4,7 @@ from sqlite3 import Row
 from ...application.context import Context
 from ...domain.models import GameError, InlineCommand, Reply
 from ...utils.arguments import quantity
-from .common import add_member, membership, named_player, require_leader, require_room
+from .common import TEAM_HELP, add_member, membership, named_player, require_leader, require_room
 
 PAGE_SIZE = 4
 _JOIN = "FROM team_requests r JOIN teams t USING(team_id) "
@@ -51,7 +51,7 @@ def join(ctx: Context, arg: str) -> Reply:
     return Reply("入队申请已提交", (
         f"{player.uid_label}申请加入{leader.uid_label}的队伍，须由队长同意。",
         f"申请 {ctx.config.spirit_pet_team_request_ttl} 秒后失效，不预留名额，不消耗资源。",
-    ), (f"灵宠队务 {leader.uid_label}", f"灵宠队伍撤回 {leader.uid_label}"))
+    ), (f"灵宠队务 {leader.uid_label}", f"灵宠队伍撤回 {leader.uid_label}", TEAM_HELP))
 
 
 def invite(ctx: Context, arg: str) -> Reply:
@@ -67,7 +67,7 @@ def invite(ctx: Context, arg: str) -> Reply:
         f"{ctx.player().uid_label}邀请{candidate.uid_label}加入队伍，须由受邀道友同意。",
         f"邀请 {ctx.config.spirit_pet_team_request_ttl} 秒后失效，不预留名额，不消耗资源。",
         "邀请保存在对方的队务中，不会向其他群或私聊主动推送。",
-    ), (f"灵宠队务 {candidate.uid_label}", f"灵宠队伍撤回 {candidate.uid_label}"))
+    ), (f"灵宠队务 {candidate.uid_label}", f"灵宠队伍撤回 {candidate.uid_label}", TEAM_HELP))
 
 
 def _request(ctx: Context, arg: str) -> Row:
@@ -110,7 +110,7 @@ def accept(ctx: Context, arg: str) -> Reply:
     return Reply("加入队伍", (
         f"{candidate_name}已加入{leader_name}的队伍。",
         "该道友的其他入队申请和邀请已取消，全队需重新准备；未消耗资源。",
-    ), ("灵宠队伍", "灵宠准备"))
+    ), ("灵宠队伍", "灵宠准备", TEAM_HELP))
 
 
 def _delete(ctx: Context, request: Row) -> None:
@@ -126,7 +126,7 @@ def reject(ctx: Context, arg: str) -> Reply:
     _require_decider(ctx, request)
     other = _opponent(ctx, request)
     _delete(ctx, request)
-    return Reply("队务已拒绝", (f"已拒绝与{other}的队务，未消耗资源。",), ("灵宠队务",))
+    return Reply("队务已拒绝", (f"已拒绝与{other}的队务，未消耗资源。",), ("灵宠队务", TEAM_HELP))
 
 
 def withdraw(ctx: Context, arg: str) -> Reply:
@@ -135,7 +135,7 @@ def withdraw(ctx: Context, arg: str) -> Reply:
         raise GameError("只有原发起人可以撤回；处理方可以拒绝。")
     other = _opponent(ctx, request)
     _delete(ctx, request)
-    return Reply("队务已撤回", (f"已撤回与{other}的队务，未消耗资源。",), ("灵宠队务",))
+    return Reply("队务已撤回", (f"已撤回与{other}的队务，未消耗资源。",), ("灵宠队务", TEAM_HELP))
 
 
 def _summary(ctx: Context, request: Row) -> str:
@@ -187,6 +187,7 @@ def inbox(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠队务 分页 {page + 1}")
     if not rows:
         commands.append("灵宠队伍" if membership(ctx) else "灵宠组队")
+        commands.append(TEAM_HELP)
     # Each row links its own read-only detail entry, so a full page keeps every row
     # reachable under the four-button cap; buttons keep only pagination navigation.
     links = tuple(

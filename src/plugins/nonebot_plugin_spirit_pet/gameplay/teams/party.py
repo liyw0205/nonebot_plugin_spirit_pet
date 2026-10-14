@@ -1,11 +1,11 @@
 import json
 
 from ...application.context import Context
-from ...domain.models import GameError, Reply
+from ...domain.models import GameError, InlineCommand, Reply
 from ...domain.state import Pet
 from ...utils.arguments import named
 from ..adventure import run_dungeon
-from .common import add_member, membership, require_leader, require_member
+from .common import TEAM_HELP, add_member, membership, require_leader, require_member
 
 
 def _active_pet(ctx: Context, user_id: str) -> Pet:
@@ -13,6 +13,11 @@ def _active_pet(ctx: Context, user_id: str) -> Pet:
     if player.active_pet_id is None:
         raise GameError("尚未选择出战灵宠。")
     return ctx.repo.pet(player.active_pet_id)
+
+
+def _can_ready(ctx: Context, active: list[Pet]) -> bool:
+    """Ready is rejected while any roster pet is still out on an expedition."""
+    return bool(active) and all(ctx.repo.active_expedition(pet.pet_id) is None for pet in active)
 
 
 def _ready_ids(row) -> list[int]:
@@ -32,7 +37,7 @@ def create(ctx: Context, arg: str) -> Reply:
     return Reply("灵契小队", (
         f"{player.uid_label}组建了小队，担任队长。",
         f"队伍容量：1/{ctx.content.rules.max_team_size}。",
-    ), ("灵宠队伍", "灵宠队务", "灵宠准备"))
+    ), ("灵宠队伍", "灵宠队务", "灵宠准备", TEAM_HELP))
 
 
 def status(ctx: Context, arg: str) -> Reply:
@@ -48,7 +53,11 @@ def status(ctx: Context, arg: str) -> Reply:
     leader_name = ctx.player(member["leader_id"]).uid_label
     lines = [f"队伍容量：{len(rows)}/{ctx.content.rules.max_team_size}。"]
     own_ready = False
-    others = []
+    own_active: list[Pet] = []
+    all_ready = True
+    # The capacity line carries the guide link, so help stays reachable without
+    # spending one of the four button slots the page actions need.
+    links = [InlineCommand(0, "组队指南", TEAM_HELP)]
     for row in rows:
         active = ctx.repo.active_pets(row["user_id"])
         if row["user_id"] != member["leader_id"]:
@@ -60,19 +69,28 @@ def status(ctx: Context, arg: str) -> Reply:
         roster = "、".join(item.name for item in active)
         uid_label = f"UID {row['player_internal_id'] + 9999}"
         lines.append(f"{role} {uid_label} · 出战 {roster} · {'已准备' if ready else '未准备'}")
+        all_ready = all_ready and ready
         if row["user_id"] == ctx.user_id:
             own_ready = ready
+            own_active = active
         else:
-            others.append(uid_label)
-    commands = ["灵宠队务", "灵宠取消准备" if own_ready else "灵宠准备"]
+            # Each other member links their own roster card; the row command leaves the
+            # button set, so every member stays reachable under the four-button cap.
+            links.append(InlineCommand(len(lines) - 1, "查看名帖", f"灵宠队伍 {uid_label}"))
+    commands = ["灵宠队务"]
+    if own_ready:
+        commands.append("灵宠取消准备")
+    elif _can_ready(ctx, own_active):
+        commands.append("灵宠准备")
     if member["leader_id"] == ctx.user_id:
-        if len(rows) >= 2:
+        # The business layer rejects a team run until every member is ready, so the
+        # entry appears exactly when it can actually run.
+        if len(rows) >= 2 and all_ready:
             commands.append("灵宠组队挑战 上古灵殿")
         commands.append("灵宠解散")
     else:
         commands.extend(("灵宠退队", "灵宠秘境"))
-    commands.extend(f"灵宠队伍 {name}" for name in others)
-    return Reply(f"{leader_name}的小队", tuple(lines), tuple(commands))
+    return Reply(f"{leader_name}的小队", tuple(lines), tuple(commands), tuple(links))
 
 
 def _member_detail(ctx: Context, member, uid: str) -> Reply:
@@ -94,13 +112,16 @@ def _member_detail(ctx: Context, member, uid: str) -> Reply:
     ready = ready_ids == [item.pet_id for item in active] if role == "队长" else ready_ids == [pet.pet_id]
     commands = ["灵宠队伍", "灵宠队务"]
     if row["user_id"] == ctx.user_id:
-        commands.append("灵宠取消准备" if ready else "灵宠准备")
+        if ready:
+            commands.append("灵宠取消准备")
+        elif _can_ready(ctx, active):
+            commands.append("灵宠准备")
     elif member["leader_id"] == ctx.user_id:
         commands.extend((f"灵宠踢人 {player.uid_label}", f"灵宠转让 {player.uid_label}"))
     return Reply(f"队员名帖 · {player.uid_label}", (
         f"队伍：{ctx.player(member['leader_id']).uid_label}的小队。",
         f"身份：{role}。", f"出战灵宠：{'、'.join(item.name for item in active)} · {'已准备' if ready else '未准备'}。",
-    ), tuple(commands))
+    ), tuple(commands), (InlineCommand(1, "组队指南", TEAM_HELP),))
 
 
 def ready(ctx: Context, arg: str) -> Reply:
@@ -120,13 +141,13 @@ def ready(ctx: Context, arg: str) -> Reply:
         f"已准备 {len(active)} 只灵宠：{'、'.join(pet.name for pet in active)}。",
         "组队战斗最多五只灵宠；队长最多三只，每位队友出战一只。",
         "战斗后、切换阵容或改变参战能力后准备失效；成员或队长变化后全队需重新准备。",
-    ), ("灵宠取消准备", "灵宠队伍"))
+    ), ("灵宠取消准备", "灵宠队伍", TEAM_HELP))
 
 
 def unready(ctx: Context, arg: str) -> Reply:
     require_member(ctx)
     ctx.repo.invalidate_ready(ctx.user_id)
-    return Reply("取消准备", ("已取消出征准备。",), ("灵宠准备", "灵宠队伍"))
+    return Reply("取消准备", ("已取消出征准备。",), ("灵宠准备", "灵宠队伍", TEAM_HELP))
 
 
 def challenge(ctx: Context, arg: str) -> Reply:

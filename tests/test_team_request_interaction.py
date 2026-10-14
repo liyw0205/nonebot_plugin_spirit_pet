@@ -84,11 +84,11 @@ def test_empty_inbox_keeps_its_fallback_entry_and_no_row_links(game, play):
     listing = play("team_requests", user="leader")
     assert listing.title == "待处理队务 1/1"
     assert listing.inline_commands == ()
-    assert listing.commands == ("灵宠队伍",)
+    assert listing.commands == ("灵宠队伍", "灵宠帮助 组队与派遣")
     register(play, "solo", "10001")
     solo = play("team_requests", user="solo")
     assert solo.inline_commands == ()
-    assert solo.commands == ("灵宠组队",)
+    assert solo.commands == ("灵宠组队", "灵宠帮助 组队与派遣")
 
 
 def test_detail_reply_keeps_direction_specific_actions(game, play):
