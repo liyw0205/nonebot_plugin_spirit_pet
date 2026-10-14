@@ -100,6 +100,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_dungeon_interaction.py tests/test_balance.py tests/test_adventure_routes.py tests/test_commands.py`：`38 passed`（含新增 `test_dungeon_interaction` 4 项）。新增测试覆盖首页五行蓝字行号/命令逐行对应、`reply.commands` 恰为分页导航、native markdown payload 与按钮零重复、第二页蓝字与上一页下一页按钮、详情首命令仍为挑战入口、降级文本含可读命令且无 `mqqapi://`。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-dungeon-list 目标卡](goals/pet-dungeon-list.md)。
 
+### 队务列表行内详情闭环（2026-10-14，已完成）
+
+`待处理队务` 每页四条队务，此前把每行详情命令 `灵宠队务 <对方UID>` 全部塞进按钮，再叠加 `灵宠队务 分页 <n>` 导航；`_action_items` 四条上限截断后满页时的第四行队务与翻页在 QQ native 键盘不可达。本切片沿用万灵图鉴/秘境列表的“查看详情”只读约定：`teams/requests.inbox` 每条队务行在所在行挂唯一“查看详情”蓝字（`InlineCommand`，命令 `灵宠队务 <对方UID>`，完整、直接执行只读详情）；行命令同时退出按钮集合，按钮只剩 `灵宠队务 分页 <n>` 导航，空列表保留 `灵宠队伍`/`灵宠组队` 回退入口。行文本 `_summary`、排序、分页、`_detail` 审批方向（发起人撤回 / 处理人同意与拒绝）、`_require_decider` 授权、过期与上限规则、并发与永久幂等重放、schema 20 全部不动；`party.py` 与 `management.py` 不在本切片范围。
+
+定向命令 `./.venv/bin/pytest -q tests/test_team_request_interaction.py tests/test_team_requests.py tests/test_team_management.py tests/test_commands.py`：`57 passed`（含新增 `test_team_request_interaction` 5 项）。新增测试覆盖满页四行蓝字行位与命令逐行对应、`reply.commands` 恰为分页导航、native markdown payload 与按钮零重复、第二页蓝字与上一页下一页按钮、空列表回退入口且无蓝字、详情审批方向与详情不挂蓝字、降级文本含可读命令且无 `mqqapi://`。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-team-request-row-actions 目标卡](goals/pet-team-request-row-actions.md)。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

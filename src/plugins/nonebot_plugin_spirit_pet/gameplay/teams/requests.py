@@ -2,7 +2,7 @@ import re
 from sqlite3 import Row
 
 from ...application.context import Context
-from ...domain.models import GameError, Reply
+from ...domain.models import GameError, InlineCommand, Reply
 from ...utils.arguments import quantity
 from .common import add_member, membership, named_player, require_leader, require_room
 
@@ -180,13 +180,19 @@ def inbox(ctx: Context, arg: str) -> Reply:
         + " ORDER BY r.expires_at, r.created_at, r.team_id, r.candidate_id LIMIT ? OFFSET ?",
         (*params, PAGE_SIZE, (page - 1) * PAGE_SIZE),
     ).fetchall()
-    commands = [f"灵宠队务 {_opponent(ctx, row)}" for row in rows]
+    commands = []
     if page > 1:
         commands.append(f"灵宠队务 分页 {page - 1}")
     if page < pages:
         commands.append(f"灵宠队务 分页 {page + 1}")
-    if not commands:
+    if not rows:
         commands.append("灵宠队伍" if membership(ctx) else "灵宠组队")
+    # Each row links its own read-only detail entry, so a full page keeps every row
+    # reachable under the four-button cap; buttons keep only pagination navigation.
+    links = tuple(
+        InlineCommand(index, "查看详情", f"灵宠队务 {_opponent(ctx, row)}")
+        for index, row in enumerate(rows)
+    )
     return Reply(f"待处理队务 {page}/{pages}", tuple(_summary(ctx, row) for row in rows) or (
         "当前没有待处理的入队申请或队伍邀请。",
-    ), tuple(commands))
+    ), tuple(commands), links)
