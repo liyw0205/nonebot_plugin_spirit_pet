@@ -316,7 +316,7 @@ def test_current_rule_details_are_available_without_any_history(game, play):
     assert not sql(game[1], "SELECT * FROM season_entries")
 
 
-def test_current_board_buttons_are_named_challenges_and_fit_qq_keyboard(game, play):
+def test_current_board_rows_use_one_step_challenge_links(game, play):
     from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
     from nonebot_plugin_spirit_pet.core.config import Config
 
@@ -330,13 +330,23 @@ def test_current_board_buttons_are_named_challenges_and_fit_qq_keyboard(game, pl
         reply = invoke(game, seasons.rank, f"分页 {page}")
         assert len(reply.commands) <= 8
         assert "灵宠论剑 UID 10000" not in reply.commands
+        # Every reachable opponent row carries exactly one challenge link on its own line.
+        linked_uids = []
+        for link in reply.inline_commands:
+            assert link.label == "挑战该修士"
+            assert link.command.startswith("灵宠论剑 UID ")
+            assert link.command.removeprefix("灵宠论剑 ") in reply.lines[link.line]
+            linked_uids.append(link.command)
         challenges = [command for command in reply.commands if command.startswith("灵宠论剑 ")]
-        assert challenges and all(command.removeprefix("灵宠论剑 ") in reply.text() for command in challenges)
+        assert challenges == linked_uids
         _, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
         buttons = [button for row in message["keyboard"][0].data["keyboard"].content.rows
                    for button in row.buttons]
-        assert len(buttons) == 4
-        assert all(button.action.data.removeprefix("/") in reply.commands for button in buttons)
+        # Buttons keep only pagination/entry steps; row challenges live as blue links.
+        button_commands = [button.action.data.removeprefix("/") for button in buttons]
+        assert all(command not in challenges for command in button_commands)
+        page_steps = [command for command in reply.commands if not command.startswith("灵宠论剑 ")]
+        assert button_commands == page_steps
 
 
 def test_large_reward_tier_catalog_uses_reachable_bounded_pages(game, play):

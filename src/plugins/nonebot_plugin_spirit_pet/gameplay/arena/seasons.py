@@ -3,7 +3,7 @@ from datetime import datetime
 
 from ...application.context import Context
 from ...domain.arena_content import ArenaTier
-from ...domain.models import GameError, Reply
+from ...domain.models import GameError, InlineCommand, Reply
 from ...utils.arguments import quantity
 from ...utils.time import BEIJING
 from .common import Season, current_season, load_season, stats
@@ -186,15 +186,20 @@ def rank(ctx: Context, arg: str) -> Reply:
         (season.season_id, RANK_PAGE_SIZE, (page - 1) * RANK_PAGE_SIZE),
     ).fetchall()
     viewer = ctx.repo.player(ctx.user_id)
-    commands = [f"灵宠论剑 UID {row['uid']}" for row in rows
-                if season.season_id == current.season_id and (viewer is None or row['uid'] != viewer.uid)]
+    lines, links = [], []
+    for index, row in enumerate(rows, 1):
+        lines.append(
+            f"{(page - 1) * RANK_PAGE_SIZE + index}. UID {row['uid']} · 积分 {row['rating']}"
+            f" · {row['wins']} 胜 {row['losses']} 负 {row['draws']} 平"
+        )
+        # Only the current season, and never a self-challenge, offers the one-step blue link.
+        if season.season_id == current.season_id and (viewer is None or row['uid'] != viewer.uid):
+            links.append(InlineCommand(index - 1, "挑战该修士", f"灵宠论剑 UID {row['uid']}"))
+    commands = [link.command for link in links]
     if page > 1:
         commands.append(f"灵宠论剑榜 {season.season_id} 分页 {page - 1}")
     if page < pages:
         commands.append(f"灵宠论剑榜 {season.season_id} 分页 {page + 1}")
     commands.append("灵宠匹配" if season.season_id == current.season_id else f"灵宠赛季 {season.season_id}")
-    return Reply(f"论剑榜 · {season.season_id} {page}/{pages}", tuple(
-        f"{(page - 1) * RANK_PAGE_SIZE + index}. UID {row['uid']} · 积分 {row['rating']}"
-        f" · {row['wins']} 胜 {row['losses']} 负 {row['draws']} 平"
-        for index, row in enumerate(rows, 1)
-    ) or ("该赛季暂无论剑战绩。",), tuple(commands))
+    return Reply(f"论剑榜 · {season.season_id} {page}/{pages}",
+                 tuple(lines) or ("该赛季暂无论剑战绩。",), tuple(commands), tuple(links))

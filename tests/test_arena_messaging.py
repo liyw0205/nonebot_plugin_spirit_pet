@@ -59,30 +59,43 @@ def test_real_arena_views_preserve_uids_and_season_ids_in_buttons_and_links(game
     replies.append(play("pvp", user=USERS[1], now=now))
     replies.append(play("spar", UIDS[0], user=USERS[1], now=now))
     exposed = set()
+    linked_replies = 0
     for reply in replies:
         fallback, message = _qq_segments(reply, config)
-        keyboard = buttons(message)
-        assert len(keyboard) <= 4
         assert "private-arena" not in fallback + str(message)
-        for button in keyboard:
-            command = button.action.data.removeprefix(prefix)
-            assert command in reply.commands
-            name, _, argument = command.partition(" ")
-            expected = (COMMANDS[name], argument)
-            assert button.action.type == 2
-            assert button.action.enter and button.action.reply
-            assert handlers._parse(button.action.data) == expected
-            exposed.add(expected[0])
-            if expected[0] == "pvp":
-                assert argument in UIDS
+        linked = {action.command for action in reply.inline_commands}
+        segments = message["keyboard"]
+        assert not linked or len(segments) <= 1
+        for segment in segments:
+            keyboard = segment.data["keyboard"].content
+            assert 1 <= len(keyboard.rows) <= 4
+            for row in keyboard.rows:
+                for button in row.buttons:
+                    command = button.action.data.removeprefix(prefix)
+                    # Row-level challenge links leave the button set entirely.
+                    assert command not in linked
+                    assert command in reply.commands
+                    name, _, argument = command.partition(" ")
+                    expected = (COMMANDS[name], argument)
+                    assert button.action.type == 2
+                    assert button.action.enter and button.action.reply
+                    assert handlers._parse(button.action.data) == expected
+                    exposed.add(expected[0])
+                    if expected[0] == "pvp":
+                        assert argument in UIDS
+        if linked:
+            linked_replies += 1
+            exposed.add("pvp")
+            # Challenge links target only the two prepared UIDs of this fixture.
+            assert all(argument in UIDS for command in linked
+                       for name, _, argument in [command.partition(" ")] if name == "灵宠论剑")
         markdown = message["markdown"][0].data["markdown"]
         if mode == "native":
             links = re.findall(r"\]\((mqqapi://[^)]+)\)", markdown.content)
-            inline_commands = {action.command for action in reply.inline_commands}
             for link in links:
                 query = parse_qs(urlparse(link).query)
                 command = query["command"][0].removeprefix(prefix)
-                assert command in inline_commands
+                assert command in linked
                 assert query["enter"] == [str(not command.endswith((" ", "\t"))).lower()]
                 assert query["reply"] == ["false"]
                 assert handlers._parse(query["command"][0]) == handlers._parse(prefix + command)
@@ -91,6 +104,8 @@ def test_real_arena_views_preserve_uids_and_season_ids_in_buttons_and_links(game
             assert markdown.params[0].key == "arena_content"
             assert markdown.params[0].values == [fallback]
     assert {"season", "pvp_rank", "pvp", "match"} <= exposed
+    # Board and candidate rows each carry their one-step challenge link.
+    assert linked_replies >= 2
     assert "灵宠应战" not in COMMANDS and "灵宠拒战" not in COMMANDS and "灵宠战帖" not in COMMANDS
 
 
@@ -105,11 +120,16 @@ def test_qq_direct_challenge_roundtrip_only_charges_actor_and_deduplicates(game,
     monkeypatch.setattr(handlers, "config", config)
     monkeypatch.setattr(handlers, "game", game[0])
     candidates = play("match", user=USERS[0], now=now)
+    # The row-level challenge is now a one-step blue link, never a keyboard button.
+    challenge = next(link.command for link in candidates.inline_commands
+                     if handlers._parse("/" + link.command) == ("pvp", UIDS[1]))
     _, message = _qq_segments(candidates, config)
-    challenge = next(
-        button.action.data for button in buttons(message)
-        if handlers._parse(button.action.data) == ("pvp", UIDS[1])
-    )
+    assert not message["keyboard"]
+    if mode == "native":
+        markdown = message["markdown"][0].data["markdown"].content
+        queries = [parse_qs(urlparse(url).query) for url in re.findall(r"\((mqqapi://[^)]+)\)", markdown)]
+        assert [q["command"][0] for q in queries] == ["/" + challenge]
+        assert queries[0]["enter"] == ["true"] and queries[0]["reply"] == ["false"]
     if battle_mode == "spar":
         challenge = "/灵宠切磋 " + UIDS[1]
     bot = SimpleNamespace(

@@ -82,6 +82,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_catalog_interaction.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py`：`130 passed`。覆盖列表蓝字行位与种族名对应、初始/非初始详情蓝字区分与预填语义、末页详情可达、按钮与蓝字去重、native/template payload、OneBot 前缀可读。未跑全量、仿真、压测、真实 QQ 或部署；QQ 客户端实际呈现仍属外部验收，不由本地 payload 合同替代。
 
+### 论剑挑战交互闭环（2026-10-13，已完成）
+
+论剑榜与匹配候选每页五条，此前挑战命令全部进按钮，`_action_items` 四条上限截断后第四、五行对手在 QQ native 键盘不可达。本切片沿用图鉴/战报的控件约定：`matching.candidates` 与 `seasons.rank`（仅当前赛季）每行在所在行挂唯一“挑战该修士”蓝字（`InlineCommand`，命令 `灵宠论剑 UID <公开UID>` 完整、直接执行），蓝字命令同时退出按钮集合，按钮只保留分页与“灵宠匹配/灵宠赛季”入口；历史赛季行仍可读但从不挂挑战入口，本人行也从不挂。赛季冻结规则、积分结算、限额/资格检查、永久凭证与幂等重放、schema 20 全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_arena_interaction.py tests/test_arena_matching.py tests/test_seasons.py tests/test_arena_messaging.py tests/test_arena_battles.py tests/test_arena_content.py tests/test_lineup_settlement.py`：`242 passed`。新增 `test_arena_interaction` 覆盖候选/榜单蓝字行位与 UID 一一对应、第二页蓝字直达挑战、仅当前赛季挂入口、本人行不挂、QQ native payload 与按钮零重复、OneBot 降级前缀可读。未跑全量、仿真、压测、真实 QQ 或部署；QQ 客户端实际呈现仍属外部验收。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

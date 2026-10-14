@@ -1,5 +1,5 @@
 from ...application.context import Context
-from ...domain.models import GameError, Reply
+from ...domain.models import GameError, InlineCommand, Reply
 from ...utils.arguments import quantity
 from ...utils.time import beijing_day
 from .common import current_season, rating
@@ -40,13 +40,18 @@ def candidates(ctx: Context, arg: str) -> Reply:
     if page > 1 and not rows:
         raise GameError("该页暂无候选对手。")
     visible = rows[:PAGE_SIZE]
+    links = tuple(
+        InlineCommand(index, "挑战该修士", f"灵宠论剑 UID {row['uid']}")
+        for index, row in enumerate(visible)
+    )
     lines = tuple(
         f"UID {row['uid']} · {row['name']} · {ctx.content.realms[pet.realm].name} {row['layer']}层"
         f" · 积分 {row['rating']}" for row in visible
     ) or ("暂无符合条件的候选对手。",)
-    commands = [f"灵宠论剑 UID {row['uid']}" for row in visible]
+    commands = [link.command for link in links]
     if page > 1:
         commands.append(f"灵宠匹配 {page - 1}")
     if len(rows) > PAGE_SIZE:
         commands.append(f"灵宠匹配 {page + 1}")
-    return Reply(f"论剑候选 · {season.season_id} · 第{page}页", lines + ("直接挑战对方当前出战灵宠的镜像，无需对方在线。",), tuple(commands))
+    return Reply(f"论剑候选 · {season.season_id} · 第{page}页",
+                 lines + ("直接挑战对方当前出战灵宠的镜像，无需对方在线。",), tuple(commands), links)
