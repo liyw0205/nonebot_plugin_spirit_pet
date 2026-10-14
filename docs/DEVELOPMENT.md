@@ -88,6 +88,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_arena_interaction.py tests/test_arena_matching.py tests/test_seasons.py tests/test_arena_messaging.py tests/test_arena_battles.py tests/test_arena_content.py tests/test_lineup_settlement.py`：`242 passed`。新增 `test_arena_interaction` 覆盖候选/榜单蓝字行位与 UID 一一对应、第二页蓝字直达挑战、仅当前赛季挂入口、本人行不挂、QQ native payload 与按钮零重复、OneBot 降级前缀可读。未跑全量、仿真、压测、真实 QQ 或部署；QQ 客户端实际呈现仍属外部验收。
 
+### 灵宠关卡挑战交互闭环（2026-10-14，已完成）
+
+关卡列表每页五条，此前挑战命令全部进按钮，`_action_items` 四条上限截断后第四、五行不可达，且锁定关卡也占用按钮位。本切片沿用任务/成就的“仅可执行行挂蓝字”约定：`pve_stages.catalog` 中 `可挑战/已通关` 行在所在行挂唯一“前往挑战”蓝字（`InlineCommand`，命令 `灵宠挑战关卡 <序号>` 或组队关 `灵宠组队关卡 <序号>`，完整、直接执行），`未解锁/尚未结契` 行不挂可执行入口；蓝字命令同时退出按钮集合，按钮只剩 `灵宠关卡` 分页导航。关卡详情回复、行文本、解锁/精力/境界/前置校验、首通奖励与永久战报幂等重放、schema 20 全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_stage_interaction.py tests/test_pve_stages.py tests/test_stage_content.py`：`33 passed`。新增 `test_stage_interaction` 覆盖新号仅首关挂蓝字与行位、已通关与新开行各挂一行、锁定/未注册行不挂、第二页仅新开行挂蓝字且分页按钮保留、组队蓝字即注册入口且未组队干净拒绝、QQ native payload 与按钮零重复。未跑全量、仿真、压测、真实 QQ 或部署。范围与停止条件见 [pet-pve 目标卡](goals/pet-pve.md)。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

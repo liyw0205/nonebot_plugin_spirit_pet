@@ -10,7 +10,7 @@ import json
 from sqlite3 import Row
 
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.stage_content import Stage
 from ..gameplay.battle_records import capture_snapshot, record_battle
 from ..utils.arguments import named, quantity
@@ -82,19 +82,19 @@ def catalog(ctx: Context, arg: str) -> Reply:
         ), (f"{'灵宠组队关卡' if stage.team else '灵宠挑战关卡'} {stage.order}", "灵宠关卡"))
     page = paginate(entries, arg, "灵宠关卡", "灵宠关卡")
     progress = _progress_labels(ctx, entries)
-    lines = []
-    for stage in page.entries:
+    lines, links = [], []
+    for index, stage in enumerate(page.entries):
         realm = next(realm.name for realm in ctx.content.realms if realm.id == stage.min_realm)
         lines.append(
             f"{stage.order}. {stage.name} · {progress[stage.id]} · "
             f"{'组队' if stage.team else '单人'} · {realm}起 · 精力 {stage.energy}"
         )
-    commands = [
-        f"{'灵宠组队关卡' if stage.team else '灵宠挑战关卡'} {stage.order}"
-        for stage in page.entries
-    ]
-    commands.extend(page.navigation)
-    return Reply(f"灵宠关卡 {page.number}/{page.total}", tuple(lines), tuple(commands))
+        # Only openable stages (challengeable or already cleared for rematches) link a direct run;
+        # locked and unregistered rows keep no executable entry, matching the quest/achievement rows.
+        if progress[stage.id] in ("可挑战", "已通关"):
+            command = f"{'灵宠组队关卡' if stage.team else '灵宠挑战关卡'} {stage.order}"
+            links.append(InlineCommand(index, "前往挑战", command))
+    return Reply(f"灵宠关卡 {page.number}/{page.total}", tuple(lines), page.navigation, tuple(links))
 
 
 def _progress(ctx: Context, user_id: str, stage_id: str) -> Row | None:
