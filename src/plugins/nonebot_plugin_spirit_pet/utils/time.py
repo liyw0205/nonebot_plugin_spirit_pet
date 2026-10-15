@@ -8,6 +8,15 @@ def beijing_day(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp, BEIJING).date().isoformat()
 
 
+def beijing_week(timestamp: int) -> tuple[int, int]:
+    """Start (Monday 00:00 Beijing) and end of the week containing `timestamp`."""
+    current = datetime.fromtimestamp(timestamp, BEIJING)
+    start = (current - timedelta(days=current.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0,
+    )
+    return int(start.timestamp()), int((start + timedelta(days=7)).timestamp())
+
+
 def cooldown_left(previous: int | None, now: int, seconds: int) -> int:
     if previous is None:
         return 0

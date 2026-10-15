@@ -16,6 +16,7 @@ from ..domain.expedition_content import Expedition
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
+from ..domain.weekly_quest_content import WeeklyQuest
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 
@@ -77,6 +78,7 @@ class Catalog:
     stages: dict[str, Stage]
     tower: dict[str, TowerFloor]
     main_quests: dict[str, MainQuest]
+    weekly_quests: dict[str, WeeklyQuest]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
 
@@ -110,6 +112,7 @@ class Catalog:
             stages=_index(directory / "stages.json", Stage),
             tower=_index(directory / "tower.json", TowerFloor),
             main_quests=_index(directory / "main_quests.json", MainQuest),
+            weekly_quests=_index(directory / "weekly_quests.json", WeeklyQuest),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
         )
@@ -149,6 +152,7 @@ class Catalog:
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
             *(quest.reward for quest in self.main_quests.values()),
+            *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
             self._require(reward.items, self.items, "reward items")

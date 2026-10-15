@@ -164,6 +164,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_adventure_routes.py tests/test_dungeon_interaction.py tests/test_battles.py tests/test_battle_records.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_main_quest.py tests/test_breeding.py tests/test_quest_interaction.py`：合计 `329 passed`（含新增 `test_daily_dungeon` 11 项与平衡门禁 12 项），无既有断言需要改动。新增测试覆盖轮换的纯函数性（同日稳定、跨日轮换、九处循环、只取单人秘境）、未结契只读不建号、列表文本与唯一蓝字、按钮集合与蓝字零重叠、首胜/三胜的可领取与领取发奖、未达成与重复领取的拒绝、非今日秘境不计入、跨日状态失效、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 周常任务闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块、命令与帮助、定向测试。此前目标体系只有每日任务（10 条事件计数、跨日清零）、今日秘境（每日轮换）、成就（无序里程碑）与主线（16 步按序引导），没有任何“本周做什么”的中期循环；而周度进度所需的证据已经全部永久留存，因此可以纯派生实现。
+
+新增 `data/weekly_quests.json`（六项，`WeeklyMetric` 词表：`weekly_pve_wins`/`weekly_pvp_wins`/`weekly_expedition_claims`/`weekly_adventures`/`weekly_stage_clears`/`weekly_achievement_claims`）与 `domain/weekly_quest_content.py::WeeklyQuest`；`content/catalog.py` 载入 `weekly_quests` 并把周常奖励并入奖励物品校验（`_index` 已负责空/重复 id 与重名校验）；`utils/time.py` 新增 `beijing_week(now)` 返回本周（周一 00:00 北京时间）起止时间戳。
+
+`gameplay/weekly_quests.py` 提供 `_metric`（六项均按 `[week_start, week_end)` 窗口统计既有永久记录）、`claimed_this_week`（领取行 `progress` 存本周起始时间戳，因此“本周是否已领取”由存储值判定，跨周自动失效，不依赖任何清理时机）、`catalog` 与 `claim`。命令注册为 `weekly_quests`（`registered=False`，未结契可只读浏览）与 `weekly_quest_claim`（`registered=True`），别名 `灵宠周常`/`灵宠周常领奖`，帮助“秘境与关卡”段补两条。奖励沿用既有领取约定，战斗结算路径、平衡门禁、每日任务、今日秘境、成就与主线全部不动；未新增计数列或冷却。
+
+定向命令 `./.venv/bin/pytest -q tests/test_weekly_quests.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_quest_interaction.py tests/test_daily_dungeon.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_adventure_routes.py tests/test_battles.py tests/test_arena_battles.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `435 passed`（含新增 `test_weekly_quests` 10 项），无既有断言需要改动。新增测试覆盖六项内容与指标词表、未结契只读不建号、本周周期与零进度、六项指标只统计本周窗口（上周/下周的记录不计入、塔层不计入章节指标）、未达成与重复领取的拒绝、领取发奖与周标记、跨周归零并重新可领、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

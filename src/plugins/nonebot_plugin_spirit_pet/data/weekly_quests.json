@@ -1,0 +1,140 @@
+[
+  {
+    "id": "weekly_pve",
+    "name": "秘境历练",
+    "description": "本周在秘境或关卡中获胜 5 场。",
+    "metric": "weekly_pve_wins",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 800
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "weekly_pvp",
+    "name": "论剑周赛",
+    "description": "本周在论剑中获胜 3 场。",
+    "metric": "weekly_pvp_wins",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 600,
+        "maximum": 600
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "weekly_expedition",
+    "name": "山海往来",
+    "description": "本周完成并领取 3 次离线委托。",
+    "metric": "weekly_expedition_claims",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 700,
+        "maximum": 700
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "weekly_adventure",
+    "name": "奇闻寻访",
+    "description": "本周在历练中新发现 5 条奇闻。",
+    "metric": "weekly_adventures",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "weekly_stage",
+    "name": "关卡推进",
+    "description": "本周首次通关 2 处章节关卡。",
+    "metric": "weekly_stage_clears",
+    "target": 2,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 900,
+        "maximum": 900
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "weekly_achievement",
+    "name": "成就累积",
+    "description": "本周领取 2 项成就奖励。",
+    "metric": "weekly_achievement_claims",
+    "target": 2,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 400,
+        "maximum": 400
+      },
+      "items": {
+        "affinity_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  }
+]
