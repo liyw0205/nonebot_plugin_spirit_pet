@@ -410,6 +410,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_weekly_expansion.py tests/test_weekly_quests.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_main_quest.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `225 passed`（新增 `test_weekly_expansion` 4 项）。新增测试覆盖 12 项且每指标两个目标、进阶奖励高于轻量版、进阶周常按目标判定与领取幂等、跨周标记失效后可再次领取、`灵宠目标` 行随内容变化。既有断言同步：`test_weekly_quests` 的条目数 6 → 12 与页码 `1/2` → `1/3`、`2/2` → `2/3`。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 赛季任务扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示赛季任务是三个“目标清单”系统里唯一还没加深的：今日课题（6 → 12）与周常（6 → 12）本轮已各加一档难度，而赛季任务仍是每个指标单一目标，玩家一个月里把五项做完就没有更高追求。
+
+`data/season_missions.json` 追加 5 项进阶赛季任务：论剑百战（`season_matches` 30）、论剑称雄（`season_wins` 15）、山海远征（`season_pve` 15）、奇闻遍访（`season_discoveries` 8）、成就盈册（`season_claims` 8），奖励约为轻量版两倍（灵石 650-900，材料 3-4）。池子由 5 项变为 10 项，`灵宠赛季任务` 页面由 1 页变为 2 页（每页 5 条）。
+
+关键边界：不新增命令、表、列或规则字段；`season_claims`（本赛季领取次数）不在 `catalog.maxima` 内，因此无上限里程碑级联；进度仍按当前赛季窗口（`utils.time.season_bounds` 的自然月起止）从带时间戳记录派生，领取标记仍是 `quest_progress` 的 `season_<任务 id>`（`progress` 存赛季起始），业务代码零改动；既有 5 项赛季任务字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_season_expansion.py tests/test_season_missions.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_weekly_expansion.py tests/test_assignment_expansion.py`：合计 `226 passed`（新增 `test_season_expansion` 4 项）。新增测试覆盖 10 项且每指标两个目标、进阶奖励高于轻量版、进阶任务按目标判定与领取幂等、跨赛季标记失效后可再次领取、`灵宠目标` 行随内容变化。既有断言同步：`test_season_missions` 的页码 `1/1` → `1/2`、导航按钮（多出 `灵宠赛季任务 2`）、已领取计数 `1/5` → `1/10`，以及「缺失指标」用例改为删除该指标的全部条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

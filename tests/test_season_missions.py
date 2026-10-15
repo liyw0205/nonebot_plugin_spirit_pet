@@ -73,13 +73,13 @@ def test_page_lists_every_mission_with_the_season(game, play):
     play("adopt", "青鸾", now=NOW)
     total = len(game[0].content.season_missions)
     page = play("season_missions", now=NOW)
-    assert page.title == "赛季任务 1/1"
+    assert page.title == "赛季任务 1/2"
     assert row(page, "论剑历练") == "论剑历练 · 灵石 300，锻灵矿 2 · 进行中（0/10）"
     assert row(page, "山海征战") == "山海征战 · 灵石 400，蕴灵丹 2 · 进行中（0/5）"
     assert "本赛季参加 10 场论剑。" in page.text()
     assert page.lines[-1].startswith("赛季 2027-01 · 剩余 ")
     assert f"已领取 0/{total} 项" in page.lines[-1]
-    assert page.commands == ("灵宠赛季", "灵宠目标")
+    assert page.commands == ("灵宠赛季任务 2", "灵宠赛季", "灵宠目标")
     assert page.inline_commands == ()
 
 
@@ -126,7 +126,7 @@ def test_claim_grants_once_and_replays(game, play):
 
     assert row(play("season_missions", now=NOW), "奇闻寻访").endswith("已领取")
     hub = next(text for text in play("objectives", now=NOW).lines if text.startswith("赛季任务："))
-    assert hub == "赛季任务：暂无可领 · 已领取 1/5 项"
+    assert hub == "赛季任务：暂无可领 · 已领取 1/10 项"
 
 
 def test_unfinished_mission_is_refused(game, play):
@@ -186,7 +186,9 @@ def edit_content(tmp_path, change):
 
 
 def test_missing_metric_is_rejected(tmp_path):
-    target = edit_content(tmp_path, lambda entries: entries.pop(0))
+    target = edit_content(tmp_path, lambda entries: entries.__setitem__(
+        slice(None), [entry for entry in entries if entry["metric"] != "season_matches"],
+    ))
     with pytest.raises(ValueError, match="missing season mission metrics"):
         Catalog.load(target)
 

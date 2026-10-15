@@ -113,5 +113,120 @@
         }
       }
     }
+  },
+{
+    "id": "season_matches_deep",
+    "name": "论剑百战",
+    "description": "本赛季参加 30 场论剑。",
+    "metric": "season_matches",
+    "target": 30,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 700,
+        "maximum": 700
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+{
+    "id": "season_wins_deep",
+    "name": "论剑称雄",
+    "description": "本赛季赢下 15 场论剑。",
+    "metric": "season_wins",
+    "target": 15,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 900,
+        "maximum": 900
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+{
+    "id": "season_pve_deep",
+    "name": "山海远征",
+    "description": "本赛季在秘境或关卡获胜 15 场。",
+    "metric": "season_pve",
+    "target": 15,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 800
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+{
+    "id": "season_discoveries_deep",
+    "name": "奇闻遍访",
+    "description": "本赛季发现 8 条奇闻。",
+    "metric": "season_discoveries",
+    "target": 8,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 650,
+        "maximum": 650
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+{
+    "id": "season_claims_deep",
+    "name": "成就盈册",
+    "description": "本赛季领取 8 项成就奖励。",
+    "metric": "season_claims",
+    "target": 8,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 750,
+        "maximum": 750
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
   }
 ]
