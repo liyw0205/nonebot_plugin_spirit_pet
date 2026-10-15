@@ -136,5 +136,143 @@
         }
       }
     }
+  },
+{
+    "id": "daily_pve_deep",
+    "name": "秘境三胜",
+    "description": "今日在秘境或关卡获胜 3 场。",
+    "metric": "daily_pve",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 340,
+        "maximum": 340
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+{
+    "id": "daily_pvp_three",
+    "name": "论剑三试",
+    "description": "今日参加 3 场论剑。",
+    "metric": "daily_pvp",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 380,
+        "maximum": 380
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "daily_discovery_two",
+    "name": "奇闻双探",
+    "description": "今日发现 2 条奇闻。",
+    "metric": "daily_discovery",
+    "target": 2,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 320,
+        "maximum": 320
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+{
+    "id": "daily_expedition_two",
+    "name": "委托双程",
+    "description": "今日领取 2 次离线委托。",
+    "metric": "daily_expedition",
+    "target": 2,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 360,
+        "maximum": 360
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "daily_claim_two",
+    "name": "成就双收",
+    "description": "今日领取 2 项成就奖励。",
+    "metric": "daily_claim",
+    "target": 2,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "daily_pve_extreme",
+    "name": "秘境五胜",
+    "description": "今日在秘境或关卡获胜 5 场。",
+    "metric": "daily_pve",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 420,
+        "maximum": 420
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
   }
 ]

@@ -136,7 +136,7 @@
 
 `season_missions.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `season_matches`（本赛季论剑场次）、`season_wins`（本赛季论剑胜场）、`season_pve`（本赛季秘境或关卡获胜）、`season_discoveries`（本赛季发现奇闻）与 `season_claims`（本赛季领取成就奖励），五种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。进度全部按当前赛季窗口（`utils.time.season_bounds` 给出的北京时间自然月起止）从带时间戳的既有记录派生，领取标记写入 `quest_progress` 并保存赛季起始时间，因此换季自动重置。
 
-`daily_assignments.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `daily_pve`（今日秘境或关卡获胜）、`daily_pvp`（今日论剑场次）、`daily_discovery`（今日发现奇闻）、`daily_expedition`（今日领取委托）、`daily_claim`（今日领取成就奖励）与 `daily_training`（今日修炼），六种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。每天按北京时间日期序数确定性轮换出三项（`pool[(序数 * 3 + i) % len(pool)]`），同一天稳定、次日换新；进度只统计当天的记录，领取标记写入 `quest_progress` 的 `daily_assignment` 行，`progress` 为 `序数 * 10 + 所选序号`，因此次日自动重置且只保留一行。
+`daily_assignments.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `daily_pve`（今日秘境或关卡获胜）、`daily_pvp`（今日论剑场次）、`daily_discovery`（今日发现奇闻）、`daily_expedition`（今日领取委托）、`daily_claim`（今日领取成就奖励）与 `daily_training`（今日修炼），六种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。池中现有 12 项（六种指标各 1-3 个难度，同一指标的不同目标共用同一条当日进度），每天按北京时间日期序数确定性轮换出三项（`pool[(序数 * 3 + i) % len(pool)]`），同一天稳定、四天覆盖全池；进度只统计当天的记录，领取标记写入 `quest_progress` 的 `daily_assignment` 行，`progress` 为 `序数 * 10 + 所选序号`，因此次日自动重置且只保留一行。
 
 ## 奇遇定义
 

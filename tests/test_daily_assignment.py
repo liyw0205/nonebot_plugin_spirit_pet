@@ -233,7 +233,9 @@ def edit_content(tmp_path, change):
 
 
 def test_missing_metric_is_rejected(tmp_path):
-    target = edit_content(tmp_path, lambda entries: entries.pop(0))
+    target = edit_content(tmp_path, lambda entries: entries.__setitem__(
+        slice(None), [entry for entry in entries if entry["metric"] != "daily_pve"],
+    ))
     with pytest.raises(ValueError, match="missing daily assignment metrics"):
         Catalog.load(target)
 

@@ -388,6 +388,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_expedition_expansion.py tests/test_expedition_interaction.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_expedition_contract.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `521 passed`（新增 `test_expedition_expansion` 4 项）。新增测试覆盖每境界恰好三条、新条目精力与奖励区间合法且材料互不重复、境界门槛生效、派遣占用与归来领取幂等、目录分页覆盖全部境界。既有断言同步：`test_expedition_content` 的「委托集合恰好等于 7 条」改为「既有 7 条仍在册」（子集断言），`test_expedition_interaction` 的第二页链接集合（分页后第二页为第 6-10 条）并补末页断言。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 今日课题扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示今日课题的池子太浅：6 项里每天抽 3 项，同一组三项每两天就重复，且每个指标只有 1 次这一种难度，没有“今天多做一点换更高奖励”的取舍。
+
+`data/daily_assignments.json` 追加 6 项课题：秘境三胜（`daily_pve` 3）、论剑三试（`daily_pvp` 3）、奇闻双探（`daily_discovery` 2）、委托双程（`daily_expedition` 2）、成就双收（`daily_claim` 2）、秘境五胜（`daily_pve` 5），奖励高于对应轻量版（灵石 260-420，材料 2-4）。池子由 6 项变为 12 项。
+
+**审计发现**：`daily_training` 指标是布尔量——`_value` 只比较 `players.last_train` 的日期，取值恒为 0 或 1，无法计数，因此不能给它加“修炼 3 次”这类高强度变体（加了也永远无法达成）。改为再给 `daily_pve` 加一个 5 胜变体，池子仍为 12 项；这也说明该指标目前只能表达“今天是否修炼过”。
+
+关键边界：不新增命令、表、列或规则字段；轮换按 `pool[(序数 * 3 + i) % len(pool)]` 自动覆盖全池（3 与 12 互质，四天一轮）；`daily_assignment` 的领取标记是 `quest_progress` 的单行、不在 `catalog.maxima` 内，因此无上限里程碑级联；业务代码零改动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_assignment_expansion.py tests/test_daily_assignment.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `224 passed`（新增 `test_assignment_expansion` 4 项）。新增测试覆盖池子 12 项且每个指标目标互不相同、高强度变体奖励高于轻量版、四天轮换覆盖全池、高强度课题按目标判定与领取幂等。既有断言同步：`test_daily_assignment` 的「缺失指标」用例原本只删数组第一条，池中有两个 `daily_pve` 后不再触发校验，改为删除该指标的全部条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
