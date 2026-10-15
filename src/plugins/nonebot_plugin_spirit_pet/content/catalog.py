@@ -17,6 +17,7 @@ from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
 from ..domain.weekly_quest_content import WeeklyQuest
+from ..domain.title_content import Title
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 
@@ -79,6 +80,7 @@ class Catalog:
     tower: dict[str, TowerFloor]
     main_quests: dict[str, MainQuest]
     weekly_quests: dict[str, WeeklyQuest]
+    titles: dict[str, Title]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
 
@@ -113,6 +115,7 @@ class Catalog:
             tower=_index(directory / "tower.json", TowerFloor),
             main_quests=_index(directory / "main_quests.json", MainQuest),
             weekly_quests=_index(directory / "weekly_quests.json", WeeklyQuest),
+            titles=_index(directory / "titles.json", Title),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
         )
@@ -219,6 +222,7 @@ class Catalog:
         validate_lineages(self)
         self._validate_achievements()
         self._validate_breeding()
+        self._validate_titles()
 
     def _validate_main_quests(self) -> None:
         quests = sorted(self.main_quests.values(), key=lambda quest: quest.order)
@@ -230,6 +234,11 @@ class Catalog:
                 raise ValueError(f"main quest {quest.id} must follow {expected}")
         if not quests:
             raise ValueError("at least one main quest is required")
+
+    def _validate_titles(self) -> None:
+        titles = sorted(self.titles.values(), key=lambda title: title.order)
+        if [title.order for title in titles] != list(range(1, len(titles) + 1)):
+            raise ValueError("title order must be contiguous from 1")
 
     def _validate_breeding(self) -> None:
         eggs = {item.species_id for item in self.items.values() if item.kind == "pet_egg"}

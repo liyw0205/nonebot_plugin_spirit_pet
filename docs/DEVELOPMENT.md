@@ -184,6 +184,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_inheritance.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py tests/test_breeding.py`：合计 `363 passed`（含新增 `test_inheritance` 6 项），无既有断言需要改动。新增测试覆盖按等级计费（+1 与 +10）、源回 +0 与目标变 +N、背包数量与资源校验、格式/同一件/非装备/部位不同/源未强化/目标已有强化/缺少目标/灵石不足/材料不足各类拒绝、继承后可穿戴（既有 `灵宠装备`）、同消息重投不重复扣费与帮助条目。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠称号闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块、命令与展示、定向测试。此前目标体系已有五种（每日任务、今日秘境、周常、成就、主线），但玩家没有任何身份展示：`我的信息` 只显示 UID 与注册时间，完成万灵塔、主线、论剑、委托之后除成就条目外没有可见的长期沉淀。
+
+新增 `data/titles.json`（16 项，`order` 1..16 连续且兼作优先级）与 `domain/title_content.py::Title`（`TitleMetric = AchievementMetric | Literal["main_quest_claims", "weekly_claims"]`）；`content/catalog.py` 载入 `titles` 并新增 `_validate_titles`（order 连续）。插入校验时注意不要把既有 `if` 与其 `raise` 拆开——本次一度造成 `IndentationError`，`compileall` 立刻暴露。
+
+`gameplay/titles.py` 提供 `_metric`（复用 `achievements._metric`，另实现两个领取数指标）、`earned`（按优先级列出已获得称号）、`current`（已获得中优先级最高者）与 `catalog`（当前称号行 + 逐项 `已获得`/`进度 n/target` + 条件说明，分页）。命令注册为 `titles`（`registered=False`，未结契可只读浏览），别名 `灵宠称号`，帮助“身份与收集”段补一条；`gameplay/information.py` 的 `我的信息` 概况新增“称号：… · 已获得 n/16 项”一行（既有断言为子串匹配，不受影响）。称号纯派生，不落库、不消耗、无冷却；schema 20、成就/主线/周常/今日秘境与战斗、经济结算路径全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_titles.py tests/test_information.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_main_quest.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_breeding.py tests/test_inheritance.py tests/test_balance_lineups.py`：合计 `349 passed`（含新增 `test_titles` 9 项），无既有断言需要改动。新增测试覆盖 16 项内容与 order 连续、未结契只读不建号、当前称号与逐项进度、最高优先级称号生效（塔层 8 + 渡劫）、主线与周常领取数指标、双灵称号条件、`我的信息` 展示、帮助条目与 native payload 按钮集合。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

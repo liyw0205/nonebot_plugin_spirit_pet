@@ -7,6 +7,7 @@ from .cultivation import MAJOR_BREAKTHROUGH_PITY, breakthrough_chance
 from .effects import BOND_GUARD_AFFINITY
 from .loadout import combatant
 from .lineage import describe_multipliers
+from .titles import earned as earned_titles
 
 
 def element_line(ctx: Context, species: Species) -> str:
@@ -63,8 +64,15 @@ def status(ctx: Context, arg: str) -> Reply:
         f"进化：{evolution.exp} 修为、{evolution.stones} 灵石、"
         + "、".join(f"{ctx.content.items[key].name} {amount}" for key, amount in evolution.items.items())
     )
+    held_titles = earned_titles(ctx, player.user_id)
+    holder = held_titles[-1][0] if held_titles else None
+    title_line = (
+        f"称号：{holder.name} · 已获得 {len(held_titles)}/{len(ctx.content.titles)} 项"
+        if holder else f"称号：尚无 · 已获得 0/{len(ctx.content.titles)} 项"
+    )
     lines = [
         "概况",
+        title_line,
         f"当前出战：{'、'.join(f'{item.name}（{item.pet_id}）' for item in roster)}",
         *activity,
         "成长",

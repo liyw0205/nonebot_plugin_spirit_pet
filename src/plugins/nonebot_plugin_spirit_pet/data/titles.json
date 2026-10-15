@@ -1,0 +1,130 @@
+[
+  {
+    "id": "first_bond",
+    "name": "初入仙途",
+    "description": "与第一位伙伴结下灵契。",
+    "metric": "pets_owned",
+    "target": 1,
+    "order": 1
+  },
+  {
+    "id": "twin_spirits",
+    "name": "双灵同修",
+    "description": "拥有两只同族灵宠。",
+    "metric": "duplicate_species",
+    "target": 1,
+    "order": 2
+  },
+  {
+    "id": "blood_awakened",
+    "name": "灵血初显",
+    "description": "把一只伙伴的血脉提升到灵血。",
+    "metric": "max_bloodline",
+    "target": 1,
+    "order": 3
+  },
+  {
+    "id": "path_chooser",
+    "name": "择路者",
+    "description": "为一只灵宠选定血脉分支。",
+    "metric": "lineage_branches",
+    "target": 1,
+    "order": 4
+  },
+  {
+    "id": "skill_novice",
+    "name": "秘术初成",
+    "description": "学会第一门灵术。",
+    "metric": "skills_learned",
+    "target": 1,
+    "order": 5
+  },
+  {
+    "id": "codex_walker",
+    "name": "山海行者",
+    "description": "发现五条历练奇闻。",
+    "metric": "adventures_discovered",
+    "target": 5,
+    "order": 6
+  },
+  {
+    "id": "stage_breaker",
+    "name": "首关告捷",
+    "description": "通关第一处章节关卡。",
+    "metric": "stage_clears",
+    "target": 1,
+    "order": 7
+  },
+  {
+    "id": "arena_regular",
+    "name": "论剑客",
+    "description": "在论剑中获胜十场。",
+    "metric": "pvp_wins",
+    "target": 10,
+    "order": 8
+  },
+  {
+    "id": "expedition_veteran",
+    "name": "山海常客",
+    "description": "完成并领取二十次离线委托。",
+    "metric": "expedition_claims",
+    "target": 20,
+    "order": 9
+  },
+  {
+    "id": "team_player",
+    "name": "并肩者",
+    "description": "与队友合力赢下一场组队 PVE。",
+    "metric": "team_pve_wins",
+    "target": 1,
+    "order": 10
+  },
+  {
+    "id": "main_traveler",
+    "name": "主线行者",
+    "description": "完成主线前八步。",
+    "metric": "main_quest_claims",
+    "target": 8,
+    "order": 11
+  },
+  {
+    "id": "weekly_keeper",
+    "name": "周常不辍",
+    "description": "领取六项周常奖励。",
+    "metric": "weekly_claims",
+    "target": 6,
+    "order": 12
+  },
+  {
+    "id": "golden_core",
+    "name": "金丹真人",
+    "description": "把一只伙伴送入金丹境。",
+    "metric": "max_realm",
+    "target": 4,
+    "order": 13
+  },
+  {
+    "id": "tower_guard",
+    "name": "塔门守卫",
+    "description": "在万灵塔通过三层。",
+    "metric": "tower_depth",
+    "target": 3,
+    "order": 14
+  },
+  {
+    "id": "tower_lord",
+    "name": "万灵塔主",
+    "description": "通关万灵塔全部八层。",
+    "metric": "tower_depth",
+    "target": 8,
+    "order": 15
+  },
+  {
+    "id": "tribulation_peak",
+    "name": "渡劫问鼎",
+    "description": "把一只伙伴送入渡劫境。",
+    "metric": "max_realm",
+    "target": 7,
+    "order": 16
+  }
+]
