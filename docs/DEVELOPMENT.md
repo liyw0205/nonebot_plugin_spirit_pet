@@ -174,6 +174,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_weekly_quests.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_quest_interaction.py tests/test_daily_dungeon.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_adventure_routes.py tests/test_battles.py tests/test_arena_battles.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `435 passed`（含新增 `test_weekly_quests` 10 项），无既有断言需要改动。新增测试覆盖六项内容与指标词表、未结契只读不建号、本周周期与零进度、六项指标只统计本周窗口（上周/下周的记录不计入、塔层不计入章节指标）、未达成与重复领取的拒绝、领取发奖与周标记、跨周归零并重新可领、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 装备强化继承闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块、命令与帮助、定向测试。此前装备线只有打造（产出 +0）、强化（逐级消耗）与分解（回收至多 50% 材料、不退灵石）三条路径：玩家把过渡装备强化到高等级后换到更好的同部位装备时，那笔强化投入完全作废，缺少把等级带到新装备上的长期配装路径。
+
+`data/rules.json` 新增 `inheritance_cost`（`ResourceCost`，默认每级 80 灵石 + 1 锻灵矿），`domain/content.py` 的 `Rules` 增加 `inheritance_cost: ResourceCost`，`content/catalog.py` 把该成本物品并入既有校验并要求为材料（与 `resonance_cost` 一致）。不需要新数据文件：部位来自 `items.json` 的 `equipment_id` → `equipment.json` 的 `slot`，等级来自 `forge_levels.json`。
+
+`gameplay/inheritance.py` 提供 `cost`（按源等级线性计算）与 `inherit`：校验两件都是装备灵物、部位相同、不是同一件、源在背包且取最高强化等级 ≥1、目标在背包且未强化，再校验灵石与材料，然后用既有 `equipment_inventory.take`/`put` 完成转移——源回到 +0、目标变为该等级。命令注册为 `inheritance`（`registered=True`），别名 `灵宠强化继承`，帮助“血脉与道具”段补一条。打造、强化、分解的成本与回收规则、战斗数值与平衡门禁全部不动，未新增表或列。
+
+定向命令 `./.venv/bin/pytest -q tests/test_inheritance.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py tests/test_breeding.py`：合计 `363 passed`（含新增 `test_inheritance` 6 项），无既有断言需要改动。新增测试覆盖按等级计费（+1 与 +10）、源回 +0 与目标变 +N、背包数量与资源校验、格式/同一件/非装备/部位不同/源未强化/目标已有强化/缺少目标/灵石不足/材料不足各类拒绝、继承后可穿戴（既有 `灵宠装备`）、同消息重投不重复扣费与帮助条目。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

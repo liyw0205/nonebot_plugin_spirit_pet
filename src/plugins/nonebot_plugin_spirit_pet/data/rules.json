@@ -70,5 +70,9 @@
         }
       }
     }
+  },
+  "inheritance_cost": {
+    "stones": 80,
+    "items": {"forge_ore": 1}
   }
 }

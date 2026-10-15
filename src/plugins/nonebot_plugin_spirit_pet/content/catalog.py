@@ -143,9 +143,12 @@ class Catalog:
                 self._require(cost.items, self.items, "cost items")
         self._require(self.rules.starter_items, self.items, "starter items")
         self._require(self.rules.resonance_cost.items, self.items, "resonance cost items")
+        self._require(self.rules.inheritance_cost.items, self.items, "inheritance cost items")
         self._require(self.rules.breeding.cost.items, self.items, "breeding cost items")
         if any(self.items[key].kind != "material" for key in self.rules.resonance_cost.items):
             raise ValueError("resonance costs must be materials")
+        if any(self.items[key].kind != "material" for key in self.rules.inheritance_cost.items):
+            raise ValueError("inheritance costs must be materials")
         for reward in (
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),

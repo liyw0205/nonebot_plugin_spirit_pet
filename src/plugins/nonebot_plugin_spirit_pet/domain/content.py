@@ -233,3 +233,4 @@ class Rules(Definition):
     resonance_cost: ResourceCost
     breeding: BreedingRule
     daily_featured: DailyFeatured
+    inheritance_cost: ResourceCost
