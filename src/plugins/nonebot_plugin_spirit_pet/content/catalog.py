@@ -158,6 +158,7 @@ class Catalog:
         for reward in (
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
+            *(option.reward for e in self.encounters.values() for option in e.options),
             *(d.first_clear for d in self.dungeons.values() if d.first_clear is not None),
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
@@ -172,6 +173,12 @@ class Catalog:
             for route in self.exploration_routes.values()
             for encounter_id in route.encounters
         ]
+        for encounter in self.encounters.values():
+            if not 2 <= len(encounter.options) <= 3:
+                raise ValueError(f"encounter {encounter.id} needs two or three echo options")
+            option_ids = [option.id for option in encounter.options]
+            if len(set(option_ids)) != len(option_ids):
+                raise ValueError(f"encounter {encounter.id} repeats an echo option id")
         self._require(route_encounters, self.encounters, "exploration route encounters")
         if set(route_encounters) != set(self.encounters) or len(route_encounters) != len(set(route_encounters)):
             raise ValueError("each exploration encounter must belong to exactly one route")

@@ -120,12 +120,22 @@ class Reward(Definition):
     items: dict[Identifier, Range] = Field(default_factory=dict)
 
 
+class EncounterOption(Definition):
+    """One exclusive choice offered when an encounter is echoed."""
+
+    id: Identifier
+    label: Name
+    text: str
+    reward: Reward
+
+
 class Encounter(Definition):
     id: Identifier
     name: Name
     text: str
     weight: Positive
     reward: Reward
+    options: list[EncounterOption] = Field(default_factory=list)
 
 
 class ExplorationRoute(Definition):

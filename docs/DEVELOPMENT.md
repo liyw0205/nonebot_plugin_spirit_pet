@@ -278,6 +278,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_journey.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_expansion.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_dungeon_interaction.py tests/test_sweep.py tests/test_tower.py tests/test_breeding.py tests/test_catalog_interaction.py tests/test_quest_interaction.py`：合计 `375 passed`（含新增 `test_journey` 11 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、分页与页数边界、章节状态与故事文案、首章需先通关秘境、领取发放奖励并解锁下一章、锁定与重复领取被拒、同 `operation_id` 幂等、六种任务类型的派生进度（含两连胜与境界门槛）、`灵宠目标` 行纪行、内容校验（链条断裂、目标不存在、可达性越界）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 奇闻回响闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与校验、业务与命令、聚焦测试、文档。审计发现 14 条奇闻是一次性、无选择的：探索按权重随机触发、发一份固定奖励并写入 `adventure_discoveries`，之后这条奇闻再也不能交互；全游戏只有血脉分支是永久选择，奇闻这条最有叙事潜力的内容线完全没有玩家能动性。
+
+`domain/content.py` 新增 `EncounterOption`（`id`、`label`、`text`、`reward`），`Encounter` 增加 `options: list[EncounterOption]`（默认空，保持既有构造兼容）。`data/adventures.json` 用文本锚点按 `"id"` 定位、插在 `"reward"` 行之前，为 14 条奇闻各补 2 个互斥选项（奖励按路线境界从 60 灵石递增到 750 灵石，并带灵粮/锻灵矿/血脉精华），既有 `text`、`weight`、`reward` 字节不变。`content/catalog.py` 校验每条奇闻 2-3 个选项、选项 id 在奇闻内唯一，并把选项奖励并入统一的奖励物品校验元组。
+
+`gameplay/echoes.py`：`_discovered` 读 `adventure_discoveries`（未发现不可回响），`_chosen` 读 `quest_progress` 的 `echo_<奇闻 id>` 并用 `progress` 还原所选选项，`_rows` 为每条已发现奇闻的每个选项生成 `可回响`/`已回响（选项名）`/`已错过` 三态；`catalog` 每页 5 行（每选项一行），可选项挂 `灵宠回响选择 <奇闻名> <选项名>` 蓝字，页尾给出已发现奇闻数与可回响选项数，未结契只返回预览与“开始领养”蓝字；`choose` 依次校验参数格式、奇闻是否发现、是否已回响、选项是否存在（不存在时列出可选选项），再 `grant` 并把选项序号写入 `quest_progress`。命令注册为 `echoes`（`registered=False`）与 `echo_choose`（`registered=True`），别名 `灵宠回响` / `灵宠回响选择`，帮助“秘境与关卡”段在奇闻条目旁补两条，`灵宠目标` 增加第十行“回响”。
+
+关键边界：不新增表或列；探索触发概率、触发奖励与奇闻文案完全不变（回响是独立的主动选择路径）；同一条奇闻的选项互斥，由“已有标记”派生，不需要额外状态。
+
+定向命令 `./.venv/bin/pytest -q tests/test_echoes.py tests/test_adventure_routes.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_achievements.py tests/test_achievement_expansion.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_quest_interaction.py tests/test_player_experience.py`：合计 `393 passed`（含新增 `test_echoes` 11 项与既有 `test_adventure_routes` 12 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、未发现奇闻不出现、发现后列出全部选项、选择发放选项奖励并锁定其余选项、未发现与未知选项与格式错误被拒、重复回响被拒与同 `operation_id` 幂等、`灵宠目标` 回响行、内容校验（选项少于 2 个、id 重复、奖励物品缺失）、全部奇闻的选项完整性、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

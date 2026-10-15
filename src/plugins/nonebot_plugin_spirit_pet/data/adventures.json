@@ -4,6 +4,10 @@
     "name": "灵泉寻踪",
     "text": "踏入青岚秘境，在古树下寻得一处灵泉。",
     "weight": 30,
+    "options": [
+      {"id": "draw", "label": "取水", "text": "你取了一瓢灵泉水，水汽在掌心凝成细碎的灵光。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 60, "maximum": 60}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"id": "sit", "label": "静坐", "text": "你在泉边静坐到日落，灵台一片清明。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 80, "maximum": 80}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 15,
@@ -26,6 +30,10 @@
     "name": "古阵修复",
     "text": "越过断云山，帮助守山人修复了一座古阵。",
     "weight": 25,
+    "options": [
+      {"id": "mend", "label": "修复", "text": "古阵的纹路重新亮起，守山人赠你一块阵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 70, "maximum": 70}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"id": "salvage", "label": "拆解", "text": "你把残阵拆成材料，换得一笔灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 100, "maximum": 100}, "items": {}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 20,
@@ -48,6 +56,10 @@
     "name": "灵草采集",
     "text": "夜探星落谷，循着流光采回几株灵草。",
     "weight": 25,
+    "options": [
+      {"id": "gather", "label": "采满", "text": "你采了满满一筐灵草，草香一路不散。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 90, "maximum": 90}, "items": {"spirit_food": {"minimum": 2, "maximum": 2}}}},
+      {"id": "one", "label": "只取一株", "text": "你只取了一株最老的灵草，其余留给山野。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 120, "maximum": 120}, "items": {}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 15,
@@ -70,6 +82,10 @@
     "name": "洞府幻阵",
     "text": "误入上古洞府，凭借心神感应走出了幻阵。",
     "weight": 20,
+    "options": [
+      {"id": "break", "label": "破阵", "text": "幻阵应声而碎，阵眼里躺着一块锻灵矿。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 110, "maximum": 110}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}},
+      {"id": "read", "label": "记阵", "text": "你记下幻阵的走势，把见闻卖给了书商。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 150, "maximum": 150}, "items": {}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 30,
@@ -92,6 +108,10 @@
     "name": "坠星采矿",
     "text": "循着星落谷的坠星痕迹，采到几块可用来打造的锻灵矿。",
     "weight": 20,
+    "options": [
+      {"id": "deep", "label": "深挖", "text": "你顺着坠星的裂口深挖，矿石成堆。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 140, "maximum": 140}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}},
+      {"id": "surface", "label": "采表层", "text": "你只采了表层碎星，稳妥地换回灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 180, "maximum": 180}, "items": {}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 15,
@@ -114,6 +134,10 @@
     "name": "封印宝匣",
     "text": "破开古洞深处的封印，寻得一匣血脉精华。",
     "weight": 20,
+    "options": [
+      {"id": "open", "label": "启封", "text": "宝匣开启，一缕血脉精华浮出。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 160, "maximum": 160}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}},
+      {"id": "seal", "label": "加固封印", "text": "你重新加固封印，守宝人给了你酬谢。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 220, "maximum": 220}, "items": {}}}
+    ],
     "reward": {
       "exp": {
         "minimum": 20,
@@ -136,6 +160,10 @@
     "name": "焚心炼魄",
     "text": "借赤霞火脉淬炼灵息，在余烬中拾得几块锻灵矿。",
     "weight": 30,
+    "options": [
+      {"id": "enter", "label": "入火", "text": "你踏入火中炼魄，出来时血脉更纯。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 200, "maximum": 200}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}},
+      {"id": "withdraw", "label": "退守", "text": "你退守阵外，把火候记下换成了灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 260, "maximum": 260}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 45, "maximum": 85},
       "stones": {"minimum": 80, "maximum": 150},
@@ -147,6 +175,10 @@
     "name": "金脉采矿",
     "text": "循着地脉金光找到一处旧矿，矿髓深处还残留着血脉精华。",
     "weight": 20,
+    "options": [
+      {"id": "gold", "label": "采金", "text": "你采下金脉主枝，沉甸甸地压手。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 240, "maximum": 240}, "items": {"forge_ore": {"minimum": 3, "maximum": 3}}}},
+      {"id": "silver", "label": "采银", "text": "你只采银脉，换回一笔稳妥的灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 300, "maximum": 300}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 40, "maximum": 75},
       "stones": {"minimum": 90, "maximum": 170},
@@ -161,6 +193,10 @@
     "name": "归墟拾脉",
     "text": "在沉没古境的断壁下寻得灵脉遗物，收获数份血脉精华。",
     "weight": 25,
+    "options": [
+      {"id": "take", "label": "拾脉", "text": "你拾起一段归墟灵脉，气息绵长。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 300, "maximum": 300}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}},
+      {"id": "store", "label": "封存", "text": "你把灵脉封存原地，换得归墟守人的谢礼。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 380, "maximum": 380}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 65, "maximum": 110},
       "stones": {"minimum": 120, "maximum": 210},
@@ -172,6 +208,10 @@
     "name": "青冥守镜",
     "text": "替古境灵木守过一夜，镜湖映出可供锻造的灵矿。",
     "weight": 25,
+    "options": [
+      {"id": "guard", "label": "守镜", "text": "你守镜一夜，镜中映出一缕血脉精华。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 360, "maximum": 360}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}},
+      {"id": "borrow", "label": "借镜", "text": "你借镜一观，把所见卖给了观星人。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 450, "maximum": 450}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 70, "maximum": 120},
       "stones": {"minimum": 130, "maximum": 220},
@@ -186,6 +226,10 @@
     "name": "太虚观剑",
     "text": "循着虚空中的古剑痕迹静悟片刻，并采回几块星淬灵矿。",
     "weight": 35,
+    "options": [
+      {"id": "watch", "label": "观剑", "text": "你观剑三日，剑意化作一块锻灵矿。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 400, "maximum": 400}, "items": {"forge_ore": {"minimum": 4, "maximum": 4}}}},
+      {"id": "try", "label": "试剑", "text": "你试了一剑，剑痕换成了灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 500, "maximum": 500}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 80, "maximum": 140},
       "stones": {"minimum": 170, "maximum": 280},
@@ -197,6 +241,10 @@
     "name": "幽庭渡魂",
     "text": "助迷失的幽魂寻回归途，得到其留下的血脉精华。",
     "weight": 25,
+    "options": [
+      {"id": "ferry", "label": "渡魂", "text": "你渡了一缕幽魂，它留下一点血脉精华。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 420, "maximum": 420}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}},
+      {"id": "send", "label": "送魂", "text": "你送魂归庭，幽庭给了你一笔灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 520, "maximum": 520}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 90, "maximum": 150},
       "stones": {"minimum": 180, "maximum": 300},
@@ -208,6 +256,10 @@
     "name": "劫海采雷",
     "text": "避开雷瀑，在劫云祭坛边收集淬雷后的锻灵矿。",
     "weight": 20,
+    "options": [
+      {"id": "collect", "label": "采雷", "text": "你采下一缕劫雷，雷意凝成血脉精华。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 500, "maximum": 500}, "items": {"bloodline_essence": {"minimum": 3, "maximum": 3}}}},
+      {"id": "channel", "label": "引雷", "text": "你把劫雷引入阵中，换来一笔灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 620, "maximum": 620}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 110, "maximum": 180},
       "stones": {"minimum": 240, "maximum": 380},
@@ -219,6 +271,10 @@
     "name": "天门问道",
     "text": "在天门外悟得一线道韵，带回数份凝结的血脉精华。",
     "weight": 30,
+    "options": [
+      {"id": "knock", "label": "叩门", "text": "你叩响天门，门缝里透出一缕血脉精华。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 600, "maximum": 600}, "items": {"bloodline_essence": {"minimum": 3, "maximum": 3}}}},
+      {"id": "wait", "label": "静候", "text": "你在门前静候，守门人给了你一笔灵石。", "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 750, "maximum": 750}, "items": {}}}
+    ],
     "reward": {
       "exp": {"minimum": 120, "maximum": 200},
       "stones": {"minimum": 260, "maximum": 400},
