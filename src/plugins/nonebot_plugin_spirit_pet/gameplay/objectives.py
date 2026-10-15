@@ -1,10 +1,11 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from . import daily_dungeon, first_clear, main_quest, quests, titles, weekly_quests
+from . import daily_dungeon, first_clear, free_summon, main_quest, quests, titles, weekly_quests
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
+    "灵宠每周召唤",
 )
 
 
@@ -84,6 +85,11 @@ def _first_clear_line(ctx: Context, user_id: str) -> str:
     return f"秘境首通：暂无可领 · 共 {total} 处"
 
 
+def _free_summon_line(ctx: Context, user_id: str) -> str:
+    state = "可领取" if free_summon.available(ctx, user_id) else "本周已领取"
+    return f"每周召唤：{state}"
+
+
 def _title_line(ctx: Context, user_id: str) -> str:
     held = titles.earned(ctx, user_id)
     holder = held[-1][0] if held else None
@@ -110,6 +116,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _achievement_line(ctx, player.user_id),
         _title_line(ctx, player.user_id),
         _first_clear_line(ctx, player.user_id),
+        _free_summon_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

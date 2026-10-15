@@ -256,6 +256,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_first_clear.py tests/test_sweep.py tests/test_daily_dungeon.py tests/test_objectives.py tests/test_achievement_expansion.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_balance_lineups.py tests/test_battle_records.py tests/test_arena_battles.py tests/test_arena_messaging.py tests/test_mastery.py tests/test_tower.py tests/test_main_quest.py tests/test_weekly_quests.py tests/test_quest_interaction.py tests/test_crafting.py tests/test_forging.py tests/test_dungeon_interaction.py tests/test_stage_interaction.py`：合计 `467 passed`（含新增 `test_first_clear` 10 项），既有断言无需改动。新增测试覆盖分页与页数边界、未通关拒绝、通关后解锁并发放一次（灵石 +150、锻灵矿 +2）、重复领取拒绝与同 `operation_id` 幂等、未结契只读预览且不建号、`灵宠目标` 秘境首通行随领取变化、组队秘境按真实胜利判定（从战报读取胜方并逐人核对）、缺少 `first_clear` 的内容被拒绝、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 每周免费召唤闭环（2026-10-15，已完成）
+
+四个阶段一次交付：业务、命令与帮助、聚焦测试、文档。审计发现召唤是除秘境灵卵外唯一的获取新种族途径，但只有付费一条路（标准池 100 灵石/次、十连 1000 灵石并有珍稀保底）；每日循环里没有免费但有限的召唤，周常六项也都与召唤无关。已排除的方向：新增装备部位（schema 20 的 `equipment.slot` 有 `CHECK (slot IN ('weapon','armor','charm'))`，必须改 schema）；批量扫荡（扫荡进入共享 PVE 冷却，无法连续执行）；改名/道号（有意移除并有合同测试锁定）；好友/交易/信箱（需要新表）。
+
+`gameplay/pets.py::summon` 增加可选 `free` 参数：`cost = 0 if free else count * pool.stones`，并把首行改为 `本次召唤不消耗灵石。`；付费路径的定价、权重、保底与文案保持字节一致（`test_pets`、`test_catalog_interaction` 不改动即通过）。新增 `gameplay/free_summon.py`：`CLAIM = "free_summon_weekly"`、`DRAW_COUNT = 10`，`available` 直接复用 `weekly_quests.claimed_this_week`（存储的周起始必须等于当前周起始），`catalog` 给出状态、规则与名册上限提示并在可领时挂 `灵宠每周召唤领取` 蓝字（未结契只返回预览与“开始领养”蓝字，不建号），`claim` 先校验本周未领取，再调用 `summon(ctx, "10", free=True)`，成功后把 `beijing_week(ctx.now)` 的起始时间戳写入 `quest_progress`。名册检查在 `summon` 内部先于任何写入，因此名册已满时抛错且标记未写入，本周机会保留。命令注册为 `free_summon`（`registered=False`，页面可只读）与 `free_summon_claim`（`registered=True`），别名 `灵宠每周召唤` / `灵宠每周召唤领取`，帮助“结契”段补两条，`灵宠目标` 增加第八行“每周召唤”。
+
+关键边界：不新增表或列、不新增数据文件与规则字段；付费召唤的定价、权重、保底与名册上限完全不变；领取标记按周失效且不累积。
+
+定向命令 `./.venv/bin/pytest -q tests/test_free_summon.py tests/test_objectives.py tests/test_first_clear.py tests/test_weekly_quests.py tests/test_quest_interaction.py tests/test_catalog_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_balance_lineups.py tests/test_achievement_expansion.py tests/test_achievements.py tests/test_breeding.py tests/test_tower.py tests/test_main_quest.py tests/test_daily_dungeon.py tests/test_player_experience.py tests/test_item_loop.py tests/test_crafting.py`：合计 `445 passed`（含新增 `test_free_summon` 9 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、页面状态与蓝字、领取后一次得到 10 只且灵石不变、保底文案、本周重复领取拒绝与同 `operation_id` 幂等、跨周（`now + 8 天`）重新可领、名册已满时拒绝且不写入标记（本周机会保留）、付费召唤仍扣 100 灵石、`灵宠目标` 每周召唤行随领取变化、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

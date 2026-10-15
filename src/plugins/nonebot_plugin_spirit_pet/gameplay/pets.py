@@ -27,13 +27,14 @@ def adopt(ctx: Context, arg: str) -> Reply:
     ), ("我的灵宠", "灵宠帮助"), (InlineCommand(0, "查看我的信息", "我的信息"),))
 
 
-def summon(ctx: Context, arg: str) -> Reply:
+def summon(ctx: Context, arg: str, free: bool = False) -> Reply:
+    """Draw from the standard pool; `free` skips the cost for a granted pull."""
     player = ctx.player()
     count = quantity(arg or "1", 10)
     if len(ctx.repo.owned_pets(ctx.user_id)) + count > ctx.config.spirit_pet_max_pets:
         raise GameError(f"灵宠名册上限为 {ctx.config.spirit_pet_max_pets} 只。")
     pool = ctx.content.pools["standard"]
-    cost = count * pool.stones
+    cost = 0 if free else count * pool.stones
     if player.stones < cost:
         raise GameError(f"召唤需要 {cost} 灵石。")
     player.stones -= cost
@@ -61,7 +62,8 @@ def summon(ctx: Context, arg: str) -> Reply:
         lines.append(
             "十连珍稀保底触发。" if forced_guarantee else "本次十连已提前抽得珍稀灵宠，保底不追加。"
         )
-    return Reply("山海召唤", (f"灵石 -{cost}。", *lines), ("灵宠列表", "我的灵宠", "灵宠图鉴"))
+    cost_line = "本次召唤不消耗灵石。" if free else f"灵石 -{cost}。"
+    return Reply("山海召唤", (cost_line, *lines), ("灵宠列表", "我的灵宠", "灵宠图鉴"))
 
 
 def pet_list(ctx: Context, arg: str) -> Reply:
