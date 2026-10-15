@@ -134,6 +134,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_tower.py tests/test_pve_stages.py tests/test_stage_content.py tests/test_stage_interaction.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py` 与第二批 `tests/test_information.py tests/test_player_experience.py tests/test_battles.py tests/test_battle_records.py tests/test_identity.py tests/test_game.py`：合计 `397 passed`（含新增 `test_tower` 11 项），无既有断言需要改动。新增测试覆盖八层内容与前置链、列表行位与按钮集合（≤4、互不重复、与蓝字零重叠）、未结契只读浏览不建号、层详情、首通只发一次奖励、重复挑战只练熟练度、失败/平局不推进进度、前置层/境界/精力/冷却/越界/未知名称门控、同消息重放与跨身份拒绝、`tower_depth` 成就可领而 `stage_clears` 不被塔层污染、帮助条目、native payload 蓝字与按钮零重复。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠培育闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块、命令与帮助、定向测试。此前灵宠获取只有领养、召唤与 6 枚秘境掉落灵卵，灵宠之间没有任何产出玩法；灵卵与孵化路径虽已存在，却只覆盖 27 族中的 6 族。
+
+`data/items.json` 补齐 27 族灵卵（新增 21 枚 `kind: pet_egg`，`price` 留空，描述写明由同族培育所得），`data/rules.json` 新增 `breeding`（`affinity` 100、`energy` 30、`cost.stones` 800），`domain/content.py` 增加 `BreedingRule` 并挂到 `Rules.breeding`，`content/catalog.py` 校验培育成本物品、精力上限与“每个种族都有一枚灵卵”，同时把 `tests/test_pet_catalog.py` 中“灵卵只能来自秘境掉落”的旧断言更新为“秘境掉落灵卵仍须是灵卵，且灵卵覆盖全部种族”。
+
+`gameplay/breeding.py` 提供 `breeding` 分派、`catalog` 与 `breed`。列表显示规则与本人同族配对（编号、亲密、可用精力、阻塞原因或“可培育”），只给就绪配对挂唯一“培育这一对”蓝字（`InlineCommand`，命令 `灵宠培育 A B`），按钮只保留分页与 `灵宠列表`；未结契玩家可只读浏览且不建号。`breed` 在事务内校验归属、封存、行程、同族、亲密、精力与灵石，成功后扣除 800 灵石与双方各 30 精力、写入该族灵卵并 `invalidate_ready`。命令注册为 `breeding`（`registered=False`，只读可浏览，动作分支自行取玩家），别名 `灵宠培育`，帮助“成长”段补两条。schema 20、召唤定价、秘境掉落、亲密上限、精力恢复与每日任务事件全部不动，未新增冷却或第二行程。
+
+定向命令 `./.venv/bin/pytest -q tests/test_breeding.py tests/test_hatching.py tests/test_item_loop.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：合计 `267 passed`（含新增 `test_breeding` 12 项）。新增测试覆盖 27 族灵卵与规则合法性、列表行位与唯一蓝字、按钮集合与蓝字零重叠、阻塞原因（亲密/精力/灵石）、未结契只读不建号、无同族伙伴的下一步、成功扣费发卵、培育灵卵经既有孵化路径成为新伙伴、格式/同一只/无效编号/封存/非同族/亲密/精力/灵石/外出派遣各类拒绝、同消息重放不重复扣费、帮助条目与 native payload 蓝字按钮零重叠。`test_pet_catalog` 的旧灵卵断言按需原地更新；QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

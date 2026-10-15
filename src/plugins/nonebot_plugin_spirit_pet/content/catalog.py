@@ -137,6 +137,7 @@ class Catalog:
                 self._require(cost.items, self.items, "cost items")
         self._require(self.rules.starter_items, self.items, "starter items")
         self._require(self.rules.resonance_cost.items, self.items, "resonance cost items")
+        self._require(self.rules.breeding.cost.items, self.items, "breeding cost items")
         if any(self.items[key].kind != "material" for key in self.rules.resonance_cost.items):
             raise ValueError("resonance costs must be materials")
         for reward in (
@@ -177,7 +178,9 @@ class Catalog:
                 raise ValueError("dungeon energy exceeds capacity")
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
-        for energy in (self.rules.training_energy, self.rules.explore_energy):
+        for energy in (
+            self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
+        ):
             if energy > 100:
                 raise ValueError("action energy exceeds capacity")
         for pool in self.pools.values():
@@ -202,6 +205,16 @@ class Catalog:
         validate_crafting_content(self)
         validate_lineages(self)
         self._validate_achievements()
+        self._validate_breeding()
+
+    def _validate_breeding(self) -> None:
+        eggs = {item.species_id for item in self.items.values() if item.kind == "pet_egg"}
+        for item in self.items.values():
+            if item.kind == "pet_egg" and item.species_id not in self.species:
+                raise ValueError(f"pet egg {item.id} has an unknown species")
+        missing = set(self.species) - eggs
+        if missing:
+            raise ValueError(f"missing pet eggs for species: {sorted(missing)}")
 
     def _validate_progression(self):
         if set(self.skill_levels) != set(range(1, len(self.skill_levels) + 1)):

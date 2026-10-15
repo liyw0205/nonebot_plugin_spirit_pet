@@ -264,6 +264,90 @@
     "kind": "pet_egg", "species_id": "molian"
   },
   {
+    "id": "egg_qingluan", "name": "青鸾灵卵", "description": "由同族培育所得，使用后获得一只青鸾。",
+    "kind": "pet_egg", "species_id": "qingluan"
+  },
+  {
+    "id": "egg_xuanhu", "name": "玄狐灵卵", "description": "由同族培育所得，使用后获得一只玄狐。",
+    "kind": "pet_egg", "species_id": "xuanhu"
+  },
+  {
+    "id": "egg_baize", "name": "白泽灵卵", "description": "由同族培育所得，使用后获得一只白泽。",
+    "kind": "pet_egg", "species_id": "baize"
+  },
+  {
+    "id": "egg_jiaolong", "name": "蛟龙灵卵", "description": "由同族培育所得，使用后获得一只蛟龙。",
+    "kind": "pet_egg", "species_id": "jiaolong"
+  },
+  {
+    "id": "egg_bifang", "name": "毕方灵卵", "description": "由同族培育所得，使用后获得一只毕方。",
+    "kind": "pet_egg", "species_id": "bifang"
+  },
+  {
+    "id": "egg_xuanwu", "name": "玄武灵卵", "description": "由同族培育所得，使用后获得一只玄武。",
+    "kind": "pet_egg", "species_id": "xuanwu"
+  },
+  {
+    "id": "egg_sanlinglu", "name": "三灵鹿灵卵", "description": "由同族培育所得，使用后获得一只三灵鹿。",
+    "kind": "pet_egg", "species_id": "sanlinglu"
+  },
+  {
+    "id": "egg_chiyanhu", "name": "赤焰虎灵卵", "description": "由同族培育所得，使用后获得一只赤焰虎。",
+    "kind": "pet_egg", "species_id": "chiyanhu"
+  },
+  {
+    "id": "egg_rongyanjia", "name": "熔岩甲灵卵", "description": "由同族培育所得，使用后获得一只熔岩甲。",
+    "kind": "pet_egg", "species_id": "rongyanjia"
+  },
+  {
+    "id": "egg_lingxi", "name": "灵汐獭灵卵", "description": "由同族培育所得，使用后获得一只灵汐獭。",
+    "kind": "pet_egg", "species_id": "lingxi"
+  },
+  {
+    "id": "egg_hanying", "name": "寒翎鹰灵卵", "description": "由同族培育所得，使用后获得一只寒翎鹰。",
+    "kind": "pet_egg", "species_id": "hanying"
+  },
+  {
+    "id": "egg_xuehu", "name": "雪影狐灵卵", "description": "由同族培育所得，使用后获得一只雪影狐。",
+    "kind": "pet_egg", "species_id": "xuehu"
+  },
+  {
+    "id": "egg_mohe", "name": "墨潮鹤灵卵", "description": "由同族培育所得，使用后获得一只墨潮鹤。",
+    "kind": "pet_egg", "species_id": "mohe"
+  },
+  {
+    "id": "egg_bizhu", "name": "碧竹蛇灵卵", "description": "由同族培育所得，使用后获得一只碧竹蛇。",
+    "kind": "pet_egg", "species_id": "bizhu"
+  },
+  {
+    "id": "egg_jinyu", "name": "金羽隼灵卵", "description": "由同族培育所得，使用后获得一只金羽隼。",
+    "kind": "pet_egg", "species_id": "jinyu"
+  },
+  {
+    "id": "egg_daotang", "name": "刃甲螳灵卵", "description": "由同族培育所得，使用后获得一只刃甲螳。",
+    "kind": "pet_egg", "species_id": "daotang"
+  },
+  {
+    "id": "egg_tielin", "name": "铁鳞穿山甲灵卵", "description": "由同族培育所得，使用后获得一只铁鳞穿山甲。",
+    "kind": "pet_egg", "species_id": "tielin"
+  },
+  {
+    "id": "egg_shanshi", "name": "负山狮灵卵", "description": "由同族培育所得，使用后获得一只负山狮。",
+    "kind": "pet_egg", "species_id": "shanshi"
+  },
+  {
+    "id": "egg_fenghu", "name": "逐风猞猁灵卵", "description": "由同族培育所得，使用后获得一只逐风猞猁。",
+    "kind": "pet_egg", "species_id": "fenghu"
+  },
+  {
+    "id": "egg_leize", "name": "雷泽夔灵卵", "description": "由同族培育所得，使用后获得一只雷泽夔。",
+    "kind": "pet_egg", "species_id": "leize"
+  },
+  {
+    "id": "egg_mingdie", "name": "冥粉蝶灵卵", "description": "由同族培育所得，使用后获得一只冥粉蝶。",
+    "kind": "pet_egg", "species_id": "mingdie"
+  },
+  {
     "id": "book_ice_seal", "name": "霜封术诀", "description": "学习霜封术所需，限凝气境冰系灵宠。",
     "kind": "skill_book", "price": 220, "skill_id": "ice_seal"
   },

@@ -205,8 +205,10 @@ def test_progression_tables_have_caps_and_usable_material_sources():
     assert any("forge_ore" in quest.reward.items for quest in content.quests.values())
     eggs = {item.id for item in content.items.values() if item.kind == "pet_egg"}
     drops = {item for dungeon in content.dungeons.values() for item in dungeon.reward.items}
+    egg_drops = {item for item in drops if content.items[item].kind == "pet_egg"}
     assert len(eggs) >= 3
-    assert eggs <= drops
+    assert egg_drops <= eggs
+    assert {content.items[egg].species_id for egg in eggs} == set(content.species)
     assert all(content.items[egg].price is None for egg in eggs)
 
 

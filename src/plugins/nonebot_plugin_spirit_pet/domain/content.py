@@ -202,6 +202,12 @@ class Pool(Definition):
         return self
 
 
+class BreedingRule(Definition):
+    affinity: Annotated[int, Field(ge=1, le=100)]
+    energy: Positive
+    cost: ResourceCost
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -213,3 +219,4 @@ class Rules(Definition):
     max_skill_slots: Annotated[int, Field(ge=1, le=4)]
     skill_proficiency_per_use: Positive = 5
     resonance_cost: ResourceCost
+    breeding: BreedingRule

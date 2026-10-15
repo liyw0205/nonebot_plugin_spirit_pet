@@ -31,5 +31,10 @@
   "resonance_cost": {
     "stones": 200,
     "items": {"bloodline_essence": 1}
+  },
+  "breeding": {
+    "affinity": 100,
+    "energy": 30,
+    "cost": {"stones": 800, "items": {}}
   }
 }
