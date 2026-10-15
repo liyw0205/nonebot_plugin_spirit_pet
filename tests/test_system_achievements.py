@@ -129,12 +129,12 @@ def test_echo_and_first_clear_achievements_unlock(game, play):
     markers(game, "first_clear_claims", 5)
     page = play("achievements", "14")
     assert "回响三章 · 可领奖 · 进度：3/3" in page.text()
-    assert "回响全章 · 进行中 · 进度：3/14" in page.text()
+    assert "回响全章 · 进行中 · 进度：3/21" in page.text()
     assert "秘境五通 · 可领奖 · 进度：5/5" in page.text()
 
-    markers(game, "echo_claims", 14)
+    markers(game, "echo_claims", 21)
     markers(game, "first_clear_claims", 20)
-    assert "回响全章 · 可领奖 · 进度：14/14" in play("achievements", "14").text()
+    assert "回响全章 · 可领奖 · 进度：21/21" in play("achievements", "14").text()
     assert "秘境全通 · 可领奖 · 进度：20/20" in play("achievements", "15").text()
 
 
@@ -145,7 +145,7 @@ def test_top_titles_appear_once_the_systems_are_complete(game, play):
     markers(game, "journey_claims", 16)
     assert "17. 山海尽头 · 已获得 · 走完山海行纪全部十六段章节。" in play("titles", "4").text()
 
-    markers(game, "echo_claims", 14)
+    markers(game, "echo_claims", 21)
     markers(game, "first_clear_claims", 20)
     page = play("titles", "4").text()
     assert "18. 万籁归心 · 已获得" in page

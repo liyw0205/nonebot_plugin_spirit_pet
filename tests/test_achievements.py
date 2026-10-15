@@ -85,9 +85,9 @@ def test_adventure_discovery_achievement_cannot_exceed_catalog(content_dir):
     def add_invalid_milestone(entries):
         invalid = dict(next(
             entry for entry in entries
-            if entry["metric"] == "adventures_discovered" and entry["target"] == 14
+            if entry["metric"] == "adventures_discovered" and entry["target"] == 21
         ))
-        invalid.update(id="adventure_fifteen", name="奇闻超限", target=15)
+        invalid.update(id="adventure_over", name="奇闻超限", target=22)
         entries.append(invalid)
 
     edit(content_dir, add_invalid_milestone)
@@ -106,7 +106,7 @@ def test_duplicate_species_target_cannot_exceed_species_catalog(content_dir):
 @pytest.mark.parametrize(("metric", "target"), [
     ("species_collected", 27), ("max_realm", 7), ("max_layer", 70),
     ("max_bloodline", 4), ("stage_clears", 8), ("max_skill_level", 5),
-    ("max_affinity", 100), ("adventures_discovered", 14),
+    ("max_affinity", 100), ("adventures_discovered", 21),
 ])
 def test_achievement_catalog_requires_final_milestones(content_dir, metric, target):
     edit(content_dir, lambda entries: entries.__setitem__(

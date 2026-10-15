@@ -138,9 +138,9 @@
   {
     "id": "echo_all",
     "name": "万籁归心",
-    "description": "在全部十四处奇闻中做出回响选择。",
+    "description": "在全部二十一处奇闻中做出回响选择。",
     "metric": "echo_claims",
-    "target": 14,
+    "target": 21,
     "order": 18
   },
   {

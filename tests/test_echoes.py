@@ -44,7 +44,7 @@ def test_page_lists_only_discovered_encounters(game, play):
     play("adopt", "青鸾", now=NOW)
     empty = play("echoes", now=NOW)
     assert empty.title == "奇闻回响 1/1"
-    assert empty.lines == ("已发现 0/14 条奇闻，尚有 0 个选项可回响。",)
+    assert empty.lines == ("已发现 0/21 条奇闻，尚有 0 个选项可回响。",)
     assert empty.inline_commands == ()
 
     discover(game)
@@ -54,7 +54,7 @@ def test_page_lists_only_discovered_encounters(game, play):
     assert [link.command for link in page.inline_commands] == [
         "灵宠回响选择 灵泉寻踪 取水", "灵宠回响选择 灵泉寻踪 静坐",
     ]
-    assert page.lines[-1] == "已发现 1/14 条奇闻，尚有 2 个选项可回响。"
+    assert page.lines[-1] == "已发现 1/21 条奇闻，尚有 2 个选项可回响。"
 
 
 def test_choose_grants_the_option_and_locks_the_others(game, play):
@@ -72,7 +72,7 @@ def test_choose_grants_the_option_and_locks_the_others(game, play):
     assert "灵泉寻踪 · 静坐 · 已错过" in page.text()
     assert page.inline_commands == ()
     hub = next(text for text in play("objectives", now=NOW).lines if text.startswith("回响："))
-    assert hub == "回响：暂无可回响 · 已发现 1/14 条奇闻"
+    assert hub == "回响：暂无可回响 · 已发现 1/21 条奇闻"
 
 
 def test_choose_rejects_unknown_options_and_undiscovered_encounters(game, play):

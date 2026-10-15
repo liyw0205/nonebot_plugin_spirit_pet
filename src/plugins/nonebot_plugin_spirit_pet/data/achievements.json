@@ -48,7 +48,7 @@
   {"id":"team_thirty_victories","name":"同袍久战","description":"参与并赢得三十场组队秘境或组队关卡。","metric":"team_pve_wins","target":30,"reward":{"stones":1200,"items":{"bloodline_essence":4}}},
   {"id":"adventure_five","name":"奇闻初见","description":"在历练中发现五条不同奇闻。","metric":"adventures_discovered","target":5,"reward":{"stones":250,"items":{"spirit_food":2}}},
   {"id":"adventure_ten","name":"博闻山海","description":"在历练中发现十条不同奇闻。","metric":"adventures_discovered","target":10,"reward":{"stones":600,"items":{"forge_ore":4}}},
-  {"id":"adventure_all","name":"尽览奇闻","description":"发现当前历练目录中的全部奇闻。","metric":"adventures_discovered","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
+  {"id":"adventure_all","name":"尽览奇闻","description":"发现当前历练目录中的全部奇闻。","metric":"adventures_discovered","target":21,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
 ,
   {"id":"forge_first","name":"初试锋芒","description":"把一件装备强化到 +3。","metric":"max_enhancement","target":3,"reward":{"stones":200,"items":{"forge_ore":1}}},
   {"id":"forge_six","name":"精炼有成","description":"把一件装备强化到 +6。","metric":"max_enhancement","target":6,"reward":{"stones":500,"items":{"forge_ore":3}}},
@@ -68,7 +68,7 @@
   {"id":"journey_seven","name":"行纪七章","description":"领取七段山海行纪的章节奖励。","metric":"journey_claims","target":7,"reward":{"stones":600,"items":{"exp_pill":2}}},
   {"id":"journey_all","name":"行纪全章","description":"领取全部十六段山海行纪的章节奖励。","metric":"journey_claims","target":16,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"echo_three","name":"回响三章","description":"在三处奇闻中做出回响选择。","metric":"echo_claims","target":3,"reward":{"stones":300,"items":{"affinity_pill":1}}},
-  {"id":"echo_all","name":"回响全章","description":"在全部十四处奇闻中做出回响选择。","metric":"echo_claims","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
+  {"id":"echo_all","name":"回响全章","description":"在全部二十一处奇闻中做出回响选择。","metric":"echo_claims","target":21,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"first_clear_five","name":"秘境五通","description":"领取五处秘境的一次性首通奖励。","metric":"first_clear_claims","target":5,"reward":{"stones":400,"items":{"forge_ore":3}}},
   {"id":"first_clear_all","name":"秘境全通","description":"领取全部二十处秘境的一次性首通奖励。","metric":"first_clear_claims","target":20,"reward":{"stones":1500,"items":{"bloodline_essence":4}}}
 ]

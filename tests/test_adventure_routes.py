@@ -29,13 +29,13 @@ def test_route_catalog_shows_choices_and_reward_ranges_without_spending_resource
     assert any("元婴起" in line for line in reply.lines)
     assert any("化神起" in line for line in reply.lines)
     assert any("渡劫起" in line for line in reply.lines)
-    assert "奇遇概率：灵泉寻踪 55% · 古阵修复 45%" in reply.lines
-    assert "奇遇概率：灵草采集 56% · 坠星采矿 44%" in reply.lines
-    assert "奇遇概率：洞府幻阵 50% · 封印宝匣 50%" in reply.lines
-    assert "奇遇概率：焚心炼魄 60% · 金脉采矿 40%" in reply.lines
-    assert "奇遇概率：归墟拾脉 50% · 青冥守镜 50%" in reply.lines
-    assert "奇遇概率：太虚观剑 58% · 幽庭渡魂 42%" in reply.lines
-    assert "奇遇概率：劫海采雷 40% · 天门问道 60%" in reply.lines
+    assert "奇遇概率：灵泉寻踪 39% · 古阵修复 32% · 灵泉回响 29%" in reply.lines
+    assert "奇遇概率：灵草采集 37% · 坠星采矿 30% · 星谷寻脉 33%" in reply.lines
+    assert "奇遇概率：洞府幻阵 32% · 封印宝匣 32% · 洞壁遗刻 35%" in reply.lines
+    assert "奇遇概率：焚心炼魄 42% · 金脉采矿 28% · 火脉遗炉 31%" in reply.lines
+    assert "奇遇概率：归墟拾脉 35% · 青冥守镜 35% · 归墟祭台 31%" in reply.lines
+    assert "奇遇概率：太虚观剑 43% · 幽庭渡魂 30% · 太虚残桥 27%" in reply.lines
+    assert "奇遇概率：劫海采雷 28% · 天门问道 42% · 劫云古碑 31%" in reply.lines
     assert reply.commands[:3] == (
         "灵宠历练 灵泉修行", "灵宠历练 星谷采集", "灵宠历练 古洞寻珍",
     )
@@ -52,8 +52,8 @@ def test_selected_route_limits_encounters_and_replay_does_not_grant_twice(game, 
     reply = play("explore", "星谷采集", op="star-valley-explore")
 
     assert reply.title == "山海历练 · 星谷采集"
-    assert "奇遇：坠星采矿" in reply.text()
-    assert "星落谷的坠星痕迹" in reply.text()
+    assert "奇遇：星谷寻脉" in reply.text()
+    assert "星谷岩层裂开一道细脉" in reply.text()
     assert "古树" not in reply.text()
     assert pet(game[1])["energy"] == 75
     assert player(game[1])["last_explore"] == 1_800_000_000
@@ -94,10 +94,10 @@ def test_unknown_route_does_not_change_player_state(game, play):
 
 
 @pytest.mark.parametrize(("realm", "route", "encounter", "item_id"), [
-    (3, "赤霞寻脉", "金脉采矿", "forge_ore"),
-    (4, "归墟拾遗", "青冥守镜", "forge_ore"),
-    (5, "太虚巡界", "幽庭渡魂", "bloodline_essence"),
-    (6, "劫云问道", "天门问道", "bloodline_essence"),
+    (3, "赤霞寻脉", "火脉遗炉", "forge_ore"),
+    (4, "归墟拾遗", "归墟祭台", "bloodline_essence"),
+    (5, "太虚巡界", "太虚残桥", "forge_ore"),
+    (6, "劫云问道", "劫云古碑", "bloodline_essence"),
 ])
 def test_high_realm_routes_gate_and_settle_rewards(game, play, realm, route, encounter, item_id):
     play("adopt", "青鸾")
@@ -124,7 +124,7 @@ def test_adventure_codex_hides_undiscovered_text_and_records_first_discovery(gam
     now = 1_800_000_000
     play("adopt", "青鸾", now=now)
     before = play("adventure_codex", now=now)
-    assert "奇闻发现：0/14" in before.text()
+    assert "奇闻发现：0/21" in before.text()
     assert "未遇 · 灵泉寻踪：尚未触发。" in before.text()
     assert "踏入青岚秘境，在古树下寻得一处灵泉。" not in before.text()
     assert "灵宠奇闻 2" in before.commands
@@ -138,7 +138,7 @@ def test_adventure_codex_hides_undiscovered_text_and_records_first_discovery(gam
     ]
 
     after = play("adventure_codex", now=now + 1)
-    assert "奇闻发现：1/14" in after.text()
+    assert "奇闻发现：1/21" in after.text()
     assert "已遇 · 灵泉寻踪：踏入青岚秘境，在古树下寻得一处灵泉。" in after.text()
     assert "踏入青岚秘境，在古树下寻得一处灵泉。" not in play(
         "adventure_codex", user="u2", now=now + 1,
@@ -174,7 +174,7 @@ def test_all_adventure_discoveries_unlock_and_claim_codex_milestones(game, play)
     for route in game[0].content.exploration_routes.values():
         for index, encounter_id in enumerate(route.encounters):
             sql(game[1], "UPDATE pets SET energy=100")
-            game[0].rng.random = lambda value=index: 0.0 if value == 0 else 0.99
+            game[0].rng.random = lambda value=index: (value + 0.5) / len(route.encounters)
             play(
                 "explore", route.name, now=now + encounter_index * 901,
                 op=f"discover-{encounter_id}",
@@ -192,9 +192,9 @@ def test_all_adventure_discoveries_unlock_and_claim_codex_milestones(game, play)
                 )
 
     assert sql(game[1], "SELECT COUNT(*) AS amount FROM adventure_discoveries WHERE user_id='u1'") == [
-        {"amount": 14},
+        {"amount": 21},
     ]
-    assert "奇闻发现：14/14" in play("adventure_codex", "2", now=now + 20_000).text()
+    assert "奇闻发现：21/21" in play("adventure_codex", "2", now=now + 20_000).text()
     play("achievement_claim", "尽览奇闻", now=now + 20_001, op="claim-尽览奇闻")
     assert sql(game[1], "SELECT achievement_id FROM achievement_claims WHERE user_id='u1' ORDER BY achievement_id") == [
         {"achievement_id": "adventure_all"},
@@ -225,6 +225,6 @@ def test_adventure_rank_orders_unique_discoveries_and_hides_user_ids(game, play)
 
     assert reply.title == "山海奇闻榜"
     assert [line.split(". ", 1)[1].split(" · ", 1)[0] for line in reply.lines] == labels
-    assert "奇闻 2/14" in reply.lines[0]
-    assert "奇闻 1/14" in reply.lines[2]
+    assert "奇闻 2/21" in reply.lines[0]
+    assert "奇闻 1/21" in reply.lines[2]
     assert all(user_id not in reply.text() for user_id in ("u1", "u2", "u3"))

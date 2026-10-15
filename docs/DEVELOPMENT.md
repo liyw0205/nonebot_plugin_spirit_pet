@@ -354,6 +354,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_tower_finale.py tests/test_tower.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_system_achievements.py tests/test_balance_lineups.py tests/test_player_experience.py tests/test_catalog_interaction.py tests/test_endgame_arc.py tests/test_achievement_expansion.py tests/test_pet_catalog.py tests/test_weekly_quests.py`：合计 `365 passed`（新增 `test_tower_finale` 5 项）。新增测试覆盖新层的境界/精力/奖励递增/前置链/末层三敌、新层在旧塔顶通关后才可挑战、新层首通奖励只发一次且重复挑战只记练习、深度与上限里程碑随内容变化、页面链接与按钮不重叠。既有断言同步：`test_tower` 的层序 `range(1, 17)`、id 格式 `tower_{index:02d}`（原 `tower_0{index}` 在两位数层号下会错）、页码 `1/4` 与 `4/4`、深度文案 `0/16 层`、`共 4 页`、`1-16 的整数`、第二页按钮集合；`test_titles` 的塔层种子从 8 层改为 16 层。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 奇闻扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示奇闻（`adventures.json`）是当前最薄的内容层：秘境 20 处、行纪 16 章、塔 16 层、成就 71 项，而奇闻只有 14 条（7 条路线各 2 条），每条路线可遇到的内容很快被看遍，`灵宠回响` 的收集目标（尽览奇闻 14、回响全章 14、称号万籁归心 14）也停在 14。
+
+`data/adventures.json` 追加 7 条奇闻（每条路线 1 条）：灵泉回响、星谷寻脉、洞壁遗刻、火脉遗炉、归墟祭台、太虚残桥、劫云古碑。每条含 `id`/`name`/`text`/`weight`（22）与 2 个互斥 `options`，奖励按所属路线境界落在该路线既有两条之间（灵石 35-100 / 35-105 / 30-115 / 85-160 / 125-215 / 175-290 / 250-390），选项沿用「偏材料 / 偏灵石」的既有模式。`data/exploration_routes.json` 把每条新奇闻加入对应路线的 `encounters`（每条路线 2 → 3 条，共 21 条）。
+
+上限里程碑随内容对齐：`achievements.json` 的「尽览奇闻」与「回响全章」14 → 21，`titles.json` 的「万籁归心」14 → 21（说明文案同步）；`catalog` 的 `maxima`（`adventures_discovered`/`echo_claims` = `len(self.encounters)`）与 `final_milestones` 自动取到 21。
+
+关键边界：不新增命令、表、列或规则字段；探索按路线权重抽取、回响按 `quest_progress` 的 `echo_<奇闻 id>` 标记派生，业务代码零改动；既有 14 条奇闻与 7 条路线的名称/权重/奖励/选项字节不变（仅把新条目追加进路线列表）。
+
+定向命令 `./.venv/bin/pytest -q tests/test_encounter_expansion.py tests/test_echoes.py tests/test_adventure_routes.py tests/test_achievements.py tests/test_system_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_tower_finale.py tests/test_endgame_arc.py tests/test_achievement_expansion.py tests/test_pet_catalog.py`：合计 `372 passed`（新增 `test_encounter_expansion` 5 项）。新增测试覆盖 7 条新奇闻在册且选项合法、每条路线恰好 3 条且新奇闻归属正确、新奇闻奖励落在所属路线区间内、发现后可回响并幂等领取、计数与上限里程碑随内容变化。既有断言同步：`test_echoes` 与 `test_adventure_routes` 的 `n/14` → `n/21`、7 条路线的「奇遇概率」字符串（权重归一后每条路线三条）、`test_adventure_routes` 的「最后一条奇闻」参数化（0.99 现在命中新奇闻）与逐条发现循环的取样值、`test_achievements` 的 `adventures_discovered` 上限 14 → 21 与超限用例 15 → 22、`test_system_achievements` 的回响标记数与进度断言。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -280,5 +280,432 @@
       "stones": {"minimum": 260, "maximum": 400},
       "items": {"bloodline_essence": {"minimum": 2, "maximum": 3}}
     }
+  },
+{
+    "id": "spring_echo",
+    "name": "灵泉回响",
+    "text": "灵泉深处传来回响，似有旧日修行者在此驻足。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "draw",
+        "label": "汲取",
+        "text": "你依回响的节拍汲取泉水，灵光凝成灵粮。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 90,
+            "maximum": 90
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "listen",
+        "label": "静听",
+        "text": "你静听回响直至声息散尽，心境澄明。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 110,
+            "maximum": 110
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 18,
+        "maximum": 45
+      },
+      "stones": {
+        "minimum": 35,
+        "maximum": 100
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 0,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "valley_vein",
+    "name": "星谷寻脉",
+    "text": "星谷岩层裂开一道细脉，星屑顺着裂隙簌簌落下。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "dig",
+        "label": "掘脉",
+        "text": "你沿脉掘进，采得数块星屑矿石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 110,
+            "maximum": 110
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "detour",
+        "label": "绕行",
+        "text": "你绕过裂隙，只在谷口拾得散落灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 140,
+            "maximum": 140
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 18,
+        "maximum": 42
+      },
+      "stones": {
+        "minimum": 35,
+        "maximum": 105
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "cave_mural",
+    "name": "洞壁遗刻",
+    "text": "古洞石壁上留有一幅褪色遗刻，笔意尚存。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "copy",
+        "label": "拓印",
+        "text": "你拓下遗刻，墨痕里渗出一缕血脉精粹。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 130,
+            "maximum": 130
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "dust",
+        "label": "拂尘",
+        "text": "你拂去浮尘，只在壁龛里找到一小袋灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 170,
+            "maximum": 170
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 28,
+        "maximum": 65
+      },
+      "stones": {
+        "minimum": 30,
+        "maximum": 115
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "ember_forge",
+    "name": "火脉遗炉",
+    "text": "火脉尽头有一座仍在余温中的旧炉。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "open",
+        "label": "开炉",
+        "text": "你撬开炉门，取出一批尚未冷却的锻灵矿。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 220,
+            "maximum": 220
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 3,
+              "maximum": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "seal",
+        "label": "封炉",
+        "text": "你重新封炉，只收下炉台旁散落的灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 280,
+            "maximum": 280
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 45,
+        "maximum": 82
+      },
+      "stones": {
+        "minimum": 85,
+        "maximum": 160
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "ruins_altar",
+    "name": "归墟祭台",
+    "text": "沉没古境的祭台仍在缓慢旋转，石面刻满旧纹。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "offer",
+        "label": "献祭",
+        "text": "你以灵息献祭，祭台回吐两缕血脉精粹。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 330,
+            "maximum": 330
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "take",
+        "label": "取石",
+        "text": "你取走台基碎石，换得一笔灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 410,
+            "maximum": 410
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 68,
+        "maximum": 115
+      },
+      "stones": {
+        "minimum": 125,
+        "maximum": 215
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "void_bridge",
+    "name": "太虚残桥",
+    "text": "太虚深处横着一段残桥，桥下是无尽虚空。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "cross",
+        "label": "过桥",
+        "text": "你踏桥而过，在桥头拾得数块太虚锻矿。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 410,
+            "maximum": 410
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 4,
+              "maximum": 4
+            }
+          }
+        }
+      },
+      {
+        "id": "return",
+        "label": "折返",
+        "text": "你止步折返，只在桥墩下寻得灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 510,
+            "maximum": 510
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 85,
+        "maximum": 145
+      },
+      "stones": {
+        "minimum": 175,
+        "maximum": 290
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    }
+  },
+{
+    "id": "cloud_stele",
+    "name": "劫云古碑",
+    "text": "劫云之下立着一块古碑，碑文被雷火反复灼过。",
+    "weight": 22,
+    "options": [
+      {
+        "id": "read",
+        "label": "读碑",
+        "text": "你逐字读碑，雷火余韵凝成血脉精华。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 560,
+            "maximum": 560
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 3,
+              "maximum": 3
+            }
+          }
+        }
+      },
+      {
+        "id": "bow",
+        "label": "拜碑",
+        "text": "你向古碑一拜，碑座下滚出一笔灵石。",
+        "reward": {
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "stones": {
+            "minimum": 680,
+            "maximum": 680
+          },
+          "items": {}
+        }
+      }
+    ],
+    "reward": {
+      "exp": {
+        "minimum": 115,
+        "maximum": 190
+      },
+      "stones": {
+        "minimum": 250,
+        "maximum": 390
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    }
   }
 ]
