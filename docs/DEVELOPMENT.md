@@ -224,6 +224,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_batch_enhance.py tests/test_forging.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_inheritance.py tests/test_recycle.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_battle_records.py tests/test_sweep.py tests/test_titles.py tests/test_breeding.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py`：合计 `428 passed`（含新增 `test_batch_enhance` 11 项），无既有断言需要改动。新增测试覆盖 +0→+5 的阶梯成本（1000 灵石、15 锻灵矿）、逐级路径字节一致、灵石不足与材料不足时的原子性、目标不高于当前等级、目标越界/非数字/段数错误、空部位、满级两条路径、同 `operation_id` 幂等、帮助条目与 native payload 按钮集合。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠目标闭环（2026-10-15，已完成）
+
+四个阶段一次交付：业务模块、命令与帮助、聚焦测试、文档。审计发现目标体系已经长到五套（每日任务 10 项、周常 6 项、主线 16 步、成就 50 项、称号 16 项）外加今日秘境，却没有任何一处能看到“现在有哪些奖励可以领”；玩家必须依次打开 `灵宠任务`、`灵宠周常`、`灵宠主线`、`灵宠成就`、`灵宠今日秘境` 才能发现可领项，跨页可领项尤其容易漏掉。这是本轮自己新增四个目标面之后新出现的摩擦，也说明目标面继续增加时必须有一个汇总入口。
+
+新增 `gameplay/objectives.py`：`objectives` 是 `registered=False` 的只读命令，先拒绝参数（“灵宠目标 不接受参数，直接发送即可。”），未结契时只返回预览与“开始领养”蓝字（不建号），否则调用 `quests.refresh`（与 `灵宠任务` 同一条跨日重置路径）后拼六行——`_daily_line` 镜像 `quests.quests` 的可领判定读 `quest_progress`，`_weekly_line` 用 `weekly_quests.claimed_this_week`/`_metric`，`_main_quest_line` 用 `main_quest._claimed`/`_current`/`_state`，`_achievement_line` 用 `achievements._metric` 与 `achievement_claims`，`_dungeon_line` 用 `daily_dungeon.featured_dungeon`/`wins_today`/`_state`，`_title_line` 用 `titles.earned`。每行挂该体系入口蓝字（`HUB_PAGES`），按钮保留 `灵宠帮助` 与 `我的灵宠`，与行蓝字零重叠。命令注册为 `objectives`（`registered=False`），别名 `灵宠目标`，帮助“身份与收集”段补一条。
+
+关键边界：汇总只读派生，不发放奖励、不写 `battle_records`、不推进任务与成就、不改动宠物与装备；唯一的写入是 `quests.refresh` 的跨日每日任务重置（与 `灵宠任务` 行为一致）。未结契预览不创建玩家行。不新增表或列、不新增数据文件与规则字段，既有各体系规则、奖励与领取条件全部不动。
+
+定向命令 `./.venv/bin/pytest -q tests/test_objectives.py tests/test_quest_interaction.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_titles.py tests/test_daily_dungeon.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_batch_enhance.py tests/test_recycle.py tests/test_sweep.py tests/test_forging.py tests/test_crafting.py`：合计 `439 passed`（含新增 `test_objectives` 9 项），无既有断言需要改动。新增测试覆盖六行内容与各体系计数、签到后可领数变化、领取后回落、主线下一步与称号行、未结契只读预览且不建号、参数拒绝、只读性（无战报与成就领取行、宠物精力不变）、同 `operation_id` 幂等、帮助条目与 native payload 按钮/蓝字零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
