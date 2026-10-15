@@ -18,7 +18,7 @@ from .support import sql
 def test_special_matrix_preserves_basic_matrix_and_covers_every_new_definition(game):
     content = game[0].content
     matrix = special_scenarios(content)
-    assert len(scenarios(content)) == 626
+    assert len(scenarios(content)) == 706
     assert len(matrix) == 124
     assert len({case.id for case in matrix}) == len(matrix)
     assert {case.subject for case in matrix if case.category == "lineage"} == set(content.lineages)
