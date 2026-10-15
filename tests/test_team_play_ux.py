@@ -75,6 +75,35 @@ def test_roster_links_each_other_member_card_on_its_own_row(game, play):
     assert_distinct_bounded_actions(roster)
 
 
+def test_two_member_roster_links_the_other_card_and_swaps_the_readiness_entry(game, play):
+    prepare(game, play, size=2)
+    # Member's view: the leader is the only other member, so their card is the only row link.
+    roster = play("team_status", user=USERS[1])
+    assert [(link.line, link.label, link.command) for link in roster.inline_commands] == [
+        (0, "组队指南", TEAM_HELP),
+        (1, "查看名帖", f"灵宠队伍 {UIDS[0]}"),
+    ]
+    assert roster.lines[1].startswith("队长 UID 10000")
+    assert not any(command.startswith("灵宠队伍 ") for command in roster.commands)
+    assert "灵宠准备" in roster.commands
+    assert_distinct_bounded_actions(roster)
+    # Leader's view: the member's card is the only row link, and never their own row.
+    leader = play("team_status", user=USERS[0])
+    assert [(link.line, link.label, link.command) for link in leader.inline_commands] == [
+        (0, "组队指南", TEAM_HELP),
+        (2, "查看名帖", f"灵宠队伍 {UIDS[1]}"),
+    ]
+    assert leader.lines[1].startswith("队长 UID 10000")
+    assert_distinct_bounded_actions(leader)
+    # Readiness entry swaps with state instead of offering a rejected action.
+    assert "灵宠取消准备" in play("team_ready", user=USERS[1]).commands
+    ready = play("team_status", user=USERS[1])
+    assert "灵宠取消准备" in ready.commands and "灵宠准备" not in ready.commands
+    assert_distinct_bounded_actions(ready)
+    play("team_unready", user=USERS[1])
+    assert "灵宠准备" in play("team_status", user=USERS[1]).commands
+
+
 def test_team_pages_keep_bounded_distinct_actions_without_duplicating_row_links(game, play):
     prepare(game, play, size=3)
     replies = [
