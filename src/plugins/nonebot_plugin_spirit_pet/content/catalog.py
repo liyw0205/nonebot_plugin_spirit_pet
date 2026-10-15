@@ -22,6 +22,7 @@ from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 from ..domain.journey_content import Journey
 from ..domain.season_mission_content import SeasonMission
+from ..domain.daily_assignment_content import DailyAssignment
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -87,6 +88,7 @@ class Catalog:
     resonances: dict[str, Resonance]
     journey: dict[str, Journey]
     season_missions: dict[str, SeasonMission]
+    daily_assignments: dict[str, DailyAssignment]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -124,6 +126,7 @@ class Catalog:
             resonances=_index(directory / "resonances.json", Resonance),
             journey=_index(directory / "journey.json", Journey),
             season_missions=_index(directory / "season_missions.json", SeasonMission),
+            daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
         )
         catalog.validate()
         return catalog
@@ -168,6 +171,7 @@ class Catalog:
             *(quest.reward for quest in self.main_quests.values()),
             *(chapter.reward for chapter in self.journey.values()),
             *(mission.reward for mission in self.season_missions.values()),
+            *(assignment.reward for assignment in self.daily_assignments.values()),
             *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
@@ -214,6 +218,7 @@ class Catalog:
         self._validate_main_quests()
         self._validate_journey(realm_ids)
         self._validate_season_missions()
+        self._validate_daily_assignments()
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -483,6 +488,21 @@ class Catalog:
         pairs = [(mission.metric, mission.target) for mission in missions.values()]
         if len(set(pairs)) != len(pairs):
             raise ValueError("duplicate season mission metric target")
+
+    def _validate_daily_assignments(self):
+        assignments = self.daily_assignments
+        if not assignments:
+            raise ValueError("at least one daily assignment is required")
+        expected = {
+            "daily_pve", "daily_pvp", "daily_discovery", "daily_expedition", "daily_claim",
+            "daily_training",
+        }
+        present = {assignment.metric for assignment in assignments.values()}
+        if not expected.issubset(present):
+            raise ValueError(f"missing daily assignment metrics: {sorted(expected - present)}")
+        pairs = [(assignment.metric, assignment.target) for assignment in assignments.values()]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("duplicate daily assignment metric target")
 
     def _validate_resonances(self):
         covered = set()

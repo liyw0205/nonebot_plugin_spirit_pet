@@ -1,0 +1,140 @@
+[
+  {
+    "id": "daily_pve",
+    "name": "秘境一胜",
+    "description": "今日在秘境或关卡获胜 1 场。",
+    "metric": "daily_pve",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 120,
+        "maximum": 120
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "daily_pvp",
+    "name": "论剑一试",
+    "description": "今日参加 1 场论剑。",
+    "metric": "daily_pvp",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 150,
+        "maximum": 150
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "daily_discovery",
+    "name": "奇闻一探",
+    "description": "今日发现 1 条奇闻。",
+    "metric": "daily_discovery",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 140,
+        "maximum": 140
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "daily_expedition",
+    "name": "委托一程",
+    "description": "今日领取 1 次离线委托。",
+    "metric": "daily_expedition",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 160,
+        "maximum": 160
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "daily_claim",
+    "name": "成就一收",
+    "description": "今日领取 1 项成就奖励。",
+    "metric": "daily_claim",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 130,
+        "maximum": 130
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "daily_training",
+    "name": "吐纳一回",
+    "description": "今日修炼 1 次。",
+    "metric": "daily_training",
+    "target": 1,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  }
+]

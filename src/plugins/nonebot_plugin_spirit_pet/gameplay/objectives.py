@@ -1,11 +1,11 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from . import daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
+from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务",
+    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题",
 )
 
 
@@ -124,6 +124,20 @@ def _season_line(ctx: Context, user_id: str) -> str:
     return f"赛季任务：暂无可领 · 已领取 {done}/{len(entries)} 项"
 
 
+def _assignment_line(ctx: Context, user_id: str) -> str:
+    chosen = daily_assignment._chosen(ctx, user_id)
+    if chosen is not None:
+        return f"今日课题：今日已选「{chosen.name}」"
+    offered = daily_assignment.todays(ctx)
+    claimable = [
+        entry.name for entry in offered
+        if daily_assignment._value(ctx, user_id, entry) >= entry.target
+    ]
+    if claimable:
+        return f"今日课题：可领 1 项（{'、'.join(claimable)}）· 今日三项任选其一"
+    return "今日课题：暂无可领 · 今日三项任选其一"
+
+
 def _title_line(ctx: Context, user_id: str) -> str:
     held = titles.earned(ctx, user_id)
     holder = held[-1][0] if held else None
@@ -154,6 +168,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _journey_line(ctx, player.user_id),
         _echo_line(ctx, player.user_id),
         _season_line(ctx, player.user_id),
+        _assignment_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

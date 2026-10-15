@@ -302,6 +302,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_season_missions.py tests/test_seasons.py tests/test_arena_battles.py tests/test_arena_content.py tests/test_arena_interaction.py tests/test_arena_matching.py tests/test_arena_messaging.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_echoes.py tests/test_achievements.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_quest_interaction.py tests/test_player_experience.py`：合计 `585 passed`（含新增 `test_season_missions` 12 项与全部论剑/赛季既有合同），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、页面内容与赛季行、五种指标的派生进度（含窗口外记录不计）、领取发放奖励并写入赛季起始、未达成与重复领取被拒、同 `operation_id` 幂等、换季重新可领、`灵宠目标` 赛季任务行、内容校验（指标缺失、重复目标、奖励物品缺失）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 今日课题闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务与命令、聚焦测试、文档。审计发现每日任务十项是固定清单、今日秘境是固定轮换，玩家每天都是“照着清单做完”，日常循环里没有任何当日决策（全游戏只有奇闻回响与血脉分支提供选择）。
+
+新增 `data/daily_assignments.json` 六项课题：秘境一胜（今日秘境或关卡获胜 1 场）、论剑一试（今日参加 1 场论剑）、奇闻一探（今日发现 1 条奇闻）、委托一程（今日领取 1 次离线委托）、成就一收（今日领取 1 项成就奖励）、吐纳一回（今日修炼 1 次）。`domain/daily_assignment_content.py` 定义 `DailyAssignmentMetric` 与 `DailyAssignment`，`content/catalog.py` 的 `_validate_daily_assignments` 校验六种指标必须全部在册、不得出现重复的“指标 + 目标”组合，并把奖励并入统一的奖励物品校验元组（指标齐全已隐含至少六项，因此不再单设“至少三项”的分支）。
+
+`gameplay/daily_assignment.py`：`todays` 用 `day_ordinal`（`beijing_day` 的日期序数）从池中取 `pool[(序数 * 3 + i) % len(pool)]` 三项，确定性、同一天稳定、次日换新；`_value` 按指标派生且只统计当天——`daily_pve` 扫 `battle_records` 的今日胜场，`daily_pvp` 扫 `pvp_results` 的今日参与，`daily_discovery` 读 `adventure_discoveries.discovered_at`，`daily_expedition` 读 `expeditions.settled_at`（`state='claimed'`），`daily_claim` 读 `achievement_claims.claimed_at`，`daily_training` 比较 `players.last_train` 的日期；所有时间戳查询都用 `SCAN_WINDOW`（两天）限定扫描范围，与今日秘境同款。`_chosen` 从 `quest_progress` 的 `daily_assignment` 行还原今日所选（`progress // 10` 必须等于今日序数，`progress % 10` 为所选序号，越界即视为未选）。`catalog` 逐项两行（奖励摘要 + 状态行、说明行），未结契只返回预览与“开始领养”蓝字；`claim` 依次校验课题是否属于今日三项、今日是否已领取、进度是否达标，再 `grant` 并写入 `progress = 序数 * 10 + 序号`。命令注册为 `daily_assignment`（`registered=False`）与 `daily_assignment_claim`（`registered=True`），别名 `灵宠课题` / `灵宠课题领奖`，帮助“秘境与关卡”段在每日任务条目旁补两条，`灵宠目标` 增加第十二行“今日课题”。
+
+关键边界：不新增表或列、不新增规则字段；每日任务、今日秘境、周常、赛季任务与任何既有奖励完全不变；当日只能领取一项，其余两项作废，次日自动重置且未领取不累积。
+
+定向命令 `./.venv/bin/pytest -q tests/test_daily_assignment.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_expedition_contract.py tests/test_expedition_interaction.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_echoes.py tests/test_season_missions.py tests/test_achievements.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_quest_interaction.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_player_experience.py`：合计 `690 passed`（含新增 `test_daily_assignment` 12 项与全部委托既有合同），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、三项轮换的确定性与次日变化、六种指标的当日派生（含昨日记录不计）、领取发放奖励并锁定其余两项、未提供与未完成被拒、同 `operation_id` 幂等、次日重新可领、`灵宠目标` 今日课题行、内容校验（指标缺失、重复目标、奖励物品缺失）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

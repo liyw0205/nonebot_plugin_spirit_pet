@@ -17,6 +17,7 @@ from ..gameplay import free_summon
 from ..gameplay import journey
 from ..gameplay import echoes
 from ..gameplay import season_missions
+from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
@@ -82,6 +83,8 @@ ACTIONS = {
     "echo_choose": Command(echoes.choose, True),
     "season_missions": Command(season_missions.catalog, True, registered=False),
     "season_mission_claim": Command(season_missions.claim, True),
+    "daily_assignment": Command(daily_assignment.catalog, True, registered=False),
+    "daily_assignment_claim": Command(daily_assignment.claim, True),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
@@ -155,7 +158,7 @@ COMMANDS = {
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠目标": "objectives",
-    "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim", "灵宠每周召唤": "free_summon", "灵宠每周召唤领取": "free_summon_claim", "灵宠行纪": "journey", "灵宠行纪领奖": "journey_claim", "灵宠回响": "echoes", "灵宠回响选择": "echo_choose", "灵宠赛季任务": "season_missions", "灵宠赛季任务领奖": "season_mission_claim",
+    "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim", "灵宠每周召唤": "free_summon", "灵宠每周召唤领取": "free_summon_claim", "灵宠行纪": "journey", "灵宠行纪领奖": "journey_claim", "灵宠回响": "echoes", "灵宠回响选择": "echo_choose", "灵宠赛季任务": "season_missions", "灵宠赛季任务领奖": "season_mission_claim", "灵宠课题": "daily_assignment", "灵宠课题领奖": "daily_assignment_claim",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
