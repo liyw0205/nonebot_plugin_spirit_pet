@@ -156,13 +156,13 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 ### 今日秘境闭环（2026-10-15，已完成）
 
-四个阶段一次交付：内容与规则、业务模块与战斗接入、命令与帮助、定向测试。此前秘境是无限重复内容，规则只有“胜利按参战成员发一份奖励、败平无奖励、无论胜败都消耗精力与共享冷却”，没有任何每日节奏；每日循环只有签到与 10 条每日事件任务，玩家缺少“今天该打哪一处”的轮换目标。
+四个阶段一次交付：内容与规则、业务模块、命令与帮助、定向测试。此前秘境是无限重复内容，规则只有“胜利按参战成员发一份奖励、败平无奖励、无论胜败都消耗精力与共享冷却”，没有任何每日节奏；每日循环只有签到与 10 条每日事件任务，玩家缺少“今天该打哪一处”的轮换目标。
 
 `data/rules.json` 新增 `daily_featured`（`first` 与 `third` 两份 `Reward`），`domain/content.py` 新增 `DailyFeatured` 并挂到 `Rules.daily_featured`（校验两份奖励非空），`content/catalog.py` 把两份今日奖励并入既有奖励物品校验。轮换不需要数据文件。
 
-`gameplay/daily_dungeon.py` 提供 `featured`（按 `beijing_day` 的日期序数在九处单人秘境中取模，纯函数）、`wins_today`（由 `battle_records` 与 `battle_participants` 派生当日该秘境胜场）、`bonus`（胜场为 0 时发首胜、为 2 时发三胜，其余返回空）与 `catalog`。`adventure.run_dungeon` 在既有掉落行之后调用 `daily_dungeon.bonus`，因此今日奖励与战报在同一事务内结算，重投由通用操作缓存返回原回复。命令注册为 `daily_dungeon`（`registered=False`，未结契可只读浏览），别名 `灵宠今日秘境`，帮助“秘境与关卡”段补一条。schema 20、秘境掉落、精力消耗、共享冷却、每日任务事件与组队规则全部不动，未新增计数列或冷却。
+`gameplay/daily_dungeon.py` 提供 `featured_dungeon`（按 `beijing_day` 的日期序数在九处单人秘境中取模，纯函数）、`wins_today`（由 `battle_records` 与 `battle_participants` 派生当日该秘境胜场）、`claimed_today`（领取行带当日日期，跨日自动失效）、`catalog` 与 `claim`。奖励沿用既有领取约定（与每日任务、成就一致），因此 `adventure.run_dungeon` 的战斗结算路径与平衡门禁完全不变——最初把奖励直接写进 `run_dungeon` 时，`test_balance_lineups` 的生产结算门禁立刻报出 `production settlement violation`，改为领取式后门禁恢复。命令注册为 `daily_dungeon`（`registered=False`，未结契可只读浏览）与 `daily_dungeon_claim`（`registered=True`），别名 `灵宠今日秘境`/`灵宠今日秘境领奖`，帮助“秘境与关卡”段补两条。schema 20、秘境掉落、精力消耗、共享冷却、每日任务事件与组队规则全部不动，未新增计数列或冷却。
 
-定向命令 `./.venv/bin/pytest -q tests/test_daily_dungeon.py tests/test_adventure_routes.py tests/test_dungeon_interaction.py tests/test_battles.py tests/test_battle_records.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_main_quest.py tests/test_breeding.py` 与第二批 `tests/test_team_management.py tests/test_team_requests.py tests/test_team_requests_contract.py tests/test_team_request_interaction.py tests/test_team_play_ux.py tests/test_team_messaging.py tests/test_team_config.py tests/test_team_concurrency.py tests/test_arena_battles.py`：合计 `457 passed`（含新增 `test_daily_dungeon` 9 项），无既有断言需要改动。新增测试覆盖轮换的纯函数性（同日稳定、跨日轮换、九处循环、只取单人秘境）、未结契只读不建号、列表四行文本与唯一蓝字、按钮集合与蓝字零重叠、首胜/二胜/三胜的奖励与状态、非今日秘境不发奖、跨日状态归零、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+定向命令 `./.venv/bin/pytest -q tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_adventure_routes.py tests/test_dungeon_interaction.py tests/test_battles.py tests/test_battle_records.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_main_quest.py tests/test_breeding.py tests/test_quest_interaction.py`：合计 `329 passed`（含新增 `test_daily_dungeon` 11 项与平衡门禁 12 项），无既有断言需要改动。新增测试覆盖轮换的纯函数性（同日稳定、跨日轮换、九处循环、只取单人秘境）、未结契只读不建号、列表文本与唯一蓝字、按钮集合与蓝字零重叠、首胜/三胜的可领取与领取发奖、未达成与重复领取的拒绝、非今日秘境不计入、跨日状态失效、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
 ### 开发阶段流程
 
