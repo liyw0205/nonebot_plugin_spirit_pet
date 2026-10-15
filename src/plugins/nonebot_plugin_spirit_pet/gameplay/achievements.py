@@ -58,7 +58,21 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     elif metric == "max_bloodline":
         query, params = "SELECT COALESCE(MAX(bloodline),0) FROM pets WHERE user_id=?", (user_id,)
     elif metric == "stage_clears":
-        query, params = "SELECT COUNT(*) FROM pve_stage_progress WHERE user_id=?", (user_id,)
+        # Tower floors share the progress table, so chapter progress counts only chapters.
+        query, params = (
+            "SELECT COUNT(*) FROM pve_stage_progress WHERE user_id=? AND stage_id NOT LIKE 'tower_%'",
+            (user_id,),
+        )
+    elif metric == "tower_depth":
+        cleared = {
+            row["stage_id"] for row in ctx.repo.conn.execute(
+                "SELECT stage_id FROM pve_stage_progress WHERE user_id=? AND stage_id LIKE 'tower_%'",
+                (user_id,),
+            )
+        }
+        return max(
+            (floor.order for floor in ctx.content.tower.values() if floor.id in cleared), default=0,
+        )
     elif metric == "pvp_wins":
         query, params = "SELECT COUNT(*) FROM pvp_results WHERE winner_id=?", (user_id,)
     elif metric == "pve_wins":

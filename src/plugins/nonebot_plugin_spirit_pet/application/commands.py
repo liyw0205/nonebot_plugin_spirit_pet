@@ -3,7 +3,7 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
-from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
+from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, tower
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
@@ -57,6 +57,8 @@ ACTIONS = {
     "challenge": Command(adventure.challenge, True),
     "stage_catalog": Command(pve_stages.catalog, True, registered=False),
     "stage_challenge": Command(pve_stages.challenge, True),
+    "tower_catalog": Command(tower.catalog, True, registered=False),
+    "tower_challenge": Command(tower.challenge, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
     "collection": Command(achievements.collection, True, registered=False),
@@ -115,6 +117,7 @@ COMMANDS = {
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
+    "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",
     "灵宠共鸣": "resonance",

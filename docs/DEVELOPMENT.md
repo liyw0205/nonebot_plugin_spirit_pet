@@ -122,6 +122,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_item_loop.py tests/test_player_experience.py tests/test_pagination.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_hatching.py tests/test_crafting.py tests/test_skill_effects.py tests/test_quest_interaction.py tests/test_forging.py tests/test_loadout.py` 与第二批 `tests/test_co_training_contract.py tests/test_effect_models.py tests/test_expedition_occupancy.py tests/test_game.py tests/test_lineages.py tests/test_lineup_readiness.py tests/test_mastery.py tests/test_pet_archive.py tests/test_progression.py tests/test_talents.py tests/test_targeted_care.py`：合计 `735 passed`（含新增 `test_item_loop` 9 项），无既有断言需要改动。新增测试覆盖灵坊逐行蓝字与行位、按钮只剩翻页与背包、乾坤袋分组与用途、消耗品按状态门控（外出/属性满不给入口）、灵卵名额门控、装备与秘笈只读图鉴、材料无可执行入口、购买/使用/喂养/孵化下一步、同心丹购买使用与满亲密拒绝。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 万灵塔逐层试炼闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与校验、业务模块、命令与帮助、定向测试。此前 PVE 只有八处章节关卡，通关后没有更高强度的单人目标；玩家缺少一个可长期攀爬、逐层变难、每层给一次性奖励的试炼线。
+
+新增 `data/tower.json`（八层 `tower_01`..`tower_08`，顺序 1..8，境界启灵→渡劫，精力 20→55，敌手 1→3 只，`previous_id` 成链，首通奖励逐层抬升）与 `domain/tower_content.py::TowerFloor`；`content/catalog.py` 载入 `tower` 并新增 `_validate_tower`（序号连续、境界/敌手/奖励引用存在、前置链闭合、精力 ≤100），塔层奖励并入既有奖励物品校验，成就指标集与终局里程碑加入 `tower_depth`。
+
+`gameplay/tower.py` 提供 `catalog`（列表与层详情）与 `challenge`。列表显示当前深度与每层状态（`可挑战`/`已通关`/`未解锁`），只给可挑战与已通关的行挂唯一“前往挑战”蓝字（`InlineCommand`，命令 `灵宠挑战万灵塔 <层号>`），行命令退出按钮集，按钮保留翻页与 `灵宠关卡`/`灵宠秘境`；未结契玩家可只读浏览且不建号。层详情显示敌手、精力、境界、首通奖励与挑战入口；裸数字按页码处理，与 `灵宠关卡` 一致，层详情用层名。`challenge` 在战斗事务内校验前置层、境界、精力与共享 PVE 冷却，胜利时以 `INSERT ... ON CONFLICT DO NOTHING` 写入既有 `pve_stage_progress`（前缀 `tower_`）并只发一次首通奖励，重复挑战只练熟练度，失败/平局不推进进度，全部写入既有 `battle_records`（`kind='pve_stage'`）。命令注册为 `tower_catalog`（`registered=False`，只读入口）与 `tower_challenge`（`registered=True`），别名 `灵宠万灵塔`/`灵宠挑战万灵塔`，帮助“秘境与关卡”段补两条。
+
+成就侧新增 `tower_depth` 指标（取已通关塔层的最大序号）与“三层登临”“六层凌云”“塔顶问道”三条成就，同时把 `stage_clears` 查询改为排除 `tower_%`，使“章节征服者”仍只统计八处章节。schema 20、既有定价、掉落、效果上限与幂等重放全部不动，未新增离线战斗或第二行程。
+
+定向命令 `./.venv/bin/pytest -q tests/test_tower.py tests/test_pve_stages.py tests/test_stage_content.py tests/test_stage_interaction.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py` 与第二批 `tests/test_information.py tests/test_player_experience.py tests/test_battles.py tests/test_battle_records.py tests/test_identity.py tests/test_game.py`：合计 `397 passed`（含新增 `test_tower` 11 项），无既有断言需要改动。新增测试覆盖八层内容与前置链、列表行位与按钮集合（≤4、互不重复、与蓝字零重叠）、未结契只读浏览不建号、层详情、首通只发一次奖励、重复挑战只练熟练度、失败/平局不推进进度、前置层/境界/精力/冷却/越界/未知名称门控、同消息重放与跨身份拒绝、`tower_depth` 成就可领而 `stage_clears` 不被塔层污染、帮助条目、native payload 蓝字与按钮零重复。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

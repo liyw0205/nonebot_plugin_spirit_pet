@@ -14,6 +14,7 @@ from .lineage_validation import validate_lineages
 from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.stage_content import Stage
+from ..domain.tower_content import TowerFloor
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 
@@ -73,6 +74,7 @@ class Catalog:
     lineages: dict[str, Lineage]
     expeditions: dict[str, Expedition]
     stages: dict[str, Stage]
+    tower: dict[str, TowerFloor]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
 
@@ -104,6 +106,7 @@ class Catalog:
             lineages=_index(directory / "lineages.json", Lineage),
             expeditions=_index(directory / "expeditions.json", Expedition),
             stages=_index(directory / "stages.json", Stage),
+            tower=_index(directory / "tower.json", TowerFloor),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
         )
@@ -140,6 +143,7 @@ class Catalog:
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
             *(expedition.reward for expedition in self.expeditions.values()),
+            *(floor.reward for floor in self.tower.values()),
         ):
             self._require(reward.items, self.items, "reward items")
         route_encounters = [
@@ -172,6 +176,7 @@ class Catalog:
             if dungeon.energy > 100:
                 raise ValueError("dungeon energy exceeds capacity")
         self._validate_stages(realm_ids)
+        self._validate_tower(realm_ids)
         for energy in (self.rules.training_energy, self.rules.explore_energy):
             if energy > 100:
                 raise ValueError("action energy exceeds capacity")
@@ -265,11 +270,30 @@ class Catalog:
             if stage.previous_id != expected:
                 raise ValueError("stage previous_id must form the ordered chain")
 
+    def _validate_tower(self, realm_ids):
+        if not self.tower:
+            raise ValueError("tower must not be empty")
+        ordered = sorted(self.tower.values(), key=lambda floor: floor.order)
+        if [floor.order for floor in ordered] != list(range(1, len(ordered) + 1)):
+            raise ValueError("tower orders must be contiguous starting at 1")
+        self._require([floor.min_realm for floor in ordered], realm_ids, "tower realm")
+        for floor in ordered:
+            self._require(floor.enemies, self.enemies, "tower enemies")
+            self._require(floor.reward.items, self.items, "tower reward items")
+            if floor.previous_id is not None:
+                self._require([floor.previous_id], self.tower, "tower prerequisite")
+            if floor.energy > 100:
+                raise ValueError("tower energy exceeds capacity")
+        for index, floor in enumerate(ordered):
+            expected = ordered[index - 1].id if index else None
+            if floor.previous_id != expected:
+                raise ValueError("tower previous_id must form the ordered chain")
+
     def _validate_achievements(self):
         required = {
             "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
-            "stage_clears", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches", "skills_learned",
-            "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
+            "stage_clears", "tower_depth", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
+            "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
             "best_bond_streak", "adventures_discovered",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
@@ -285,6 +309,7 @@ class Catalog:
             "max_layer": len(self.realms) * 10,
             "max_bloodline": max(self.bloodlines),
             "stage_clears": len(self.stages),
+            "tower_depth": len(self.tower),
             "lineage_branches": len(self.lineages),
             "skills_learned": len(self.skills),
             "max_skill_level": len(self.skill_levels),
@@ -297,7 +322,7 @@ class Catalog:
             targets.setdefault(entry.metric, set()).add(entry.target)
         final_milestones = {
             "species_collected", "max_realm", "max_layer", "max_bloodline",
-            "stage_clears", "max_skill_level", "max_affinity", "adventures_discovered",
+            "stage_clears", "tower_depth", "max_skill_level", "max_affinity", "adventures_discovered",
         }
         for metric in final_milestones:
             if maxima[metric] not in targets.get(metric, set()):

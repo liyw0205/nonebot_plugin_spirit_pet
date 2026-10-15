@@ -6,7 +6,7 @@ from .content import Definition, Identifier, Name, NonNegative, Positive
 
 AchievementMetric = Literal[
     "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
-    "stage_clears", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
+    "stage_clears", "tower_depth", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
     "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
     "best_bond_streak", "adventures_discovered",
 ]

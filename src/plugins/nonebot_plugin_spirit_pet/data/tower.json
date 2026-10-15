@@ -1,0 +1,250 @@
+[
+  {
+    "id": "tower_01",
+    "name": "初入塔门",
+    "description": "塔门初启，林间傀儡在此试你心志。",
+    "order": 1,
+    "min_realm": "qiling",
+    "enemies": [
+      "wood_guard"
+    ],
+    "energy": 20,
+    "reward": {
+      "exp": {
+        "minimum": 150,
+        "maximum": 220
+      },
+      "stones": {
+        "minimum": 60,
+        "maximum": 90
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "tower_02",
+    "name": "雷泽回响",
+    "description": "月影狼王与林间傀儡结伴守层。",
+    "order": 2,
+    "min_realm": "ningqi",
+    "enemies": [
+      "wood_guard",
+      "moon_wolf"
+    ],
+    "energy": 25,
+    "reward": {
+      "exp": {
+        "minimum": 260,
+        "maximum": 360
+      },
+      "stones": {
+        "minimum": 100,
+        "maximum": 150
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    },
+    "previous_id": "tower_01"
+  },
+  {
+    "id": "tower_03",
+    "name": "古殿三重",
+    "description": "雷泽蛟灵与寒晶守灵同候此层。",
+    "order": 3,
+    "min_realm": "zhuji",
+    "enemies": [
+      "thunder_dragon",
+      "ice_guard"
+    ],
+    "energy": 30,
+    "reward": {
+      "exp": {
+        "minimum": 420,
+        "maximum": 560
+      },
+      "stones": {
+        "minimum": 160,
+        "maximum": 240
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 3
+        },
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "previous_id": "tower_02"
+  },
+  {
+    "id": "tower_04",
+    "name": "玄玉焚天",
+    "description": "古殿守卫、潮宫镇守与腐沼毒灵并肩而立。",
+    "order": 4,
+    "min_realm": "jindan",
+    "enemies": [
+      "ancient_guard",
+      "tide_sentinel",
+      "venom_guard"
+    ],
+    "energy": 35,
+    "reward": {
+      "exp": {
+        "minimum": 640,
+        "maximum": 840
+      },
+      "stones": {
+        "minimum": 260,
+        "maximum": 360
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "previous_id": "tower_03"
+  },
+  {
+    "id": "tower_05",
+    "name": "霜渊古木",
+    "description": "玄玉镇灵与焚天炎灵同守此层。",
+    "order": 5,
+    "min_realm": "yuanying",
+    "enemies": [
+      "jade_warden",
+      "ember_wraith"
+    ],
+    "energy": 40,
+    "reward": {
+      "exp": {
+        "minimum": 950,
+        "maximum": 1200
+      },
+      "stones": {
+        "minimum": 380,
+        "maximum": 520
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    },
+    "previous_id": "tower_04"
+  },
+  {
+    "id": "tower_06",
+    "name": "幽冥剑魄",
+    "description": "霜渊君主与古木法相结阵相候。",
+    "order": 6,
+    "min_realm": "huashen",
+    "enemies": [
+      "frost_monarch",
+      "wood_colossus"
+    ],
+    "energy": 45,
+    "reward": {
+      "exp": {
+        "minimum": 1400,
+        "maximum": 1800
+      },
+      "stones": {
+        "minimum": 560,
+        "maximum": 760
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 3
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "previous_id": "tower_05"
+  },
+  {
+    "id": "tower_07",
+    "name": "九霄雷劫",
+    "description": "幽冥帝影与太虚剑魄同临此层。",
+    "order": 7,
+    "min_realm": "dujie",
+    "enemies": [
+      "nether_emperor",
+      "void_blade"
+    ],
+    "energy": 50,
+    "reward": {
+      "exp": {
+        "minimum": 2000,
+        "maximum": 2600
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 1100
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 3,
+          "maximum": 4
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "previous_id": "tower_06"
+  },
+  {
+    "id": "tower_08",
+    "name": "天门绝顶",
+    "description": "天门守望、九霄劫灵与幽冥帝影齐聚塔顶。",
+    "order": 8,
+    "min_realm": "dujie",
+    "enemies": [
+      "sky_gate_guard",
+      "tribulation_avatar",
+      "nether_emperor"
+    ],
+    "energy": 55,
+    "reward": {
+      "exp": {
+        "minimum": 3000,
+        "maximum": 4000
+      },
+      "stones": {
+        "minimum": 1200,
+        "maximum": 1600
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 5
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "previous_id": "tower_07"
+  }
+]
