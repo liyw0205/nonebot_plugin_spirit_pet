@@ -314,6 +314,20 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_daily_assignment.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_expedition_contract.py tests/test_expedition_interaction.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_echoes.py tests/test_season_missions.py tests/test_achievements.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_quest_interaction.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_player_experience.py`：合计 `690 passed`（含新增 `test_daily_assignment` 12 项与全部委托既有合同），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、三项轮换的确定性与次日变化、六种指标的当日派生（含昨日记录不计）、领取发放奖励并锁定其余两项、未提供与未完成被拒、同 `operation_id` 幂等、次日重新可领、`灵宠目标` 今日课题行、内容校验（指标缺失、重复目标、奖励物品缺失）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 新体系成就与称号闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计发现身份体系没有跟上后加的三个领取式系统：成就的 25 个指标与称号的 16 项全部来自早期系统（收集、境界、血脉、塔、论剑、秘境、技能、委托、亲密、强化、切磋、装备、共鸣），玩家走完 14 段山海行纪、回响全部 14 条奇闻、领满 16 处秘境首通，身份页上不会留下任何痕迹。
+
+`domain/achievement_content.py` 的 `AchievementMetric` 增加 `journey_claims`、`echo_claims`、`first_clear_claims`；`gameplay/achievements.py::_metric` 用一个分支处理三者：按 `quest_progress` 中 `claimed=1` 且 `quest_id LIKE '<前缀>%'` 计数（前缀分别为 `journey_`、`echo_`、`first_clear_`）。三个前缀互不重叠，也不会与每日任务、周常、主线、赛季、今日课题的标记冲突。`gameplay/titles.py` 复用同一函数，因此新指标自动可用于称号。
+
+`data/achievements.json` 追加 7 项（64 → 71）：行纪三章 3、行纪七章 7、行纪全章 14；回响三章 3、回响全章 14；秘境五通 5、秘境全通 16。`data/titles.json` 追加 3 项（16 → 19）：山海尽头（`journey_claims` 14，order 17）、万籁归心（`echo_claims` 14，order 18）、秘境行家（`first_clear_claims` 16，order 19）。既有条目的 id、名称、说明、数值与顺序字节不变。
+
+`content/catalog.py`：`required` 加入三个指标；`maxima` 加入 `journey_claims = len(self.journey)`、`echo_claims = len(self.encounters)`、`first_clear_claims = len(self.dungeons)`；`final_milestones` 加入三者，因此每个指标都必须有达到上限的成就（删掉 `journey_all` 会报 `missing final achievement milestone for journey_claims`）。
+
+关键边界：不新增命令、表、列或规则字段；`灵宠成就`、`灵宠称号`、`灵宠目标` 自动包含新条目，无需改动；行纪、回响、首通的业务逻辑与奖励完全不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_system_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_achievements.py tests/test_achievement_expansion.py`：合计 `76 passed`（新增 `test_system_achievements` 8 项）。同步更新 `test_titles.py` 与 `test_objectives.py` 中写死的称号总数（16 → 19）——这是本次唯一需要改动的既有断言。新增测试覆盖三个指标的派生（未领取标记与无关前缀不计、跨玩家隔离）、行纪成就 3/7/14 的解锁与领取、回响与首通成就的解锁、三个新称号在达标后出现且当前称号取最高优先级、`灵宠目标` 的成就行、`final_milestones` 校验与 native payload 按钮零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

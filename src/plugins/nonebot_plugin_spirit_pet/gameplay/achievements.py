@@ -143,6 +143,13 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         query, params = "SELECT COUNT(*) FROM achievement_claims WHERE user_id=?", (user_id,)
     elif metric == "resonances_enabled":
         query, params = "SELECT COUNT(*) FROM player_resonance WHERE user_id=?", (user_id,)
+    elif metric in ("journey_claims", "echo_claims", "first_clear_claims"):
+        # The three claim systems share the progress table, so each counts its own prefix.
+        prefix = {"journey_claims": "journey_", "echo_claims": "echo_", "first_clear_claims": "first_clear_"}
+        query, params = (
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND claimed=1 AND quest_id LIKE ?",
+            (user_id, prefix[metric] + "%"),
+        )
     else:
         raise ValueError(f"unknown achievement metric: {metric}")
     return int(conn.execute(query, params).fetchone()[0])

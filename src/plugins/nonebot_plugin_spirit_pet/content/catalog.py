@@ -367,6 +367,7 @@ class Catalog:
             "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
             "best_bond_streak", "adventures_discovered", "max_enhancement", "spar_wins",
             "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
+            "journey_claims", "echo_claims", "first_clear_claims",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):
@@ -389,6 +390,9 @@ class Catalog:
             "max_affinity": 100,
             "adventures_discovered": len(self.encounters),
             "max_enhancement": len(self.forge_levels) - 1,
+            "journey_claims": len(self.journey),
+            "echo_claims": len(self.encounters),
+            "first_clear_claims": len(self.dungeons),
         }
         targets = {}
         for entry in self.achievements.values():
@@ -396,7 +400,7 @@ class Catalog:
         final_milestones = {
             "species_collected", "max_realm", "max_layer", "max_bloodline",
             "stage_clears", "tower_depth", "max_skill_level", "max_affinity", "adventures_discovered",
-            "max_enhancement",
+            "max_enhancement", "journey_claims", "echo_claims", "first_clear_claims",
         }
         for metric in final_milestones:
             if maxima[metric] not in targets.get(metric, set()):

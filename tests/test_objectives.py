@@ -42,7 +42,7 @@ def test_hub_shows_the_current_main_quest_and_title(game, play):
     account(game, play)
     reply = play("objectives")
     assert line(reply, "主线：") == "主线：下一步 初结灵契 · 可领奖（1/1）"
-    assert line(reply, "称号：") == "称号：初入仙途 · 已获得 1/16 项"
+    assert line(reply, "称号：") == "称号：初入仙途 · 已获得 1/19 项"
 
 
 def test_hub_previews_without_an_account(game, play):

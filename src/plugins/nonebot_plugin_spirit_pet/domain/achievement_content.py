@@ -10,6 +10,7 @@ AchievementMetric = Literal[
     "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
     "best_bond_streak", "adventures_discovered", "max_enhancement", "spar_wins", "battles_fought",
     "equipment_owned", "achievements_claimed", "resonances_enabled",
+    "journey_claims", "echo_claims", "first_clear_claims",
 ]
 
 
