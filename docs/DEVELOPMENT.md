@@ -234,6 +234,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_objectives.py tests/test_quest_interaction.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_titles.py tests/test_daily_dungeon.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_batch_enhance.py tests/test_recycle.py tests/test_sweep.py tests/test_forging.py tests/test_crafting.py`：合计 `439 passed`（含新增 `test_objectives` 9 项），无既有断言需要改动。新增测试覆盖六行内容与各体系计数、签到后可领数变化、领取后回落、主线下一步与称号行、未结契只读预览且不建号、参数拒绝、只读性（无战报与成就领取行、宠物精力不变）、同 `operation_id` 幂等、帮助条目与 native payload 按钮/蓝字零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 成就扩充闭环（2026-10-15，已完成）
+
+四个阶段一次交付：指标与内容、业务分支、聚焦测试、文档。审计发现成就的指标词汇停留在早期系统：装备强化（`forge_levels` 0..10 阶梯、`equipment.enhancement`）、切磋（`battle_records.kind='spar'`）、累计战斗（`battle_participants`）、装备收藏（`equipment` + `unequipped_equipment`）、成就领取（`achievement_claims`）与共鸣启用（`player_resonance`）都没有任何成就，玩家把装备强化到 +10 或赢下 50 场切磋，成就页毫无反馈。这些指标全部可从既有持久化只读派生，因此本项在 schema 20 冻结下完成，不新增表或计数列。
+
+`domain/achievement_content.py` 的 `AchievementMetric` 增加六个指标；`data/achievements.json` 追加 14 项成就（50 → 64）：初试锋芒 +3、精炼有成 +6、炉火纯青 +10；切磋初胜 1、切磋十胜 10、切磋五十胜 50；十战之身 10、百战之身 100、千锤百炼 500；装备初集 5、装备成库 15；成就初集 5、成就成册 20；共鸣初启 1。奖励复用既有物品与灵石，档位与既有成就同量级。`content/catalog.py` 把六个指标加入 `required`，`maxima` 增加 `max_enhancement = len(forge_levels) - 1`，并把 `max_enhancement` 加入 `final_milestones`（因此 +10 里程碑必须在册，改小目标会先触发 `missing final achievement milestone for max_enhancement`）；无界指标（战斗总量、装备收藏、成就领取数）不设上限，用固定目标。
+
+`gameplay/achievements.py::_metric` 增加六个分支：`max_enhancement` 用 `equipment`（经 `pets` 关联到 `user_id`）与 `unequipped_equipment` 的 `UNION ALL` 取 `MAX(enhancement)`，`spar_wins` 用 `battle_records` 连接 `battle_participants` 且 `kind='spar' AND winner_side=p.side`，`battles_fought` 统计 `battle_participants`，`equipment_owned` 把两处装备表计数相加，`achievements_claimed` 统计 `achievement_claims`，`resonances_enabled` 统计 `player_resonance`。`_milestone` 为 `max_enhancement` 返回 `+N`，`_progress` 把它并入“当前 / 目标”的里程碑格式。领取沿用既有 `achievement_claims` 路径与奖励快照，既有 50 项成就的目标、奖励与领取行为完全不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_achievement_expansion.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_objectives.py tests/test_titles.py tests/test_information.py tests/test_commands.py tests/test_messaging.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_crafting.py tests/test_forging.py tests/test_loadout.py tests/test_item_loop.py tests/test_battle_records.py tests/test_arena_battles.py tests/test_arena_messaging.py tests/test_mastery.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_quest_interaction.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_daily_dungeon.py`：合计 `471 passed`（含新增 `test_achievement_expansion` 11 项），既有断言无需改动。新增测试覆盖六个指标在空存档与未结契用户下均为 0 且不写任何行、强化等级跨两处装备表取最大、切磋胜场按永久战报的胜方判定（败方为 0）、累计战斗场次、装备收藏跨两处装备表、成就领取计数、共鸣启用计数、新成就在成就页的 `可领奖`/`进行中` 呈现与领取一次/重复拒绝/重投幂等、`灵宠目标` 成就行随新可领项变化、内容校验（`required` 覆盖、+10 里程碑在册、目标不得超出 `maxima`）与 native payload 按钮/蓝字零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

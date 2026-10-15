@@ -116,6 +116,33 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
             f"AND encounter_id IN ({placeholders})"
         )
         params = (user_id, *encounter_ids)
+    elif metric == "max_enhancement":
+        # Equipped and stored items both carry a level; the best one counts.
+        query = (
+            "SELECT COALESCE(MAX(enhancement),0) FROM ("
+            "SELECT e.enhancement AS enhancement FROM equipment e "
+            "JOIN pets p USING(pet_id) WHERE p.user_id=? "
+            "UNION ALL SELECT u.enhancement FROM unequipped_equipment u WHERE u.user_id=?)"
+        )
+        params = (user_id, user_id)
+    elif metric == "spar_wins":
+        query = (
+            "SELECT COUNT(*) FROM battle_records b JOIN battle_participants p USING(battle_id) "
+            "WHERE p.user_id=? AND b.kind='spar' AND b.winner_side=p.side"
+        )
+        params = (user_id,)
+    elif metric == "battles_fought":
+        query, params = "SELECT COUNT(*) FROM battle_participants WHERE user_id=?", (user_id,)
+    elif metric == "equipment_owned":
+        query = (
+            "SELECT (SELECT COUNT(*) FROM equipment e JOIN pets p USING(pet_id) WHERE p.user_id=?) "
+            "+ (SELECT COUNT(*) FROM unequipped_equipment WHERE user_id=?)"
+        )
+        params = (user_id, user_id)
+    elif metric == "achievements_claimed":
+        query, params = "SELECT COUNT(*) FROM achievement_claims WHERE user_id=?", (user_id,)
+    elif metric == "resonances_enabled":
+        query, params = "SELECT COUNT(*) FROM player_resonance WHERE user_id=?", (user_id,)
     else:
         raise ValueError(f"unknown achievement metric: {metric}")
     return int(conn.execute(query, params).fetchone()[0])
@@ -133,6 +160,8 @@ def _milestone(ctx: Context, metric: str, value: int) -> str:
         return f"{ctx.content.realms[min(index, len(ctx.content.realms) - 1)].name}{layer + 1}层"
     if metric == "max_bloodline":
         return ctx.content.bloodlines[min(value, len(ctx.content.bloodlines) - 1)].name
+    if metric == "max_enhancement":
+        return f"+{value}"
     return str(value)
 
 
@@ -140,7 +169,7 @@ def _progress(ctx: Context, achievement: Achievement, value: int) -> str:
     shown = min(value, achievement.target)
     current = _milestone(ctx, achievement.metric, value)
     target = _milestone(ctx, achievement.metric, achievement.target)
-    if achievement.metric in {"max_realm", "max_layer", "max_bloodline"}:
+    if achievement.metric in {"max_realm", "max_layer", "max_bloodline", "max_enhancement"}:
         return f"进度：{current} / {target}"
     return f"进度：{shown}/{achievement.target}"
 

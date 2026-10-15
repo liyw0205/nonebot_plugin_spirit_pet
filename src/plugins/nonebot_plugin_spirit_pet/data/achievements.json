@@ -49,4 +49,19 @@
   {"id":"adventure_five","name":"奇闻初见","description":"在历练中发现五条不同奇闻。","metric":"adventures_discovered","target":5,"reward":{"stones":250,"items":{"spirit_food":2}}},
   {"id":"adventure_ten","name":"博闻山海","description":"在历练中发现十条不同奇闻。","metric":"adventures_discovered","target":10,"reward":{"stones":600,"items":{"forge_ore":4}}},
   {"id":"adventure_all","name":"尽览奇闻","description":"发现当前历练目录中的全部奇闻。","metric":"adventures_discovered","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
+,
+  {"id":"forge_first","name":"初试锋芒","description":"把一件装备强化到 +3。","metric":"max_enhancement","target":3,"reward":{"stones":200,"items":{"forge_ore":1}}},
+  {"id":"forge_six","name":"精炼有成","description":"把一件装备强化到 +6。","metric":"max_enhancement","target":6,"reward":{"stones":500,"items":{"forge_ore":3}}},
+  {"id":"forge_ten","name":"炉火纯青","description":"把一件装备强化到 +10。","metric":"max_enhancement","target":10,"reward":{"stones":1500,"items":{"bloodline_essence":2}}},
+  {"id":"spar_first","name":"切磋初胜","description":"在切磋中赢下一场。","metric":"spar_wins","target":1,"reward":{"stones":150,"items":{"spirit_food":2}}},
+  {"id":"spar_ten","name":"切磋十胜","description":"在切磋中赢下十场。","metric":"spar_wins","target":10,"reward":{"stones":400,"items":{"exp_pill":2}}},
+  {"id":"spar_fifty","name":"切磋五十胜","description":"在切磋中赢下五十场。","metric":"spar_wins","target":50,"reward":{"stones":1000,"items":{"affinity_pill":2}}},
+  {"id":"battle_ten","name":"十战之身","description":"累计参与十场战斗。","metric":"battles_fought","target":10,"reward":{"stones":200,"items":{"spirit_food":3}}},
+  {"id":"battle_hundred","name":"百战之身","description":"累计参与一百场战斗。","metric":"battles_fought","target":100,"reward":{"stones":800,"items":{"exp_pill":3}}},
+  {"id":"battle_five_hundred","name":"千锤百炼","description":"累计参与五百场战斗。","metric":"battles_fought","target":500,"reward":{"stones":2000,"items":{"forge_ore":6}}},
+  {"id":"equipment_five","name":"装备初集","description":"同时拥有五件装备。","metric":"equipment_owned","target":5,"reward":{"stones":250,"items":{"forge_ore":2}}},
+  {"id":"equipment_fifteen","name":"装备成库","description":"同时拥有十五件装备。","metric":"equipment_owned","target":15,"reward":{"stones":700,"items":{"bloodline_essence":2}}},
+  {"id":"achievement_five","name":"成就初集","description":"累计领取五项成就奖励。","metric":"achievements_claimed","target":5,"reward":{"stones":300,"items":{"spirit_food":2}}},
+  {"id":"achievement_twenty","name":"成就成册","description":"累计领取二十项成就奖励。","metric":"achievements_claimed","target":20,"reward":{"stones":900,"items":{"exp_pill":3}}},
+  {"id":"resonance_first","name":"共鸣初启","description":"启用一组灵宠共鸣。","metric":"resonances_enabled","target":1,"reward":{"stones":200,"items":{"affinity_pill":1}}}
 ]
