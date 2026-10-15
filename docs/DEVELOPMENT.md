@@ -366,6 +366,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_encounter_expansion.py tests/test_echoes.py tests/test_adventure_routes.py tests/test_achievements.py tests/test_system_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_tower_finale.py tests/test_endgame_arc.py tests/test_achievement_expansion.py tests/test_pet_catalog.py`：合计 `372 passed`（新增 `test_encounter_expansion` 5 项）。新增测试覆盖 7 条新奇闻在册且选项合法、每条路线恰好 3 条且新奇闻归属正确、新奇闻奖励落在所属路线区间内、发现后可回响并幂等领取、计数与上限里程碑随内容变化。既有断言同步：`test_echoes` 与 `test_adventure_routes` 的 `n/14` → `n/21`、7 条路线的「奇遇概率」字符串（权重归一后每条路线三条）、`test_adventure_routes` 的「最后一条奇闻」参数化（0.99 现在命中新奇闻）与逐条发现循环的取样值、`test_achievements` 的 `adventures_discovered` 上限 14 → 21 与超限用例 15 → 22、`test_system_achievements` 的回响标记数与进度断言。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 章节关卡扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示章节关卡是最薄的主动内容：秘境 20 处、塔 16 层、奇闻 21 条、行纪 16 章，而关卡只有 8 处，第 8 关「九霄天门」之后没有后续。
+
+`data/stages.json` 追加 8 关：`stage_09` 星陨残关（55 精力，单人，星陨守望）、`stage_10` 镜心重围（60，组队，镜心幻影 + 太虚剑魄）、`stage_11` 沉星旧庭（64，单人，沉星帝君 + 万载霜主）、`stage_12` 归元试锋（68，组队，归元守御 + 万木归墟）、`stage_13` 双帝压境（72，单人，幽冥帝影 + 沉星帝君）、`stage_14` 万法归墟（78，组队，三敌）、`stage_15` 星陨绝壁（84，单人，三敌）、`stage_16` 归元绝顶（90，组队，三敌）。全部 `dujie`，`order` 9-16，`previous_id` 逐关相接（`stage_08` → … → `stage_15`），奖励逐关高于第 8 关（修为 1450-1900 → 2100-2700，灵石 520-720 → 900-1200，材料在雷角/龙鳞之外加入血脉精华与破境丹）。敌人全部复用既有 `enemies.json` 条目，不新增敌人定义。
+
+上限里程碑随内容对齐：`achievements.json` 的「章节征服者」8 → 16（说明「通关全部十六处章节关卡。」）；「初战告捷」1 与「连破五关」5 不变。
+
+关键边界：不新增命令、表、列或规则字段；`catalog` 的 `maxima["stage_clears"] = len(self.stages)` 与 `final_milestones` 自动取到 16，`gameplay/pve_stages.py` 按 `order`/`previous_id` 派生解锁与首通，因此业务代码零改动；既有 8 关的数值、奖励、组队标记与顺序字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_stage_finale.py tests/test_pve_stages.py tests/test_stage_content.py tests/test_stage_interaction.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_weekly_quests.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_system_achievements.py tests/test_encounter_expansion.py tests/test_tower_finale.py tests/test_endgame_arc.py`：合计 `325 passed`（新增 `test_stage_finale` 5 项）。新增测试覆盖新关的境界/精力/奖励递增/前置链/单人与组队交替/末关三敌、新关在旧末关通关后才可挑战、新关首通奖励只发一次、上限里程碑随内容变化、页面链接与按钮不重叠。既有断言同步：`test_stage_interaction` 的种子 id 改为 `stage_{order:02d}`、第二页断言与注释（16 关共 4 页，第二页为第 6-10 关）、`test_achievements` 的 `stage_clears` 上限 8 → 16。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

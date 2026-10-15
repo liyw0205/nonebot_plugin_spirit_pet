@@ -94,5 +94,279 @@
     "reward": {"exp": {"minimum": 1400, "maximum": 1800}, "stones": {"minimum": 500, "maximum": 700}, "items": {"thunder_horn": {"minimum": 1, "maximum": 2}, "dragon_scale": {"minimum": 1, "maximum": 1}}},
     "team": true,
     "previous_id": "stage_07"
+  },
+{
+    "id": "stage_09",
+    "name": "星陨残关",
+    "description": "星陨守望独守残关，关后已无旧日敌影。",
+    "order": 9,
+    "min_realm": "dujie",
+    "enemies": [
+      "starfall_warden"
+    ],
+    "energy": 55,
+    "reward": {
+      "exp": {
+        "minimum": 1450,
+        "maximum": 1900
+      },
+      "stones": {
+        "minimum": 520,
+        "maximum": 720
+      },
+      "items": {
+        "thunder_horn": {
+          "minimum": 1,
+          "maximum": 2
+        },
+        "dragon_scale": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "team": false,
+    "previous_id": "stage_08"
+  },
+{
+    "id": "stage_10",
+    "name": "镜心重围",
+    "description": "镜心幻影与太虚剑魄在重围中交错现身。",
+    "order": 10,
+    "min_realm": "dujie",
+    "enemies": [
+      "mirror_mirage",
+      "void_blade"
+    ],
+    "energy": 60,
+    "reward": {
+      "exp": {
+        "minimum": 1520,
+        "maximum": 1980
+      },
+      "stones": {
+        "minimum": 560,
+        "maximum": 770
+      },
+      "items": {
+        "thunder_horn": {
+          "minimum": 1,
+          "maximum": 2
+        },
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "team": true,
+    "previous_id": "stage_09"
+  },
+{
+    "id": "stage_11",
+    "name": "沉星旧庭",
+    "description": "沉星帝君与万载霜主同守旧庭。",
+    "order": 11,
+    "min_realm": "dujie",
+    "enemies": [
+      "sunken_sovereign",
+      "frost_monarch"
+    ],
+    "energy": 64,
+    "reward": {
+      "exp": {
+        "minimum": 1600,
+        "maximum": 2060
+      },
+      "stones": {
+        "minimum": 600,
+        "maximum": 820
+      },
+      "items": {
+        "dragon_scale": {
+          "minimum": 1,
+          "maximum": 2
+        },
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "team": false,
+    "previous_id": "stage_10"
+  },
+{
+    "id": "stage_12",
+    "name": "归元试锋",
+    "description": "归元守御携万木归墟在此试你道心。",
+    "order": 12,
+    "min_realm": "dujie",
+    "enemies": [
+      "origin_keeper",
+      "wood_colossus"
+    ],
+    "energy": 68,
+    "reward": {
+      "exp": {
+        "minimum": 1680,
+        "maximum": 2150
+      },
+      "stones": {
+        "minimum": 640,
+        "maximum": 870
+      },
+      "items": {
+        "thunder_horn": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "team": true,
+    "previous_id": "stage_11"
+  },
+{
+    "id": "stage_13",
+    "name": "双帝压境",
+    "description": "幽冥帝影与沉星帝君并立压境。",
+    "order": 13,
+    "min_realm": "dujie",
+    "enemies": [
+      "nether_emperor",
+      "sunken_sovereign"
+    ],
+    "energy": 72,
+    "reward": {
+      "exp": {
+        "minimum": 1760,
+        "maximum": 2240
+      },
+      "stones": {
+        "minimum": 680,
+        "maximum": 920
+      },
+      "items": {
+        "dragon_scale": {
+          "minimum": 1,
+          "maximum": 2
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "team": false,
+    "previous_id": "stage_12"
+  },
+{
+    "id": "stage_14",
+    "name": "万法归墟",
+    "description": "星陨守望、镜心幻影与九霄劫灵同现，万法归墟。",
+    "order": 14,
+    "min_realm": "dujie",
+    "enemies": [
+      "starfall_warden",
+      "mirror_mirage",
+      "tribulation_avatar"
+    ],
+    "energy": 78,
+    "reward": {
+      "exp": {
+        "minimum": 1850,
+        "maximum": 2350
+      },
+      "stones": {
+        "minimum": 730,
+        "maximum": 990
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "team": true,
+    "previous_id": "stage_13"
+  },
+{
+    "id": "stage_15",
+    "name": "星陨绝壁",
+    "description": "归元守御、天门守望与太虚剑魄据绝壁而守。",
+    "order": 15,
+    "min_realm": "dujie",
+    "enemies": [
+      "origin_keeper",
+      "sky_gate_guard",
+      "void_blade"
+    ],
+    "energy": 84,
+    "reward": {
+      "exp": {
+        "minimum": 1950,
+        "maximum": 2500
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 1060
+      },
+      "items": {
+        "thunder_horn": {
+          "minimum": 2,
+          "maximum": 3
+        },
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    },
+    "team": false,
+    "previous_id": "stage_14"
+  },
+{
+    "id": "stage_16",
+    "name": "归元绝顶",
+    "description": "沉星帝君、镜心幻影与星陨守望齐聚绝顶，章节尽于此。",
+    "order": 16,
+    "min_realm": "dujie",
+    "enemies": [
+      "sunken_sovereign",
+      "mirror_mirage",
+      "starfall_warden"
+    ],
+    "energy": 90,
+    "reward": {
+      "exp": {
+        "minimum": 2100,
+        "maximum": 2700
+      },
+      "stones": {
+        "minimum": 900,
+        "maximum": 1200
+      },
+      "items": {
+        "dragon_scale": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    },
+    "team": true,
+    "previous_id": "stage_15"
   }
 ]

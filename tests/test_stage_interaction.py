@@ -16,7 +16,7 @@ NOW = 1_800_000_000
 def seed_clears(game, user, orders):
     for order in orders:
         sql(game[1], "INSERT INTO pve_stage_progress(user_id,stage_id,first_cleared_at,first_operation_id)"
-            " VALUES (?,?,?,?)", (user, f"stage_0{order}", NOW, f"seed-{user}-{order}"))
+            " VALUES (?,?,?,?)", (user, f"stage_{order:02d}", NOW, f"seed-{user}-{order}"))
 
 
 def markdown_links(message):
@@ -80,12 +80,12 @@ def test_second_page_links_only_the_openable_row(game, play):
     account(game, play, "u1")
     seed_clears(game, "u1", range(1, 6))
     second = play("stage_catalog", "2", user="u1")
-    # Orders 6-8: stage_06 just opened, stage_07/08 stay locked behind it.
+    # Orders 6-10 on this page: stage_06 just opened, stage_07+ stay locked behind it.
     listing_lines = "幽沼蚀魂 · 可挑战" in second.lines[0]
     assert listing_lines
     assert [link.command for link in second.inline_commands] == ["灵宠挑战关卡 6"]
     assert second.inline_commands[0].line == 0
-    assert second.commands == ("灵宠关卡 1",)
+    assert second.commands == ("灵宠关卡 1", "灵宠关卡 3")
 
 
 def test_linked_team_stage_command_is_the_registered_team_entry(game, play):

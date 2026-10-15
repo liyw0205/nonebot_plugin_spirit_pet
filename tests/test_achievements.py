@@ -105,7 +105,7 @@ def test_duplicate_species_target_cannot_exceed_species_catalog(content_dir):
 
 @pytest.mark.parametrize(("metric", "target"), [
     ("species_collected", 27), ("max_realm", 7), ("max_layer", 70),
-    ("max_bloodline", 4), ("stage_clears", 8), ("max_skill_level", 5),
+    ("max_bloodline", 4), ("stage_clears", 16), ("max_skill_level", 5),
     ("max_affinity", 100), ("adventures_discovered", 21),
 ])
 def test_achievement_catalog_requires_final_milestones(content_dir, metric, target):
