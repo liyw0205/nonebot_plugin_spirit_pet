@@ -179,6 +179,34 @@ def restore(ctx: Context, arg: str) -> Reply:
     ), (f"灵宠切换 {pet.pet_id}", "灵宠封存库", "灵宠列表"))
 
 
+def rename(ctx: Context, arg: str) -> Reply:
+    """Give an owned pet its own name; the species name stays as the label."""
+    ctx.player()
+    parts = arg.split()
+    if len(parts) != 2:
+        raise GameError("请按 灵宠改名 编号 新名字 发送，例如 灵宠改名 3 凌霄。")
+    number, name = parts
+    if len(name) > 8:
+        raise GameError("灵宠名字最多 8 个字符。")
+    if name.isdecimal():
+        raise GameError("灵宠名字不能全是数字，以免与编号混淆。")
+    pet = _owned_pet_by_id(ctx, number)
+    if name == pet.name:
+        raise GameError(f"{pet.name}的名字没有变化，无需改名。")
+    clash = ctx.repo.conn.execute(
+        "SELECT pet_id FROM pets WHERE user_id=? AND name=? AND pet_id<>?",
+        (ctx.user_id, name, pet.pet_id),
+    ).fetchone()
+    if clash is not None:
+        raise GameError(f"名册中已有叫{name}的灵宠，请换一个名字。")
+    previous = pet.name
+    pet.name = name
+    return Reply("灵宠改名", (
+        f"{previous}（编号 {pet.pet_id}）已改名为{name}。",
+        "名册、我的灵宠与新的战斗记录都使用新名字；历史战报保留当时称谓。",
+    ), (f"灵宠切换 {pet.pet_id}", "灵宠列表", "我的灵宠"))
+
+
 def switch(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
     if any(separator in arg for separator in (" ", "，", ",")):
