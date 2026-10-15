@@ -95,9 +95,9 @@ def seed_pvp_win(game, user, played_at, op, season_id="2027-01"):
         )
 
 
-def test_content_defines_six_weekly_goals(game):
+def test_content_defines_twelve_weekly_goals(game):
     quests = list(game[0].content.weekly_quests.values())
-    assert len(quests) == 6
+    assert len(quests) == 12
     assert {quest.metric for quest in quests} == {
         "weekly_pve_wins", "weekly_pvp_wins", "weekly_expedition_claims",
         "weekly_adventures", "weekly_stage_clears", "weekly_achievement_claims",
@@ -118,13 +118,13 @@ def test_catalog_previews_without_an_account(game, play):
 def test_catalog_shows_the_week_and_zero_progress(game, play):
     account(game, play)
     listing = play("weekly_quests")
-    assert listing.title == "灵宠周常 1/2"
+    assert listing.title == "灵宠周常 1/3"
     assert listing.lines[0] == f"本周周期：{beijing_day(WEEK_START)} ~ {beijing_day(WEEK_END - 1)}（北京时间，周一 00:00 重置）"
     assert "秘境历练：0/5（未达成） · 灵石 800-800，锻灵矿 3-3" in listing.text()
     assert "论剑周赛：0/3（未达成） · 灵石 600-600，破境丹 1-1" in listing.text()
     assert links(listing) == []
     assert listing.commands == ("灵宠周常 2", "灵宠任务")
-    assert play("weekly_quests", "2").title == "灵宠周常 2/2"
+    assert play("weekly_quests", "2").title == "灵宠周常 2/3"
 
 
 def test_weekly_metrics_count_only_the_current_week(game, play):

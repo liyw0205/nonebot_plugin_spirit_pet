@@ -400,6 +400,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_assignment_expansion.py tests/test_daily_assignment.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `224 passed`（新增 `test_assignment_expansion` 4 项）。新增测试覆盖池子 12 项且每个指标目标互不相同、高强度变体奖励高于轻量版、四天轮换覆盖全池、高强度课题按目标判定与领取幂等。既有断言同步：`test_daily_assignment` 的「缺失指标」用例原本只删数组第一条，池中有两个 `daily_pve` 后不再触发校验，改为删除该指标的全部条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 周常任务扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示周常和今日课题一样只有单一难度：六个指标（`weekly_pve_wins`、`weekly_pvp_wins`、`weekly_expedition_claims`、`weekly_adventures`、`weekly_stage_clears`、`weekly_achievement_claims`）各只有一个目标值，玩家每周把六项做完就无事可做，没有“本周要不要冲更高目标”的取舍。
+
+`data/weekly_quests.json` 追加 6 项进阶周常：秘境苦战（12 胜）、论剑争锋（8 胜）、山海五往（6 次委托）、奇闻广记（10 条）、关卡连破（5 关）、成就五收（5 项），奖励约为轻量版两倍（灵石 1100-1400，材料 2-5）。池子由 6 项变为 12 项，`灵宠周常` 页面由 2 页变为 3 页（每页 5 条）。
+
+关键边界：不新增命令、表、列或规则字段；`weekly_claims`（累计领取次数）不在 `catalog.maxima` 内，因此无上限里程碑级联，称号「周常不辍」（6 次）保持有效；进度仍按当前自然周从永久记录派生，领取标记仍是 `quest_progress` 的对应行（`progress` 存本周起始），业务代码零改动；既有 6 项周常字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_weekly_expansion.py tests/test_weekly_quests.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_main_quest.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `225 passed`（新增 `test_weekly_expansion` 4 项）。新增测试覆盖 12 项且每指标两个目标、进阶奖励高于轻量版、进阶周常按目标判定与领取幂等、跨周标记失效后可再次领取、`灵宠目标` 行随内容变化。既有断言同步：`test_weekly_quests` 的条目数 6 → 12 与页码 `1/2` → `1/3`、`2/2` → `2/3`。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

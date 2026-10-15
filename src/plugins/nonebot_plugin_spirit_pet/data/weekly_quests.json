@@ -136,5 +136,143 @@
         }
       }
     }
+  },
+{
+    "id": "weekly_pve_deep",
+    "name": "秘境苦战",
+    "description": "本周在秘境或关卡中获胜 12 场。",
+    "metric": "weekly_pve_wins",
+    "target": 12,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1400,
+        "maximum": 1400
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 5,
+          "maximum": 5
+        }
+      }
+    }
+  },
+{
+    "id": "weekly_pvp_deep",
+    "name": "论剑争锋",
+    "description": "本周论剑获胜 8 场。",
+    "metric": "weekly_pvp_wins",
+    "target": 8,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1200,
+        "maximum": 1200
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "weekly_expedition_deep",
+    "name": "山海五往",
+    "description": "本周领取 6 次离线委托。",
+    "metric": "weekly_expedition_claims",
+    "target": 6,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1300,
+        "maximum": 1300
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+{
+    "id": "weekly_adventure_deep",
+    "name": "奇闻广记",
+    "description": "本周新发现 10 条奇闻。",
+    "metric": "weekly_adventures",
+    "target": 10,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1100,
+        "maximum": 1100
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+{
+    "id": "weekly_stage_deep",
+    "name": "关卡连破",
+    "description": "本周首次通关 5 处章节关卡。",
+    "metric": "weekly_stage_clears",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1250,
+        "maximum": 1250
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+{
+    "id": "weekly_achievement_deep",
+    "name": "成就五收",
+    "description": "本周领取 5 项成就奖励。",
+    "metric": "weekly_achievement_claims",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1150,
+        "maximum": 1150
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
   }
 ]
