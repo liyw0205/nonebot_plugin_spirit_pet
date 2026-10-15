@@ -1,0 +1,406 @@
+[
+  {
+    "id": "main_01",
+    "name": "初结灵契",
+    "description": "与第一位伙伴结下灵契。",
+    "order": 1,
+    "metric": "pets_owned",
+    "target": 1,
+    "previous_id": null,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "main_02",
+    "name": "双灵相伴",
+    "description": "让名册里再添一位伙伴。",
+    "order": 2,
+    "metric": "pets_owned",
+    "target": 2,
+    "previous_id": "main_01",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 150,
+        "maximum": 150
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "main_03",
+    "name": "吐纳有成",
+    "description": "把伙伴修炼到启灵三层。",
+    "order": 3,
+    "metric": "max_layer",
+    "target": 3,
+    "previous_id": "main_02",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 200,
+        "maximum": 200
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_04",
+    "name": "灵血初显",
+    "description": "以修为与材料唤醒更高血脉。",
+    "order": 4,
+    "metric": "max_bloodline",
+    "target": 1,
+    "previous_id": "main_03",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 250,
+        "maximum": 250
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_05",
+    "name": "择路而行",
+    "description": "为一只灵宠选定血脉分支。",
+    "order": 5,
+    "metric": "lineage_branches",
+    "target": 1,
+    "previous_id": "main_04",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_06",
+    "name": "秘术初习",
+    "description": "学会第一门灵术。",
+    "order": 6,
+    "metric": "skills_learned",
+    "target": 1,
+    "previous_id": "main_05",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "main_07",
+    "name": "秘术精进",
+    "description": "把一门灵术练到二级。",
+    "order": 7,
+    "metric": "max_skill_level",
+    "target": 2,
+    "previous_id": "main_06",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 350,
+        "maximum": 350
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "main_08",
+    "name": "心契渐深",
+    "description": "把一只伙伴的亲密养到 50。",
+    "order": 8,
+    "metric": "max_affinity",
+    "target": 50,
+    "previous_id": "main_07",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 350,
+        "maximum": 350
+      },
+      "items": {
+        "affinity_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_09",
+    "name": "山海初见",
+    "description": "在历练中发现三条奇闻。",
+    "order": 9,
+    "metric": "adventures_discovered",
+    "target": 3,
+    "previous_id": "main_08",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 400,
+        "maximum": 400
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "main_10",
+    "name": "首关告捷",
+    "description": "通关第一处章节关卡。",
+    "order": 10,
+    "metric": "stage_clears",
+    "target": 1,
+    "previous_id": "main_09",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 450,
+        "maximum": 450
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_11",
+    "name": "论剑扬名",
+    "description": "在论剑中取得一场胜利。",
+    "order": 11,
+    "metric": "pvp_wins",
+    "target": 1,
+    "previous_id": "main_10",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_12",
+    "name": "山海归来",
+    "description": "完成并领取一次离线委托。",
+    "order": 12,
+    "metric": "expedition_claims",
+    "target": 1,
+    "previous_id": "main_11",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "main_13",
+    "name": "塔门初开",
+    "description": "在万灵塔通过三层。",
+    "order": 13,
+    "metric": "tower_depth",
+    "target": 3,
+    "previous_id": "main_12",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 600,
+        "maximum": 600
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "main_14",
+    "name": "金丹可期",
+    "description": "把一只伙伴送入金丹境。",
+    "order": 14,
+    "metric": "max_realm",
+    "target": 4,
+    "previous_id": "main_13",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 700,
+        "maximum": 700
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "main_15",
+    "name": "并肩同行",
+    "description": "与队友合力赢下一场组队 PVE。",
+    "order": 15,
+    "metric": "team_pve_wins",
+    "target": 1,
+    "previous_id": "main_14",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 800
+      },
+      "items": {
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "main_16",
+    "name": "渡劫问鼎",
+    "description": "把一只伙伴送入渡劫境。",
+    "order": 16,
+    "metric": "max_realm",
+    "target": 7,
+    "previous_id": "main_15",
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1500,
+        "maximum": 1500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "breakthrough_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  }
+]

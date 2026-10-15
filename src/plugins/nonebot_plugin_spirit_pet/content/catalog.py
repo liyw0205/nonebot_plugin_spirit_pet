@@ -15,6 +15,7 @@ from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
+from ..domain.main_quest_content import MainQuest
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 
@@ -75,6 +76,7 @@ class Catalog:
     expeditions: dict[str, Expedition]
     stages: dict[str, Stage]
     tower: dict[str, TowerFloor]
+    main_quests: dict[str, MainQuest]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
 
@@ -107,6 +109,7 @@ class Catalog:
             expeditions=_index(directory / "expeditions.json", Expedition),
             stages=_index(directory / "stages.json", Stage),
             tower=_index(directory / "tower.json", TowerFloor),
+            main_quests=_index(directory / "main_quests.json", MainQuest),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
         )
@@ -145,6 +148,7 @@ class Catalog:
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
+            *(quest.reward for quest in self.main_quests.values()),
         ):
             self._require(reward.items, self.items, "reward items")
         route_encounters = [
@@ -178,6 +182,7 @@ class Catalog:
                 raise ValueError("dungeon energy exceeds capacity")
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
+        self._validate_main_quests()
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -206,6 +211,17 @@ class Catalog:
         validate_lineages(self)
         self._validate_achievements()
         self._validate_breeding()
+
+    def _validate_main_quests(self) -> None:
+        quests = sorted(self.main_quests.values(), key=lambda quest: quest.order)
+        if [quest.order for quest in quests] != list(range(1, len(quests) + 1)):
+            raise ValueError("main quest order must be contiguous from 1")
+        for index, quest in enumerate(quests):
+            expected = quests[index - 1].id if index else None
+            if quest.previous_id != expected:
+                raise ValueError(f"main quest {quest.id} must follow {expected}")
+        if not quests:
+            raise ValueError("at least one main quest is required")
 
     def _validate_breeding(self) -> None:
         eggs = {item.species_id for item in self.items.values() if item.kind == "pet_egg"}

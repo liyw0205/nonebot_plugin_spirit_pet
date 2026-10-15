@@ -5,6 +5,7 @@ from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, tower
 from ..gameplay import breeding
+from ..gameplay import main_quest
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
@@ -49,6 +50,8 @@ ACTIONS = {
     "train": Command(cultivation.train, True),
     "co_train": Command(cultivation.co_train, True),
     "breeding": Command(breeding.breeding, True, registered=False),
+    "main_quests": Command(main_quest.catalog, True, registered=False),
+    "main_quest_claim": Command(main_quest.claim, True),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
@@ -117,6 +120,7 @@ COMMANDS = {
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond", "灵宠修炼": "train",
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
+    "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",

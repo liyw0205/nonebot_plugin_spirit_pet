@@ -144,6 +144,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_breeding.py tests/test_hatching.py tests/test_item_loop.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：合计 `267 passed`（含新增 `test_breeding` 12 项）。新增测试覆盖 27 族灵卵与规则合法性、列表行位与唯一蓝字、按钮集合与蓝字零重叠、阻塞原因（亲密/精力/灵石）、未结契只读不建号、无同族伙伴的下一步、成功扣费发卵、培育灵卵经既有孵化路径成为新伙伴、格式/同一只/无效编号/封存/非同族/亲密/精力/灵石/外出派遣各类拒绝、同消息重放不重复扣费、帮助条目与 native payload 蓝字按钮零重叠。`test_pet_catalog` 的旧灵卵断言按需原地更新；QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠主线闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与集成修复、业务模块、命令与帮助、定向测试。此前只有 10 条每日事件任务与 40+ 条无序成就，玩家从结契到渡劫之间没有任何按序引导；`quest_progress` 虽是通用一次性领取表，但 `gameplay/quests.py::refresh` 跨日时执行 `DELETE FROM quest_progress WHERE user_id=?`，会连主线记录一起清空。
+
+新增 `data/main_quests.json`（16 步，`order` 1..16 连续、`previous_id` 成链、指标复用 `AchievementMetric`、一次性 `Reward`）与 `domain/main_quest_content.py::MainQuest`；`content/catalog.py` 载入 `main_quests`、把主线奖励并入奖励物品校验，并新增 `_validate_main_quests`（序号连续、前置链闭合、至少一步）。集成修复：`quests.refresh` 的跨日清理改为 `DELETE ... AND quest_id IN (每日任务 id)`，每日任务跨日清零行为不变，主线行不再被误删。
+
+`gameplay/main_quest.py` 提供 `catalog` 与 `claim`。列表按页展示全部步骤与四态（`已完成`/`可领奖`/`进行中`/`未解锁`）、当前步进度与奖励摘要，当前可领步挂唯一“领取奖励”蓝字（`InlineCommand`，命令 `灵宠主线领奖 <步骤名>`），按钮只保留翻页与 `灵宠任务`；未结契玩家可只读浏览且不建号。`claim` 在事务内校验步骤名、重复领取、按序推进与指标达成，随后 `grant` 发奖并把 `claimed=1` 与领取时的指标值写入 `quest_progress`。命令注册为 `main_quests`（`registered=False`）与 `main_quest_claim`（`registered=True`），别名 `灵宠主线`/`灵宠主线领奖`，帮助“秘境与关卡”段补两条。schema 20、每日任务事件与奖励、成就定义与指标语义全部不动，未新增表或迁移。
+
+定向命令 `./.venv/bin/pytest -q tests/test_main_quest.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_player_experience.py tests/test_information.py tests/test_messaging.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_adventure_routes.py tests/test_companionship.py` 与第二批 `tests/test_quest_interaction.py tests/test_battles.py tests/test_arena_battles.py tests/test_expedition_commands.py tests/test_hatching.py tests/test_item_loop.py tests/test_breeding.py`：合计 `400 passed`（含新增 `test_main_quest` 9 项），无既有断言需要改动。新增测试覆盖 16 步内容与前置链、四态与进度显示、唯一蓝字与按钮集合零重叠、未结契只读不建号、领取发奖与解锁下一步、未知步骤/乱序/条件未达成/重复领取的拒绝、跨日后主线保留而每日任务清零、同消息重放不重复发奖、帮助条目与 native payload 蓝字按钮零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -9,7 +9,13 @@ def refresh(ctx: Context, user_id: str | None = None):
     player = ctx.player(user_id)
     today = beijing_day(ctx.now)
     if today > player.quest_day:
-        ctx.repo.conn.execute("DELETE FROM quest_progress WHERE user_id=?", (player.user_id,))
+        # Only daily quests reset here: other one-time claim families share this table.
+        daily = tuple(ctx.content.quests)
+        placeholders = ",".join("?" for _ in daily)
+        ctx.repo.conn.execute(
+            f"DELETE FROM quest_progress WHERE user_id=? AND quest_id IN ({placeholders})",
+            (player.user_id, *daily),
+        )
         player.quest_day = today
     return player
 
