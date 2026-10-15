@@ -420,6 +420,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_season_expansion.py tests/test_season_missions.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_weekly_expansion.py tests/test_assignment_expansion.py`：合计 `226 passed`（新增 `test_season_expansion` 4 项）。新增测试覆盖 10 项且每指标两个目标、进阶奖励高于轻量版、进阶任务按目标判定与领取幂等、跨赛季标记失效后可再次领取、`灵宠目标` 行随内容变化。既有断言同步：`test_season_missions` 的页码 `1/1` → `1/2`、导航按钮（多出 `灵宠赛季任务 2`）、已领取计数 `1/5` → `1/10`，以及「缺失指标」用例改为删除该指标的全部条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠共鸣扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示共鸣覆盖面很窄：27 族只定义了 14 组配对，且多为同系相邻组合（青鸾+寒翎鹰、玄狐+雪狐、白泽+道棠…），跨系组合几乎空缺，玩家手里的跨系双灵大多没有对应共鸣可集，收集与队伍搭配的选择面被压得很小。
+
+`data/resonances.json` 追加 7 组跨系配对：风火同翔（青鸾+毕方）、狐灵相映（玄狐+冥蝶）、金羽共鸣（白泽+金羽）、龙雷交鸣（蛟龙+雷泽）、山岳之盟（玄武+山石）、雪鹿同游（三灵鹿+雪狐）、霜翼共鸣（冰蚕+寒翎鹰），倍率沿用既有量级（合计 0.06-0.08）。目录由 14 组变为 21 组，`灵宠共鸣` 页面由 3 页变为 5 页（每页 5 条），仍覆盖全部 27 族。
+
+关键边界：不新增命令、表、列或规则字段；共鸣不在平衡门禁取样内（`lineup_report.py` 明确写明准备档「no selected lineage or resonance」），`resonances_enabled` 也不在 `catalog.maxima` 内，因此既不影响门禁也无上限里程碑级联；启用/停用/切换与幂等全部复用既有实现（重复启用当前共鸣返回「共鸣已启用」且不重复扣费），业务代码零改动；既有 14 组共鸣字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_resonance_expansion.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `225 passed`（新增 `test_resonance_expansion` 4 项）。新增测试覆盖 21 组且配对唯一、每个种族仍被覆盖、新组不与旧组重复、新组可激活并按 `rules.resonance_cost` 扣费、重复启用幂等不重复扣费、种族未集齐时被拒。既有断言同步：`test_resonance` 的条目数 14 → 21、页码 `1/3` → `1/5` 与页码参数（第 6 页越界），以及「种族未覆盖」用例改为删除某一种族的全部配对（原用例只删一组，在该种族被其他组覆盖后不再触发校验）。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -22,7 +22,7 @@ NOW = 1_800_000_000
 
 def test_resonance_definitions_are_bounded_unique_and_cover_the_roster(game):
     content = game[0].content
-    assert len(content.resonances) == 14
+    assert len(content.resonances) == 21
     assert {key for entry in content.resonances.values() for key in entry.required_species} == set(content.species)
     with pytest.raises(ValidationError, match="total at most 10%"):
         ResonanceBonuses(hp=0.08, attack=0.08, defense=0, speed=0)
@@ -33,8 +33,10 @@ def test_resonance_definitions_are_bounded_unique_and_cover_the_roster(game):
             bonuses={"hp": 0.05, "attack": 0, "defense": 0, "speed": 0},
         )
 
-    broken = dict(content.resonances)
-    broken.pop("ghostwing")
+    broken = {
+        key: entry for key, entry in content.resonances.items()
+        if "tielin" not in entry.required_species
+    }
     with pytest.raises(ValueError, match="every species"):
         replace(content, resonances=broken)._validate_resonances()
 
@@ -68,14 +70,14 @@ def test_resonance_catalog_is_read_only_and_explains_missing_species(game, play)
     play("adopt", "青鸾")
     before = player(game[1]), items(game[1])
     first = play("resonance")
-    assert first.title == "灵宠共鸣 1/3"
+    assert first.title == "灵宠共鸣 1/5"
     assert len(first.lines) == 5
     assert "青岚双翼 · 未集齐" in first.text()
     assert "灵宠共鸣 查看 青岚双翼" in first.commands
     detail = play("resonance", "查看 青岚双翼")
     assert "还需寒翎鹰" in detail.text()
-    with pytest.raises(GameError, match="共 3 页"):
-        play("resonance", "4")
+    with pytest.raises(GameError, match="共 5 页"):
+        play("resonance", "6")
     assert (player(game[1]), items(game[1])) == before
     assert not sql(game[1], "SELECT * FROM player_resonance")
 

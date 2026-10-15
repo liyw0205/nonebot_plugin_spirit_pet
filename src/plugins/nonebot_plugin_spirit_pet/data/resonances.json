@@ -96,5 +96,110 @@
     "description": "幽蝶循风穿行，守中带变。",
     "required_species": ["duman", "mingdie"],
     "bonuses": {"hp": 0, "attack": 0, "defense": 0.02, "speed": 0.05}
+  },
+{
+    "id": "windfire_soar",
+    "name": "风火同翔",
+    "description": "青鸾与毕方一风一火，同翔时攻势倍增。",
+    "required_species": [
+      "qingluan",
+      "bifang"
+    ],
+    "bonuses": {
+      "hp": 0,
+      "attack": 0.04,
+      "defense": 0,
+      "speed": 0.04
+    }
+  },
+{
+    "id": "fox_spirit",
+    "name": "狐灵相映",
+    "description": "玄狐与冥蝶一实一虚，身形更难捉摸。",
+    "required_species": [
+      "xuanhu",
+      "mingdie"
+    ],
+    "bonuses": {
+      "hp": 0,
+      "attack": 0.03,
+      "defense": 0,
+      "speed": 0.05
+    }
+  },
+{
+    "id": "metal_wing",
+    "name": "金羽共鸣",
+    "description": "白泽与金羽同鸣，锋锐与守御兼得。",
+    "required_species": [
+      "baize",
+      "jinyu"
+    ],
+    "bonuses": {
+      "hp": 0,
+      "attack": 0.04,
+      "defense": 0.03,
+      "speed": 0
+    }
+  },
+{
+    "id": "dragon_thunder",
+    "name": "龙雷交鸣",
+    "description": "蛟龙引雷泽之水气，雷水交鸣声势骇人。",
+    "required_species": [
+      "jiaolong",
+      "leize"
+    ],
+    "bonuses": {
+      "hp": 0.04,
+      "attack": 0.04,
+      "defense": 0,
+      "speed": 0
+    }
+  },
+{
+    "id": "mountain_pact",
+    "name": "山岳之盟",
+    "description": "玄武与山石立盟，守势如岳不可撼动。",
+    "required_species": [
+      "xuanwu",
+      "shanshi"
+    ],
+    "bonuses": {
+      "hp": 0.06,
+      "attack": 0,
+      "defense": 0.03,
+      "speed": 0
+    }
+  },
+{
+    "id": "snow_deer",
+    "name": "雪鹿同游",
+    "description": "三灵鹿与雪狐踏雪同行，步履轻捷。",
+    "required_species": [
+      "sanlinglu",
+      "xuehu"
+    ],
+    "bonuses": {
+      "hp": 0.03,
+      "attack": 0,
+      "defense": 0,
+      "speed": 0.05
+    }
+  },
+{
+    "id": "frost_wing",
+    "name": "霜翼共鸣",
+    "description": "冰蚕与寒翎鹰霜息相引，护体更坚。",
+    "required_species": [
+      "bingcan",
+      "hanying"
+    ],
+    "bonuses": {
+      "hp": 0,
+      "attack": 0,
+      "defense": 0.03,
+      "speed": 0.05
+    }
   }
 ]
