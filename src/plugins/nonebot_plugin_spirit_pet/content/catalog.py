@@ -155,6 +155,7 @@ class Catalog:
         for reward in (
             self.rules.daily_reward, *(q.reward for q in self.quests.values()),
             *(e.reward for e in self.encounters.values()), *(d.reward for d in self.dungeons.values()),
+            *(d.first_clear for d in self.dungeons.values() if d.first_clear is not None),
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
             *(quest.reward for quest in self.main_quests.values()),
@@ -191,6 +192,8 @@ class Catalog:
             self._require(dungeon.enemies, self.enemies, "dungeon enemies")
             if dungeon.energy > 100:
                 raise ValueError("dungeon energy exceeds capacity")
+            if dungeon.first_clear is None:
+                raise ValueError(f"dungeon {dungeon.id} is missing a first-clear reward")
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
         self._validate_main_quests()

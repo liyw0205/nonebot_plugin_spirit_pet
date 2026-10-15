@@ -12,6 +12,7 @@ from ..gameplay import inheritance
 from ..gameplay import titles
 from ..gameplay import objectives
 from ..gameplay import sweep
+from ..gameplay import first_clear
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
@@ -67,6 +68,8 @@ ACTIONS = {
     "titles": Command(titles.catalog, True, registered=False),
     "objectives": Command(objectives.objectives, True, registered=False),
     "sweep": Command(sweep.sweep, True),
+    "first_clear": Command(first_clear.catalog, True, registered=False),
+    "first_clear_claim": Command(first_clear.claim, True),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
@@ -140,7 +143,7 @@ COMMANDS = {
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠目标": "objectives",
-    "灵宠扫荡": "sweep",
+    "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",

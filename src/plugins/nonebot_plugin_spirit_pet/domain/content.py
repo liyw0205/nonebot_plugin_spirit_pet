@@ -165,6 +165,7 @@ class Dungeon(Definition):
     enemies: list[Identifier] = Field(min_length=1, max_length=5)
     energy: Positive
     reward: Reward
+    first_clear: Reward | None = None
     team: bool = False
 
 

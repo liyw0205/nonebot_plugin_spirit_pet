@@ -244,6 +244,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_achievement_expansion.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_objectives.py tests/test_titles.py tests/test_information.py tests/test_commands.py tests/test_messaging.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_crafting.py tests/test_forging.py tests/test_loadout.py tests/test_item_loop.py tests/test_battle_records.py tests/test_arena_battles.py tests/test_arena_messaging.py tests/test_mastery.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_quest_interaction.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_daily_dungeon.py`：合计 `471 passed`（含新增 `test_achievement_expansion` 11 项），既有断言无需改动。新增测试覆盖六个指标在空存档与未结契用户下均为 0 且不写任何行、强化等级跨两处装备表取最大、切磋胜场按永久战报的胜方判定（败方为 0）、累计战斗场次、装备收藏跨两处装备表、成就领取计数、共鸣启用计数、新成就在成就页的 `可领奖`/`进行中` 呈现与领取一次/重复拒绝/重投幂等、`灵宠目标` 成就行随新可领项变化、内容校验（`required` 覆盖、+10 里程碑在册、目标不得超出 `maxima`）与 native payload 按钮/蓝字零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 秘境首通奖励闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与校验、业务与命令、聚焦测试、文档。审计发现关卡有首通奖励（`pve_stage_progress`，首次通关发奖并记录），但秘境完全没有首通概念：16 处秘境每次获胜都发同一份随机奖励，第一次通关没有任何额外反馈，也没有“把 16 处秘境各通关一次”的完成度目标。秘境是主要 PVE 循环，却缺少完成度激励。
+
+`domain/content.py` 的 `Dungeon` 增加 `first_clear: Reward | None = None`（保持既有构造兼容），`data/dungeons.json` 用文本锚点按 `"id"` 定位并插在 `"reward"` 行之前，为 16 处秘境各补一行 `first_clear`（`exp` 固定 0-0，灵石与道具为固定值）：青岚林 150 + 锻灵矿 2、上古灵殿 250 + 锻灵矿 3、月影谷 200 + 锻灵矿 2、寒晶洞 220 + 血脉精华 1、腐毒沼 220 + 灵粮 3、潮生宫 350 + 血脉精华 2、雷泽 300 + 锻灵矿 3、幽冥深渊 450 + 血脉精华 2、焚天峰 400 + 锻灵矿 4、玄玉天阙 600 + 血脉精华 3、万载霜渊 500 + 锻灵矿 5、万木归墟 750 + 血脉精华 3、太虚剑境 650 + 蕴灵丹 2、冥帝幽庭 900 + 血脉精华 4、九霄劫海 800 + 蕴灵丹 3、太上天门 1200 + 血脉精华 5。`content/catalog.py` 新增完整性校验（`dungeon <id> is missing a first-clear reward`），并把 `first_clear` 奖励并入既有的奖励物品校验列表。
+
+`gameplay/first_clear.py`：`claim_id(dungeon_id)` 返回 `first_clear_<秘境 id>`，`claimed` 读 `quest_progress` 的 `claimed`（一次性，不比较日期），通关判定直接复用 `sweep._cleared`（永久战报派生，`winner_side=side`，败退与平局不算）——两条路径共用同一判定，不会各自漂移。`catalog` 分页每页 5 处（16 处共 4 页），逐行给出 `名称（单人/组队）· 奖励摘要 · 状态`，`可领取` 行挂 `灵宠秘境首通领奖 <秘境名>` 蓝字，页尾给出可领数量；未结契时只返回预览与“开始领养”蓝字，不建号。`claim` 依次校验已领取、未通关，再 `grant(ctx, dungeon.first_clear, user_id)` 并写入 `quest_progress` 标记（`progress=0`，一次性）。命令注册为 `first_clear`（`registered=False`，页面可只读）与 `first_clear_claim`（`registered=True`），别名 `灵宠秘境首通` / `灵宠秘境首通领奖`，帮助“秘境与关卡”段补两条，`灵宠目标` 增加第七行“秘境首通”。
+
+关键边界：不改动秘境战斗结算、掉落、精力与冷却——首通奖励只在结算路径之外补一份一次性领取，因此平衡门禁“一次秘境胜利只付秘境自身奖励”不变；不新增表或列，领取标记复用 `quest_progress`。
+
+定向命令 `./.venv/bin/pytest -q tests/test_first_clear.py tests/test_sweep.py tests/test_daily_dungeon.py tests/test_objectives.py tests/test_achievement_expansion.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_balance_lineups.py tests/test_battle_records.py tests/test_arena_battles.py tests/test_arena_messaging.py tests/test_mastery.py tests/test_tower.py tests/test_main_quest.py tests/test_weekly_quests.py tests/test_quest_interaction.py tests/test_crafting.py tests/test_forging.py tests/test_dungeon_interaction.py tests/test_stage_interaction.py`：合计 `467 passed`（含新增 `test_first_clear` 10 项），既有断言无需改动。新增测试覆盖分页与页数边界、未通关拒绝、通关后解锁并发放一次（灵石 +150、锻灵矿 +2）、重复领取拒绝与同 `operation_id` 幂等、未结契只读预览且不建号、`灵宠目标` 秘境首通行随领取变化、组队秘境按真实胜利判定（从战报读取胜方并逐人核对）、缺少 `first_clear` 的内容被拒绝、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

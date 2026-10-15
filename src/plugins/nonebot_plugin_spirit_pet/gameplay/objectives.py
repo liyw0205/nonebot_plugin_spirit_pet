@@ -1,10 +1,10 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from . import daily_dungeon, main_quest, quests, titles, weekly_quests
+from . import daily_dungeon, first_clear, main_quest, quests, titles, weekly_quests
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
-    "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号",
+    "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
 )
 
 
@@ -72,6 +72,18 @@ def _dungeon_line(ctx: Context, user_id: str) -> str:
     return f"今日秘境：{dungeon.name} · {states}"
 
 
+def _first_clear_line(ctx: Context, user_id: str) -> str:
+    claimable = [
+        dungeon.name for dungeon in ctx.content.dungeons.values()
+        if first_clear._cleared(ctx, dungeon.id)
+        and not first_clear.claimed(ctx, user_id, dungeon.id)
+    ]
+    total = len(ctx.content.dungeons)
+    if claimable:
+        return f"秘境首通：可领 {len(claimable)} 处（{'、'.join(claimable)}）· 共 {total} 处"
+    return f"秘境首通：暂无可领 · 共 {total} 处"
+
+
 def _title_line(ctx: Context, user_id: str) -> str:
     held = titles.earned(ctx, user_id)
     holder = held[-1][0] if held else None
@@ -97,6 +109,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _main_quest_line(ctx, player.user_id),
         _achievement_line(ctx, player.user_id),
         _title_line(ctx, player.user_id),
+        _first_clear_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)
