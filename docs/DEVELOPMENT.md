@@ -290,6 +290,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_echoes.py tests/test_adventure_routes.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_achievements.py tests/test_achievement_expansion.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_quest_interaction.py tests/test_player_experience.py`：合计 `393 passed`（含新增 `test_echoes` 11 项与既有 `test_adventure_routes` 12 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、未发现奇闻不出现、发现后列出全部选项、选择发放选项奖励并锁定其余选项、未发现与未知选项与格式错误被拒、重复回响被拒与同 `operation_id` 幂等、`灵宠目标` 回响行、内容校验（选项少于 2 个、id 重复、奖励物品缺失）、全部奇闻的选项完整性、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 赛季任务闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务与命令、聚焦测试、文档。审计发现论剑赛季只有排名档位奖励（青云/凌霄/天阙，按 rating 判定），没有任何赛季目标：玩家在整个赛季里除了“打够场次、冲分”没有可勾选的清单，赛季与每日/每周任务之间也没有衔接。
+
+新增 `data/season_missions.json` 五项赛季目标：论剑历练（本赛季参加 10 场论剑）、论剑争锋（本赛季赢下 5 场）、山海征战（本赛季在秘境或关卡获胜 5 场）、奇闻寻访（本赛季发现 3 条奇闻）、成就累积（本赛季领取 3 项成就奖励）。`domain/season_mission_content.py` 定义 `SeasonMissionMetric` 与 `SeasonMission`，`content/catalog.py` 的 `_validate_season_missions` 校验五种指标必须全部在册、不得出现重复的“指标 + 目标”组合，并把奖励并入统一的奖励物品校验元组。
+
+`gameplay/season_missions.py`：`window` 直接复用 `utils.time.season_bounds`（北京时间自然月起止），`_value` 按指标派生——`season_matches`/`season_wins` 读 `pvp_results`（按 `season_id`，参与计挑战者或目标任一侧，胜场计 `winner_id`），`season_pve` 统计 `battle_records` 中 `kind IN ('pve','pve_stage')` 且 `winner_side=side` 且 `played_at` 落在窗口内的记录，`season_discoveries` 读 `adventure_discoveries.discovered_at`，`season_claims` 读 `achievement_claims.claimed_at`。`_claimed` 要求存储的赛季起始等于当前赛季起始（与周常同款，但窗口为自然月）。`catalog` 每页 5 项，逐项两行（奖励摘要 + 状态行、说明行），页尾给出赛季号、剩余天数与已领取/可领取计数，未结契只返回预览与“开始领养”蓝字；`claim` 依次校验本赛季是否已领取、进度是否达标，再 `grant` 并把赛季起始写入 `quest_progress` 的 `season_<任务 id>`。命令注册为 `season_missions`（`registered=False`）与 `season_mission_claim`（`registered=True`），别名 `灵宠赛季任务` / `灵宠赛季任务领奖`，帮助“对战与赛季”段补两条，`灵宠目标` 增加第十一行“赛季任务”。
+
+关键边界：不新增表或列、不新增规则字段；赛季档位奖励、积分规则、场次限额与每日限额完全不变；进度只统计当前赛季窗口内的记录，换季自动重置且未领取不累积。
+
+定向命令 `./.venv/bin/pytest -q tests/test_season_missions.py tests/test_seasons.py tests/test_arena_battles.py tests/test_arena_content.py tests/test_arena_interaction.py tests/test_arena_matching.py tests/test_arena_messaging.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_journey.py tests/test_echoes.py tests/test_achievements.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_catalog_interaction.py tests/test_quest_interaction.py tests/test_player_experience.py`：合计 `585 passed`（含新增 `test_season_missions` 12 项与全部论剑/赛季既有合同），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、页面内容与赛季行、五种指标的派生进度（含窗口外记录不计）、领取发放奖励并写入赛季起始、未达成与重复领取被拒、同 `operation_id` 幂等、换季重新可领、`灵宠目标` 赛季任务行、内容校验（指标缺失、重复目标、奖励物品缺失）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

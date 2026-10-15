@@ -1,0 +1,117 @@
+[
+  {
+    "id": "season_matches",
+    "name": "论剑历练",
+    "description": "本赛季参加 10 场论剑。",
+    "metric": "season_matches",
+    "target": 10,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "season_wins",
+    "name": "论剑争锋",
+    "description": "本赛季赢下 5 场论剑。",
+    "metric": "season_wins",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  {
+    "id": "season_pve",
+    "name": "山海征战",
+    "description": "本赛季在秘境或关卡获胜 5 场。",
+    "metric": "season_pve",
+    "target": 5,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 400,
+        "maximum": 400
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "season_discoveries",
+    "name": "奇闻寻访",
+    "description": "本赛季发现 3 条奇闻。",
+    "metric": "season_discoveries",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 350,
+        "maximum": 350
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "season_claims",
+    "name": "成就累积",
+    "description": "本赛季领取 3 项成就奖励。",
+    "metric": "season_claims",
+    "target": 3,
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 450,
+        "maximum": 450
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  }
+]

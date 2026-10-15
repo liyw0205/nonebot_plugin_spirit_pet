@@ -21,6 +21,7 @@ from ..domain.title_content import Title
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
 from ..domain.journey_content import Journey
+from ..domain.season_mission_content import SeasonMission
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -85,6 +86,7 @@ class Catalog:
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
     journey: dict[str, Journey]
+    season_missions: dict[str, SeasonMission]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -121,6 +123,7 @@ class Catalog:
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
             journey=_index(directory / "journey.json", Journey),
+            season_missions=_index(directory / "season_missions.json", SeasonMission),
         )
         catalog.validate()
         return catalog
@@ -164,6 +167,7 @@ class Catalog:
             *(floor.reward for floor in self.tower.values()),
             *(quest.reward for quest in self.main_quests.values()),
             *(chapter.reward for chapter in self.journey.values()),
+            *(mission.reward for mission in self.season_missions.values()),
             *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
@@ -209,6 +213,7 @@ class Catalog:
         self._validate_tower(realm_ids)
         self._validate_main_quests()
         self._validate_journey(realm_ids)
+        self._validate_season_missions()
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -464,6 +469,20 @@ class Catalog:
             current = following[0] if following else None
         if seen != set(chapters):
             raise ValueError("journey chapters must form a single chain")
+
+    def _validate_season_missions(self):
+        missions = self.season_missions
+        if not missions:
+            raise ValueError("at least one season mission is required")
+        expected = {
+            "season_matches", "season_wins", "season_pve", "season_discoveries", "season_claims",
+        }
+        present = {mission.metric for mission in missions.values()}
+        if not expected.issubset(present):
+            raise ValueError(f"missing season mission metrics: {sorted(expected - present)}")
+        pairs = [(mission.metric, mission.target) for mission in missions.values()]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("duplicate season mission metric target")
 
     def _validate_resonances(self):
         covered = set()
