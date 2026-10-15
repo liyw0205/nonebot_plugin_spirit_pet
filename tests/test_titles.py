@@ -60,12 +60,12 @@ def test_catalog_shows_the_current_title_and_progress(game, play):
 
 def test_highest_ordered_held_title_wins(game, play):
     account(game, play)
-    for order in range(1, 9):
+    for order in range(1, 17):
         sql(
             game[1],
             "INSERT INTO pve_stage_progress(user_id, stage_id, first_cleared_at, first_operation_id)"
             " VALUES ('u1', ?, ?, ?)",
-            (f"tower_0{order}", NOW, f"seed-tower-{order}"),
+            (f"tower_{order:02d}", NOW, f"seed-tower-{order}"),
         )
     sql(game[1], "UPDATE pets SET realm=6")
     listing = play("titles")

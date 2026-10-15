@@ -28,14 +28,14 @@ def seed_floors(game, orders, user="u1"):
         sql(
             game[1],
             "INSERT INTO pve_stage_progress VALUES (?, ?, ?, ?)",
-            (user, f"tower_0{order}", NOW, f"seed-{user}-{order}"),
+            (user, f"tower_{order:02d}", NOW, f"seed-{user}-{order}"),
         )
 
 
 def test_content_defines_a_contiguous_single_player_ladder(game):
     floors = sorted(game[0].content.tower.values(), key=lambda floor: floor.order)
-    assert [floor.order for floor in floors] == list(range(1, 9))
-    assert [floor.id for floor in floors] == [f"tower_0{index}" for index in range(1, 9)]
+    assert [floor.order for floor in floors] == list(range(1, 17))
+    assert [floor.id for floor in floors] == [f"tower_{index:02d}" for index in range(1, 17)]
     for index, floor in enumerate(floors):
         assert floor.previous_id == (floors[index - 1].id if index else None)
         assert floor.energy <= 100
@@ -50,8 +50,8 @@ def test_content_defines_a_contiguous_single_player_ladder(game):
 def test_list_links_only_openable_floors_and_keeps_bounded_actions(game, play):
     account(game, play)
     listing = play("tower_catalog")
-    assert listing.title == "万灵塔 1/2"
-    assert listing.lines[0] == "当前深度：0/8 层。"
+    assert listing.title == "万灵塔 1/4"
+    assert listing.lines[0] == "当前深度：0/16 层。"
     assert "1. 初入塔门 · 可挑战" in listing.text()
     assert "2. 雷泽回响 · 未解锁" in listing.text()
     assert links(listing) == [(1, "前往挑战", "灵宠挑战万灵塔 1")]
@@ -59,9 +59,9 @@ def test_list_links_only_openable_floors_and_keeps_bounded_actions(game, play):
     assert len(set(listing.commands)) == len(listing.commands) <= 4
     assert not {command for _, _, command in links(listing)} & set(listing.commands)
     second = play("tower_catalog", "2")
-    assert second.title == "万灵塔 2/2"
+    assert second.title == "万灵塔 2/4"
     assert links(second) == []
-    assert second.commands == ("灵宠万灵塔 1", "灵宠关卡", "灵宠秘境")
+    assert second.commands == ("灵宠万灵塔 1", "灵宠万灵塔 3", "灵宠关卡", "灵宠秘境")
 
 
 def test_unregistered_player_can_browse_without_creating_an_account(game, play):
@@ -76,10 +76,10 @@ def test_unregistered_player_can_browse_without_creating_an_account(game, play):
 def test_detail_shows_progress_rewards_and_the_run_entry(game, play):
     account(game, play)
     # A bare number is a page, exactly like the chapter catalogue; details use the floor name.
-    assert play("tower_catalog", "2").title == "万灵塔 2/2"
+    assert play("tower_catalog", "2").title == "万灵塔 2/4"
     locked = play("tower_catalog", "雷泽回响")
     assert locked.title == "万灵塔 2 · 雷泽回响"
-    assert "进度：未解锁 · 当前深度 0/8 层" in locked.text()
+    assert "进度：未解锁 · 当前深度 0/16 层" in locked.text()
     assert "首通奖励" in locked.text() and "锻灵矿" in locked.text()
     assert "灵宠挑战万灵塔 2" not in locked.commands
     first = play("tower_catalog", "初入塔门")
@@ -104,7 +104,7 @@ def test_first_clear_grants_once_and_repeats_only_practice(game, play):
     assert after_first != before
     report = sql(game[1], "SELECT kind, battle_key FROM battle_records WHERE operation_id='tower-first'")[0]
     assert report == {"kind": "pve_stage", "battle_key": "tower_01"}
-    assert play("tower_catalog").lines[0] == "当前深度：1/8 层。"
+    assert play("tower_catalog").lines[0] == "当前深度：1/16 层。"
     assert "2. 雷泽回响 · 可挑战" in play("tower_catalog").text()
 
     sql(game[1], "UPDATE players SET last_pve=NULL")
@@ -139,17 +139,17 @@ def test_failed_floor_consumes_resources_without_progress(game, play):
     assert sql(game[1], "SELECT winner_side FROM battle_records WHERE operation_id='tower-loss'") == [
         {"winner_side": -1}
     ]
-    assert play("tower_catalog").lines[0] == "当前深度：0/8 层。"
+    assert play("tower_catalog").lines[0] == "当前深度：0/16 层。"
 
 
 def test_gates_reject_locked_realm_energy_cooldown_and_bad_input(game, play):
     account(game, play)
     with pytest.raises(GameError, match="前置塔层"):
         play("tower_challenge", "2")
-    with pytest.raises(GameError, match="共 2 页"):
-        play("tower_catalog", "9")
-    with pytest.raises(GameError, match="1-8 的整数"):
-        play("tower_challenge", "9")
+    with pytest.raises(GameError, match="共 4 页"):
+        play("tower_catalog", "5")
+    with pytest.raises(GameError, match="1-16 的整数"):
+        play("tower_challenge", "17")
     with pytest.raises(GameError, match="未找到该内容"):
         play("tower_challenge", "不存在的塔层")
     seed_floors(game, (1, 2, 3, 4))

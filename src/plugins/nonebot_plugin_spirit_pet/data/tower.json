@@ -246,5 +246,271 @@
       }
     },
     "previous_id": "tower_07"
+  },
+{
+    "id": "tower_09",
+    "name": "星陨回廊",
+    "description": "星陨守望独守回廊，塔中再无旧日敌影。",
+    "order": 9,
+    "min_realm": "dujie",
+    "enemies": [
+      "starfall_warden"
+    ],
+    "energy": 60,
+    "reward": {
+      "exp": {
+        "minimum": 3200,
+        "maximum": 4200
+      },
+      "stones": {
+        "minimum": 1300,
+        "maximum": 1700
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 5
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "previous_id": "tower_08"
+  },
+{
+    "id": "tower_10",
+    "name": "镜心迷途",
+    "description": "镜心幻影与太虚剑魄在迷途中交错现身。",
+    "order": 10,
+    "min_realm": "dujie",
+    "enemies": [
+      "mirror_mirage",
+      "void_blade"
+    ],
+    "energy": 65,
+    "reward": {
+      "exp": {
+        "minimum": 3400,
+        "maximum": 4500
+      },
+      "stones": {
+        "minimum": 1400,
+        "maximum": 1800
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 6
+        },
+        "breakthrough_pill": {
+          "minimum": 1,
+          "maximum": 2
+        }
+      }
+    },
+    "previous_id": "tower_09"
+  },
+{
+    "id": "tower_11",
+    "name": "沉星古庭",
+    "description": "沉星帝君与万载霜主同守古庭。",
+    "order": 11,
+    "min_realm": "dujie",
+    "enemies": [
+      "sunken_sovereign",
+      "frost_monarch"
+    ],
+    "energy": 68,
+    "reward": {
+      "exp": {
+        "minimum": 3600,
+        "maximum": 4700
+      },
+      "stones": {
+        "minimum": 1500,
+        "maximum": 1900
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 5,
+          "maximum": 6
+        },
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    },
+    "previous_id": "tower_10"
+  },
+{
+    "id": "tower_12",
+    "name": "归元试炼",
+    "description": "归元守御携万木归墟在此试你道心。",
+    "order": 12,
+    "min_realm": "dujie",
+    "enemies": [
+      "origin_keeper",
+      "wood_colossus"
+    ],
+    "energy": 72,
+    "reward": {
+      "exp": {
+        "minimum": 3800,
+        "maximum": 5000
+      },
+      "stones": {
+        "minimum": 1600,
+        "maximum": 2000
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 5,
+          "maximum": 7
+        },
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    },
+    "previous_id": "tower_11"
+  },
+{
+    "id": "tower_13",
+    "name": "双帝临朝",
+    "description": "幽冥帝影与沉星帝君并立，塔中双帝临朝。",
+    "order": 13,
+    "min_realm": "dujie",
+    "enemies": [
+      "nether_emperor",
+      "sunken_sovereign"
+    ],
+    "energy": 75,
+    "reward": {
+      "exp": {
+        "minimum": 4000,
+        "maximum": 5200
+      },
+      "stones": {
+        "minimum": 1700,
+        "maximum": 2100
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 7
+        },
+        "breakthrough_pill": {
+          "minimum": 2,
+          "maximum": 3
+        }
+      }
+    },
+    "previous_id": "tower_12"
+  },
+{
+    "id": "tower_14",
+    "name": "万法归墟",
+    "description": "星陨守望、镜心幻影与九霄劫灵同现，万法归墟。",
+    "order": 14,
+    "min_realm": "dujie",
+    "enemies": [
+      "starfall_warden",
+      "mirror_mirage",
+      "tribulation_avatar"
+    ],
+    "energy": 80,
+    "reward": {
+      "exp": {
+        "minimum": 4200,
+        "maximum": 5500
+      },
+      "stones": {
+        "minimum": 1800,
+        "maximum": 2300
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 8
+        },
+        "breakthrough_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    },
+    "previous_id": "tower_13"
+  },
+{
+    "id": "tower_15",
+    "name": "星陨绝壁",
+    "description": "归元守御、天门守望与太虚剑魄据绝壁而守。",
+    "order": 15,
+    "min_realm": "dujie",
+    "enemies": [
+      "origin_keeper",
+      "sky_gate_guard",
+      "void_blade"
+    ],
+    "energy": 85,
+    "reward": {
+      "exp": {
+        "minimum": 4500,
+        "maximum": 5800
+      },
+      "stones": {
+        "minimum": 2000,
+        "maximum": 2500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 7,
+          "maximum": 9
+        },
+        "breakthrough_pill": {
+          "minimum": 3,
+          "maximum": 4
+        }
+      }
+    },
+    "previous_id": "tower_14"
+  },
+{
+    "id": "tower_16",
+    "name": "归元绝顶",
+    "description": "沉星帝君、镜心幻影与星陨守望齐聚绝顶，塔尽于此。",
+    "order": 16,
+    "min_realm": "dujie",
+    "enemies": [
+      "sunken_sovereign",
+      "mirror_mirage",
+      "starfall_warden"
+    ],
+    "energy": 90,
+    "reward": {
+      "exp": {
+        "minimum": 4800,
+        "maximum": 6200
+      },
+      "stones": {
+        "minimum": 2200,
+        "maximum": 2700
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 8,
+          "maximum": 10
+        },
+        "breakthrough_pill": {
+          "minimum": 4,
+          "maximum": 5
+        }
+      }
+    },
+    "previous_id": "tower_15"
   }
 ]

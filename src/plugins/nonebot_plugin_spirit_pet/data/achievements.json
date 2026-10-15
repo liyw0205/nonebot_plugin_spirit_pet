@@ -25,7 +25,7 @@
   {"id":"stage_all","name":"章节征服者","description":"通关全部八处章节关卡。","metric":"stage_clears","target":8,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"tower_three","name":"三层登临","description":"登上万灵塔第三层。","metric":"tower_depth","target":3,"reward":{"stones":400,"items":{"bloodline_essence":1}}},
   {"id":"tower_six","name":"六层凌云","description":"登上万灵塔第六层。","metric":"tower_depth","target":6,"reward":{"stones":900,"items":{"bloodline_essence":2,"breakthrough_pill":1}}},
-  {"id":"tower_all","name":"塔顶问道","description":"登上万灵塔第八层。","metric":"tower_depth","target":8,"reward":{"stones":2000,"items":{"bloodline_essence":4,"breakthrough_pill":2}}},
+  {"id":"tower_all","name":"塔顶问道","description":"登上万灵塔第十六层。","metric":"tower_depth","target":16,"reward":{"stones":2000,"items":{"bloodline_essence":4,"breakthrough_pill":2}}},
   {"id":"pvp_first","name":"初胜论剑","description":"在论剑中赢得一场胜利。","metric":"pvp_wins","target":1,"reward":{"stones":150,"items":{"spirit_food":2}}},
   {"id":"pvp_ten","name":"论剑老手","description":"在论剑中赢得十场胜利。","metric":"pvp_wins","target":10,"reward":{"stones":900,"items":{"bloodline_essence":2}}},
   {"id":"pve_first","name":"百战初捷","description":"赢得一场秘境或章节战斗。","metric":"pve_wins","target":1,"reward":{"stones":150,"items":{"exp_pill":1}}},

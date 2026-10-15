@@ -342,6 +342,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_endgame_arc.py tests/test_balance_lineups.py tests/test_balance.py tests/test_first_clear.py tests/test_journey.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_system_achievements.py tests/test_adventure_routes.py tests/test_daily_assignment.py tests/test_sweep.py tests/test_echoes.py tests/test_achievement_expansion.py tests/test_player_experience.py tests/test_catalog_interaction.py`：合计 `418 passed`（新增 `test_endgame_arc` 9 项）。新增测试覆盖新秘境的境界/组队/精力/首通与敌人引用、新敌人数值与同境界既有敌人一致、首通页总数 20 与领取幂等、秘境列表包含新条目、行纪终章的链条与任务类型、行纪终章在完成条件后可领取、成就与称号上限随内容变化。既有断言同步：`test_balance_lineups` 场景数 64 → 80、快速矩阵 32/128 → 40/160；`test_first_clear` 共 16 处 → 20 处；`test_journey` 页数 1/3 → 1/4 与总数 1/14 → 1/16；`test_system_achievements` 的上限断言（行纪 16、秘境 20）。平衡门禁在新秘境纳入矩阵后 `issues == []`。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 万灵塔终章闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。内容审计显示万灵塔是当前最薄的主要玩法：秘境 20 处、行纪 16 章、成就 71 项、称号 19 项，而塔只有 8 层，第 8 层「天门绝顶」之后没有后续，把塔打完的玩家在塔里再无目标。
+
+`data/tower.json` 追加 8 层：`tower_09` 星陨回廊（60 精力，星陨守望）、`tower_10` 镜心迷途（65，镜心幻影 + 太虚剑魄）、`tower_11` 沉星古庭（68，沉星帝君 + 万载霜主）、`tower_12` 归元试炼（72，归元守御 + 万木归墟）、`tower_13` 双帝临朝（75，幽冥帝影 + 沉星帝君）、`tower_14` 万法归墟（80，三敌）、`tower_15` 星陨绝壁（85，三敌）、`tower_16` 归元绝顶（90，三敌）。全部 `dujie`，`order` 9-16，`previous_id` 逐层相接（`tower_08` → … → `tower_15`），奖励逐层高于第 8 层（exp 3200-4200 → 4800-6200，灵石 1300-1700 → 2200-2700，血脉精华与破境丹递增）。敌人全部复用既有 `enemies.json` 条目（含渡劫终章秘境新增的四个敌人），不新增敌人定义，也不触碰秘境/关卡与平衡矩阵。
+
+上限里程碑随内容对齐：`achievements.json` 的「塔顶问道」8 → 16（说明「登上万灵塔第十六层。」），`titles.json` 的「万灵塔主」8 → 16（说明「通关万灵塔全部十六层。」）；「三层登临」「六层凌云」「塔门守卫」保持 3/6/3 不变。
+
+关键边界：不新增命令、表、列或规则字段；`catalog` 的 `maxima["tower_depth"] = len(self.tower)` 与 `final_milestones` 自动取到 16，`gameplay/tower.py` 按 `order`/`previous_id` 派生解锁与深度，因此业务代码零改动；既有 8 层的数值、奖励与顺序字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_tower_finale.py tests/test_tower.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_system_achievements.py tests/test_balance_lineups.py tests/test_player_experience.py tests/test_catalog_interaction.py tests/test_endgame_arc.py tests/test_achievement_expansion.py tests/test_pet_catalog.py tests/test_weekly_quests.py`：合计 `365 passed`（新增 `test_tower_finale` 5 项）。新增测试覆盖新层的境界/精力/奖励递增/前置链/末层三敌、新层在旧塔顶通关后才可挑战、新层首通奖励只发一次且重复挑战只记练习、深度与上限里程碑随内容变化、页面链接与按钮不重叠。既有断言同步：`test_tower` 的层序 `range(1, 17)`、id 格式 `tower_{index:02d}`（原 `tower_0{index}` 在两位数层号下会错）、页码 `1/4` 与 `4/4`、深度文案 `0/16 层`、`共 4 页`、`1-16 的整数`、第二页按钮集合；`test_titles` 的塔层种子从 8 层改为 16 层。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

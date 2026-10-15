@@ -114,9 +114,9 @@
   {
     "id": "tower_lord",
     "name": "万灵塔主",
-    "description": "通关万灵塔全部八层。",
+    "description": "通关万灵塔全部十六层。",
     "metric": "tower_depth",
-    "target": 8,
+    "target": 16,
     "order": 15
   },
   {
