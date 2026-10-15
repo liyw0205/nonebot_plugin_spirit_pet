@@ -48,8 +48,12 @@ def test_expedition_catalog_links_every_task_and_keeps_navigation_on_buttons(gam
 
     second = play("expedition_catalog", "2")
     assert {link.command for link in second.inline_commands} == {
+        "灵宠委托 灵泉浸润", "灵宠委托 采药炼丹", "灵宠委托 铸翎",
         "灵宠委托 幽庭觅卵", "灵宠委托 天门寻器",
     }
+
+    last = play("expedition_catalog", "5")
+    assert {link.command for link in last.inline_commands} == {"灵宠委托 琢晶"}
 
 
 @pytest.mark.parametrize("mode", ["native", "template"])

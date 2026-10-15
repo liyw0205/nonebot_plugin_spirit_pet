@@ -378,6 +378,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_stage_finale.py tests/test_pve_stages.py tests/test_stage_content.py tests/test_stage_interaction.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_weekly_quests.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_system_achievements.py tests/test_encounter_expansion.py tests/test_tower_finale.py tests/test_endgame_arc.py`：合计 `325 passed`（新增 `test_stage_finale` 5 项）。新增测试覆盖新关的境界/精力/奖励递增/前置链/单人与组队交替/末关三敌、新关在旧末关通关后才可挑战、新关首通奖励只发一次、上限里程碑随内容变化、页面链接与按钮不重叠。既有断言同步：`test_stage_interaction` 的种子 id 改为 `stage_{order:02d}`、第二页断言与注释（16 关共 4 页，第二页为第 6-10 关）、`test_achievements` 的 `stage_clears` 上限 8 → 16。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 离线委托扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示离线委托是最薄的选择面：每个大境界只有一条委托（共 7 条），玩家在任一境界都没有选择，而秘境 20 处、塔 16 层、关卡 16 处、奇闻 21 条都已有纵深。
+
+`data/expeditions.json` 追加 14 条委托（每境界 2 条，共 21 条）：启灵的灵泉浸润（20 精力，回元丹）与采药炼丹（30，蕴灵丹）；凝气的铸翎（28，青岚翎）与铸牙（34，赤焰牙）；筑基的寻鳞（38，龙鳞甲）与掘甲（44，玄岩甲）；金丹的炼铃（48，灵心铃）与雕喙（54，霜喙）；元婴的织茧（58，霜茧衣）与制鳞（64，蚀鳞甲）；化神的接根（68，灵木根）与磨角（74，雷角）；渡劫的锻镰（78，金锋镰）与琢晶（86，水灵晶）。每条 `min_realm` 与所属境界一致，奖励沿用既有形状（单一材料 `minimum 0 / maximum 1`、`exp.minimum < maximum`、`stones.minimum < maximum`），材料互不重复且都在册。
+
+关键边界：不新增命令、表、列或规则字段；`expedition_claims` 是累计领取次数指标、不在 `catalog.maxima` 内，因此本次扩充不触发上限里程碑级联；派遣/归来/领取与幂等全部复用既有实现，业务代码零改动；既有 7 条委托与委托时长规则字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_expedition_expansion.py tests/test_expedition_interaction.py tests/test_expedition_commands.py tests/test_expedition_content.py tests/test_expedition_contract.py tests/test_expedition_occupancy.py tests/test_expedition_storage.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_weekly_quests.py tests/test_main_quest.py tests/test_player_experience.py tests/test_balance_lineups.py`：合计 `521 passed`（新增 `test_expedition_expansion` 4 项）。新增测试覆盖每境界恰好三条、新条目精力与奖励区间合法且材料互不重复、境界门槛生效、派遣占用与归来领取幂等、目录分页覆盖全部境界。既有断言同步：`test_expedition_content` 的「委托集合恰好等于 7 条」改为「既有 7 条仍在册」（子集断言），`test_expedition_interaction` 的第二页链接集合（分页后第二页为第 6-10 条）并补末页断言。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

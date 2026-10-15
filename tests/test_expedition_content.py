@@ -49,10 +49,10 @@ def test_high_realm_expeditions_offer_distinct_existing_item_uses():
         ("huashen_nether_egg", "幽庭觅卵", "huashen", 70, "egg_molian"),
         ("dujie_heaven_relic", "天门寻器", "dujie", 80, "stone_core"),
     )
-    assert set(content.expeditions) == {
+    assert {
         "herb_gathering", "ore_survey", "essence_search",
         *(entry[0] for entry in expected),
-    }
+    } <= set(content.expeditions)
     uses = []
     for identifier, name, realm, energy, item in expected:
         expedition = content.expeditions[identifier]

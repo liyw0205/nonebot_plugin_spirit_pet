@@ -82,5 +82,327 @@
       "stones": {"minimum": 260, "maximum": 380},
       "items": {"stone_core": {"minimum": 0, "maximum": 1}}
     }
+  },
+{
+    "id": "spring_soak",
+    "name": "灵泉浸润",
+    "description": "在灵泉边静养数日，带回几枚调息用的丹药。",
+    "min_realm": "qiling",
+    "energy": 20,
+    "reward": {
+      "exp": {
+        "minimum": 12,
+        "maximum": 22
+      },
+      "stones": {
+        "minimum": 8,
+        "maximum": 18
+      },
+      "items": {
+        "energy_pill": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "pill_brew",
+    "name": "采药炼丹",
+    "description": "采集山野药草试炼丹方，得蕴灵丹数枚。",
+    "min_realm": "qiling",
+    "energy": 30,
+    "reward": {
+      "exp": {
+        "minimum": 18,
+        "maximum": 30
+      },
+      "stones": {
+        "minimum": 14,
+        "maximum": 26
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "feather_forge",
+    "name": "铸翎",
+    "description": "寻访铸器匠人，以风羽铸成青岚翎。",
+    "min_realm": "ningqi",
+    "energy": 28,
+    "reward": {
+      "exp": {
+        "minimum": 20,
+        "maximum": 34
+      },
+      "stones": {
+        "minimum": 16,
+        "maximum": 30
+      },
+      "items": {
+        "wind_feather": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "fang_forge",
+    "name": "铸牙",
+    "description": "在火脉旧炉旁重铸赤焰牙。",
+    "min_realm": "ningqi",
+    "energy": 34,
+    "reward": {
+      "exp": {
+        "minimum": 24,
+        "maximum": 40
+      },
+      "stones": {
+        "minimum": 20,
+        "maximum": 36
+      },
+      "items": {
+        "fire_fang": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "scale_hunt",
+    "name": "寻鳞",
+    "description": "追踪古龙遗蜕，取回一片龙鳞甲。",
+    "min_realm": "zhuji",
+    "energy": 38,
+    "reward": {
+      "exp": {
+        "minimum": 30,
+        "maximum": 48
+      },
+      "stones": {
+        "minimum": 24,
+        "maximum": 44
+      },
+      "items": {
+        "dragon_scale": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "shell_dig",
+    "name": "掘甲",
+    "description": "深入岩层掘取玄岩甲。",
+    "min_realm": "zhuji",
+    "energy": 44,
+    "reward": {
+      "exp": {
+        "minimum": 34,
+        "maximum": 54
+      },
+      "stones": {
+        "minimum": 28,
+        "maximum": 50
+      },
+      "items": {
+        "earth_shell": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "bell_temper",
+    "name": "炼铃",
+    "description": "以金丹真火淬炼灵心铃。",
+    "min_realm": "jindan",
+    "energy": 48,
+    "reward": {
+      "exp": {
+        "minimum": 40,
+        "maximum": 64
+      },
+      "stones": {
+        "minimum": 34,
+        "maximum": 60
+      },
+      "items": {
+        "spirit_bell": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "beak_carve",
+    "name": "雕喙",
+    "description": "在霜原雕琢霜喙。",
+    "min_realm": "jindan",
+    "energy": 54,
+    "reward": {
+      "exp": {
+        "minimum": 46,
+        "maximum": 72
+      },
+      "stones": {
+        "minimum": 40,
+        "maximum": 68
+      },
+      "items": {
+        "frost_beak": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "silk_weave",
+    "name": "织茧",
+    "description": "收集灵蚕丝，织成霜茧衣。",
+    "min_realm": "yuanying",
+    "energy": 58,
+    "reward": {
+      "exp": {
+        "minimum": 54,
+        "maximum": 84
+      },
+      "stones": {
+        "minimum": 46,
+        "maximum": 80
+      },
+      "items": {
+        "silk_cocoon": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "scale_cure",
+    "name": "制鳞",
+    "description": "以元婴灵息炮制蚀鳞甲。",
+    "min_realm": "yuanying",
+    "energy": 64,
+    "reward": {
+      "exp": {
+        "minimum": 60,
+        "maximum": 92
+      },
+      "stones": {
+        "minimum": 52,
+        "maximum": 88
+      },
+      "items": {
+        "poison_scale": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "root_graft",
+    "name": "接根",
+    "description": "在归墟接续灵木之根。",
+    "min_realm": "huashen",
+    "energy": 68,
+    "reward": {
+      "exp": {
+        "minimum": 68,
+        "maximum": 104
+      },
+      "stones": {
+        "minimum": 60,
+        "maximum": 100
+      },
+      "items": {
+        "living_root": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "horn_polish",
+    "name": "磨角",
+    "description": "打磨雷角至锋锐如新。",
+    "min_realm": "huashen",
+    "energy": 74,
+    "reward": {
+      "exp": {
+        "minimum": 74,
+        "maximum": 114
+      },
+      "stones": {
+        "minimum": 66,
+        "maximum": 110
+      },
+      "items": {
+        "thunder_horn": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "scythe_forge",
+    "name": "锻镰",
+    "description": "在劫云之下锻成金锋镰。",
+    "min_realm": "dujie",
+    "energy": 78,
+    "reward": {
+      "exp": {
+        "minimum": 84,
+        "maximum": 130
+      },
+      "stones": {
+        "minimum": 76,
+        "maximum": 126
+      },
+      "items": {
+        "metal_scythe": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+{
+    "id": "prism_cut",
+    "name": "琢晶",
+    "description": "以渡劫之力琢出水灵晶。",
+    "min_realm": "dujie",
+    "energy": 86,
+    "reward": {
+      "exp": {
+        "minimum": 92,
+        "maximum": 144
+      },
+      "stones": {
+        "minimum": 84,
+        "maximum": 140
+      },
+      "items": {
+        "water_prism": {
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
   }
 ]
