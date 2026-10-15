@@ -234,3 +234,4 @@ class Rules(Definition):
     breeding: BreedingRule
     daily_featured: DailyFeatured
     inheritance_cost: ResourceCost
+    recycle_percent: Annotated[int, Field(gt=0, lt=100)]

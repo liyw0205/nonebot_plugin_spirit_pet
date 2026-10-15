@@ -204,6 +204,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_sweep.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_adventure_routes.py tests/test_pve_stages.py tests/test_daily_dungeon.py tests/test_weekly_quests.py tests/test_balance_lineups.py tests/test_content.py tests/test_pet_catalog.py tests/test_player_experience.py tests/test_titles.py tests/test_achievements.py tests/test_tower.py`：合计 `357 passed`（含新增 `test_sweep` 10 项），无既有断言需要改动。新增测试覆盖未通关（含败退不算通关）、奖励与精力/冷却、不写战报与不计获胜场次、组队秘境、境界门槛、冷却中、名称缺失/无效、同 `operation_id` 幂等、帮助条目与 native payload 按钮集合。精力断言先固定 `energy_updated`，避免受被动回复影响。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵坊回收闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块、命令与帮助、聚焦测试与文档。审计发现道具只进不出：`灵宠分解` 只接受装备（`named(ctx.content.recipes, …)`，换成材料且明确“不返还灵石”），材料、消耗品、灵术秘笈与破境丹没有任何换回灵石的路径；而秘笈受类别/元素/境界三重门槛限制（例如玄狐学不了水箭术），装备也受元素与类别限制，玩家必然会囤下用不了的道具。
+
+新增 `rules.recycle_percent`（默认 40）与 `Rules.recycle_percent: Annotated[int, Field(gt=0, lt=100)]`——上限 100 由类型约束保证，从结构上杜绝“买入再回收”套利；`data/rules.json` 按唯一锚点文本插入，`git diff --stat` 确认只有 2 行新增。`gameplay/economy.py::recycle` 复用 `item_amount`（名称+数量，缺省 1）与 `named`，先拒绝装备（“装备请用 灵宠分解 回收材料。”）与无售价道具（“该道具不在灵坊出售，无法回收。”），再按 `售价 × 数量 × percent // 100` 结算并拒绝不足 1 灵石的情况，最后用既有 `Repository.consume_item` 扣道具、`player.stones` 加灵石。命令注册为 `recycle`（`registered=True`），别名 `灵宠回收`，帮助“血脉与道具”段补一条（与 `灵宠购买`/`灵宠使用` 同段，而非 `灵宠分解` 所在的“灵物与灵术”段）。
+
+关键边界：回收只写 `inventory.quantity` 与 `players.stones`，不写 `battle_records`、不推进任务与成就、不改动宠物与装备；装备分解规则与打造套利不变量（`cheaper materials`）完全不动。非战斗动作没有持久重放守卫，因此合同测试断言同 `operation_id` 重投返回原回复且只结算一次。
+
+定向命令 `./.venv/bin/pytest -q tests/test_recycle.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_sweep.py tests/test_titles.py tests/test_inheritance.py tests/test_breeding.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py`：合计 `395 passed`（含新增 `test_recycle` 13 项），无既有断言需要改动。新增测试覆盖比例区间与逐件套利不可能、回收结算与取整、无售价道具（青藤灵卵）、装备拒绝、背包不足、参数与数量越界、未结契、零记录零宠物影响、同 `operation_id` 幂等、买入再回收必然亏损、帮助条目与 native payload 按钮集合。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

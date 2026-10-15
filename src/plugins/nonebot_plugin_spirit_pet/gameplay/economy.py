@@ -171,6 +171,27 @@ def buy(ctx: Context, arg: str) -> Reply:
     ))
 
 
+def recycle(ctx: Context, arg: str) -> Reply:
+    """Turn surplus items back into stones at the shop-recycle rate."""
+    player = ctx.player()
+    name, amount = item_amount(arg)
+    item = named(ctx.content.items, name)
+    if item.kind == "equipment":
+        raise GameError("装备请用 灵宠分解 回收材料。")
+    if item.price is None:
+        raise GameError("该道具不在灵坊出售，无法回收。")
+    percent = ctx.content.rules.recycle_percent
+    stones = item.price * amount * percent // 100
+    if stones <= 0:
+        raise GameError(f"回收 {amount} 个{item.name}不足 1 灵石，请一次回收更多。")
+    ctx.repo.consume_item(ctx.user_id, item.id, amount)
+    player.stones += stones
+    return Reply("灵坊回收", (
+        f"{item.name} -{amount}，灵石 +{stones}。",
+        f"回收价为售价的 {percent}%；当前灵石 {player.stones}。",
+    ), ("灵宠背包", "灵宠商店", "灵宠装备"))
+
+
 def use(ctx: Context, arg: str) -> Reply:
     name, amount = item_amount(arg)
     item = named(ctx.content.items, name)
