@@ -214,6 +214,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_recycle.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_sweep.py tests/test_titles.py tests/test_inheritance.py tests/test_breeding.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py`：合计 `395 passed`（含新增 `test_recycle` 13 项），无既有断言需要改动。新增测试覆盖比例区间与逐件套利不可能、回收结算与取整、无售价道具（青藤灵卵）、装备拒绝、背包不足、参数与数量越界、未结契、零记录零宠物影响、同 `operation_id` 幂等、买入再回收必然亏损、帮助条目与 native payload 按钮集合。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠批量强化闭环（2026-10-15，已完成）
+
+四个阶段一次交付：业务模块、命令与帮助、聚焦测试、文档。审计发现强化只能一级一级点：`forge_levels` 是 0..10 的阶梯（80/120/180/260/360/480/620/780/960/1160 灵石配 1..10 锻灵矿），把新装备推到 +5 要 5 条命令、+10 要 10 条，是当前最重复的配装动作；其余候选都已被既有系统覆盖（战报详情已按页渲染完整日志、关卡只在首通发奖、材料与秘笈已有灵坊回收出口、内容可达性审计无缺口）。
+
+`gameplay/forging.py::enhance` 改为先 `arg.split()` 再解析：超过两段给出格式示例，第一段交给既有 `selected_slot`（槽位或装备名），第二段作为可选目标等级（`isdecimal` 且 1-`len(forge_levels)-1`，否则“目标等级须为 1-10 的整数”）。随后统一按 `range(level, target or level + 1)` 收集阶梯，逐级累加 `upgrade_stones` 与 `upgrade_items`；任一级 `upgrade_stones is None` 时按有无目标分别给出“该装备已达最高强化等级。”或“该装备最高只能强化到 +N。”。灵石不足时沿用既有“强化需要 …，灵石不足。”句式并带上总消耗；材料走既有 `Repository.consume_item`（不足即“道具数量不足”）并整条回滚。成功后一次 `UPDATE equipment SET enhancement=?` 写到 `level + len(steps)`，回复沿用“灵物淬炼”与既有两行格式。不带目标等级时 `steps` 只有一级，消息与成本与改动前完全一致，因此 `test_crafting`/`test_forging` 无需改动。
+
+关键边界：整条命令原子（灵石与材料在同一事务内结算，任一步失败等级/灵石/材料都不变）；目标等级必须高于当前等级，超过 +10 被拒绝；逐级定价、倍率、回收规则、打造与分解、强化继承与灵坊回收全部不动，schema 20 不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_batch_enhance.py tests/test_forging.py tests/test_crafting.py tests/test_loadout.py tests/test_item_loop.py tests/test_inheritance.py tests/test_recycle.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_content.py tests/test_pet_catalog.py tests/test_balance_lineups.py tests/test_battle_records.py tests/test_sweep.py tests/test_titles.py tests/test_breeding.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_main_quest.py`：合计 `428 passed`（含新增 `test_batch_enhance` 11 项），无既有断言需要改动。新增测试覆盖 +0→+5 的阶梯成本（1000 灵石、15 锻灵矿）、逐级路径字节一致、灵石不足与材料不足时的原子性、目标不高于当前等级、目标越界/非数字/段数错误、空部位、满级两条路径、同 `operation_id` 幂等、帮助条目与 native payload 按钮集合。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
