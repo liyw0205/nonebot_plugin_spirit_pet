@@ -55,16 +55,16 @@ def test_page_lists_chapters_with_states_and_stories(game, play):
     play("adopt", "青鸾", now=NOW)
     total = len(game[0].content.journey)
     page = play("journey", now=NOW)
-    assert page.title == "山海行纪 1/3"
+    assert page.title == "山海行纪 1/4"
     assert entry(page, "灵泉初醒") == "灵泉初醒 · 启灵 · 进行中（0/1）"
     assert entry(page, "灵泉寻踪") == "灵泉寻踪 · 启灵 · 未解锁"
     assert "青岚林的风声里" in page.text()
     assert page.lines[-1] == f"共 {total} 章，已完成 0 章，尚有 0 章可领取。"
     assert page.commands == ("灵宠行纪 2", "灵宠主线", "灵宠目标")
     assert page.inline_commands == ()
-    assert play("journey", "3", now=NOW).title == "山海行纪 3/3"
-    with pytest.raises(GameError, match="共 3 页"):
-        play("journey", "4", now=NOW)
+    assert play("journey", "3", now=NOW).title == "山海行纪 3/4"
+    with pytest.raises(GameError, match="共 4 页"):
+        play("journey", "5", now=NOW)
 
 
 def test_first_chapter_waits_for_the_dungeon_win(game, play):
@@ -89,7 +89,7 @@ def test_claim_grants_once_and_unlocks_the_next_chapter(game, play):
     assert entry(play("journey", now=NOW), "灵泉初醒") == "灵泉初醒 · 启灵 · 已完成"
     assert entry(play("journey", now=NOW), "灵泉寻踪") == "灵泉寻踪 · 启灵 · 进行中（0/1）"
     hub = next(text for text in play("objectives", now=NOW).lines if text.startswith("行纪："))
-    assert hub == "行纪：暂无可领 · 已完成 1/14 章"
+    assert hub == "行纪：暂无可领 · 已完成 1/16 章"
 
 
 def test_locked_and_repeated_claims_are_refused(game, play):

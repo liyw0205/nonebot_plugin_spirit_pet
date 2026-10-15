@@ -127,15 +127,15 @@
     "target": 7,
     "order": 16
   },
-{
+  {
     "id": "journey_end",
     "name": "山海尽头",
-    "description": "走完山海行纪全部十四段章节。",
+    "description": "走完山海行纪全部十六段章节。",
     "metric": "journey_claims",
-    "target": 14,
+    "target": 16,
     "order": 17
   },
-{
+  {
     "id": "echo_all",
     "name": "万籁归心",
     "description": "在全部十四处奇闻中做出回响选择。",
@@ -143,12 +143,12 @@
     "target": 14,
     "order": 18
   },
-{
+  {
     "id": "first_clear_all",
     "name": "秘境行家",
-    "description": "领满全部十六处秘境的首通奖励。",
+    "description": "领满全部二十处秘境的首通奖励。",
     "metric": "first_clear_claims",
-    "target": 16,
+    "target": 20,
     "order": 19
   }
 ]

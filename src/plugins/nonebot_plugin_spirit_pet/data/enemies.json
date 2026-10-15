@@ -121,5 +121,73 @@
     "id": "sky_gate_guard", "name": "天门守望", "primary_element": "earth", "elements": ["earth", "thunder"],
     "stats": {"hp": 22000, "attack": 1350, "defense": 750, "speed": 900},
     "signature_skill": "earth_crush", "skill_every": 3
+  },
+{
+    "id": "starfall_warden",
+    "name": "星陨守望",
+    "primary_element": "metal",
+    "elements": [
+      "metal",
+      "wind"
+    ],
+    "stats": {
+      "hp": 22000,
+      "attack": 1350,
+      "defense": 750,
+      "speed": 900
+    },
+    "signature_skill": "metal_edge",
+    "skill_every": 3
+  },
+{
+    "id": "mirror_mirage",
+    "name": "镜心幻影",
+    "primary_element": "water",
+    "elements": [
+      "water",
+      "ice"
+    ],
+    "stats": {
+      "hp": 12500,
+      "attack": 1300,
+      "defense": 700,
+      "speed": 1000
+    },
+    "signature_skill": "ice_lance",
+    "skill_every": 3
+  },
+{
+    "id": "sunken_sovereign",
+    "name": "沉星帝君",
+    "primary_element": "fire",
+    "elements": [
+      "fire",
+      "earth"
+    ],
+    "stats": {
+      "hp": 22000,
+      "attack": 1350,
+      "defense": 750,
+      "speed": 900
+    },
+    "signature_skill": "fireball",
+    "skill_every": 3
+  },
+{
+    "id": "origin_keeper",
+    "name": "归元守御",
+    "primary_element": "wood",
+    "elements": [
+      "wood",
+      "thunder"
+    ],
+    "stats": {
+      "hp": 12500,
+      "attack": 1300,
+      "defense": 700,
+      "speed": 1000
+    },
+    "signature_skill": "vine_lash",
+    "skill_every": 3
   }
 ]

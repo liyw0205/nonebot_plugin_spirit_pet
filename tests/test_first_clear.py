@@ -54,7 +54,7 @@ def test_winning_unlocks_the_claim_and_grants_once(game, play):
     page = play("first_clear")
     assert entry(page, DUNGEON).endswith("可领取")
     assert [link.command for link in page.inline_commands] == [f"灵宠秘境首通领奖 {DUNGEON}"]
-    assert page.lines[-1] == "共 16 处秘境，尚有 1 处可领取。"
+    assert page.lines[-1] == "共 20 处秘境，尚有 1 处可领取。"
 
     before = stones(game), ore(game)
     claim = play("first_clear_claim", DUNGEON, op="first-clear")
@@ -81,11 +81,11 @@ def test_unregistered_preview_creates_no_account(game, play):
 def test_hub_reports_the_claimable_first_clear(game, play):
     play("adopt", "青鸾")
     hub = lambda: next(text for text in play("objectives").lines if text.startswith("秘境首通："))
-    assert hub() == "秘境首通：暂无可领 · 共 16 处"
+    assert hub() == "秘境首通：暂无可领 · 共 20 处"
     play("challenge", DUNGEON)
-    assert hub() == f"秘境首通：可领 1 处（{DUNGEON}）· 共 16 处"
+    assert hub() == f"秘境首通：可领 1 处（{DUNGEON}）· 共 20 处"
     play("first_clear_claim", DUNGEON)
-    assert hub() == "秘境首通：暂无可领 · 共 16 处"
+    assert hub() == "秘境首通：暂无可领 · 共 20 处"
 
 
 def test_team_dungeon_first_clear_follows_the_real_win(game, play):

@@ -328,6 +328,20 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_system_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_achievements.py tests/test_achievement_expansion.py`：合计 `76 passed`（新增 `test_system_achievements` 8 项）。同步更新 `test_titles.py` 与 `test_objectives.py` 中写死的称号总数（16 → 19）——这是本次唯一需要改动的既有断言。新增测试覆盖三个指标的派生（未领取标记与无关前缀不计、跨玩家隔离）、行纪成就 3/7/14 的解锁与领取、回响与首通成就的解锁、三个新称号在达标后出现且当前称号取最高优先级、`灵宠目标` 的成就行、`final_milestones` 校验与 native payload 按钮零重叠。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 渡劫终章秘境闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计发现秘境共 16 处（启灵 2、凝气 4、筑基 2、金丹 2、元婴 2、化神 2、渡劫 2），渡劫作为最高境界只有 `九霄劫海` 与 `太上天门` 两行，山海行纪也在第 14 章「天门问道」结束——把收集、血脉、技能、装备、共鸣、塔与论剑都推到顶的玩家没有新内容可打。
+
+`data/enemies.json` 新增 4 个渡劫境敌人：星陨守望（`starfall_warden`，metal/wind，`metal_edge`）、镜心幻影（`mirror_mirage`，water/ice，`ice_lance`）、沉星帝君（`sunken_sovereign`，fire/earth，`fireball`）、归元守御（`origin_keeper`，wood/thunder，`vine_lash`）。**战斗数值严格照抄同境界既有敌人**（前两者取 `sky_gate_guard` 的 22000/1350/750/900，后两者取 `tribulation_avatar` 的 12500/1300/700/1000），只改 id、名称、主属性与招式，因此平衡门禁的胜率与回合上限结论与既有渡劫秘境一致。
+
+`data/dungeons.json` 新增 4 处渡劫秘境：星陨祭坛（`starfall_altar`，精力 50，首通 1250 灵石 + 5 血脉精华）、镜心湖（`mirror_lake`，52，1300 + 5）、沉星古庭（`sunken_court`，55，1350 + 6）、归元峰（`origin_peak`，58，1400 + 6），均为组队秘境，奖励略高于既有渡劫秘境。
+
+`data/journey.json` 追加 2 章：`journey_15` 星陨问道（`clear_dungeon` 星陨祭坛）与 `journey_16` 归元问鼎（`win_at` 归元峰 count 2），`previous_id` 接在 `journey_14` 之后，境界均为 `dujie`。上限里程碑随内容对齐：`achievements.json` 的 `first_clear_all` 16 → 20、`journey_all` 14 → 16，`titles.json` 的「秘境行家」16 → 20、「山海尽头」14 → 16（说明文案同步）。
+
+关键边界：不新增命令、表、列或规则字段；`catalog` 的 `maxima`/`final_milestones` 自动取到 `len(self.dungeons)`/`len(self.journey)`，因此业务代码零改动；既有 16 处秘境、14 章行纪与 2 个渡劫敌人的数值与奖励字节不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_endgame_arc.py tests/test_balance_lineups.py tests/test_balance.py tests/test_first_clear.py tests/test_journey.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_achievements.py tests/test_titles.py tests/test_objectives.py tests/test_system_achievements.py tests/test_adventure_routes.py tests/test_daily_assignment.py tests/test_sweep.py tests/test_echoes.py tests/test_achievement_expansion.py tests/test_player_experience.py tests/test_catalog_interaction.py`：合计 `418 passed`（新增 `test_endgame_arc` 9 项）。新增测试覆盖新秘境的境界/组队/精力/首通与敌人引用、新敌人数值与同境界既有敌人一致、首通页总数 20 与领取幂等、秘境列表包含新条目、行纪终章的链条与任务类型、行纪终章在完成条件后可领取、成就与称号上限随内容变化。既有断言同步：`test_balance_lineups` 场景数 64 → 80、快速矩阵 32/128 → 40/160；`test_first_clear` 共 16 处 → 20 处；`test_journey` 页数 1/3 → 1/4 与总数 1/14 → 1/16；`test_system_achievements` 的上限断言（行纪 16、秘境 20）。平衡门禁在新秘境纳入矩阵后 `issues == []`。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -18,7 +18,7 @@ def test_lineup_matrix_pairs_all_dungeons_with_existing_legal_baselines(game):
     content = game[0].content
     matrix = lineup_scenarios(content)
     base = {(case.dungeon_id, case.profile, case.species) for case in scenarios(content)}
-    assert len(matrix) == 4 * len(content.dungeons) == 64
+    assert len(matrix) == 4 * len(content.dungeons) == 80
     assert {case.realm for case in matrix} == set(range(len(content.realms)))
     assert {sum(map(len, case.rosters)) for case in matrix} == {1, 3, 5}
     for case in matrix:
@@ -119,7 +119,7 @@ def test_lineup_complete_quick_matrix_passes_and_gate_detects_missing_or_unviabl
     service, store = game
     report = run_lineup_report(store, service.content, service.config, 2, 20261007)
     assert report["issues"] == []
-    assert len(report["comparisons"]) == 32 and report["battle_count"] == 128
+    assert len(report["comparisons"]) == 40 and report["battle_count"] == 160
     assert "Exp/Hour Range/Member" in lineup_markdown(report)
     rows = report["scenarios"][1:]
     assert any("missing lineup scenario" in issue for issue in lineup_audit(rows, service.content))
@@ -151,7 +151,7 @@ def test_lineup_cli_exports_portable_reports_without_touching_configured_player_
     )
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(json_path.read_text(encoding="utf-8"))
-    assert report["scenario_count"] == report["battle_count"] == 64
+    assert report["scenario_count"] == report["battle_count"] == 80
     assert report["issues"] == [] and "seed=20261007" in result.stdout
     assert report["content_sha256"] in markdown_path.read_text(encoding="utf-8")
     assert b"\r" not in markdown_path.read_bytes()

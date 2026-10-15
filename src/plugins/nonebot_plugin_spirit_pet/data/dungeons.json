@@ -246,5 +246,189 @@
       "exp": {"minimum": 1300, "maximum": 1750}, "stones": {"minimum": 820, "maximum": 1080},
       "items": {"forge_ore": {"minimum": 8, "maximum": 10}, "bloodline_essence": {"minimum": 7, "maximum": 8}}
     }
+  },
+{
+    "id": "starfall_altar",
+    "name": "星陨祭坛",
+    "min_realm": "dujie",
+    "team": true,
+    "enemies": [
+      "starfall_warden"
+    ],
+    "energy": 50,
+    "first_clear": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1250,
+        "maximum": 1250
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 5,
+          "maximum": 5
+        }
+      }
+    },
+    "reward": {
+      "exp": {
+        "minimum": 1350,
+        "maximum": 1800
+      },
+      "stones": {
+        "minimum": 850,
+        "maximum": 1120
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 8,
+          "maximum": 10
+        },
+        "bloodline_essence": {
+          "minimum": 7,
+          "maximum": 8
+        }
+      }
+    }
+  },
+{
+    "id": "mirror_lake",
+    "name": "镜心湖",
+    "min_realm": "dujie",
+    "team": true,
+    "enemies": [
+      "mirror_mirage"
+    ],
+    "energy": 52,
+    "first_clear": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1300,
+        "maximum": 1300
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 5,
+          "maximum": 5
+        }
+      }
+    },
+    "reward": {
+      "exp": {
+        "minimum": 1380,
+        "maximum": 1840
+      },
+      "stones": {
+        "minimum": 880,
+        "maximum": 1150
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 9,
+          "maximum": 11
+        },
+        "bloodline_essence": {
+          "minimum": 7,
+          "maximum": 9
+        }
+      }
+    }
+  },
+{
+    "id": "sunken_court",
+    "name": "沉星古庭",
+    "min_realm": "dujie",
+    "team": true,
+    "enemies": [
+      "sunken_sovereign"
+    ],
+    "energy": 55,
+    "first_clear": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1350,
+        "maximum": 1350
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 6
+        }
+      }
+    },
+    "reward": {
+      "exp": {
+        "minimum": 1420,
+        "maximum": 1900
+      },
+      "stones": {
+        "minimum": 900,
+        "maximum": 1180
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 9,
+          "maximum": 11
+        },
+        "bloodline_essence": {
+          "minimum": 8,
+          "maximum": 9
+        }
+      }
+    }
+  },
+{
+    "id": "origin_peak",
+    "name": "归元峰",
+    "min_realm": "dujie",
+    "team": true,
+    "enemies": [
+      "origin_keeper"
+    ],
+    "energy": 58,
+    "first_clear": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1400,
+        "maximum": 1400
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 6
+        }
+      }
+    },
+    "reward": {
+      "exp": {
+        "minimum": 1460,
+        "maximum": 1950
+      },
+      "stones": {
+        "minimum": 930,
+        "maximum": 1220
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 10,
+          "maximum": 12
+        },
+        "bloodline_essence": {
+          "minimum": 8,
+          "maximum": 10
+        }
+      }
+    }
   }
 ]

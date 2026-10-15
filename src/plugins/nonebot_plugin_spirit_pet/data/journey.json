@@ -390,5 +390,61 @@
         }
       }
     }
+  },
+{
+    "id": "journey_15",
+    "name": "星陨问道",
+    "realm": "dujie",
+    "previous_id": "journey_14",
+    "story": "星陨祭坛上残存一线道韵，你以渡劫之身踏坛问道。",
+    "task": {
+      "kind": "clear_dungeon",
+      "target": "starfall_altar",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1250,
+        "maximum": 1250
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 6
+        }
+      }
+    }
+  },
+{
+    "id": "journey_16",
+    "name": "归元问鼎",
+    "realm": "dujie",
+    "previous_id": "journey_15",
+    "story": "归元峰顶再无前人足迹，你在此问鼎山海。",
+    "task": {
+      "kind": "win_at",
+      "target": "origin_peak",
+      "count": 2
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1400,
+        "maximum": 1400
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 8,
+          "maximum": 8
+        }
+      }
+    }
   }
 ]

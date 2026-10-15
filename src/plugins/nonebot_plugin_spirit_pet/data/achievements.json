@@ -66,9 +66,9 @@
   {"id":"resonance_first","name":"共鸣初启","description":"启用一组灵宠共鸣。","metric":"resonances_enabled","target":1,"reward":{"stones":200,"items":{"affinity_pill":1}}},
   {"id":"journey_three","name":"行纪三章","description":"领取三段山海行纪的章节奖励。","metric":"journey_claims","target":3,"reward":{"stones":300,"items":{"spirit_food":2}}},
   {"id":"journey_seven","name":"行纪七章","description":"领取七段山海行纪的章节奖励。","metric":"journey_claims","target":7,"reward":{"stones":600,"items":{"exp_pill":2}}},
-  {"id":"journey_all","name":"行纪全章","description":"领取全部十四段山海行纪的章节奖励。","metric":"journey_claims","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
+  {"id":"journey_all","name":"行纪全章","description":"领取全部十六段山海行纪的章节奖励。","metric":"journey_claims","target":16,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"echo_three","name":"回响三章","description":"在三处奇闻中做出回响选择。","metric":"echo_claims","target":3,"reward":{"stones":300,"items":{"affinity_pill":1}}},
   {"id":"echo_all","name":"回响全章","description":"在全部十四处奇闻中做出回响选择。","metric":"echo_claims","target":14,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"first_clear_five","name":"秘境五通","description":"领取五处秘境的一次性首通奖励。","metric":"first_clear_claims","target":5,"reward":{"stones":400,"items":{"forge_ore":3}}},
-  {"id":"first_clear_all","name":"秘境全通","description":"领取全部十六处秘境的一次性首通奖励。","metric":"first_clear_claims","target":16,"reward":{"stones":1500,"items":{"bloodline_essence":4}}}
+  {"id":"first_clear_all","name":"秘境全通","description":"领取全部二十处秘境的一次性首通奖励。","metric":"first_clear_claims","target":20,"reward":{"stones":1500,"items":{"bloodline_essence":4}}}
 ]

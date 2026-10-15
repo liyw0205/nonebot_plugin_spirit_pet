@@ -117,9 +117,9 @@ def test_journey_achievements_unlock_at_three_seven_and_fourteen(game, play):
     markers(game, "journey_claims", 7)
     assert "行纪七章 · 可领奖 · 进度：7/7" in play("achievements", "14").text()
 
-    markers(game, "journey_claims", 14)
+    markers(game, "journey_claims", 16)
     page = play("achievements", "14").text()
-    assert "行纪全章 · 可领奖 · 进度：14/14" in page
+    assert "行纪全章 · 可领奖 · 进度：16/16" in page
     assert "秘境五通 · 进行中 · 进度：0/5" in page
 
 
@@ -133,20 +133,20 @@ def test_echo_and_first_clear_achievements_unlock(game, play):
     assert "秘境五通 · 可领奖 · 进度：5/5" in page.text()
 
     markers(game, "echo_claims", 14)
-    markers(game, "first_clear_claims", 16)
+    markers(game, "first_clear_claims", 20)
     assert "回响全章 · 可领奖 · 进度：14/14" in play("achievements", "14").text()
-    assert "秘境全通 · 可领奖 · 进度：16/16" in play("achievements", "15").text()
+    assert "秘境全通 · 可领奖 · 进度：20/20" in play("achievements", "15").text()
 
 
 def test_top_titles_appear_once_the_systems_are_complete(game, play):
     play("adopt", "青鸾")
-    assert "17. 山海尽头 · 进度 0/14" in play("titles", "4").text()
+    assert "17. 山海尽头 · 进度 0/16" in play("titles", "4").text()
 
-    markers(game, "journey_claims", 14)
-    assert "17. 山海尽头 · 已获得 · 走完山海行纪全部十四段章节。" in play("titles", "4").text()
+    markers(game, "journey_claims", 16)
+    assert "17. 山海尽头 · 已获得 · 走完山海行纪全部十六段章节。" in play("titles", "4").text()
 
     markers(game, "echo_claims", 14)
-    markers(game, "first_clear_claims", 16)
+    markers(game, "first_clear_claims", 20)
     page = play("titles", "4").text()
     assert "18. 万籁归心 · 已获得" in page
     assert "19. 秘境行家 · 已获得" in page
