@@ -194,6 +194,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_titles.py tests/test_information.py tests/test_commands.py tests/test_content.py tests/test_pet_catalog.py tests/test_messaging.py tests/test_player_experience.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_main_quest.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_breeding.py tests/test_inheritance.py tests/test_balance_lineups.py`：合计 `349 passed`（含新增 `test_titles` 9 项），无既有断言需要改动。新增测试覆盖 16 项内容与 order 连续、未结契只读不建号、当前称号与逐项进度、最高优先级称号生效（塔层 8 + 渡劫）、主线与周常领取数指标、双灵称号条件、`我的信息` 展示、帮助条目与 native payload 按钮集合。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠扫荡闭环（2026-10-15，已完成）
+
+四个阶段一次交付：业务模块、命令与帮助、聚焦测试、文档。秘境是可重复内容，但每次都要打完整战斗（最多 40 回合）才能拿一次掉落，重复刷材料时回复冗长；同时每日任务与周常又要求“秘境获胜场次”，因此战斗不能被替代，但重复刷取应当有一条更轻的路径。
+
+新增 `gameplay/sweep.py`：`_cleared` 用 `battle_records JOIN battle_participants` 判定该玩家在该秘境（`kind='pve'`、`battle_key=<秘境 id>`、`winner_side = p.side`）是否已有胜利，因此不需要任何新计数列；`sweep` 复用 `named`、`ctx.check_action`、`ctx.require_idle_pet`、`ctx.active_pets` 与 `rewards.grant`，与 `run_dungeon` 保持同一套境界门槛、精力与冷却语义，并复用 `dungeon.reward` 作为掉落定义。命令注册为 `sweep`（`registered=True`），别名 `灵宠扫荡`，帮助“秘境与关卡”段补一条。
+
+关键边界：扫荡不写 `battle_records`、不调用 `award_mastery`、不调用 `advance(ctx, "pve")`，因此不推进每日任务与周常的获胜计数，也不影响首通与关卡进度；`adventure.run_dungeon` 与平衡门禁路径完全未动。组队秘境、未通关、境界不足、精力不足与冷却中均按既有提示拒绝；未填名称给出格式提示。
+
+定向命令 `./.venv/bin/pytest -q tests/test_sweep.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_adventure_routes.py tests/test_pve_stages.py tests/test_daily_dungeon.py tests/test_weekly_quests.py tests/test_balance_lineups.py tests/test_content.py tests/test_pet_catalog.py tests/test_player_experience.py tests/test_titles.py tests/test_achievements.py tests/test_tower.py`：合计 `357 passed`（含新增 `test_sweep` 10 项），无既有断言需要改动。新增测试覆盖未通关（含败退不算通关）、奖励与精力/冷却、不写战报与不计获胜场次、组队秘境、境界门槛、冷却中、名称缺失/无效、同 `operation_id` 幂等、帮助条目与 native payload 按钮集合。精力断言先固定 `energy_updated`，避免受被动回复影响。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
