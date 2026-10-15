@@ -20,6 +20,7 @@ from ..domain.weekly_quest_content import WeeklyQuest
 from ..domain.title_content import Title
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
+from ..domain.journey_content import Journey
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -83,6 +84,7 @@ class Catalog:
     titles: dict[str, Title]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
+    journey: dict[str, Journey]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -118,6 +120,7 @@ class Catalog:
             titles=_index(directory / "titles.json", Title),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
+            journey=_index(directory / "journey.json", Journey),
         )
         catalog.validate()
         return catalog
@@ -159,6 +162,7 @@ class Catalog:
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
             *(quest.reward for quest in self.main_quests.values()),
+            *(chapter.reward for chapter in self.journey.values()),
             *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
@@ -197,6 +201,7 @@ class Catalog:
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
         self._validate_main_quests()
+        self._validate_journey(realm_ids)
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -395,6 +400,63 @@ class Catalog:
             maximum = maxima.get(entry.metric)
             if maximum is not None and entry.target > maximum:
                 raise ValueError(f"achievement target exceeds available {entry.metric}")
+
+    def _validate_journey(self, realm_ids):
+        chapters = self.journey
+        if not chapters:
+            raise ValueError("at least one journey chapter is required")
+        order = [realm.id for realm in self.realms]
+        covered = set()
+        for chapter in chapters.values():
+            self._require([chapter.realm], realm_ids, "journey realm")
+            covered.add(chapter.realm)
+            task = chapter.task
+            limit = order.index(chapter.realm)
+            if task.kind in {"clear_dungeon", "win_at"}:
+                self._require([task.target], self.dungeons, "journey dungeon")
+                if order.index(self.dungeons[task.target].min_realm) > limit:
+                    raise ValueError(f"journey {chapter.id} targets an unreachable dungeon")
+            elif task.kind == "discover":
+                self._require([task.target], self.encounters, "journey encounter")
+                route = next(
+                    route for route in self.exploration_routes.values() if task.target in route.encounters
+                )
+                if order.index(route.min_realm) > limit:
+                    raise ValueError(f"journey {chapter.id} targets an unreachable encounter")
+            elif task.kind == "collect_species":
+                self._require([task.target], self.species, "journey species")
+            elif task.kind == "enable_resonance":
+                self._require([task.target], self.resonances, "journey resonance")
+            else:
+                self._require([task.target], realm_ids, "journey realm target")
+                if order.index(task.target) > limit:
+                    raise ValueError(f"journey {chapter.id} targets an unreachable realm")
+            if task.kind != "win_at" and task.count != 1:
+                raise ValueError(f"journey {chapter.id} may only repeat a win_at task")
+        missing = set(order) - covered
+        if missing:
+            raise ValueError(f"missing journey chapters for realms: {sorted(missing)}")
+        heads = [chapter for chapter in chapters.values() if chapter.previous_id is None]
+        if len(heads) != 1:
+            raise ValueError("journey must have exactly one first chapter")
+        for chapter in chapters.values():
+            if chapter.previous_id is None:
+                continue
+            self._require([chapter.previous_id], chapters, "journey previous chapter")
+            if order.index(chapters[chapter.previous_id].realm) > order.index(chapter.realm):
+                raise ValueError(f"journey {chapter.id} moves backwards in realms")
+        seen = set()
+        current = heads[0]
+        while current is not None:
+            if current.id in seen:
+                raise ValueError("journey chain contains a cycle")
+            seen.add(current.id)
+            following = [c for c in chapters.values() if c.previous_id == current.id]
+            if len(following) > 1:
+                raise ValueError(f"journey chapter {current.id} has more than one successor")
+            current = following[0] if following else None
+        if seen != set(chapters):
+            raise ValueError("journey chapters must form a single chain")
 
     def _validate_resonances(self):
         covered = set()

@@ -1,11 +1,11 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from . import daily_dungeon, first_clear, free_summon, main_quest, quests, titles, weekly_quests
+from . import daily_dungeon, first_clear, free_summon, journey, main_quest, quests, titles, weekly_quests
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤",
+    "灵宠每周召唤", "灵宠行纪",
 )
 
 
@@ -90,6 +90,18 @@ def _free_summon_line(ctx: Context, user_id: str) -> str:
     return f"每周召唤：{state}"
 
 
+def _journey_line(ctx: Context, user_id: str) -> str:
+    entries = tuple(ctx.content.journey.values())
+    claimable = [
+        chapter.name for chapter in entries
+        if journey._state(ctx, user_id, chapter) == "可领取"
+    ]
+    done = sum(1 for chapter in entries if journey._claimed(ctx, user_id, chapter.id))
+    if claimable:
+        return f"行纪：可领 {len(claimable)} 章（{'、'.join(claimable)}）· 已完成 {done}/{len(entries)} 章"
+    return f"行纪：暂无可领 · 已完成 {done}/{len(entries)} 章"
+
+
 def _title_line(ctx: Context, user_id: str) -> str:
     held = titles.earned(ctx, user_id)
     holder = held[-1][0] if held else None
@@ -117,6 +129,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _title_line(ctx, player.user_id),
         _first_clear_line(ctx, player.user_id),
         _free_summon_line(ctx, player.user_id),
+        _journey_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

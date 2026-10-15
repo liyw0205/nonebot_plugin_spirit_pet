@@ -24,6 +24,7 @@
 | stages.json | 线性章节关卡、前置关卡、队伍模式、敌手、精力成本和首通奖励范围 |
 | achievements.json | 稳定成就 ID、目标指标、完成条件文案和一次性静态奖励 |
 | main_quests.json | 主线步骤的序号、前置、目标指标与一次性奖励，按序解锁 |
+| journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
 | weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置 |
 | titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率 |
@@ -128,6 +129,8 @@
 固定奖励将 minimum 与 maximum 设成相同值。掉落可以为零，成本和权重必须为正，奖励最小值不能大于最大值。
 
 `achievements.json` 的每项只定义稳定 ID、名称、说明、指标、目标和一次性奖励，不保存玩家进度。`duplicate_species` 指至少拥有两只实例的种族数量；封存宠物仍属于玩家，也计入此指标。动态进度从 SQLite 当前存档与永久记录计算，领取凭证和奖励快照单独持久化。指标词汇同时覆盖装备强化等级（`max_enhancement`，取 `equipment` 与 `unequipped_equipment` 的最大强化等级）、切磋胜场（`spar_wins`）、累计战斗场次（`battles_fought`）、装备收藏（`equipment_owned`）、成就领取数（`achievements_claimed`）与共鸣启用（`resonances_enabled`），全部只读派生，不新增表或计数列。`max_enhancement` 的上限由 `forge_levels` 阶梯决定，因此 +10 里程碑必须在册。
+
+`journey.json` 的每章只定义境界、前置章节、故事文案、任务与一次性奖励，不保存玩家进度。校验要求：境界必须存在；每个境界至少一章；恰好一个首章（`previous_id` 为空），其余章节的前置必须存在且境界不倒退；整条链必须无环、无分叉且覆盖全部章节；任务目标按类型引用对应目录（秘境、奇闻、种族、共鸣、境界），且秘境 `min_realm`、奇闻所属路线的 `min_realm` 与 `reach_realm` 目标都不得高于本章境界（避免出现无法达成的章节）；只有 `win_at` 允许 `count` 大于 1；奖励物品必须存在。进度由永久战报、奇闻发现记录、灵宠种族与境界、当前共鸣即时派生，领取标记写入 `quest_progress`。
 
 ## 奇遇定义
 

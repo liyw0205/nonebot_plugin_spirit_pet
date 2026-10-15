@@ -1,0 +1,394 @@
+[
+  {
+    "id": "journey_01",
+    "name": "灵泉初醒",
+    "realm": "qiling",
+    "previous_id": null,
+    "story": "青岚林的风声里，你听见了第一声灵契的回响。",
+    "task": {
+      "kind": "clear_dungeon",
+      "target": "forest",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 120,
+        "maximum": 120
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_02",
+    "name": "灵泉寻踪",
+    "realm": "qiling",
+    "previous_id": "journey_01",
+    "story": "循着水汽走进灵泉修行，古树下藏着一处未名的泉眼。",
+    "task": {
+      "kind": "discover",
+      "target": "spring",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 150,
+        "maximum": 150
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_03",
+    "name": "月影双行",
+    "realm": "ningqi",
+    "previous_id": "journey_02",
+    "story": "月影谷的狼群在夜里结伴而行，你也该学会并肩作战。",
+    "task": {
+      "kind": "win_at",
+      "target": "moon",
+      "count": 2
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 220,
+        "maximum": 220
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_04",
+    "name": "双灵共鸣",
+    "realm": "ningqi",
+    "previous_id": "journey_03",
+    "story": "两只灵宠气息相接，青岚双翼在风中张开。",
+    "task": {
+      "kind": "enable_resonance",
+      "target": "wind_wings",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 260,
+        "maximum": 260
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_05",
+    "name": "雷泽问心",
+    "realm": "zhuji",
+    "previous_id": "journey_04",
+    "story": "雷泽的雷声问的是心，答得上来的人才走得过去。",
+    "task": {
+      "kind": "clear_dungeon",
+      "target": "thunder",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 320,
+        "maximum": 320
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_06",
+    "name": "古阵重光",
+    "realm": "zhuji",
+    "previous_id": "journey_05",
+    "story": "星谷深处，古阵的纹路被重新点亮。",
+    "task": {
+      "kind": "discover",
+      "target": "mountain",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 360,
+        "maximum": 360
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_07",
+    "name": "赤霞寻脉",
+    "realm": "jindan",
+    "previous_id": "journey_06",
+    "story": "赤霞之下有灵脉，也有焚心的试炼。",
+    "task": {
+      "kind": "discover",
+      "target": "ember_refining",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 450,
+        "maximum": 450
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_08",
+    "name": "铁鳞入册",
+    "realm": "jindan",
+    "previous_id": "journey_07",
+    "story": "铁鳞一族守山千年，如今愿意与你同行。",
+    "task": {
+      "kind": "collect_species",
+      "target": "tielin",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 5,
+          "maximum": 5
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_09",
+    "name": "归墟拾脉",
+    "realm": "yuanying",
+    "previous_id": "journey_08",
+    "story": "归墟的残垣里还留着上古灵脉的气息。",
+    "task": {
+      "kind": "discover",
+      "target": "primordial_root",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 600,
+        "maximum": 600
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_10",
+    "name": "霜渊再战",
+    "realm": "yuanying",
+    "previous_id": "journey_09",
+    "story": "万载霜渊的寒气不止一次考验来客。",
+    "task": {
+      "kind": "win_at",
+      "target": "frost_abyss",
+      "count": 2
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 650,
+        "maximum": 650
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 3,
+          "maximum": 3
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_11",
+    "name": "青冥守镜",
+    "realm": "huashen",
+    "previous_id": "journey_10",
+    "story": "青冥之镜映出的是你的来路。",
+    "task": {
+      "kind": "discover",
+      "target": "azure_mirror",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 750,
+        "maximum": 750
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 4,
+          "maximum": 4
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_12",
+    "name": "太虚观剑",
+    "realm": "huashen",
+    "previous_id": "journey_11",
+    "story": "太虚剑境里，剑意比剑更快。",
+    "task": {
+      "kind": "discover",
+      "target": "void_sword",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 800,
+        "maximum": 800
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 6,
+          "maximum": 6
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_13",
+    "name": "劫海采雷",
+    "realm": "dujie",
+    "previous_id": "journey_12",
+    "story": "劫海之上雷云翻滚，采雷者要稳得住手。",
+    "task": {
+      "kind": "discover",
+      "target": "thunder_altar",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 900,
+        "maximum": 900
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 5,
+          "maximum": 5
+        }
+      }
+    }
+  },
+  {
+    "id": "journey_14",
+    "name": "天门问道",
+    "realm": "dujie",
+    "previous_id": "journey_13",
+    "story": "太上天门在前，渡劫者自此问鼎。",
+    "task": {
+      "kind": "reach_realm",
+      "target": "dujie",
+      "count": 1
+    },
+    "reward": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 1200,
+        "maximum": 1200
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 6,
+          "maximum": 6
+        }
+      }
+    }
+  }
+]

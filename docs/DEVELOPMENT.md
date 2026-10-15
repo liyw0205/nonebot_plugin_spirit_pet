@@ -266,6 +266,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_free_summon.py tests/test_objectives.py tests/test_first_clear.py tests/test_weekly_quests.py tests/test_quest_interaction.py tests/test_catalog_interaction.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_balance_lineups.py tests/test_achievement_expansion.py tests/test_achievements.py tests/test_breeding.py tests/test_tower.py tests/test_main_quest.py tests/test_daily_dungeon.py tests/test_player_experience.py tests/test_item_loop.py tests/test_crafting.py`：合计 `445 passed`（含新增 `test_free_summon` 9 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、页面状态与蓝字、领取后一次得到 10 只且灵石不变、保底文案、本周重复领取拒绝与同 `operation_id` 幂等、跨周（`now + 8 天`）重新可领、名册已满时拒绝且不写入标记（本周机会保留）、付费召唤仍扣 100 灵石、`灵宠目标` 每周召唤行随领取变化、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 山海行纪闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与校验、业务与命令、聚焦测试、文档。审计发现内容之间没有叙事主线：`灵宠主线` 的 16 步是通用指标（拥有 X 只、修炼 N 次），与具体地点、奇闻、种族无关；14 条奇闻、7 条路线、16 处秘境、27 族灵宠各自独立，玩家没有任何一条“按故事顺序走遍山海”的旅程。奇闻有文案但没有前后关系，路线有境界门槛但没有章节感。
+
+新增 `data/journey.json`：14 章（每境界 2 章）按 `previous_id` 串成单链，从启灵的「灵泉初醒」（通关青岚林）到渡劫的「天门问道」（达到渡劫）。每章含 `realm`、`story`、`task` 与一次性 `reward`；任务类型六种——`clear_dungeon`、`win_at`（可带 `count`）、`discover`、`collect_species`、`enable_resonance`、`reach_realm`。`domain/journey_content.py` 定义 `JourneyTask`/`Journey`，`content/catalog.py` 的 `_validate_journey` 校验境界引用、每境界至少一章、恰好一个首章、链条无环无分叉且全覆盖、前置章节境界不倒退、任务目标按类型引用（秘境/奇闻/种族/共鸣/境界）、可达性不越界（秘境 `min_realm`、奇闻所属路线 `min_realm`、`reach_realm` 目标都不得高于本章境界）、只有 `win_at` 允许 `count > 1`、奖励物品存在；`journey` 奖励也并入既有的奖励物品校验元组。
+
+`gameplay/journey.py`：`_value` 按类型派生进度——`clear_dungeon` 直接复用 `sweep._cleared`（与扫荡、秘境首通同源），`win_at` 统计永久战报中该秘境的胜场，`discover` 读 `adventure_discoveries`，`collect_species` 读 `pets`，`enable_resonance` 读 `player_resonance`，`reach_realm` 比较 `MAX(realm)` 与目标境界序号。`_state` 依次判定已领取、前置未领取（`未解锁`）、任务达成（`可领取`）与进行中；`catalog` 每页 5 章，每章两行（状态行 + 故事文案），可领章挂 `灵宠行纪领奖 <章节名>` 蓝字，未结契只返回预览与“开始领养”蓝字；`claim` 依次校验重复领取、前置章节、任务进度，再 `grant` 并把标记写入 `quest_progress` 的 `journey_<章节 id>`（`progress=0`，一次性），回复给出下一章解锁提示。命令注册为 `journey`（`registered=False`）与 `journey_claim`（`registered=True`），别名 `灵宠行纪` / `灵宠行纪领奖`，帮助“秘境与关卡”段补两条（与主线条目同段），`灵宠目标` 增加第九行“行纪”。
+
+关键边界：不新增表或列、不新增规则字段；不改动主线、周常、成就、称号、秘境、关卡与召唤的任何规则与数值；进度只读派生，领取标记按一次性保存且不随日期失效。
+
+定向命令 `./.venv/bin/pytest -q tests/test_journey.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_main_quest.py tests/test_achievements.py tests/test_achievement_expansion.py tests/test_first_clear.py tests/test_free_summon.py tests/test_weekly_quests.py tests/test_daily_dungeon.py tests/test_balance_lineups.py tests/test_dungeon_interaction.py tests/test_sweep.py tests/test_tower.py tests/test_breeding.py tests/test_catalog_interaction.py tests/test_quest_interaction.py`：合计 `375 passed`（含新增 `test_journey` 11 项），既有断言无需改动。新增测试覆盖未结契只读预览且不建号、分页与页数边界、章节状态与故事文案、首章需先通关秘境、领取发放奖励并解锁下一章、锁定与重复领取被拒、同 `operation_id` 幂等、六种任务类型的派生进度（含两连胜与境界门槛）、`灵宠目标` 行纪行、内容校验（链条断裂、目标不存在、可达性越界）、native payload 按钮与行蓝字零重叠、帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
