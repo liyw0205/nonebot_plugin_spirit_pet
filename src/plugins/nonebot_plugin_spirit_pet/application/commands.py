@@ -6,6 +6,7 @@ from ..gameplay import adventure, cultivation, economy, equipment, forging, iden
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, tower
 from ..gameplay import breeding
 from ..gameplay import main_quest
+from ..gameplay import daily_dungeon
 from ..gameplay import achievements, resonance
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
@@ -52,6 +53,7 @@ ACTIONS = {
     "breeding": Command(breeding.breeding, True, registered=False),
     "main_quests": Command(main_quest.catalog, True, registered=False),
     "main_quest_claim": Command(main_quest.claim, True),
+    "daily_dungeon": Command(daily_dungeon.catalog, True, registered=False),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
@@ -121,6 +123,7 @@ COMMANDS = {
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
+    "灵宠今日秘境": "daily_dungeon",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",

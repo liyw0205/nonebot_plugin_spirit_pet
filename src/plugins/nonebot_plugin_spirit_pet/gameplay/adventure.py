@@ -8,6 +8,7 @@ from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
+from . import daily_dungeon
 
 ADVENTURE_CODEX_PAGE_SIZE = 4
 
@@ -209,6 +210,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
             advance(ctx, "pve", user_id)
             names = "、".join(pet.name for owner, pet in selected if owner == user_id)
             lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+            lines.extend(daily_dungeon.bonus(ctx, user_id, dungeon))
     for user_id in user_ids:
         ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")

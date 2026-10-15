@@ -154,6 +154,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_main_quest.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_player_experience.py tests/test_information.py tests/test_messaging.py tests/test_achievements.py tests/test_achievement_interaction.py tests/test_adventure_routes.py tests/test_companionship.py` 与第二批 `tests/test_quest_interaction.py tests/test_battles.py tests/test_arena_battles.py tests/test_expedition_commands.py tests/test_hatching.py tests/test_item_loop.py tests/test_breeding.py`：合计 `400 passed`（含新增 `test_main_quest` 9 项），无既有断言需要改动。新增测试覆盖 16 步内容与前置链、四态与进度显示、唯一蓝字与按钮集合零重叠、未结契只读不建号、领取发奖与解锁下一步、未知步骤/乱序/条件未达成/重复领取的拒绝、跨日后主线保留而每日任务清零、同消息重放不重复发奖、帮助条目与 native payload 蓝字按钮零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 今日秘境闭环（2026-10-15，已完成）
+
+四个阶段一次交付：内容与规则、业务模块与战斗接入、命令与帮助、定向测试。此前秘境是无限重复内容，规则只有“胜利按参战成员发一份奖励、败平无奖励、无论胜败都消耗精力与共享冷却”，没有任何每日节奏；每日循环只有签到与 10 条每日事件任务，玩家缺少“今天该打哪一处”的轮换目标。
+
+`data/rules.json` 新增 `daily_featured`（`first` 与 `third` 两份 `Reward`），`domain/content.py` 新增 `DailyFeatured` 并挂到 `Rules.daily_featured`（校验两份奖励非空），`content/catalog.py` 把两份今日奖励并入既有奖励物品校验。轮换不需要数据文件。
+
+`gameplay/daily_dungeon.py` 提供 `featured`（按 `beijing_day` 的日期序数在九处单人秘境中取模，纯函数）、`wins_today`（由 `battle_records` 与 `battle_participants` 派生当日该秘境胜场）、`bonus`（胜场为 0 时发首胜、为 2 时发三胜，其余返回空）与 `catalog`。`adventure.run_dungeon` 在既有掉落行之后调用 `daily_dungeon.bonus`，因此今日奖励与战报在同一事务内结算，重投由通用操作缓存返回原回复。命令注册为 `daily_dungeon`（`registered=False`，未结契可只读浏览），别名 `灵宠今日秘境`，帮助“秘境与关卡”段补一条。schema 20、秘境掉落、精力消耗、共享冷却、每日任务事件与组队规则全部不动，未新增计数列或冷却。
+
+定向命令 `./.venv/bin/pytest -q tests/test_daily_dungeon.py tests/test_adventure_routes.py tests/test_dungeon_interaction.py tests/test_battles.py tests/test_battle_records.py tests/test_content.py tests/test_pet_catalog.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_player_experience.py tests/test_main_quest.py tests/test_breeding.py` 与第二批 `tests/test_team_management.py tests/test_team_requests.py tests/test_team_requests_contract.py tests/test_team_request_interaction.py tests/test_team_play_ux.py tests/test_team_messaging.py tests/test_team_config.py tests/test_team_concurrency.py tests/test_arena_battles.py`：合计 `457 passed`（含新增 `test_daily_dungeon` 9 项），无既有断言需要改动。新增测试覆盖轮换的纯函数性（同日稳定、跨日轮换、九处循环、只取单人秘境）、未结契只读不建号、列表四行文本与唯一蓝字、按钮集合与蓝字零重叠、首胜/二胜/三胜的奖励与状态、非今日秘境不发奖、跨日状态归零、重投不重复发奖、帮助条目与 native payload 零重叠。QQ 适配器契约 `test_messaging` 未改动即通过。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

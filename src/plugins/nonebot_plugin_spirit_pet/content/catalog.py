@@ -149,6 +149,7 @@ class Catalog:
             *(expedition.reward for expedition in self.expeditions.values()),
             *(floor.reward for floor in self.tower.values()),
             *(quest.reward for quest in self.main_quests.values()),
+            self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
             self._require(reward.items, self.items, "reward items")
         route_encounters = [

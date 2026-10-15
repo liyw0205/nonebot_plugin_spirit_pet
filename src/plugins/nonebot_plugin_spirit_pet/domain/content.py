@@ -202,6 +202,18 @@ class Pool(Definition):
         return self
 
 
+class DailyFeatured(Definition):
+    first: Reward
+    third: Reward
+
+    @model_validator(mode="after")
+    def require_rewards(self):
+        for name, reward in (("first", self.first), ("third", self.third)):
+            if reward.stones.maximum == 0 and not reward.items:
+                raise ValueError(f"daily featured {name} reward must not be empty")
+        return self
+
+
 class BreedingRule(Definition):
     affinity: Annotated[int, Field(ge=1, le=100)]
     energy: Positive
@@ -220,3 +232,4 @@ class Rules(Definition):
     skill_proficiency_per_use: Positive = 5
     resonance_cost: ResourceCost
     breeding: BreedingRule
+    daily_featured: DailyFeatured

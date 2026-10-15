@@ -36,5 +36,39 @@
     "affinity": 100,
     "energy": 30,
     "cost": {"stones": 800, "items": {}}
+  },
+  "daily_featured": {
+    "first": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 200,
+        "maximum": 200
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "third": {
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
   }
 }
