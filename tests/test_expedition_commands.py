@@ -20,6 +20,8 @@ from .test_commands import onebot_event, qq_event
     ("灵宠委托", "expedition_catalog", "采灵药"),
     ("灵宠派遣", "expedition_start", "采灵药"),
     ("灵宠行程", "expedition_status", "17"),
+    ("灵宠行程记录", "expedition_history", "2"),
+    ("灵宠行程回顾", "expedition_history_detail", "17"),
     ("灵宠归来", "expedition_claim", "17"),
     ("灵宠召回", "expedition_cancel", "17"),
 ])

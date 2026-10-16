@@ -1,5 +1,7 @@
 from sqlite3 import Row
 
+from pydantic import ValidationError
+
 from ..application.context import Context
 from ..domain.expedition_state import RewardSnapshot
 from ..domain.models import GameError, InlineCommand, Reply
@@ -141,7 +143,10 @@ def claim(ctx: Context, arg: str) -> Reply:
     _require_running(row)
     if ctx.now < row["finishes_at"]:
         raise GameError(f"行程尚未完成，还需 {row['finishes_at'] - ctx.now} 秒。")
-    snapshot = RewardSnapshot.model_validate_json(row["reward_snapshot"])
+    try:
+        snapshot = RewardSnapshot.model_validate_json(row["reward_snapshot"])
+    except (TypeError, ValueError, ValidationError) as exc:
+        raise GameError("该行程的奖励快照暂不可领取，请联系管理员检查存档；奖励尚未结算。") from exc
     if set(snapshot.items) - set(ctx.content.items):
         raise GameError("行程奖励所需的物品定义缺失，请联系管理员恢复内容后再领取；奖励尚未结算。")
     pet = ctx.repo.pet(row["pet_id"])

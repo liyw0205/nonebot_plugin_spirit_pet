@@ -22,6 +22,7 @@ from ..gameplay import season_missions
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
+from ..gameplay import expedition_history
 from ..gameplay import stage_stars
 from ..gameplay import checkin_rewards
 from ..gameplay import battle_records, help
@@ -122,6 +123,8 @@ ACTIONS = {
     "quests": Command(quests.quests),
     "claim": Command(quests.claim, True),
     "expedition_catalog": Command(expeditions.catalog, True, registered=False),
+    "expedition_history": Command(expedition_history.catalog, True, registered=False),
+    "expedition_history_detail": Command(expedition_history.detail, True, registered=False),
     "expedition_start": Command(expeditions.start, True),
     "expedition_status": Command(expeditions.status, True),
     "expedition_claim": Command(expeditions.claim, True),
@@ -191,6 +194,7 @@ COMMANDS = {
     "灵宠图鉴奖励": "codex", "灵宠图鉴领奖": "codex_claim",
     "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
+    "灵宠行程记录": "expedition_history", "灵宠行程回顾": "expedition_history_detail",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
     "灵宠论剑": "pvp", "灵宠切磋": "spar",
     "灵宠战报": "battle_reports",
