@@ -30,7 +30,7 @@ from ..gameplay import checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import battle_merits, battle_records, help
+from ..gameplay import battle_merits, battle_records, help, rank_rewards
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -50,6 +50,8 @@ ACTIONS = {
     "status": Command(information.status),
     "catalog": Command(information.catalog, True, registered=False),
     "rank": Command(information.rank, registered=False),
+    "rank_rewards": Command(rank_rewards.catalog, True, registered=False),
+    "rank_reward_claim": Command(rank_rewards.claim, True),
     "adventure_rank": Command(information.adventure_rank, registered=False),
     "pvp_rank": Command(seasons.rank, True, registered=False),
     "season": Command(seasons.status, True),
@@ -185,7 +187,7 @@ ACTIONS = {
 COMMANDS = {
     "灵宠": "help", "灵宠帮助": "help", "我的信息": "identity",
     "我的灵宠": "status", "我的宠": "status",
-    "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
+    "灵宠图鉴": "catalog", "灵宠排行奖励": "rank_rewards", "灵宠排行领奖": "rank_reward_claim", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季奖励回顾": "arena_reward_history", "灵宠赛季领奖": "season_claim",
     "灵宠段位奖励": "arena_tier_rewards", "灵宠段位领奖": "arena_tier_claim",
     "灵宠匹配": "match",

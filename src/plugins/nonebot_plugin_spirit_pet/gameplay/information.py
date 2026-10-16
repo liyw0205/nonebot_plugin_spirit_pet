@@ -10,6 +10,7 @@ from .lineage import describe_multipliers
 from .titles import current as current_title
 from .titles import earned as earned_titles
 from .titles import selected as selected_title
+from .rank_rewards import leaderboard_rows
 
 
 def element_line(ctx: Context, species: Species) -> str:
@@ -154,17 +155,21 @@ def acquisition(ctx: Context, species: Species) -> str:
 
 
 def rank(ctx: Context, arg: str) -> Reply:
-    rows = ctx.repo.conn.execute(
-        "SELECT name, realm, layer, exp, identity.id + 9999 AS uid FROM ("
-        "SELECT p.*, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY realm DESC, layer DESC, exp DESC, pet_id) n "
-        "FROM pets p WHERE archived=0) ranked JOIN players owner ON ranked.user_id=owner.user_id "
-        "JOIN player_identity identity USING(user_id) "
-        "WHERE n=1 ORDER BY realm DESC, layer DESC, exp DESC, pet_id LIMIT 10"
-    ).fetchall()
-    return Reply("万灵榜", tuple(
-        f"{index}. UID {row['uid']} · {row['name']} · {ctx.content.realms[row['realm']].name} {row['layer']}层"
-        f" · 修为 {row['exp']}" for index, row in enumerate(rows, 1)
-    ) or ("尚无灵宠入榜。",))
+    rows = leaderboard_rows(ctx)
+    lines = tuple(
+        f"{row['rank']}. UID {row['uid']} · {row['name']} · {ctx.content.realms[row['realm']].name} {row['layer']}层"
+        f" · 修为 {row['exp']}" for row in rows[:10]
+    )
+    player = ctx.repo.player(ctx.user_id)
+    if player is None:
+        return Reply(
+            "万灵榜", (*lines, "结契后可查看自己的万灵榜名次与名次奖励。"),
+            ("灵宠排行奖励", "灵宠帮助"),
+        )
+    rank_value = next((row["rank"] for row in rows if row["user_id"] == player.user_id), None)
+    suffix = f"你的当前名次：第 {rank_value} 名。" if rank_value else "你尚未入榜（需有在册灵宠）。"
+    return Reply("万灵榜", (*lines, suffix) if lines else ("尚无灵宠入榜。", suffix),
+                 ("灵宠排行奖励", "灵宠目标"))
 
 
 def adventure_rank(ctx: Context, arg: str) -> Reply:
