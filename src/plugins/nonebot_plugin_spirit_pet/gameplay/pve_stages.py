@@ -20,6 +20,7 @@ from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
+from . import stage_stars
 from .teams.common import membership, require_leader
 
 
@@ -72,6 +73,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         return Reply(f"关卡 {stage.order} · {stage.name}", (
             stage.description,
             f"进度：{progress}",
+            stage_stars.detail_line(ctx, ctx.user_id, stage),
             f"{mode} · {realm}起 · 精力 {stage.energy} · 敌手：{enemy_names}",
             *enemy_techniques,
             f"首通奖励：修为 {reward.exp.minimum}-{reward.exp.maximum} · "

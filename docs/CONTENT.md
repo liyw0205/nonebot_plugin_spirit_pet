@@ -24,6 +24,7 @@
 | expeditions.json | 离线委托的名称、描述、境界门槛、精力成本与奖励范围，不含时间或玩家状态 |
 | arena.json | 论剑赛季的积分规则、准入门槛、场次限额、奖励资格与固定奖励档位；六档由青云 0 分到归元 1450 分 |
 | stages.json | 线性章节关卡、前置关卡、队伍模式、敌手、精力成本和首通奖励范围 |
+| stage_star_rewards.json | 关卡星数里程碑的星数门槛与一次性奖励，按星数递增 |
 | achievements.json | 稳定成就 ID、目标指标、完成条件文案和一次性静态奖励 |
 | main_quests.json | 主线步骤的序号、前置、目标指标与一次性奖励，按序解锁 |
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
@@ -31,7 +32,7 @@
 | season_missions.json | 赛季目标的指标、目标值与每赛季一次性奖励，按自然月重置；每个指标 1-2 个难度 |
 | titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
-| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本与灵坊回收比例 |
+| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛与灵坊回收比例 |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
@@ -138,6 +139,8 @@
 `season_missions.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `season_matches`（本赛季论剑场次）、`season_wins`（本赛季论剑胜场）、`season_pve`（本赛季秘境或关卡获胜）、`season_discoveries`（本赛季发现奇闻）与 `season_claims`（本赛季领取成就奖励），五种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。进度全部按当前赛季窗口（`utils.time.season_bounds` 给出的北京时间自然月起止）从带时间戳的既有记录派生，领取标记写入 `quest_progress` 并保存赛季起始时间，因此换季自动重置。
 
 `daily_assignments.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `daily_pve`（今日秘境或关卡获胜）、`daily_pvp`（今日论剑场次）、`daily_discovery`（今日发现奇闻）、`daily_expedition`（今日领取委托）、`daily_claim`（今日领取成就奖励）与 `daily_training`（今日修炼），六种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。池中现有 12 项（六种指标各 1-3 个难度，同一指标的不同目标共用同一条当日进度），每天按北京时间日期序数确定性轮换出三项（`pool[(序数 * 3 + i) % len(pool)]`），同一天稳定、四天覆盖全池；进度只统计当天的记录，领取标记写入 `quest_progress` 的 `daily_assignment` 行，`progress` 为 `序数 * 10 + 所选序号`，因此次日自动重置且只保留一行。
+
+`stage_star_rewards.json` 的每项只定义 `stars`、`stones` 与 `items`，不保存玩家进度。星数门槛为正整数、互不重复且不超过 `3 × stages.json 条目数`（当前 48）；`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间；星级由 `battle_records` 中该玩家的获胜记录即时派生（取最少回合数，按 `rules.json` 的 `stage_star_rounds` 每敌手门槛换算），领取标记写入 `quest_progress` 的 `stage_stars_<星数>` 行，因此每档只发一次且永久有效。
 
 `codex_rewards.json` 的每项只定义 `species`、`stones` 与 `items`，不保存玩家进度。`species` 必须引用已有种族且每个种族恰好一条（不多不少），`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间，领取时按单值发放；收集状态由 `pets` 表即时派生（封存宠物仍计入），领取标记写入 `quest_progress` 的 `codex_<种族>` 行，因此每族只发一次且永久有效。
 

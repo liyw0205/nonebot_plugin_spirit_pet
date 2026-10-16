@@ -430,6 +430,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_resonance_expansion.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `225 passed`（新增 `test_resonance_expansion` 4 项）。新增测试覆盖 21 组且配对唯一、每个种族仍被覆盖、新组不与旧组重复、新组可激活并按 `rules.resonance_cost` 扣费、重复启用幂等不重复扣费、种族未集齐时被拒。既有断言同步：`test_resonance` 的条目数 14 → 21、页码 `1/3` → `1/5` 与页码参数（第 6 页越界），以及「种族未覆盖」用例改为删除某一种族的全部配对（原用例只删一组，在该种族被其他组覆盖后不再触发校验）。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠关卡星级评价闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、命令与 UX、测试与文档。审计显示章节关卡只有「未解锁 / 可挑战 / 已通关」三种状态，通关后这一关就彻底结束（`pve_stage_progress` 只记首次通关时间），没有表现评价维度，16 关的深度止步于「是否通关」。战斗记录里已经保存了每场战斗的回合数（`battle_records.rounds`），因此评价可以完全派生。
+
+`rules.json` 新增 `stage_star_rounds`（`{"three": 3, "two": 5}`，每名敌手允许的回合数），`Rules` 模型新增 `StageStarRule` 并校验 3 星门槛严于 2 星门槛。新增 `data/stage_star_rewards.json` 三档里程碑（16 星：500 灵石 + 5 锻灵矿；32 星：1200 灵石 + 10 锻灵矿 + 3 血脉精华；48 星：2400 灵石 + 16 锻灵矿 + 6 血脉精华）与 `domain/stage_star_content.py`，`Catalog` 增加 `stage_star_rewards` 字段，校验星数不重复、不超过 `3 × 关卡数`、物品存在、奖励非空。新增 `gameplay/stage_stars.py`：`best_rounds` 取该玩家在该关**获胜**记录中的最少回合数，`stars_for` 按 `rounds <= 每敌手门槛 × 敌手数` 换算 3/2/1 星，`total` 汇总 16 关星数；领取标记写入 `quest_progress` 的 `stage_stars_<星数>` 行，发奖复用 `rewards.grant`。命令 `灵宠关卡星级`（只读分页，5 关/页，共 4 页）与 `灵宠关卡星级领奖 <星数>`；`灵宠关卡 <序号>` 详情新增星级行；帮助「秘境与关卡」新增两条；`灵宠目标` 新增星级行。
+
+门槛以实测锚定：启灵期青鸾在 `FixedRandom` 最差骰下以 5 回合通关第 1 关（1 名敌手），即最差骰为 2 星、正常骰可拿 3 星。
+
+关键边界：不新增表、列或计数列，schema 20 不动；关卡解锁、前置、精力、首通奖励、助战规则与全部战斗结算不变；星级纯派生、奖励领取式，不进入任何战斗结算，因此平衡门禁结论不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_stage_stars.py tests/test_stage_interaction.py tests/test_stage_finale.py tests/test_objectives.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_content.py tests/test_balance_lineups.py tests/test_runtime.py tests/test_achievements.py tests/test_player_experience.py tests/test_catalog_interaction.py tests/test_pet_catalog.py tests/test_codex.py tests/test_sweep.py tests/test_pve_stages.py`：合计 `353 passed`（新增 `test_stage_stars` 11 项）。新增测试覆盖每敌手门槛边界（门槛与门槛 +1）、多敌手换算、取历史最少回合、败退与平局不计入、真实通关得星（★★☆）、详情星级行、里程碑领取扣减与二次领取被拒、同 `operation_id` 重放只发一次、未结契只读浏览不建号、`灵宠目标` 行格式与帮助条目。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 灵宠图鉴收集奖励闭环（2026-10-16，已完成）
 
 四个阶段一次交付：内容与校验、业务、命令与 UX、测试与文档。审计显示收集是核心循环之一（领养、召唤、孵化、培育），`灵宠收集` 与 `灵宠图鉴` 都能看到收集状态，但收集本身没有任何直接回报：只有三条成就按总数给奖（初识百灵 3 族、百灵相逢 10 族、万灵归藏 27 族），中间 24 个种族收齐了也没有反馈。

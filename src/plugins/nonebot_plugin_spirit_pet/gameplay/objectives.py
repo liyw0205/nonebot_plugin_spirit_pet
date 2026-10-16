@@ -2,11 +2,12 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
 from . import codex
+from . import stage_stars
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励",
+    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
 )
 
 
@@ -84,6 +85,20 @@ def _first_clear_line(ctx: Context, user_id: str) -> str:
     if claimable:
         return f"秘境首通：可领 {len(claimable)} 处（{'、'.join(claimable)}）· 共 {total} 处"
     return f"秘境首通：暂无可领 · 共 {total} 处"
+
+
+def _stage_star_line(ctx: Context, user_id: str) -> str:
+    reached = stage_stars.total(ctx, user_id)
+    milestones = sorted(ctx.content.stage_star_rewards)
+    claimable = [
+        milestone for milestone in milestones
+        if reached >= milestone and not stage_stars.claimed(ctx, user_id, milestone)
+    ]
+    maximum = stage_stars.FULL_STARS * len(ctx.content.stages)
+    if claimable:
+        joined = "、".join(f"{milestone} 星" for milestone in claimable)
+        return f"关卡星级：可领 {len(claimable)} 档（{joined}）· 当前 {reached}/{maximum} 星"
+    return f"关卡星级：暂无可领 · 当前 {reached}/{maximum} 星"
 
 
 def _codex_line(ctx: Context, user_id: str) -> str:
@@ -184,6 +199,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _season_line(ctx, player.user_id),
         _assignment_line(ctx, player.user_id),
         _codex_line(ctx, player.user_id),
+        _stage_star_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

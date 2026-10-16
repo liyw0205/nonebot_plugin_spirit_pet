@@ -1,0 +1,5 @@
+[
+  {"stars": 16, "stones": 500, "items": {"forge_ore": 5}},
+  {"stars": 32, "stones": 1200, "items": {"forge_ore": 10, "bloodline_essence": 3}},
+  {"stars": 48, "stones": 2400, "items": {"forge_ore": 16, "bloodline_essence": 6}}
+]

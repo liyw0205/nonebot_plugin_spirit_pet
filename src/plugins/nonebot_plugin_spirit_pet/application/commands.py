@@ -20,6 +20,7 @@ from ..gameplay import season_missions
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
+from ..gameplay import stage_stars
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
@@ -103,6 +104,8 @@ ACTIONS = {
     "collection": Command(achievements.collection, True, registered=False),
     "codex": Command(codex.catalog, True, registered=False),
     "codex_claim": Command(codex.claim, True),
+    "stage_stars": Command(stage_stars.catalog, True, registered=False),
+    "stage_stars_claim": Command(stage_stars.claim, True),
     "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
@@ -165,6 +168,7 @@ COMMANDS = {
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠挑战关卡": "stage_challenge",
+    "灵宠关卡星级": "stage_stars", "灵宠关卡星级领奖": "stage_stars_claim",
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",

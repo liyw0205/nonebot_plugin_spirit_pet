@@ -231,6 +231,23 @@ class BreedingRule(Definition):
     cost: ResourceCost
 
 
+class StageStarRule(Definition):
+    """Rounds allowed per enemy for a stage clear rating.
+
+    ``three`` is the full-star bar and ``two`` the two-star bar, both counted
+    per enemy so a stage with more opponents gets proportionally more room.
+    """
+
+    three: Annotated[int, Field(gt=0, le=100)]
+    two: Annotated[int, Field(gt=0, le=100)]
+
+    @model_validator(mode="after")
+    def ordered(self):
+        if self.three >= self.two:
+            raise ValueError("three-star bar must be stricter than the two-star bar")
+        return self
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -245,4 +262,5 @@ class Rules(Definition):
     breeding: BreedingRule
     daily_featured: DailyFeatured
     inheritance_cost: ResourceCost
+    stage_star_rounds: StageStarRule
     recycle_percent: Annotated[int, Field(gt=0, lt=100)]

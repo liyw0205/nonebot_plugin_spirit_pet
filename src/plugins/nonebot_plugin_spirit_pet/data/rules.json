@@ -75,5 +75,6 @@
     "stones": 80,
     "items": {"forge_ore": 1}
   },
+  "stage_star_rounds": {"three": 3, "two": 5},
   "recycle_percent": 40
 }
