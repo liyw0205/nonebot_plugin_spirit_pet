@@ -50,14 +50,18 @@ def test_partial_set_and_stale_claim_are_rejected_without_consuming_items(game, 
     play("equipment", "青岚翎")
     partial = play("equipment_sets", "青岚风铃")
     assert partial.lines[-1].endswith("未完成。")
-    assert partial.inline_commands == ()
+    assert not any(link.command.startswith("灵宠套装穿戴") for link in partial.inline_commands)
+    assert not any(link.command.startswith("灵宠套装领奖") for link in partial.inline_commands)
     with pytest.raises(GameError, match="须由同一只出战灵宠"):
         play("equipment_set_claim", "青岚风铃")
     assert sql(game[1], "SELECT quest_id FROM quest_progress WHERE quest_id LIKE ?", (claim_id("%"),)) == []
 
     play("buy", "灵心铃")
     play("equipment", "灵心铃")
-    stale_link = play("equipment_sets", "青岚风铃").inline_commands[0]
+    stale_link = next(
+        link for link in play("equipment_sets", "青岚风铃").inline_commands
+        if link.command.startswith("灵宠套装领奖")
+    )
     assert stale_link.command == "灵宠套装领奖 青岚风铃"
     play("unequip", "饰品")
     stale_action, stale_argument = handlers._parse(stale_link.command)
@@ -75,7 +79,9 @@ def test_complete_set_claim_is_durable_one_time_and_replay_safe(game, play):
 
     detail = play("equipment_sets", "青岚风铃")
     assert detail.lines[-1] == "首次完成奖励：灵石 180，灵粮 1 · 可领取。"
-    assert [link.command for link in detail.inline_commands] == ["灵宠套装领奖 青岚风铃"]
+    assert [link.command for link in detail.inline_commands if link.command.startswith("灵宠套装领奖")] == [
+        "灵宠套装领奖 青岚风铃",
+    ]
 
     first = play("equipment_set_claim", "青岚风铃", op="wind-set-reward")
     assert first.title == "套装完成奖励"
@@ -89,7 +95,10 @@ def test_complete_set_claim_is_durable_one_time_and_replay_safe(game, play):
 
     play("unequip", "饰品")
     assert play("equipment_sets", "青岚风铃").lines[-1].endswith("已领取。")
-    assert play("equipment_sets", "青岚风铃").inline_commands == ()
+    assert not any(
+        link.command.startswith("灵宠套装领奖")
+        for link in play("equipment_sets", "青岚风铃").inline_commands
+    )
     assert player(game[1])["stones"] == stones_before + 180
 
 
@@ -164,6 +173,7 @@ def test_set_list_has_claim_link_separate_from_native_buttons(game, play):
 
 def test_help_and_objectives_expose_set_rewards(game, play):
     assert "灵宠套装领奖 套装名：" in play("help", "灵物与灵术").text()
+    assert "灵宠套装穿戴 宠物编号 套装名：" in play("help", "灵物与灵术").text()
     account(game, play)
     equip_wind_set(play)
     hub = play("objectives")

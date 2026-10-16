@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from ..utils.arguments import named
+from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
 from .compatibility import check_requirements, requirement_text
 from .equipment_inventory import highest_enhancement, put, take
@@ -30,6 +30,10 @@ def active_sets(ctx: Context, pet_id: int):
         equipment_set for equipment_set in ctx.content.equipment_sets.values()
         if set(equipment_set.items).issubset(equipped_ids)
     )
+
+
+def _gear_item(ctx: Context, equipment_id: str):
+    return next(item for item in ctx.content.items.values() if item.equipment_id == equipment_id)
 
 
 def selected_slot(ctx: Context, pet_id: int, arg: str) -> str:
@@ -113,18 +117,89 @@ def sets(ctx: Context, arg: str) -> Reply:
     active = equipment_set_rewards.active_set_ids(ctx, user_id)
     if arg and not arg.isdecimal():
         equipment_set = named(ctx.content.equipment_sets, arg)
-        pieces = "、".join(ctx.content.equipment[item_id].name for item_id in equipment_set.items)
         state = equipment_set_rewards.state(
             ctx, user_id, equipment_set.id, active, player is not None,
         )
-        lines = (
-            equipment_set.description,
-            f"套件：{pieces}（需同时装备 {len(equipment_set.items)} 件）。",
+        pet = ctx.repo.pet(player.active_pet_id) if player and player.active_pet_id is not None else None
+        current = loadout(ctx, pet.pet_id) if pet else {}
+        inventory = ctx.repo.inventory(user_id) if player else {}
+        lines = [equipment_set.description, f"套件（需同一只灵宠装备 {len(equipment_set.items)} 件）："]
+        links = []
+        can_equip = pet is not None
+        missing_parts = []
+        incompatible_parts = []
+        for equipment_id in equipment_set.items:
+            gear = ctx.content.equipment[equipment_id]
+            item = _gear_item(ctx, equipment_id)
+            equipped = current.get(gear.slot)
+            if pet is None:
+                item_state = "尚未结契" if player is None else "无出战灵宠"
+                compatible = False
+                level = None
+            elif equipped and equipped[0] == item.id:
+                item_state, compatible, level = f"本宠已装备 +{equipped[1]}", True, equipped[1]
+            else:
+                try:
+                    check_requirements(ctx, pet, gear.requirements)
+                    compatible = True
+                except GameError:
+                    compatible = False
+                level = _available_enhancement(ctx, user_id, item.id, inventory)
+                if not compatible:
+                    item_state = "当前宠物不适配"
+                    incompatible_parts.append(item.name)
+                elif level is None:
+                    item_state = "背包缺少"
+                    missing_parts.append(item.name)
+                else:
+                    item_state = f"背包可用 +{level}"
+            if pet is not None and not compatible:
+                can_equip = False
+            if pet is not None and not (equipped and equipped[0] == item.id) and level is None:
+                can_equip = False
+            lines.append(f"{SLOTS[gear.slot]}：{item.name} · {item_state}。")
+            line_index = len(lines) - 1
+            links.append(InlineCommand(line_index, "查看装备", f"灵宠装备图鉴 {gear.name}"))
+            if item.price is not None:
+                links.append(InlineCommand(line_index, "查看灵坊", f"灵宠商店 {item.name}"))
+            if any(recipe.item_id == item.id for recipe in ctx.content.recipes.values()):
+                links.append(InlineCommand(line_index, "查看打造", f"灵宠工坊 {item.name}"))
+
+        if pet is None:
+            lines.append("装配状态：尚无可操作的出战灵宠。")
+            can_equip = False
+        elif equipment_set.id in active:
+            lines.append(f"装配状态：{pet.name}已穿齐该套装。")
+            can_equip = False
+        elif ctx.repo.active_expedition(pet.pet_id) is not None:
+            lines.append(f"装配状态：{pet.name}仍在行程中，暂不能穿戴。")
+            can_equip = False
+        elif missing_parts or incompatible_parts:
+            issues = []
+            if incompatible_parts:
+                issues.append(f"不适配：{'、'.join(incompatible_parts)}")
+            if missing_parts:
+                issues.append(f"缺少：{'、'.join(missing_parts)}")
+            lines.append(f"装配状态：{'；'.join(issues)}。")
+        elif can_equip:
+            lines.append(f"装配状态：可由{pet.name}一键穿戴。")
+            links.append(InlineCommand(
+                len(lines) - 1, "穿戴套装",
+                f"灵宠套装穿戴 {pet.pet_id} {equipment_set.name}",
+            ))
+        else:
+            lines.append("装配状态：当前出战灵宠不适配该套装。")
+
+        lines.extend((
             f"套装加成：{_bonus_text(equipment_set.bonuses.model_dump())}。",
             f"首次完成奖励：{equipment_set_rewards.reward_text(ctx, equipment_set.id)} · {state}。",
+        ))
+        if state == "可领取":
+            links.append(InlineCommand(len(lines) - 1, "领取奖励", f"灵宠套装领奖 {equipment_set.name}"))
+        return Reply(
+            f"装备套装 · {equipment_set.name}", tuple(lines),
+            ("灵宠装备", "灵宠目标", "灵宠套装"), tuple(links),
         )
-        links = (InlineCommand(3, "领取奖励", f"灵宠套装领奖 {equipment_set.name}"),) if state == "可领取" else ()
-        return Reply(f"装备套装 · {equipment_set.name}", lines, ("灵宠装备", "灵宠目标", "灵宠套装"), links)
     page = paginate(ctx.content.equipment_sets.values(), arg, "装备套装", "灵宠套装")
     lines, links = [], []
     for equipment_set in page.entries:
@@ -150,6 +225,67 @@ def sets(ctx: Context, arg: str) -> Reply:
 def _bonus_text(bonuses: dict[str, int]) -> str:
     labels = {"hp": "气血", "attack": "攻击", "defense": "防御", "speed": "速度"}
     return " ".join(f"{labels[key]} +{value}" for key, value in bonuses.items() if value)
+
+
+def _available_enhancement(
+    ctx: Context, user_id: str, item_id: str, inventory: dict[str, int],
+) -> int | None:
+    row = ctx.repo.conn.execute(
+        "SELECT MAX(enhancement) AS enhancement FROM unequipped_equipment "
+        "WHERE user_id=? AND item_id=? AND quantity>0", (user_id, item_id),
+    ).fetchone()
+    if row["enhancement"] is not None:
+        return int(row["enhancement"])
+    return 0 if inventory.get(item_id, 0) > 0 else None
+
+
+def wear_set(ctx: Context, arg: str) -> Reply:
+    parts = arg.split(maxsplit=1)
+    if len(parts) != 2:
+        raise GameError("格式：灵宠套装穿戴 宠物编号 套装名。")
+    target_pet_id = quantity(parts[0], 9_223_372_036_854_775_807)
+    equipment_set = named(ctx.content.equipment_sets, parts[1])
+    player = ctx.player()
+    if player.active_pet_id != target_pet_id:
+        raise GameError("当前出战伙伴已变化，请重新打开套装详情后再穿戴。")
+    pet = ctx.pet()
+    ctx.require_idle_pet(pet)
+    current = loadout(ctx, pet.pet_id)
+    inventory = ctx.repo.inventory(player.user_id)
+    plan = []
+
+    # Validate every piece before moving any inventory or equipment row.
+    for equipment_id in equipment_set.items:
+        gear = ctx.content.equipment[equipment_id]
+        item = _gear_item(ctx, equipment_id)
+        check_requirements(ctx, pet, gear.requirements)
+        equipped = current.get(gear.slot)
+        if equipped and equipped[0] == item.id:
+            continue
+        enhancement = _available_enhancement(ctx, player.user_id, item.id, inventory)
+        if enhancement is None:
+            raise GameError(
+                f"背包缺少{item.name}，请先查看 灵宠商店 {item.name} 或 灵宠工坊 {item.name}。"
+            )
+        plan.append((gear, item, enhancement, equipped))
+
+    if not plan:
+        raise GameError(f"{pet.name}已经穿齐「{equipment_set.name}」，无需重复穿戴。")
+
+    for gear, item, enhancement, equipped in plan:
+        take(ctx, item.id, enhancement)
+        if equipped:
+            put(ctx, *equipped)
+        ctx.repo.conn.execute(
+            "INSERT INTO equipment(pet_id, slot, item_id, enhancement) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(pet_id, slot) DO UPDATE SET item_id=excluded.item_id, enhancement=excluded.enhancement",
+            (pet.pet_id, gear.slot, item.id, enhancement),
+        )
+    ctx.repo.invalidate_ready(player.user_id)
+    lines = [f"{pet.name}已穿戴「{equipment_set.name}」。"]
+    lines.extend(f"{SLOTS[gear.slot]}：{item.name} +{enhancement}" for gear, item, enhancement, _ in plan)
+    lines.append("替换下的装备已返还背包；套装加成仅在同一只灵宠穿齐后生效。")
+    return Reply("套装穿戴", tuple(lines), ("灵宠装备", f"灵宠套装 {equipment_set.name}", "灵宠目标"))
 
 
 def equip(ctx: Context, arg: str) -> Reply:

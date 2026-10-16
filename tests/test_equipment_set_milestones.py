@@ -119,7 +119,7 @@ def test_content_requires_set_milestone_targets_and_top_title(game):
 
 
 def test_help_and_native_achievement_link_expose_the_new_progress(game, play):
-    assert "完成奖励与收藏进度" in play("help", "灵物与灵术").text()
+    assert "套装部件、当前宠物适配状态与完成奖励" in play("help", "灵物与灵术").text()
     account(play)
     mark(game, "sky_wind")
     reply = play("achievements", "15")
