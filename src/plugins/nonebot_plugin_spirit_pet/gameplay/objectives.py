@@ -5,10 +5,11 @@ from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon,
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
+from . import checkin_rewards
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
-    "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
+    "灵宠签到奖励", "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
 )
@@ -35,6 +36,21 @@ def _daily_line(ctx: Context, user_id: str) -> str:
         if (row["progress"] if row else 0) >= quest.target:
             claimable.append(quest.name)
     return _claim_line("今日任务", claimable, len(ctx.content.quests))
+
+
+def _checkin_line(ctx: Context, user_id: str) -> str:
+    player = ctx.repo.player(user_id)
+    if player is None:
+        return "连续签到：尚未结契"
+    streak = checkin_rewards.current_streak(ctx, player)
+    best = checkin_rewards.best_streak(ctx, player)
+    claimable = [
+        f"{days} 天" for days, _, _, _ in checkin_rewards.MILESTONES
+        if best >= days and not checkin_rewards._claimed(ctx, user_id, days)
+    ]
+    if claimable:
+        return f"连续签到：可领 {len(claimable)} 档（{'、'.join(claimable)}）· 当前 {streak} 天/最佳 {best} 天"
+    return f"连续签到：当前 {streak} 天 · 历史最佳 {best} 天"
 
 
 def _weekly_line(ctx: Context, user_id: str) -> str:
@@ -203,6 +219,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
 
     quests.refresh(ctx)
     lines = [
+        _checkin_line(ctx, player.user_id),
         _daily_line(ctx, player.user_id),
         _dungeon_line(ctx, player.user_id),
         _weekly_line(ctx, player.user_id),

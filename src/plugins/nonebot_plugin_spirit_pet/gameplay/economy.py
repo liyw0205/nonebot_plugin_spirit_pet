@@ -7,6 +7,7 @@ from ..utils.time import beijing_day
 from .pet_targets import selected_pet
 from .quests import advance
 from .rewards import grant
+from . import checkin_rewards
 
 
 def sign(ctx: Context, arg: str) -> Reply:
@@ -14,9 +15,21 @@ def sign(ctx: Context, arg: str) -> Reply:
     today = beijing_day(ctx.now)
     if player.sign_day >= today:
         raise GameError("今日已领取仙缘，明日再来。（每日北京时间 00:00 刷新）")
+    previous_sign_day = player.sign_day
     player.sign_day = today
     advance(ctx, "sign")
-    return Reply("今日仙缘", grant(ctx, ctx.content.rules.daily_reward))
+    streak, best = checkin_rewards.record_sign(ctx, player, previous_sign_day)
+    next_milestone = next((days for days, _, _, _ in checkin_rewards.MILESTONES if days > streak), None)
+    reward_lines = grant(ctx, ctx.content.rules.daily_reward)
+    streak_line = len(reward_lines)
+    lines = [*reward_lines, f"连续签到：当前 {streak} 天 · 历史最佳 {best} 天。"]
+    if next_milestone is not None:
+        lines.append(f"下一里程碑：连续 {next_milestone} 天。")
+    elif any(not checkin_rewards._claimed(ctx, player.user_id, days) for days, _, _, _ in checkin_rewards.MILESTONES):
+        lines.append("所有连续签到里程碑均已达成，可前往领取。")
+    return Reply("今日仙缘", tuple(lines), inline_commands=(
+        InlineCommand(streak_line, "查看奖励", "灵宠签到奖励"),
+    ))
 
 
 def _active_pet_or_none(ctx: Context):

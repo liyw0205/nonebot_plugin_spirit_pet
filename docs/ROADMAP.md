@@ -9,6 +9,7 @@
 - 验收边界：QQ 机器人连接/鉴权、QQ 客户端 Markdown/按钮/蓝字呈现、Termux 设备验收分别记录；未实测项不由 OneBot 或 mock 结果替代。
 - 实际部署：`/root/spirit-pet-qq-test-20261010` 先由 legacy managed 显式转换为 `v0.1.1`，再通过 `xiupet update` 更新到最新 `v0.1.2`；当前源码提交 `8616455e6e1f5ec76d532d778d809133f8d9ef9f`，`.env`、`data/` 与 schema 20 SQLite 存档保留并验证。`v0.1.2` 更新备份位于 `/root/spirit-pet-qq-test-20261010/.xiupet/backups/release-v0.1.2-8616455-20261011T143651Z`；当前 PID、QQ READY 与短启动日志已核对。
 - 当前切片结果：灵宠论剑段位达成奖励闭环已完成（四个阶段）——审计显示段位已由三档扩到六档，但爬档过程本身没有任何回报：无论爬到哪一档，收益都要等赛季结束才结算一次，赛季中期的爬分缺少即时反馈；赛季任务覆盖的是活动量而非段位。新增 `data/arena_tier_rewards.json`（六条，与 `arena.json` 档位一一对应，青云 80 灵石 → 归元 700 灵石 + 10 锻灵矿 + 4 血脉精华）、`domain/arena_tier_content.py`、`Catalog.arena_tier_rewards` 校验（覆盖全部档位、物品存在、奖励非空）、`gameplay/arena/tier_rewards.py`（档位由 `season_entries.rating` 即时派生、领取标记写 `quest_progress` 的 `arena_tier_<赛季号>_<档位 id>` 行、只读页用不建赛季行的 `season_rating`）、命令 `灵宠段位奖励`/`灵宠段位领奖`、帮助两条与 `灵宠目标` 段位行。不新增表、列或计数列，schema 20 不动；匹配、积分转移、场次限额、领奖资格、赛季结束结算与赛季任务均不变。定向合同 `494 passed`（新增 `test_arena_tier_rewards` 9 项，含六档覆盖与递增、状态与门槛映射、积分不足被拒、领取扣减与二次领取被拒、换季重新可领、幂等重放、未结契只读、目标行与帮助条目；跨批次运行，未跑全量）。已推送 `develop` 并通过 CI 后快进合入 `main`，随后本目标停止。
+- 下一有限目标（进行中）：连续签到里程碑奖励闭环；范围为北京时间 3/7/14/30 天连续签到、持久化与断签后的历史资格、分级奖励领取、帮助与 `灵宠目标` 汇总及聚焦合同。复用 `quest_progress`，不新增表/列或改玩家模型。辅助目标卡 `docs/goals/pet-checkin-streak-rewards.md` 仅本地保留、不提交；本目标未完成前不宣称交付。
 
 ## D1-D3 交付清单
 

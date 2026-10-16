@@ -21,6 +21,7 @@ from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
 from ..gameplay import stage_stars
+from ..gameplay import checkin_rewards
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.arena import tier_rewards
@@ -56,6 +57,8 @@ ACTIONS = {
     "switch": Command(pets.switch, True),
     "lineup": Command(pets.lineup, True),
     "sign": Command(economy.sign),
+    "checkin_rewards": Command(checkin_rewards.catalog, True, registered=False),
+    "checkin_reward_claim": Command(checkin_rewards.claim, True),
     "bag": Command(economy.bag),
     "shop": Command(economy.shop, True, registered=False),
     "buy": Command(economy.buy, True),
@@ -159,7 +162,8 @@ COMMANDS = {
     "灵宠匹配": "match",
     "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
-    "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠背包": "bag", "灵宠商店": "shop",
+    "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
+    "灵宠签到领奖": "checkin_reward_claim", "灵宠背包": "bag", "灵宠商店": "shop",
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond", "灵宠修炼": "train", "灵宠回收": "recycle",
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
