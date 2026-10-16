@@ -74,7 +74,7 @@ def test_history_is_read_only_without_a_player_and_rejects_unknown_jobs(game, pl
 
 def test_help_lists_expedition_history_commands(play):
     reply = play("help", "组队与派遣")
-    assert "灵宠行程记录 [页]" in reply.text()
+    assert "灵宠行程记录 页码" in reply.text()
     assert "灵宠行程回顾 行程号" in reply.text()
 
 

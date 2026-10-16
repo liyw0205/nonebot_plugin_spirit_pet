@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from nonebot_plugin_spirit_pet.domain.expedition_state import RewardSnapshot
+from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import pet, sql
 
@@ -197,7 +198,7 @@ def test_bad_persisted_snapshot_keeps_job_running_and_all_resources_unchanged(ga
     job = sql(game[1], "SELECT * FROM expeditions")[0]
     sql(game[1], "UPDATE expeditions SET reward_snapshot=? WHERE job_id=?", (payload, job["job_id"]))
     before = saved_state(game[1])
-    with pytest.raises(ValidationError):
+    with pytest.raises(GameError, match="奖励快照暂不可领取"):
         play("expedition_claim", str(job["job_id"]), now=job["finishes_at"], op="invalid-snapshot-claim")
     assert saved_state(game[1]) == before
     assert sql(game[1], "SELECT state FROM expeditions")[0]["state"] == "running"
