@@ -302,7 +302,7 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 装备 slot 为 weapon/armor/charm，对应灵器/护甲/饰品。bonuses 是 hp/attack/defense/speed 的非负固定增量，叠加在成长倍率计算之后，不随使用次数递增。穿戴与卸装使用 SQLite 库存事务，不修改 JSON。
 
-`equipment_sets.json` 中每套至少包含两件、最多三件装备，套件必须占用不同槽位；一件装备不能属于多套。只有同一只灵宠同时装备套件内全部装备时，套装 bonuses 才生效，不能由背包持有或不同宠物拼出。套装加成是完成套件后额外叠加的固定属性，不受单件强化倍率放大；未知装备、重复部位、重复成员和零加成套件均在启动时拒绝。
+`equipment_sets.json` 中每套至少包含两件、最多三件装备，套件必须占用不同槽位；一件装备不能属于多套。目录校验还要求存在至少一种灵宠，其类别与元素同时满足套件内每件装备的 requirements，避免定义出无法激活的套装。只有同一只灵宠同时装备套件内全部装备时，套装 bonuses 才生效，不能由背包持有或不同宠物拼出。套装加成是完成套件后额外叠加的固定属性，不受单件强化倍率放大；未知装备、重复部位、重复成员、不可达套件和零加成套件均在启动时拒绝。
 
 `forge_levels.json` 必须完整包含 0-10 级。当前级的 `upgrade_stones/upgrade_items` 为升下一级成本，材料引用必须是 material。最后一级 upgrade_stones 为 null、upgrade_items 为空；仅 +0 的 bonus_multiplier 为 1，之后严格递增。该倍率只乘装备 bonuses，再向下取整，不能乘基础种族属性。
 

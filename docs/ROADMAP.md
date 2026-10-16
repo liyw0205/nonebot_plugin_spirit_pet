@@ -9,7 +9,8 @@
 - 验收边界：QQ 机器人连接/鉴权、QQ 客户端 Markdown/按钮/蓝字呈现、Termux 设备验收分别记录；未实测项不由 OneBot 或 mock 结果替代。
 - 实际部署：`/root/spirit-pet-qq-test-20261010` 先由 legacy managed 显式转换为 `v0.1.1`，再通过 `xiupet update` 更新到最新 `v0.1.2`；当前源码提交 `8616455e6e1f5ec76d532d778d809133f8d9ef9f`，`.env`、`data/` 与 schema 20 SQLite 存档保留并验证。`v0.1.2` 更新备份位于 `/root/spirit-pet-qq-test-20261010/.xiupet/backups/release-v0.1.2-8616455-20261011T143651Z`；当前 PID、QQ READY 与短启动日志已核对。
 - 当前切片结果：连续签到里程碑奖励闭环已完成——使用北京时间签到日期凭证计算当前/最佳连续天数，3/7/14/30 天奖励资格断签后保留；签到日期与领取凭证复用 `quest_progress`，每日任务跨日只清理每日任务 id。新增 `gameplay/checkin_rewards.py`、`灵宠签到奖励`/`灵宠签到领奖`、帮助与 `灵宠目标` 汇总；`docs/GAMEPLAY.md` 已记录新玩家/旧存档的历史边界、领取和跨日语义。旧每日任务回归更新为签到记录保留，并新增过期任务链接拒领合同。聚焦用例 `2 passed`；develop CI `38855715805` 与 main CI `38855982696` 全绿（Python 3.10/3.13、安装冒烟、编译、shell 入口）。提交 `d2c1e55` 与修复 `62e9635` 已普通推送 develop 并 fast-forward 合入 main。辅助目标卡 `docs/goals/pet-checkin-streak-rewards.md` 仅本地保留、不提交。
-- 下一有限目标（进行中）：连续陪伴里程碑奖励闭环；玩家每日真实执行灵宠互动累计 3/7/14/30 天后，可基于历史最佳连续天数逐档领取一次性奖励，错过日期会重置当前连续天数但不收回已达成资格。复用 `players.best_bond_streak` 与 `quest_progress`，不新增表/列、不改玩家模型；包含只读预览、命令/蓝字、目标页、帮助、失败与重复领取处理、聚焦合同。辅助目标卡 `docs/goals/pet-companionship-streak-rewards.md` 仅本地保留、不提交。
+- 近期完成补记：连续陪伴里程碑奖励已实现并合入；每日互动累计 3/7/14/30 天后可按历史最佳逐档领取，断签不收回资格。复用 `players.best_bond_streak`、`quest_progress` 和现有目标页，未改 schema/玩家模型；`tests/test_companionship_rewards.py` 与受影响合同通过，develop CI `38857136747`、main CI `38857427917` 全绿。辅助目标卡 `docs/goals/pet-companionship-streak-rewards.md` 仅本地保留、不提交。
+- 当前唯一目标（进行中）：装备套装可达性闭环。修复木灵缚甲原先因灵丝甲限定虫族、长生根限定木属性植族而无共同可穿戴物种的问题；新增整套类别/元素交集校验，验证装备状态持久化、套装属性与战报快照、拒绝时物品保留，并更新玩家/内容/帮助文档。无 schema 或玩家模型改动；聚焦测试已通过，CI 与普通合并待验收。辅助目标卡 `docs/goals/pet-equipment-set-accessibility.md` 仅本地保留、不提交。
 
 ## D1-D3 交付清单
 

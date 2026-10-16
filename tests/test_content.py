@@ -159,6 +159,15 @@ def test_equipment_sets_are_validated(content_dir, change, error):
         Catalog.load(content_dir)
 
 
+def test_equipment_set_requires_a_species_compatible_with_every_piece(content_dir):
+    def make_set_unreachable(rows):
+        next(row for row in rows if row["id"] == "silk_cocoon")["requirements"]["categories"] = ["insect"]
+
+    edit(content_dir, "equipment.json", make_set_unreachable)
+    with pytest.raises(ValueError, match="no compatible species: root_silk"):
+        Catalog.load(content_dir)
+
+
 @pytest.mark.parametrize("change,error", [
     (lambda enemy: enemy.update(signature_skill="unknown", skill_every=3), "unknown enemy signature skill"),
     (lambda enemy: enemy.update(signature_skill="fireball"), "configured together"),

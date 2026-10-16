@@ -84,7 +84,7 @@
   },
   {
     "id": "silk_cocoon", "name": "灵丝甲", "slot": "armor",
-    "requirements": {"elements": [], "categories": ["insect"], "min_realm": "qiling"},
+    "requirements": {"elements": [], "categories": ["insect", "flora"], "min_realm": "qiling"},
     "bonuses": {"hp": 35, "defense": 6}
   },
   {

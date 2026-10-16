@@ -26,6 +26,7 @@ from ..domain.daily_assignment_content import DailyAssignment
 from ..domain.codex_content import CodexReward
 from ..domain.stage_star_content import StageStarReward
 from ..domain.arena_tier_content import ArenaTierReward
+from ..utils.elements import expand_elements
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -329,6 +330,18 @@ class Catalog:
                 raise ValueError("equipment set items must use distinct slots")
             if not any(equipment_set.bonuses.model_dump().values()):
                 raise ValueError("equipment set must provide a bonus")
+            pieces = [self.equipment[item_id] for item_id in equipment_set.items]
+            if not any(
+                all(
+                    (not piece.requirements.categories or species.category in piece.requirements.categories)
+                    and set(piece.requirements.elements).issubset(
+                        expand_elements(species.elements, self.elements)
+                    )
+                    for piece in pieces
+                )
+                for species in self.species.values()
+            ):
+                raise ValueError(f"equipment set has no compatible species: {equipment_set.id}")
             for item_id in equipment_set.items:
                 previous = assigned.setdefault(item_id, equipment_set.id)
                 if previous != equipment_set.id:

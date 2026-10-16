@@ -95,16 +95,63 @@ def test_equipment_set_catalog_and_battle_snapshot(game, play):
     assert "套装 青岚风铃" in detail.text()
 
 
+def test_wood_spirit_set_is_reachable_persists_and_rewards_battle(game, play):
+    rich(game, play)
+    sql(game[1], "UPDATE pets SET species_id='tengling'")
+    before = stats(game)
+
+    play("buy", "灵丝甲")
+    play("equipment", "灵丝甲", op="equip-silk")
+    play("buy", "长生根")
+    play("equipment", "长生根", op="equip-root")
+
+    assert sql(game[1], "SELECT slot, item_id FROM equipment ORDER BY slot") == [
+        {"slot": "armor", "item_id": "silk_cocoon"},
+        {"slot": "charm", "item_id": "living_root"},
+    ]
+    assert "套装：木灵缚甲 2/2 · 已激活" in play("equipment").text()
+    after = stats(game)
+    assert after.hp == before.hp + 35 + 45 + 35
+    assert after.attack == before.attack + 3
+    assert after.defense == before.defense + 6 + 4
+
+    reply = play("challenge", "青岚林", op="wood-set-battle")
+    assert reply.title == "秘境获胜"
+    row = sql(game[1], "SELECT snapshot FROM battle_records WHERE operation_id='wood-set-battle'")[0]
+    snapshot = json.loads(row["snapshot"])
+    assert snapshot["teams"][0]["members"][0]["equipment_sets"] == ["木灵缚甲"]
+    assert "套装 木灵缚甲" in play("battle_reports", "查看 1").text()
+
+
 def test_element_and_species_category_equipment_restrictions(game, play):
     rich(game, play, "玄狐")
     play("buy", "青岚翎")
     play("buy", "龙鳞甲")
+    play("buy", "灵丝甲")
+    play("buy", "长生根")
     with pytest.raises(GameError, match="元素不兼容"):
         play("equipment", "青岚翎")
     with pytest.raises(GameError, match="类别不兼容"):
         play("equipment", "龙鳞甲")
+    with pytest.raises(GameError, match="类别不兼容"):
+        play("equipment", "长生根")
     assert items(game[1])["wind_feather"] == items(game[1])["dragon_scale"] == 1
+    assert items(game[1])["living_root"] == 1
     assert not sql(game[1], "SELECT * FROM equipment")
+
+
+def test_silk_cocoon_remains_insect_compatible_and_rejections_keep_items(game, play):
+    rich(game, play)
+    sql(game[1], "UPDATE pets SET species_id='bingcan'")
+    play("buy", "灵丝甲")
+    play("buy", "长生根")
+    play("equipment", "灵丝甲")
+    with pytest.raises(GameError, match="类别不兼容"):
+        play("equipment", "长生根")
+    assert sql(game[1], "SELECT slot, item_id FROM equipment") == [
+        {"slot": "armor", "item_id": "silk_cocoon"},
+    ]
+    assert items(game[1])["living_root"] == 1
 
 
 def test_swapping_and_multi_pet_ownership_cannot_copy_equipment(game, play):
