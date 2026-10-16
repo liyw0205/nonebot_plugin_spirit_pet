@@ -114,5 +114,7 @@ def test_native_payload_keeps_buttons_without_links(game, play):
         for row in segment.data["keyboard"].content.rows
         for button in row.buttons
     }
-    assert buttons == set(listing.commands)
-    assert listing.inline_commands == ()
+    assert buttons == set(listing.commands) - {
+        "灵宠称号佩戴 初入仙途",
+    }
+    assert [link.command for link in listing.inline_commands] == ["灵宠称号佩戴 初入仙途"]

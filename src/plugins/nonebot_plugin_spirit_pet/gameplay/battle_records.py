@@ -17,6 +17,7 @@ from ..gameplay.equipment import loadout
 from ..gameplay.mastery import progress
 from ..utils.arguments import quantity
 from ..utils.time import BEIJING
+from .titles import current as current_title
 
 REPORT_PAGE_SIZE = 5
 DETAIL_PAGE_SIZE = 8
@@ -45,8 +46,10 @@ def _skill_snapshot(ctx: Context, pet_id: int, fighter: Fighter) -> list[dict]:
 
 def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> dict:
     primary = ctx.content.elements.get(fighter.primary_element) if fighter.primary_element else None
+    title = current_title(ctx, user_id) if user_id else None
     member = {
         "uid": ctx.player(user_id).uid_label if user_id else None,
+        "title": title.name if title else None,
         "pet_name": fighter.name.rsplit("的", 1)[-1] if "的" in fighter.name else fighter.name,
         "species_id": None,
         "realm": None,
@@ -188,8 +191,9 @@ def _member_text(member: dict) -> str:
     resonance = f" · 共鸣 {member['resonance']}" if member.get("resonance") else ""
     affinity = f" · 亲密 {member['affinity']}/100" if isinstance(member.get("affinity"), int) else ""
     bond_protection = " · 心契护佑" if member.get("bond_protection") else ""
+    title = f" · 称号 {member['title']}" if member.get("title") else ""
     return (
-        f"{player}的{member.get('pet_name', '未知灵宠')}{realm_text}{resonance}"
+        f"{player}的{member.get('pet_name', '未知灵宠')}{title}{realm_text}{resonance}"
         f"{affinity}{bond_protection} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
     )
 
