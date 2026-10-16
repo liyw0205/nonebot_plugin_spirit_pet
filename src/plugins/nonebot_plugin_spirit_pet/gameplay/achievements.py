@@ -1,10 +1,12 @@
 import json
 from dataclasses import asdict
+from datetime import datetime
 
 from ..application.context import Context
 from ..domain.achievement_content import Achievement
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
+from ..utils.time import BEIJING
 from .equipment_set_rewards import SET_REWARDS, claim_id
 
 COLLECTION_PAGE_SIZE = 9
@@ -185,13 +187,56 @@ def _milestone(ctx: Context, metric: str, value: int) -> str:
     return str(value)
 
 
-def _progress(ctx: Context, achievement: Achievement, value: int) -> str:
-    shown = min(value, achievement.target)
-    current = _milestone(ctx, achievement.metric, value)
-    target = _milestone(ctx, achievement.metric, achievement.target)
-    if achievement.metric in {"max_realm", "max_layer", "max_bloodline", "max_enhancement"}:
+def _progress_values(ctx: Context, metric: str, target_value: int, value: int) -> str:
+    shown = min(value, target_value)
+    current = _milestone(ctx, metric, value)
+    target = _milestone(ctx, metric, target_value)
+    if metric in {"max_realm", "max_layer", "max_bloodline", "max_enhancement"}:
         return f"进度：{current} / {target}"
-    return f"进度：{shown}/{achievement.target}"
+    return f"进度：{shown}/{target_value}"
+
+
+def _progress(ctx: Context, achievement: Achievement, value: int) -> str:
+    return _progress_values(ctx, achievement.metric, achievement.target, value)
+
+
+def _reward_summary(stones: int, items: list[dict[str, object]]) -> str:
+    parts = [f"灵石 +{stones}"] if stones else []
+    parts.extend(f"{item['name']} +{item['amount']}" for item in items)
+    return "、".join(parts) or "无奖励"
+
+
+def _preview_items(ctx: Context, achievement: Achievement) -> list[dict[str, object]]:
+    return [
+        {"item_id": item_id, "name": ctx.content.items[item_id].name, "amount": amount}
+        for item_id, amount in achievement.reward.items.items()
+    ]
+
+
+def _saved_snapshot(row, achievement_id: str) -> dict:
+    try:
+        snapshot = json.loads(row["reward_snapshot"])
+        valid = (
+            isinstance(snapshot, dict)
+            and snapshot.get("achievement_id") == achievement_id
+            and isinstance(snapshot.get("achievement_name"), str)
+            and isinstance(snapshot.get("metric"), str)
+            and type(snapshot.get("target")) is int and snapshot["target"] > 0
+            and type(snapshot.get("progress_at_claim")) is int and snapshot["progress_at_claim"] >= 0
+            and type(snapshot.get("stones")) is int and snapshot["stones"] >= 0
+            and isinstance(snapshot.get("items"), list)
+            and all(
+                isinstance(item, dict)
+                and isinstance(item.get("name"), str)
+                and type(item.get("amount")) is int and item["amount"] > 0
+                for item in snapshot["items"]
+            )
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        valid = False
+    if not valid:
+        raise GameError("该成就领取记录暂不可回顾，请联系管理员检查存档。")
+    return snapshot
 
 
 def achievements(ctx: Context, arg: str) -> Reply:
@@ -211,12 +256,19 @@ def achievements(ctx: Context, arg: str) -> Reply:
     for entry in selected:
         value = _metric(ctx, ctx.user_id, entry.metric) if player else 0
         claimed = entry.id in claims
-        state = "已领取" if claimed else "可领奖" if value >= entry.target and player else "进行中"
+        state = (
+            "已领取" if claimed else "未结契" if not player
+            else "可领奖" if value >= entry.target else "进行中"
+        )
         status_line = len(lines)
         lines.extend((
             f"{entry.name} · {state} · {_progress(ctx, entry, value)}",
-            entry.description,
+            f"条件：{entry.description}",
+            f"奖励预览：{_reward_summary(entry.reward.stones, _preview_items(ctx, entry))}",
         ))
+        detail_command = f"灵宠成就详情 {entry.name}"
+        commands.append(detail_command)
+        links.append(InlineCommand(status_line, "查看详情", detail_command))
         if value >= entry.target and not claimed and player:
             command = f"灵宠成就领奖 {entry.name}"
             commands.append(command)
@@ -227,6 +279,44 @@ def achievements(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠成就 {page + 1}")
     commands.append("灵宠收集")
     return Reply(f"灵宠成就 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
+
+
+def detail(ctx: Context, arg: str) -> Reply:
+    achievement = named(ctx.content.achievements, arg)
+    player = ctx.repo.player(ctx.user_id)
+    row = ctx.repo.achievement_claim(ctx.user_id, achievement.id)
+    if row is not None:
+        snapshot = _saved_snapshot(row, achievement.id)
+        name = snapshot["achievement_name"]
+        value = snapshot["progress_at_claim"]
+        metric = snapshot["metric"]
+        target = snapshot["target"]
+        actual_items = snapshot["items"]
+        reward_line = f"实际发放：{_reward_summary(snapshot['stones'], actual_items)}"
+        claimed_at = datetime.fromtimestamp(row["claimed_at"], BEIJING).strftime("%Y-%m-%d %H:%M:%S")
+        lines = (
+            f"条件：{achievement.description}",
+            f"领取状态：已领取 · 领取时{_progress_values(ctx, metric, target, value)}",
+            f"领取时间：{claimed_at}（北京时间）",
+            reward_line,
+            "领取凭证：已永久保存",
+        )
+        return Reply(f"成就回顾 · {name}", lines, ("灵宠成就", "灵宠收集"))
+
+    value = _metric(ctx, ctx.user_id, achievement.metric) if player else 0
+    state = "可领奖" if player and value >= achievement.target else "进行中" if player else "未结契"
+    command = f"灵宠成就领奖 {achievement.name}"
+    commands = ["灵宠成就", "灵宠收集"]
+    links = ()
+    if player and value >= achievement.target:
+        commands.insert(0, command)
+        links = (InlineCommand(3, "领取奖励", command),)
+    return Reply(f"成就详情 · {achievement.name}", (
+        f"条件：{achievement.description}",
+        f"领取状态：{state}",
+        f"当前{_progress(ctx, achievement, value)}",
+        f"奖励预览：{_reward_summary(achievement.reward.stones, _preview_items(ctx, achievement))}",
+    ), tuple(commands), links)
 
 
 def _reply_from_row(row) -> Reply:

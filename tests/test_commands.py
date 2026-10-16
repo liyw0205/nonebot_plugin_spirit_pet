@@ -75,6 +75,7 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠组队关卡 4") == ("team_stage_challenge", "4")
     assert handlers._parse("灵宠收集 2") == ("collection", "2")
     assert handlers._parse("灵宠成就 3") == ("achievements", "3")
+    assert handlers._parse("灵宠成就详情 初结灵契") == ("achievement_detail", "初结灵契")
     assert handlers._parse("灵宠成就领奖 初结灵契") == ("achievement_claim", "初结灵契")
     assert handlers._parse("灵宠共鸣") == ("resonance", "")
     assert handlers._parse("灵宠共鸣 激活 青岚双翼") == ("resonance", "激活 青岚双翼")

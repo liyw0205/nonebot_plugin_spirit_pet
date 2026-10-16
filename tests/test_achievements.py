@@ -447,3 +447,6 @@ def test_late_reward_failure_rolls_back_claim_and_player_rewards(game, play):
     assert not sql(game[1], "SELECT * FROM achievement_claims")
     assert player(game[1]) == before_player
     assert items(game[1]) == before_items
+    detail = play("achievement_detail", "初结灵契")
+    assert "领取状态：可领奖" in detail.lines
+    assert "奖励预览：灵石 +100、灵粮 +2" in detail.lines
