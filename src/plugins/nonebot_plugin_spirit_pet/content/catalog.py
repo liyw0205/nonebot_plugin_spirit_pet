@@ -392,7 +392,7 @@ class Catalog:
             "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
             "best_bond_streak", "adventures_discovered", "max_enhancement", "spar_wins",
             "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
-            "journey_claims", "echo_claims", "first_clear_claims",
+            "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):
@@ -418,6 +418,7 @@ class Catalog:
             "journey_claims": len(self.journey),
             "echo_claims": len(self.encounters),
             "first_clear_claims": len(self.dungeons),
+            "equipment_set_claims": len(self.equipment_sets),
         }
         targets = {}
         for entry in self.achievements.values():

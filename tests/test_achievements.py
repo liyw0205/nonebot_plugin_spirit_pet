@@ -51,7 +51,7 @@ def test_catalog_has_definition_only_achievements_and_all_required_metrics():
         "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
         "stage_clears", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches", "skills_learned",
         "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
-        "best_bond_streak", "adventures_discovered",
+        "best_bond_streak", "adventures_discovered", "equipment_set_claims",
     } <= metrics
     assert {1, 10, 30} <= {
         entry.target for entry in content.achievements.values() if entry.metric == "team_pve_wins"
@@ -92,6 +92,20 @@ def test_adventure_discovery_achievement_cannot_exceed_catalog(content_dir):
 
     edit(content_dir, add_invalid_milestone)
     with pytest.raises(ValueError, match="exceeds available adventures_discovered"):
+        Catalog.load(content_dir)
+
+
+def test_equipment_set_achievement_cannot_exceed_catalog(content_dir):
+    def add_invalid_milestone(entries):
+        invalid = dict(next(
+            entry for entry in entries
+            if entry["metric"] == "equipment_set_claims" and entry["target"] == 4
+        ))
+        invalid.update(id="equipment_set_over", name="套装超限", target=5)
+        entries.append(invalid)
+
+    edit(content_dir, add_invalid_milestone)
+    with pytest.raises(ValueError, match="exceeds available equipment_set_claims"):
         Catalog.load(content_dir)
 
 

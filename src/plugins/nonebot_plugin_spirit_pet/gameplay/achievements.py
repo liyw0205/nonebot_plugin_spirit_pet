@@ -5,6 +5,7 @@ from ..application.context import Context
 from ..domain.achievement_content import Achievement
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
+from .equipment_set_rewards import SET_REWARDS, claim_id
 
 COLLECTION_PAGE_SIZE = 9
 ACHIEVEMENT_PAGE_SIZE = 5
@@ -149,6 +150,18 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         query, params = (
             "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND claimed=1 AND quest_id LIKE ?",
             (user_id, prefix[metric] + "%"),
+        )
+    elif metric == "equipment_set_claims":
+        credentials = tuple(
+            claim_id(set_id) for set_id in SET_REWARDS if set_id in ctx.content.equipment_sets
+        )
+        if not credentials:
+            return 0
+        placeholders = ",".join("?" for _ in credentials)
+        query, params = (
+            f"SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND claimed=1 "
+            f"AND quest_id IN ({placeholders})",
+            (user_id, *credentials),
         )
     else:
         raise ValueError(f"unknown achievement metric: {metric}")

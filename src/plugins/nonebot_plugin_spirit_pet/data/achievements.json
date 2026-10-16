@@ -70,5 +70,8 @@
   {"id":"echo_three","name":"回响三章","description":"在三处奇闻中做出回响选择。","metric":"echo_claims","target":3,"reward":{"stones":300,"items":{"affinity_pill":1}}},
   {"id":"echo_all","name":"回响全章","description":"在全部二十一处奇闻中做出回响选择。","metric":"echo_claims","target":21,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"first_clear_five","name":"秘境五通","description":"领取五处秘境的一次性首通奖励。","metric":"first_clear_claims","target":5,"reward":{"stones":400,"items":{"forge_ore":3}}},
-  {"id":"first_clear_all","name":"秘境全通","description":"领取全部二十处秘境的一次性首通奖励。","metric":"first_clear_claims","target":20,"reward":{"stones":1500,"items":{"bloodline_essence":4}}}
+  {"id":"first_clear_all","name":"秘境全通","description":"领取全部二十处秘境的一次性首通奖励。","metric":"first_clear_claims","target":20,"reward":{"stones":1500,"items":{"bloodline_essence":4}}},
+  {"id":"equipment_set_first","name":"套装初成","description":"领取一套装备的首次完成奖励。","metric":"equipment_set_claims","target":1,"reward":{"stones":200,"items":{"spirit_food":1}}},
+  {"id":"equipment_set_pair","name":"套装兼收","description":"领取两套装备的首次完成奖励。","metric":"equipment_set_claims","target":2,"reward":{"stones":500,"items":{"forge_ore":3}}},
+  {"id":"equipment_set_all","name":"套装全收","description":"领取全部四套装备的首次完成奖励。","metric":"equipment_set_claims","target":4,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
 ]

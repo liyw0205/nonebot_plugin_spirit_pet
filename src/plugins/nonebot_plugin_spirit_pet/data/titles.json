@@ -150,5 +150,13 @@
     "metric": "first_clear_claims",
     "target": 20,
     "order": 19
+  },
+  {
+    "id": "equipment_set_master",
+    "name": "套装宗师",
+    "description": "领取全部四套装备的完成奖励。",
+    "metric": "equipment_set_claims",
+    "target": 4,
+    "order": 20
   }
 ]
