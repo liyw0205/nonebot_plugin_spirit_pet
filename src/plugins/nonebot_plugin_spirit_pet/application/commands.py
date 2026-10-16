@@ -23,6 +23,7 @@ from ..gameplay import codex
 from ..gameplay import stage_stars
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
+from ..gameplay.arena import tier_rewards
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -106,6 +107,8 @@ ACTIONS = {
     "codex_claim": Command(codex.claim, True),
     "stage_stars": Command(stage_stars.catalog, True, registered=False),
     "stage_stars_claim": Command(stage_stars.claim, True),
+    "arena_tier_rewards": Command(tier_rewards.catalog, True, registered=False),
+    "arena_tier_claim": Command(tier_rewards.claim, True),
     "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
@@ -152,6 +155,7 @@ COMMANDS = {
     "我的灵宠": "status", "我的宠": "status",
     "灵宠图鉴": "catalog", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季领奖": "season_claim",
+    "灵宠段位奖励": "arena_tier_rewards", "灵宠段位领奖": "arena_tier_claim",
     "灵宠匹配": "match",
     "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",

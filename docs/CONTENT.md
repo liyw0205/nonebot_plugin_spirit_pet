@@ -25,6 +25,7 @@
 | arena.json | 论剑赛季的积分规则、准入门槛、场次限额、奖励资格与固定奖励档位；六档由青云 0 分到归元 1450 分 |
 | stages.json | 线性章节关卡、前置关卡、队伍模式、敌手、精力成本和首通奖励范围 |
 | stage_star_rewards.json | 关卡星数里程碑的星数门槛与一次性奖励，按星数递增 |
+| arena_tier_rewards.json | 论剑各档位的一次性达成奖励，与 arena.json 的档位一一对应 |
 | achievements.json | 稳定成就 ID、目标指标、完成条件文案和一次性静态奖励 |
 | main_quests.json | 主线步骤的序号、前置、目标指标与一次性奖励，按序解锁 |
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
@@ -139,6 +140,8 @@
 `season_missions.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `season_matches`（本赛季论剑场次）、`season_wins`（本赛季论剑胜场）、`season_pve`（本赛季秘境或关卡获胜）、`season_discoveries`（本赛季发现奇闻）与 `season_claims`（本赛季领取成就奖励），五种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。进度全部按当前赛季窗口（`utils.time.season_bounds` 给出的北京时间自然月起止）从带时间戳的既有记录派生，领取标记写入 `quest_progress` 并保存赛季起始时间，因此换季自动重置。
 
 `daily_assignments.json` 的每项只定义指标、目标、说明与一次性奖励，不保存玩家进度。指标词汇为 `daily_pve`（今日秘境或关卡获胜）、`daily_pvp`（今日论剑场次）、`daily_discovery`（今日发现奇闻）、`daily_expedition`（今日领取委托）、`daily_claim`（今日领取成就奖励）与 `daily_training`（今日修炼），六种指标必须全部在册且不得出现重复的“指标 + 目标”组合；奖励物品必须存在。池中现有 12 项（六种指标各 1-3 个难度，同一指标的不同目标共用同一条当日进度），每天按北京时间日期序数确定性轮换出三项（`pool[(序数 * 3 + i) % len(pool)]`），同一天稳定、四天覆盖全池；进度只统计当天的记录，领取标记写入 `quest_progress` 的 `daily_assignment` 行，`progress` 为 `序数 * 10 + 所选序号`，因此次日自动重置且只保留一行。
+
+`arena_tier_rewards.json` 的每项只定义 `tier`、`stones` 与 `items`，不保存玩家进度。`tier` 必须与 `arena.json` 的档位 id 一一对应（不多不少），`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间；档位由 `season_entries.rating` 即时派生，领取标记写入 `quest_progress` 的 `arena_tier_<赛季号>_<档位 id>` 行，因此每档每季只发一次、换季自动重新可领。
 
 `stage_star_rewards.json` 的每项只定义 `stars`、`stones` 与 `items`，不保存玩家进度。星数门槛为正整数、互不重复且不超过 `3 × stages.json 条目数`（当前 48）；`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间；星级由 `battle_records` 中该玩家的获胜记录即时派生（取最少回合数，按 `rules.json` 的 `stage_star_rounds` 每敌手门槛换算），领取标记写入 `quest_progress` 的 `stage_stars_<星数>` 行，因此每档只发一次且永久有效。
 

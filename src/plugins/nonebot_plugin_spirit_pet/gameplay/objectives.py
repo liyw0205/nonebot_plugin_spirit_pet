@@ -1,13 +1,16 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
+from ..utils.time import season_bounds
 from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
 from . import codex
 from . import stage_stars
+from .arena import tier_rewards as arena_tier_rewards
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
+    "灵宠段位奖励",
 )
 
 
@@ -85,6 +88,20 @@ def _first_clear_line(ctx: Context, user_id: str) -> str:
     if claimable:
         return f"秘境首通：可领 {len(claimable)} 处（{'、'.join(claimable)}）· 共 {total} 处"
     return f"秘境首通：暂无可领 · 共 {total} 处"
+
+
+def _arena_tier_line(ctx: Context, user_id: str) -> str:
+    season_id, _, _ = season_bounds(ctx.now)
+    score = arena_tier_rewards.season_rating(ctx, user_id, season_id)
+    tiers = ctx.content.arena.tiers
+    claimable = [
+        tier.name for tier in tiers
+        if score >= tier.minimum_rating
+        and not arena_tier_rewards.claimed(ctx, user_id, season_id, tier.id)
+    ]
+    if claimable:
+        return f"段位奖励：可领 {len(claimable)} 档（{'、'.join(claimable)}）· 当前积分 {score}"
+    return f"段位奖励：暂无可领 · 当前积分 {score}"
 
 
 def _stage_star_line(ctx: Context, user_id: str) -> str:
@@ -200,6 +217,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _assignment_line(ctx, player.user_id),
         _codex_line(ctx, player.user_id),
         _stage_star_line(ctx, player.user_id),
+        _arena_tier_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

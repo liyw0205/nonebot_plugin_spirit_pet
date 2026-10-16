@@ -1,0 +1,8 @@
+[
+  {"tier": "qingyun", "stones": 80, "items": {}},
+  {"tier": "lingxiao", "stones": 160, "items": {"forge_ore": 2}},
+  {"tier": "tianque", "stones": 260, "items": {"forge_ore": 4}},
+  {"tier": "xinghai", "stones": 380, "items": {"forge_ore": 6, "bloodline_essence": 2}},
+  {"tier": "taixu", "stones": 520, "items": {"forge_ore": 8, "bloodline_essence": 3}},
+  {"tier": "guiyuan", "stones": 700, "items": {"forge_ore": 10, "bloodline_essence": 4}}
+]

@@ -430,6 +430,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_resonance_expansion.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `225 passed`（新增 `test_resonance_expansion` 4 项）。新增测试覆盖 21 组且配对唯一、每个种族仍被覆盖、新组不与旧组重复、新组可激活并按 `rules.resonance_cost` 扣费、重复启用幂等不重复扣费、种族未集齐时被拒。既有断言同步：`test_resonance` 的条目数 14 → 21、页码 `1/3` → `1/5` 与页码参数（第 6 页越界），以及「种族未覆盖」用例改为删除某一种族的全部配对（原用例只删一组，在该种族被其他组覆盖后不再触发校验）。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠论剑段位达成奖励闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、命令与 UX、测试与文档。审计显示段位已由三档扩到六档，但爬档过程本身没有任何回报：无论爬到哪一档，收益都要等赛季结束才结算一次（`season_claims` 每季一次），赛季中期的爬分只是「为最终结算做准备」；赛季任务覆盖的是活动量而非段位。
+
+新增 `data/arena_tier_rewards.json`（六条，与 `arena.json` 档位一一对应：青云 80 灵石、凌霄 160 + 2 锻灵矿、天阙 260 + 4 锻灵矿、星海 380 + 6 锻灵矿 + 2 血脉精华、太虚 520 + 8 锻灵矿 + 3 血脉精华、归元 700 + 10 锻灵矿 + 4 血脉精华）与 `domain/arena_tier_content.py`，`Catalog` 增加 `arena_tier_rewards` 字段，校验覆盖全部档位、物品存在、奖励非空。新增 `gameplay/arena/tier_rewards.py`：档位由 `season_entries.rating` 即时派生（`tier_of` 取不超过当前积分的最高档），领取标记写入 `quest_progress` 的 `arena_tier_<赛季号>_<档位 id>` 行，因此每档每季只发一次、换季自动重新可领；发奖复用 `rewards.grant`。只读页与 `灵宠目标` 用不建赛季行的 `season_rating`（直接读 `season_entries`，缺省取 `initial_rating`），避免只读页面写 `seasons` 表。命令 `灵宠段位奖励`（只读）与 `灵宠段位领奖 <段位名>`；帮助「对战与赛季」新增两条；`灵宠目标` 新增段位行。
+
+关键边界：不新增表、列或计数列，schema 20 不动；论剑匹配、积分转移、场次限额、领奖资格、赛季结束结算与赛季任务均不变；奖励领取式，不进入任何战斗结算，因此平衡门禁结论不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_arena_tier_rewards.py tests/test_seasons.py tests/test_arena_content.py tests/test_arena_ladder.py tests/test_arena_interaction.py tests/test_objectives.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_content.py tests/test_balance_lineups.py tests/test_runtime.py tests/test_achievements.py tests/test_player_experience.py tests/test_codex.py tests/test_stage_stars.py tests/test_arena_matching.py`：合计 `494 passed`（新增 `test_arena_tier_rewards` 9 项）。新增测试覆盖六档覆盖且奖励递增、状态与门槛映射（含 `还差 n 分`）、积分不足被拒、领取扣减与二次领取被拒、爬到更高档解锁更多可领项、换季重新可领、同 `operation_id` 重放只发一次、未结契只读浏览不建号、`灵宠目标` 行格式与帮助条目。测试用 `season_bounds` 推导赛季号（默认测试时钟落在 2027-01），并在写入 `season_entries` 前先让命令建立赛季行以满足外键。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 灵宠关卡星级评价闭环（2026-10-16，已完成）
 
 四个阶段一次交付：内容与校验、业务、命令与 UX、测试与文档。审计显示章节关卡只有「未解锁 / 可挑战 / 已通关」三种状态，通关后这一关就彻底结束（`pve_stage_progress` 只记首次通关时间），没有表现评价维度，16 关的深度止步于「是否通关」。战斗记录里已经保存了每场战斗的回合数（`battle_records.rounds`），因此评价可以完全派生。

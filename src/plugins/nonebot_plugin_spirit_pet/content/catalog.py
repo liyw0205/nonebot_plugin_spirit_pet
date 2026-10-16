@@ -25,6 +25,7 @@ from ..domain.season_mission_content import SeasonMission
 from ..domain.daily_assignment_content import DailyAssignment
 from ..domain.codex_content import CodexReward
 from ..domain.stage_star_content import StageStarReward
+from ..domain.arena_tier_content import ArenaTierReward
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -93,6 +94,7 @@ class Catalog:
     daily_assignments: dict[str, DailyAssignment]
     codex_rewards: dict[str, CodexReward]
     stage_star_rewards: dict[int, StageStarReward]
+    arena_tier_rewards: dict[str, ArenaTierReward]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -133,6 +135,7 @@ class Catalog:
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
+            arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
         )
         catalog.validate()
         return catalog
@@ -227,6 +230,7 @@ class Catalog:
         self._validate_daily_assignments()
         self._validate_codex_rewards()
         self._validate_stage_star_rewards()
+        self._validate_arena_tier_rewards()
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -515,6 +519,13 @@ class Catalog:
         pairs = [(assignment.metric, assignment.target) for assignment in assignments.values()]
         if len(set(pairs)) != len(pairs):
             raise ValueError("duplicate daily assignment metric target")
+
+    def _validate_arena_tier_rewards(self):
+        tiers = {tier.id for tier in self.arena.tiers}
+        if set(self.arena_tier_rewards) != tiers:
+            raise ValueError("every arena tier needs exactly one achievement reward")
+        for reward in self.arena_tier_rewards.values():
+            self._require(reward.items, self.items, "arena tier reward items")
 
     def _validate_stage_star_rewards(self):
         milestones = sorted(self.stage_star_rewards)
