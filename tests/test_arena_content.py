@@ -50,6 +50,18 @@ def test_default_arena_rules_and_rewards_are_explicit():
             "id": "tianque", "name": "天阙", "minimum_rating": 1150,
             "stones": 1000, "items": {"forge_ore": 10, "bloodline_essence": 4},
         },
+        {
+            "id": "xinghai", "name": "星海", "minimum_rating": 1250,
+            "stones": 1400, "items": {"forge_ore": 13, "bloodline_essence": 5},
+        },
+        {
+            "id": "taixu", "name": "太虚", "minimum_rating": 1350,
+            "stones": 1900, "items": {"forge_ore": 16, "bloodline_essence": 6},
+        },
+        {
+            "id": "guiyuan", "name": "归元", "minimum_rating": 1450,
+            "stones": 2500, "items": {"forge_ore": 20, "bloodline_essence": 8},
+        },
     ]
     assert "pvp_energy" not in content.rules.model_dump()
     assert "pvp_rating_delta" not in content.rules.model_dump()

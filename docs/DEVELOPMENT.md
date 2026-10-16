@@ -430,6 +430,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_resonance_expansion.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `225 passed`（新增 `test_resonance_expansion` 4 项）。新增测试覆盖 21 组且配对唯一、每个种族仍被覆盖、新组不与旧组重复、新组可激活并按 `rules.resonance_cost` 扣费、重复启用幂等不重复扣费、种族未集齐时被拒。既有断言同步：`test_resonance` 的条目数 14 → 21、页码 `1/3` → `1/5` 与页码参数（第 6 页越界），以及「种族未覆盖」用例改为删除某一种族的全部配对（原用例只删一组，在该种族被其他组覆盖后不再触发校验）。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠论剑段位扩充闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、测试、文档。审计显示论剑是唯一只有三档的赛季玩法：青云 0 分、凌霄 1050 分、天阙 1150 分。在 `rating_delta=20`、`daily_matches=5` 下一天全胜即可拿到 100 分，从 1000 分爬到顶档只需约两天，此后整个自然月再无段位可爬，赛季后半程只剩重复刷场次；段位阶梯是这套玩法唯一的目标感来源，三档明显过短。
+
+`data/arena.json` 在既有三档之后追加三档：星海 1250 分（1400 灵石、13 锻灵矿、5 血脉精华）、太虚 1350 分（1900 灵石、16 锻灵矿、6 血脉精华）、归元 1450 分（2500 灵石、20 锻灵矿、8 血脉精华）。灵石与材料按既有节奏递增，`灵宠赛季奖励 规则` 由 1 页变为 2 页（`CATALOG_PAGE_SIZE=4`），既有三档字节不变。
+
+关键边界：不新增命令、表、列或规则字段；档位查找（取不超过当前积分的最高档）、规则分页与赛季结算（按最终积分取最高档、不累加各档）全部内容驱动，业务代码零改动；论剑不在平衡门禁取样范围内（门禁只跑 PVE 秘境与阵容），赛季时长、准入、场次限额、积分转移与领奖资格均不变。
+
+定向命令 `./.venv/bin/pytest -q tests/test_arena_ladder.py tests/test_arena_content.py tests/test_seasons.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_runtime.py`：合计 `309 passed`（新增 `test_arena_ladder` 21 项）。新增测试覆盖六档 id/名称唯一且最低积分严格递增、首档为 0、灵石与材料随档位递增、12 个积分边界（每档阈值与阈值减一）映射到正确档位、规则分页为 2 页且第二页只含后两档、越界页被拒、爬到星海（1260 分）与归元（1460 分）后按新档位领奖、以及并发重放只领一次。既有断言同步：`test_arena_content` 的档位断言由三档改为六档。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
