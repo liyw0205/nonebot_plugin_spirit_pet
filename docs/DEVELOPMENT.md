@@ -486,11 +486,11 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 不新增 schema、表、列或玩家模型；套装定义、属性加成、奖励金额、战斗和既有领奖逻辑不变。新增聚焦合同 `tests/test_equipment_set_loadout.py` 6 项，覆盖部件来源/入口、宠物切换后的过期链接、强化保留与替换返还、领奖衔接、兼容/行程/缺件拒绝、事务失败回滚和操作重放。装备套装受影响合同中先前通过的用例未重复运行；修正断言和装配回归随后单独通过。`tests/test_messaging.py` `28 passed`；`compileall` 和 `git diff --check` 通过。实现提交 `07ef3b2` 的 develop CI `38888597059`、main CI `38889082306` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；辅助目标卡 `docs/goals/pet-equipment-set-auto-equip.md` 仅本地保留、不提交。
 
-### 赛季最终奖励回顾闭环（2026-10-17，本地验收完成，CI 待验收）
+### 赛季最终奖励回顾闭环（2026-10-17，已完成）
 
 审计发现 `season_claims.reward_snapshot` 已在赛季领奖事务中保存最终档位、积分、灵石和道具，但 `灵宠赛季奖励` 只有“已领取”状态，没有按赛季回顾实际发放数量的玩家入口。新增只读 `灵宠赛季奖励回顾 [页码/赛季号]`：按本人已领取赛季倒序分页，行内蓝字打开详情；详情严格读取持久快照，显示最终积分、结算档位、北京时间领取时间和实际奖励。静态 arena 规则改变不会重算历史，缺失物品定义按 ID 回退；未知/他人/未领取记录、进行中赛季和损坏快照有稳定边界错误，列表坏记录不会遮蔽其他历史。
 
-实现复用 `season_claims`、`season_entries` 和 `seasons`，无 schema、玩家模型、竞技场结算、段位达成奖励或赛季任务改动；未结契只读列表不创建玩家，回顾不发奖、不写进度。帮助、`docs/GAMEPLAY.md`、命令映射与 QQ native/OneBot 可读入口已同步。新增 `tests/test_arena_reward_history.py` `7 passed`，覆盖空状态、分页排序、快照稳定性、权限/未领取/进行中边界、损坏快照、幂等重投和 native 蓝字/按钮去重；受影响命令/消息合同 `37 passed`，竞技场既有合同 `179 passed`。`compileall` 与 `git diff --check` 待完成；develop/main CI、普通合入和 main CI 尚未验收。本地辅助目标卡 `docs/goals/pet-arena-reward-history.md` 不提交。
+实现复用 `season_claims`、`season_entries` 和 `seasons`，无 schema、玩家模型、竞技场结算、段位达成奖励或赛季任务改动；未结契只读列表不创建玩家，回顾不发奖、不写进度。帮助、`docs/GAMEPLAY.md`、命令映射与 QQ native/OneBot 可读入口已同步。新增 `tests/test_arena_reward_history.py` `7 passed`，覆盖空状态、分页排序、快照稳定性、权限/未领取/进行中边界、损坏快照、幂等重投和 native 蓝字/按钮去重；受影响命令/消息合同 `37 passed`，竞技场既有合同 `179 passed`。`compileall` 与 `git diff --check` 通过。实现提交 `cb79816` 的 develop CI `38941789775`、main CI `38942130507` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-arena-reward-history.md` 不提交。
 
 ### 开发阶段流程
 
