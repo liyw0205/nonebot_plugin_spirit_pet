@@ -23,6 +23,7 @@ from ..domain.resonance_content import Resonance
 from ..domain.journey_content import Journey
 from ..domain.season_mission_content import SeasonMission
 from ..domain.daily_assignment_content import DailyAssignment
+from ..domain.codex_content import CodexReward
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -89,6 +90,7 @@ class Catalog:
     journey: dict[str, Journey]
     season_missions: dict[str, SeasonMission]
     daily_assignments: dict[str, DailyAssignment]
+    codex_rewards: dict[str, CodexReward]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -127,6 +129,7 @@ class Catalog:
             journey=_index(directory / "journey.json", Journey),
             season_missions=_index(directory / "season_missions.json", SeasonMission),
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
+            codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
         )
         catalog.validate()
         return catalog
@@ -219,6 +222,7 @@ class Catalog:
         self._validate_journey(realm_ids)
         self._validate_season_missions()
         self._validate_daily_assignments()
+        self._validate_codex_rewards()
         for energy in (
             self.rules.training_energy, self.rules.explore_energy, self.rules.breeding.energy,
         ):
@@ -507,6 +511,12 @@ class Catalog:
         pairs = [(assignment.metric, assignment.target) for assignment in assignments.values()]
         if len(set(pairs)) != len(pairs):
             raise ValueError("duplicate daily assignment metric target")
+
+    def _validate_codex_rewards(self):
+        if set(self.codex_rewards) != set(self.species):
+            raise ValueError("every species needs exactly one codex reward")
+        for reward in self.codex_rewards.values():
+            self._require(reward.items, self.items, "codex reward items")
 
     def _validate_resonances(self):
         covered = set()

@@ -19,6 +19,7 @@ from ..gameplay import echoes
 from ..gameplay import season_missions
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
+from ..gameplay import codex
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.teams import management, party, requests
@@ -100,6 +101,8 @@ ACTIONS = {
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
     "collection": Command(achievements.collection, True, registered=False),
+    "codex": Command(codex.catalog, True, registered=False),
+    "codex_claim": Command(codex.claim, True),
     "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
     "quests": Command(quests.quests),
@@ -165,6 +168,7 @@ COMMANDS = {
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",
+    "灵宠图鉴奖励": "codex", "灵宠图鉴领奖": "codex_claim",
     "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",

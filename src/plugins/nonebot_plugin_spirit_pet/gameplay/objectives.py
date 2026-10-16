@@ -1,11 +1,12 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
+from . import codex
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题",
+    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励",
 )
 
 
@@ -83,6 +84,19 @@ def _first_clear_line(ctx: Context, user_id: str) -> str:
     if claimable:
         return f"秘境首通：可领 {len(claimable)} 处（{'、'.join(claimable)}）· 共 {total} 处"
     return f"秘境首通：暂无可领 · 共 {total} 处"
+
+
+def _codex_line(ctx: Context, user_id: str) -> str:
+    entries = tuple(ctx.content.species.values())
+    owned = codex.collected(ctx, user_id)
+    claimable = [
+        species.name for species in entries
+        if species.id in owned and not codex.claimed(ctx, user_id, species.id)
+    ]
+    claimed = sum(1 for species in entries if codex.claimed(ctx, user_id, species.id))
+    if claimable:
+        return f"图鉴奖励：可领 {len(claimable)} 族（{'、'.join(claimable)}）· 已领取 {claimed}/{len(entries)} 族"
+    return f"图鉴奖励：暂无可领 · 已领取 {claimed}/{len(entries)} 族"
 
 
 def _free_summon_line(ctx: Context, user_id: str) -> str:
@@ -169,6 +183,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _echo_line(ctx, player.user_id),
         _season_line(ctx, player.user_id),
         _assignment_line(ctx, player.user_id),
+        _codex_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

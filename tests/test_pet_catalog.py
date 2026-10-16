@@ -103,6 +103,11 @@ def test_unreachable_species_is_rejected(catalog_dir):
     edit(catalog_dir, "pets.json", lambda rows: rows.append({
         **rows[0], "id": "unreachable", "name": "无缘灵宠", "starter": False,
     }))
+    # Give the new species a collection reward so the content is otherwise well-formed
+    # and the missing acquisition route is what actually fails.
+    edit(catalog_dir, "codex_rewards.json", lambda rows: rows.append({
+        "species": "unreachable", "stones": 60, "items": {"spirit_food": 1},
+    }))
     with pytest.raises(ValueError, match="no acquisition route"):
         Catalog.load(catalog_dir)
 

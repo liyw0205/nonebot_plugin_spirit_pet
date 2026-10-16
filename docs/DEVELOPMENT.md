@@ -430,6 +430,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_resonance_expansion.py tests/test_resonance.py tests/test_resonance_contract.py tests/test_content.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_catalog_interaction.py`：合计 `225 passed`（新增 `test_resonance_expansion` 4 项）。新增测试覆盖 21 组且配对唯一、每个种族仍被覆盖、新组不与旧组重复、新组可激活并按 `rules.resonance_cost` 扣费、重复启用幂等不重复扣费、种族未集齐时被拒。既有断言同步：`test_resonance` 的条目数 14 → 21、页码 `1/3` → `1/5` 与页码参数（第 6 页越界），以及「种族未覆盖」用例改为删除某一种族的全部配对（原用例只删一组，在该种族被其他组覆盖后不再触发校验）。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 灵宠图鉴收集奖励闭环（2026-10-16，已完成）
+
+四个阶段一次交付：内容与校验、业务、命令与 UX、测试与文档。审计显示收集是核心循环之一（领养、召唤、孵化、培育），`灵宠收集` 与 `灵宠图鉴` 都能看到收集状态，但收集本身没有任何直接回报：只有三条成就按总数给奖（初识百灵 3 族、百灵相逢 10 族、万灵归藏 27 族），中间 24 个种族收齐了也没有反馈。
+
+新增 `data/codex_rewards.json`（27 条，每族一条）与 `domain/codex_content.py` 的 `CodexReward`，`Catalog` 增加 `codex_rewards` 字段；奖励按召唤池权重分四档：常见（权重 ≥20）60 灵石 + 灵粮 1、少见（12-19）100 灵石 + 灵粮 2、稀有（8-11）150 灵石 + 血脉精华 1、珍稀（≤7）240 灵石 + 血脉精华 1 + 灵粮 2，全部领取合计 4020 灵石。新增 `gameplay/codex.py`：收集状态由 `pets` 表即时派生（封存宠物仍计入，与 `灵宠收集` 口径一致），每族奖励只发一次，领取标记写入 `quest_progress` 的 `codex_<种族>` 行，发奖复用 `rewards.grant`。命令 `灵宠图鉴奖励`（只读分页，5 族/页，共 6 页）与 `灵宠图鉴领奖 <种族名>`，别名比既有 `灵宠图鉴` 长，按最长前缀优先解析不会误路由；帮助「身份与收集」新增两条；`灵宠目标` 新增图鉴奖励行与入口蓝字。
+
+关键边界：不新增表、列、计数列或规则字段，schema 20 不动；既有成就、称号、收集页、图鉴页、召唤池与全部战斗/结算路径不变；奖励为固定值，领取时构造成单值区间交给既有 `grant`，不进入任何战斗结算。校验要求每个种族恰好一条奖励、物品存在、奖励非空。
+
+定向命令 `./.venv/bin/pytest -q tests/test_codex.py tests/test_objectives.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_achievements.py tests/test_player_experience.py tests/test_content.py tests/test_balance_lineups.py tests/test_runtime.py tests/test_catalog_interaction.py tests/test_pet_catalog.py tests/test_achievement_interaction.py`：合计 `320 passed`（新增 `test_codex` 11 项）。新增测试覆盖 27 族覆盖与唯一、四档奖励取值、六页分页与三种状态、未收集被拒、未知名称被拒、领取扣减与二次领取被拒、封存宠物仍计入、同 `operation_id` 重放返回同一回复且只发一次、未结契只读浏览不建号、`灵宠目标` 行格式与帮助条目。既有断言同步：`test_pet_catalog` 的「无获取途径」用例在追加种族时同时补一条收集奖励，使原校验仍先触发。未跑全量、仿真、压测、真实 QQ 或部署。
+
 ### 灵宠论剑段位扩充闭环（2026-10-16，已完成）
 
 四个阶段一次交付：内容与校验、业务、测试、文档。审计显示论剑是唯一只有三档的赛季玩法：青云 0 分、凌霄 1050 分、天阙 1150 分。在 `rating_delta=20`、`daily_matches=5` 下一天全胜即可拿到 100 分，从 1000 分爬到顶档只需约两天，此后整个自然月再无段位可爬，赛季后半程只剩重复刷场次；段位阶梯是这套玩法唯一的目标感来源，三档明显过短。
