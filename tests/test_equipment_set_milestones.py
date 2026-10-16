@@ -124,7 +124,15 @@ def test_help_and_native_achievement_link_expose_the_new_progress(game, play):
     mark(game, "sky_wind")
     reply = play("achievements", "15")
     expected = {"灵宠成就领奖 套装初成"}
-    assert {link.command for link in reply.inline_commands} == expected
+    assert {
+        link.command for link in reply.inline_commands if link.label == "领取奖励"
+    } == expected
+    assert {
+        link.command for link in reply.inline_commands if link.label == "查看详情"
+    } == {
+        "灵宠成就详情 套装初成", "灵宠成就详情 套装兼收",
+        "灵宠成就详情 套装全收", "灵宠成就详情 秘境全通",
+    }
 
     _, native = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
     buttons = {
@@ -134,4 +142,4 @@ def test_help_and_native_achievement_link_expose_the_new_progress(game, play):
         for row in segment.data["keyboard"].content.rows
         for button in row.buttons
     }
-    assert buttons & expected == set()
+    assert buttons & {link.command for link in reply.inline_commands} == set()
