@@ -492,11 +492,11 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 实现复用 `season_claims`、`season_entries` 和 `seasons`，无 schema、玩家模型、竞技场结算、段位达成奖励或赛季任务改动；未结契只读列表不创建玩家，回顾不发奖、不写进度。帮助、`docs/GAMEPLAY.md`、命令映射与 QQ native/OneBot 可读入口已同步。新增 `tests/test_arena_reward_history.py` `7 passed`，覆盖空状态、分页排序、快照稳定性、权限/未领取/进行中边界、损坏快照、幂等重投和 native 蓝字/按钮去重；受影响命令/消息合同 `37 passed`，竞技场既有合同 `179 passed`。`compileall` 与 `git diff --check` 通过。实现提交 `cb79816` 的 develop CI `38941789775`、main CI `38942130507` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-arena-reward-history.md` 不提交。
 
-### 称号佩戴与切换闭环（2026-10-17，本地验收完成，CI 待验收）
+### 称号佩戴与切换闭环（2026-10-17，已完成）
 
 审计发现 21 项称号只能按 `order` 自动选择最高已获得项，玩家没有主动展示已获得低阶称号的入口。新增 `灵宠称号佩戴 <称号名>`：称号页已获得行挂唯一蓝字，服务端按当前指标重验资格后把选择写入 `quest_progress.title_equipped`；未主动选择沿用最高称号，未知 order、已不可达称号或坏标记安全回退。`我的灵宠` 状态和新战报快照固定保存/显示当前称号，历史快照无该字段时仍可读。
 
-选择只是展示偏好，不发奖、不推进目标、不改变战斗或经济；未结契页面只读不建号，未知/未获得/多参数与坏记录稳定拒绝，重复选择与同操作号重放幂等。命令、帮助、`docs/GAMEPLAY.md` 和 QQ native/OneBot 蓝字/按钮去重已同步，无 schema、玩家模型、奖励或改名/道号功能改动。新增 `tests/test_title_loadout.py` `6 passed`，覆盖持久切换、状态、战报快照、坏选择回退、错误边界、幂等、帮助解析和 native payload；受影响称号/状态/命令/战报短合同 `39 passed`，`compileall` 与 `git diff --check` 通过。develop/main CI、普通合入和 main CI 待验收；本地辅助目标卡 `docs/goals/pet-title-loadout.md` 不提交。
+选择只是展示偏好，不发奖、不推进目标、不改变战斗或经济；未结契页面只读不建号，未知/未获得/多参数与坏记录稳定拒绝，重复选择与同操作号重放幂等。命令、帮助、`docs/GAMEPLAY.md` 和 QQ native/OneBot 蓝字/按钮去重已同步，无 schema、玩家模型、奖励或改名/道号功能改动。新增 `tests/test_title_loadout.py` `6 passed`，覆盖持久切换、状态、战报快照、坏选择回退、错误边界、幂等、帮助解析和 native payload；受影响称号/状态/命令/战报短合同 `39 passed`，`compileall` 与 `git diff --check` 通过。实现提交 `aa46d76` 的 develop CI `38945555706`、main CI `38945890585` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-title-loadout.md` 不提交。
 
 ### 开发阶段流程
 
