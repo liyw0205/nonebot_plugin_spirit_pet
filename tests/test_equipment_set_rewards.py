@@ -168,6 +168,6 @@ def test_help_and_objectives_expose_set_rewards(game, play):
     equip_wind_set(play)
     hub = play("objectives")
     assert "套装完成奖励：可领 1 套（青岚风铃）· 共 4 套" in hub.text()
-    assert [link.command for link in hub.inline_commands[-3:]] == [
-        "灵宠套装", "灵宠灵术赏", "灵宠境界赏",
+    assert [link.command for link in hub.inline_commands[-4:]] == [
+        "灵宠套装", "灵宠灵术赏", "灵宠亲密赏", "灵宠境界赏",
     ]

@@ -27,6 +27,7 @@ from ..gameplay import realm_milestone_rewards
 from ..gameplay import skill_mastery_rewards
 from ..gameplay import stage_stars
 from ..gameplay import checkin_rewards
+from ..gameplay import affinity_milestone_rewards
 from ..gameplay import battle_records, help
 from ..gameplay.arena import battles, matching, seasons
 from ..gameplay.arena import tier_rewards
@@ -64,6 +65,8 @@ ACTIONS = {
     "sign": Command(economy.sign),
     "checkin_rewards": Command(checkin_rewards.catalog, True, registered=False),
     "checkin_reward_claim": Command(checkin_rewards.claim, True),
+    "affinity_milestone_rewards": Command(affinity_milestone_rewards.catalog, True, registered=False),
+    "affinity_milestone_claim": Command(affinity_milestone_rewards.claim, True),
     "bag": Command(economy.bag),
     "shop": Command(economy.shop, True, registered=False),
     "buy": Command(economy.buy, True),
@@ -179,6 +182,7 @@ COMMANDS = {
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
     "灵宠签到领奖": "checkin_reward_claim", "灵宠背包": "bag", "灵宠商店": "shop",
+    "灵宠亲密赏": "affinity_milestone_rewards", "灵宠亲密领奖": "affinity_milestone_claim",
     "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond",
     "灵宠陪伴奖励": "bond_rewards", "灵宠陪伴领奖": "bond_reward_claim", "灵宠修炼": "train", "灵宠回收": "recycle",
     "灵宠合修": "co_train",
