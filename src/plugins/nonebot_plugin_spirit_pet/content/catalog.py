@@ -211,7 +211,6 @@ class Catalog:
                 f"missing exploration routes for realms: {sorted(missing_route_realms)}"
             )
         self._require([self.arena.min_realm], realm_ids, "arena realm")
-        self._validate_equipment_sets()
         for tier in self.arena.tiers:
             self._require(tier.items, self.items, "arena tier reward items")
         for expedition in self.expeditions.values():
@@ -255,6 +254,7 @@ class Catalog:
             raise ValueError("spirit_food must be a consumable")
         self._validate_progression()
         validate_battle_content(self)
+        self._validate_equipment_sets()
         self._validate_resonances()
         validate_crafting_content(self)
         validate_lineages(self)
