@@ -8,6 +8,7 @@ from .arena import tier_rewards as arena_tier_rewards
 from . import checkin_rewards, companionship_rewards, companionship
 from . import affinity_milestone_rewards
 from . import bloodline_milestone_rewards
+from . import lineage_awakening_rewards
 from . import equipment_set_rewards
 from . import realm_milestone_rewards
 from . import skill_mastery_rewards
@@ -18,6 +19,7 @@ HUB_PAGES = (
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠血脉赏",
+    "灵宠分支赏",
     "灵宠套装",
     "灵宠灵术赏",
     "灵宠亲密赏",
@@ -198,6 +200,10 @@ def _bloodline_milestone_line(ctx: Context, user_id: str) -> str:
     return bloodline_milestone_rewards.summary(ctx, user_id)
 
 
+def _lineage_awakening_line(ctx: Context, user_id: str) -> str:
+    return lineage_awakening_rewards.summary(ctx, user_id)
+
+
 def _codex_line(ctx: Context, user_id: str) -> str:
     entries = tuple(ctx.content.species.values())
     owned = codex.collected(ctx, user_id)
@@ -301,6 +307,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _stage_star_line(ctx, player.user_id),
         _arena_tier_line(ctx, player.user_id),
         _bloodline_milestone_line(ctx, player.user_id),
+        _lineage_awakening_line(ctx, player.user_id),
         _equipment_set_line(ctx, player.user_id),
         _skill_mastery_line(ctx, player.user_id),
         _affinity_milestone_line(ctx, player.user_id),
