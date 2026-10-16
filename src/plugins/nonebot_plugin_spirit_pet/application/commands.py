@@ -4,6 +4,7 @@ from typing import Callable
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, tower
+from ..gameplay import companionship_rewards
 from ..gameplay import breeding
 from ..gameplay import main_quest
 from ..gameplay import daily_dungeon
@@ -66,6 +67,8 @@ ACTIONS = {
     "use": Command(economy.use, True),
     "feed": Command(economy.feed, True),
     "bond": Command(companionship.bond, True),
+    "bond_rewards": Command(companionship_rewards.catalog, True, registered=False),
+    "bond_reward_claim": Command(companionship_rewards.claim, True),
     "train": Command(cultivation.train, True),
     "co_train": Command(cultivation.co_train, True),
     "breeding": Command(breeding.breeding, True, registered=False),
@@ -164,7 +167,8 @@ COMMANDS = {
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
     "灵宠签到领奖": "checkin_reward_claim", "灵宠背包": "bag", "灵宠商店": "shop",
-    "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond", "灵宠修炼": "train", "灵宠回收": "recycle",
+    "灵宠购买": "buy", "灵宠使用": "use", "灵宠喂养": "feed", "灵宠互动": "bond",
+    "灵宠陪伴奖励": "bond_rewards", "灵宠陪伴领奖": "bond_reward_claim", "灵宠修炼": "train", "灵宠回收": "recycle",
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",

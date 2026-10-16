@@ -47,4 +47,4 @@ def bond(ctx: Context, arg: str) -> Reply:
         scene,
         affinity,
         f"连续陪伴：当前 {streak} 天 · 最佳 {player.best_bond_streak} 天。",
-    ), ("我的灵宠", "灵宠任务", "灵宠喂养"))
+    ), ("我的灵宠", "灵宠任务", "灵宠喂养", "灵宠陪伴奖励"))

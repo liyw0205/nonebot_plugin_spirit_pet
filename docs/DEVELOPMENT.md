@@ -472,6 +472,14 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_arena_ladder.py tests/test_arena_content.py tests/test_seasons.py tests/test_commands.py tests/test_messaging.py tests/test_information.py tests/test_objectives.py tests/test_player_experience.py tests/test_balance_lineups.py tests/test_runtime.py`：合计 `309 passed`（新增 `test_arena_ladder` 21 项）。新增测试覆盖六档 id/名称唯一且最低积分严格递增、首档为 0、灵石与材料随档位递增、12 个积分边界（每档阈值与阈值减一）映射到正确档位、规则分页为 2 页且第二页只含后两档、越界页被拒、爬到星海（1260 分）与归元（1460 分）后按新档位领奖、以及并发重放只领一次。既有断言同步：`test_arena_content` 的档位断言由三档改为六档。未跑全量、仿真、压测、真实 QQ 或部署。
 
+### 连续签到里程碑奖励闭环（2026-10-16，已完成）
+
+连续签到使用北京时间日期凭证复原当前/历史最佳 streak，3/7/14/30 天里程碑可累计领取；旧存档只利用最近一次签到日期衔接，不虚构更早历史。日期凭证与奖励标记复用 `quest_progress`，每日任务刷新只删内容定义的每日任务 ID，不清理签到历史或其他永久目标。
+
+修复 CI 暴露的旧合同断言：跨日后每日任务 `sign_once` 应清除，但 `signin_day_YYYY-MM-DD` 历史应保留；增加旧每日任务链接跨日后不生成新链接、执行旧领奖命令会被拒绝的回归。新增 `gameplay/checkin_rewards.py`、命令/帮助/目标页入口与 `docs/GAMEPLAY.md` 玩家规则，未改 schema 或玩家模型。
+
+聚焦回归 `.venv/bin/python -m pytest -q tests/test_quest_interaction.py -k 'day_refresh or stale_daily'`：`2 passed`。develop CI `38855715805` 与 main CI `38855982696` 均全绿（Python 3.10/3.13 全量 pytest、compile、shell 入口与安装冒烟）；提交 `d2c1e55`、`62e9635` 已推送 develop 并 fast-forward 合入 main。无部署、无真实 QQ 或设备验收。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
