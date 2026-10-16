@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.pagination import paginate
 from .compatibility import check_requirements, requirement_text
@@ -106,19 +106,45 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 
 def sets(ctx: Context, arg: str) -> Reply:
+    from . import equipment_set_rewards
+
+    player = ctx.repo.player(ctx.user_id)
+    user_id = player.user_id if player else ctx.user_id
+    active = equipment_set_rewards.active_set_ids(ctx, user_id)
     if arg and not arg.isdecimal():
         equipment_set = named(ctx.content.equipment_sets, arg)
         pieces = "、".join(ctx.content.equipment[item_id].name for item_id in equipment_set.items)
-        return Reply(f"装备套装 · {equipment_set.name}", (
+        state = equipment_set_rewards.state(
+            ctx, user_id, equipment_set.id, active, player is not None,
+        )
+        lines = (
             equipment_set.description,
             f"套件：{pieces}（需同时装备 {len(equipment_set.items)} 件）。",
             f"套装加成：{_bonus_text(equipment_set.bonuses.model_dump())}。",
-        ), ("灵宠装备", "灵宠套装"))
+            f"首次完成奖励：{equipment_set_rewards.reward_text(ctx, equipment_set.id)} · {state}。",
+        )
+        links = (InlineCommand(3, "领取奖励", f"灵宠套装领奖 {equipment_set.name}"),) if state == "可领取" else ()
+        return Reply(f"装备套装 · {equipment_set.name}", lines, ("灵宠装备", "灵宠目标", "灵宠套装"), links)
     page = paginate(ctx.content.equipment_sets.values(), arg, "装备套装", "灵宠套装")
-    return Reply(f"装备套装 {page.number}/{page.total}", tuple(
-        f"{equipment_set.name} · {len(equipment_set.items)}件 · {_bonus_text(equipment_set.bonuses.model_dump())}"
-        for equipment_set in page.entries
-    ), (*(f"灵宠套装 {equipment_set.name}" for equipment_set in page.entries), *page.navigation, "灵宠装备"))
+    lines, links = [], []
+    for equipment_set in page.entries:
+        current_state = equipment_set_rewards.state(
+            ctx, user_id, equipment_set.id, active, player is not None,
+        )
+        lines.append(
+            f"{equipment_set.name} · {len(equipment_set.items)}件 · "
+            f"{_bonus_text(equipment_set.bonuses.model_dump())} · "
+            f"首次完成 {equipment_set_rewards.reward_text(ctx, equipment_set.id)} · {current_state}"
+        )
+        if current_state == "可领取":
+            links.append(InlineCommand(
+                len(lines) - 1, "领取奖励", f"灵宠套装领奖 {equipment_set.name}",
+            ))
+    commands = (
+        *(f"灵宠套装 {equipment_set.name}" for equipment_set in page.entries),
+        *page.navigation, "灵宠装备", "灵宠目标",
+    )
+    return Reply(f"装备套装 {page.number}/{page.total}", tuple(lines), commands, tuple(links))
 
 
 def _bonus_text(bonuses: dict[str, int]) -> str:

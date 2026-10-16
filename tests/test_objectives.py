@@ -28,6 +28,20 @@ def test_hub_lists_every_system(game, play):
     assert line(reply, "主线：").startswith("主线：下一步 ")
     assert line(reply, "成就：") == f"成就：可领 1 项（初结灵契）· 共 {len(content.achievements)} 项"
     assert line(reply, "称号：") == f"称号：初入仙途 · 已获得 1/{len(content.titles)} 项"
+    assert line(reply, "套装完成奖励：") == f"套装完成奖励：暂无可领 · 共 {len(content.equipment_sets)} 套"
+
+
+def test_hub_tracks_equipment_set_completion_rewards(game, play):
+    account(game, play)
+    sql(game[1], "UPDATE players SET stones=10000 WHERE user_id='u1'")
+    play("buy", "青岚翎")
+    play("equipment", "青岚翎")
+    play("buy", "灵心铃")
+    play("equipment", "灵心铃")
+    assert line(play("objectives"), "套装完成奖励：") == "套装完成奖励：可领 1 套（青岚风铃）· 共 4 套"
+
+    play("equipment_set_claim", "青岚风铃")
+    assert line(play("objectives"), "套装完成奖励：") == "套装完成奖励：暂无可领 · 共 4 套"
 
 
 def test_hub_tracks_daily_claims(game, play):

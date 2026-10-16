@@ -12,6 +12,7 @@ from ..gameplay import weekly_quests
 from ..gameplay import inheritance
 from ..gameplay import titles
 from ..gameplay import objectives
+from ..gameplay import equipment_set_rewards
 from ..gameplay import sweep
 from ..gameplay import first_clear
 from ..gameplay import free_summon
@@ -144,6 +145,7 @@ ACTIONS = {
     "team_challenge": Command(party.challenge, True),
     "equipment": Command(equipment.view, True),
     "equipment_sets": Command(equipment.sets, True, registered=False),
+    "equipment_set_claim": Command(equipment_set_rewards.claim, True),
     "equipment_catalog": Command(equipment.catalog, True, registered=False),
     "unequip": Command(equipment.unequip, True),
     "enhance": Command(forging.enhance, True),
@@ -197,7 +199,7 @@ COMMANDS = {
     "灵宠队伍同意": "team_accept", "灵宠队伍拒绝": "team_reject", "灵宠队伍撤回": "team_withdraw",
     "灵宠踢人": "team_kick", "灵宠转让": "team_transfer", "灵宠解散": "team_disband",
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
-    "灵宠套装": "equipment_sets",
+    "灵宠套装": "equipment_sets", "灵宠套装领奖": "equipment_set_claim",
     "灵宠强化": "enhance",
     "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",
     "灵宠工坊": "recipe_catalog", "灵宠打造": "craft", "灵宠分解": "salvage",

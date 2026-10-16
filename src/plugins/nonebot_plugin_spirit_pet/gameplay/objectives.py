@@ -6,12 +6,14 @@ from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
 from . import checkin_rewards, companionship_rewards, companionship
+from . import equipment_set_rewards
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
+    "灵宠套装",
 )
 
 
@@ -149,6 +151,14 @@ def _stage_star_line(ctx: Context, user_id: str) -> str:
     return f"关卡星级：暂无可领 · 当前 {reached}/{maximum} 星"
 
 
+def _equipment_set_line(ctx: Context, user_id: str) -> str:
+    entries = equipment_set_rewards.claimable(ctx, user_id)
+    if entries:
+        names = "、".join(entry.name for entry in entries)
+        return f"套装完成奖励：可领 {len(entries)} 套（{names}）· 共 {len(ctx.content.equipment_sets)} 套"
+    return f"套装完成奖励：暂无可领 · 共 {len(ctx.content.equipment_sets)} 套"
+
+
 def _codex_line(ctx: Context, user_id: str) -> str:
     entries = tuple(ctx.content.species.values())
     owned = codex.collected(ctx, user_id)
@@ -229,7 +239,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
     if player is None:
         return Reply("灵宠目标", (
             "尚未结契，先完成领养，就能在这里看到所有可领奖励。",
-            "这里汇总今日任务、今日秘境、本周周常、主线、成就与称号的领取状态。",
+            "这里汇总每日、每周、成长、收集与套装奖励的领取状态。",
         ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
 
     quests.refresh(ctx)
@@ -251,6 +261,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _codex_line(ctx, player.user_id),
         _stage_star_line(ctx, player.user_id),
         _arena_tier_line(ctx, player.user_id),
+        _equipment_set_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)
