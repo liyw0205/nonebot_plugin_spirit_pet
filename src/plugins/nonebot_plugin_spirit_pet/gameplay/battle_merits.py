@@ -66,14 +66,11 @@ def catalog(ctx: Context, arg: str) -> Reply:
         raise GameError("灵宠战斗功勋 不接受参数，直接发送即可。")
     player = ctx.repo.player(ctx.user_id)
     if player is None:
-        lines = [
-            f"有效胜场统计秘境、关卡和论剑，切磋、败北与平局不计。",
-            *(
-                f"{wins_needed} 胜 · {name} · {_reward_text(ctx, milestone)}"
-                for wins_needed, name, _, _ in MILESTONES
-            ),
-            "尚未结契，先完成领养；战报会从此记录你的有效胜场。",
-        ]
+        lines = ["有效胜场统计秘境、关卡和论剑，切磋、败北与平局不计。"]
+        for milestone in MILESTONES:
+            wins_needed, name, _, _ = milestone
+            lines.append(f"{wins_needed} 胜 · {name} · {_reward_text(ctx, milestone)}")
+        lines.append("尚未结契，先完成领养；战报会从此记录你的有效胜场。")
         return Reply("战斗功勋", tuple(lines), ("灵宠帮助",), (
             InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "),
         ))
