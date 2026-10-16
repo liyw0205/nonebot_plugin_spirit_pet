@@ -498,6 +498,12 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 选择只是展示偏好，不发奖、不推进目标、不改变战斗或经济；未结契页面只读不建号，未知/未获得/多参数与坏记录稳定拒绝，重复选择与同操作号重放幂等。命令、帮助、`docs/GAMEPLAY.md` 和 QQ native/OneBot 蓝字/按钮去重已同步，无 schema、玩家模型、奖励或改名/道号功能改动。新增 `tests/test_title_loadout.py` `6 passed`，覆盖持久切换、状态、战报快照、坏选择回退、错误边界、幂等、帮助解析和 native payload；受影响称号/状态/命令/战报短合同 `39 passed`，`compileall` 与 `git diff --check` 通过。实现提交 `aa46d76` 的 develop CI `38945555706`、main CI `38945890585` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-title-loadout.md` 不提交。
 
+### 战斗功勋奖励闭环（2026-10-17，本地验收完成，CI 待验收）
+
+审计永久 `battle_records` 后补上长期战斗奖励缺口。新增只读 `灵宠战斗功勋` 与 `灵宠战斗功勋领奖 <胜场>`：按本人参与者行与 `winner_side=side` 派生秘境、章节关卡、论剑胜场，组队每位成员各计一场，切磋、败北、平局不计。5/20/50 胜分别奖励 180 灵石+锻灵矿、600 灵石+血脉精华、1500 灵石+锻灵矿/血脉精华；凭证 `battle_merit_<胜场>` 写入 `quest_progress`，领取时保存胜场快照并与资源同事务提交。
+
+未结契可只读预览，参数/未知档位/未达成/重复/奖励物品定义异常均稳定拒绝且不改资源；原操作重投保持幂等。命令、帮助、`灵宠目标`、`docs/GAMEPLAY.md` 与 QQ native/OneBot 蓝字/按钮去重已同步；不改 schema、玩家模型、战斗、掉落、成就、任务或称号规则。新增 `tests/test_battle_merit_rewards.py` `11 passed`，受影响命令/消息/目标/战报合同 `66 passed`，`compileall` 与 `git diff --check` 通过。实现、正式文档、develop/main CI 待验收；本地辅助目标卡 `docs/goals/pet-battle-merit-rewards.md` 不提交。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

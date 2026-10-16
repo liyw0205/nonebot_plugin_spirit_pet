@@ -30,7 +30,7 @@ from ..gameplay import checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import battle_records, help
+from ..gameplay import battle_merits, battle_records, help
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -145,6 +145,8 @@ ACTIONS = {
     "pvp": Command(battles.pvp, True),
     "spar": Command(battles.spar, True),
     "battle_reports": Command(battle_records.reports, True),
+    "battle_merits": Command(battle_merits.catalog, True, registered=False),
+    "battle_merit_claim": Command(battle_merits.claim, True),
     "team_create": Command(party.create),
     "team_join": Command(requests.join, True),
     "team_invite": Command(requests.invite, True),
@@ -219,6 +221,7 @@ COMMANDS = {
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
     "灵宠论剑": "pvp", "灵宠切磋": "spar",
     "灵宠战报": "battle_reports",
+    "灵宠战斗功勋": "battle_merits", "灵宠战斗功勋领奖": "battle_merit_claim",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",
     "灵宠组队挑战": "team_challenge",

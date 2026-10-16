@@ -9,6 +9,7 @@ from . import checkin_rewards, companionship_rewards, companionship
 from . import affinity_milestone_rewards
 from . import bloodline_milestone_rewards
 from . import lineage_awakening_rewards
+from . import battle_merits
 from . import equipment_set_rewards
 from . import realm_milestone_rewards
 from . import skill_mastery_rewards
@@ -18,6 +19,7 @@ HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
+    "灵宠战斗功勋",
     "灵宠血脉赏",
     "灵宠分支赏",
     "灵宠套装",
@@ -276,6 +278,17 @@ def _title_line(ctx: Context, user_id: str) -> str:
     return f"称号：{holder.name if holder else '尚无'} · 已获得 {len(held)}/{len(ctx.content.titles)} 项"
 
 
+def _battle_merit_line(ctx: Context, user_id: str) -> str:
+    total = battle_merits.wins(ctx, user_id)
+    claimable = [
+        f"{milestone[0]} 胜" for milestone in battle_merits.MILESTONES
+        if total >= milestone[0] and not battle_merits.claimed(ctx, user_id, milestone[0])
+    ]
+    if claimable:
+        return f"战斗功勋：可领 {len(claimable)} 档（{'、'.join(claimable)}）· 当前 {total} 胜"
+    return f"战斗功勋：暂无可领 · 当前 {total} 胜/{battle_merits.MILESTONES[-1][0]} 胜"
+
+
 def objectives(ctx: Context, arg: str) -> Reply:
     """One read-only page summarising every objective system's claimable state."""
     if arg.strip():
@@ -306,6 +319,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _codex_line(ctx, player.user_id),
         _stage_star_line(ctx, player.user_id),
         _arena_tier_line(ctx, player.user_id),
+        _battle_merit_line(ctx, player.user_id),
         _bloodline_milestone_line(ctx, player.user_id),
         _lineage_awakening_line(ctx, player.user_id),
         _equipment_set_line(ctx, player.user_id),
