@@ -7,6 +7,7 @@ from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
 from . import checkin_rewards, companionship_rewards, companionship
 from . import equipment_set_rewards
+from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
@@ -14,6 +15,7 @@ HUB_PAGES = (
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠套装",
+    "灵宠灵术赏",
 )
 
 
@@ -159,6 +161,25 @@ def _equipment_set_line(ctx: Context, user_id: str) -> str:
     return f"套装完成奖励：暂无可领 · 共 {len(ctx.content.equipment_sets)} 套"
 
 
+def _skill_mastery_line(ctx: Context, user_id: str) -> str:
+    maximum = max(ctx.content.skill_levels)
+    rows = ctx.repo.conn.execute(
+        "SELECT p.pet_id, p.name AS pet_name, s.skill_id FROM pets p "
+        "JOIN learned_skills s ON s.pet_id=p.pet_id WHERE p.user_id=? AND s.level=? "
+        "ORDER BY p.pet_id, s.skill_id",
+        (user_id, maximum),
+    ).fetchall()
+    claimable = []
+    for row in rows:
+        if not skill_mastery_rewards.claimed(ctx, user_id, row["pet_id"], row["skill_id"]):
+            skill = ctx.content.skills.get(row["skill_id"])
+            name = skill.name if skill else f"技能 {row['skill_id']}"
+            claimable.append(f"{row['pet_name']}·{name}")
+    if claimable:
+        return f"灵术精进奖励：可领 {len(claimable)} 项（{'、'.join(claimable)}）· 五阶精通 {len(rows)} 项"
+    return f"灵术精进奖励：暂无可领 · 五阶精通 {len(rows)} 项"
+
+
 def _codex_line(ctx: Context, user_id: str) -> str:
     entries = tuple(ctx.content.species.values())
     owned = codex.collected(ctx, user_id)
@@ -262,6 +283,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _stage_star_line(ctx, player.user_id),
         _arena_tier_line(ctx, player.user_id),
         _equipment_set_line(ctx, player.user_id),
+        _skill_mastery_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)

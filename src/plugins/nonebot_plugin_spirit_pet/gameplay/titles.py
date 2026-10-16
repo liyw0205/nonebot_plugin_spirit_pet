@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import Reply
 from ..utils.pagination import paginate
 from .achievements import _metric as _achievement_metric
+from .skill_mastery_rewards import claim_count as _skill_mastery_claim_count
 
 TITLE_PAGE_SIZE = 5
 
@@ -24,6 +25,8 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         return _claim_count(ctx, user_id, ctx.content.main_quests)
     if metric == "weekly_claims":
         return _claim_count(ctx, user_id, ctx.content.weekly_quests)
+    if metric == "skill_mastery_rewards":
+        return _skill_mastery_claim_count(ctx, user_id)
     return _achievement_metric(ctx, user_id, metric)
 
 

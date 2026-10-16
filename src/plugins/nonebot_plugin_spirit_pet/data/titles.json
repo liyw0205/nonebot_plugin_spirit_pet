@@ -158,5 +158,13 @@
     "metric": "equipment_set_claims",
     "target": 4,
     "order": 20
+  },
+  {
+    "id": "skill_mastery_adept",
+    "name": "万法宗师",
+    "description": "领取八份灵术精进奖励。",
+    "metric": "skill_mastery_rewards",
+    "target": 8,
+    "order": 21
   }
 ]

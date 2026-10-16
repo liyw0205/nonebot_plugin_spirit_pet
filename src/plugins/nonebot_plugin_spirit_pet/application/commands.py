@@ -23,6 +23,7 @@ from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
 from ..gameplay import expedition_history
+from ..gameplay import skill_mastery_rewards
 from ..gameplay import stage_stars
 from ..gameplay import checkin_rewards
 from ..gameplay import battle_records, help
@@ -158,6 +159,8 @@ ACTIONS = {
     "salvage": Command(crafting.salvage, True),
     "skills": Command(skills.view),
     "skill_catalog": Command(skills.catalog, True, registered=False),
+    "skill_mastery_rewards": Command(skill_mastery_rewards.catalog, True, registered=False),
+    "skill_mastery_claim": Command(skill_mastery_rewards.claim, True),
     "learn": Command(skills.learn, True),
     "equip_skill": Command(skills.equip, True),
     "unequip_skill": Command(skills.unequip, True),
@@ -211,4 +214,5 @@ COMMANDS = {
     "灵宠工坊": "recipe_catalog", "灵宠打造": "craft", "灵宠分解": "salvage",
     "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠学习": "learn",
     "灵宠携带": "equip_skill", "灵宠卸技": "unequip_skill",
+    "灵宠灵术赏": "skill_mastery_rewards", "灵宠灵术领奖": "skill_mastery_claim",
 }

@@ -61,7 +61,7 @@ def stones(game):
 def test_content_defines_the_new_metrics_and_their_milestones(game):
     content = game[0].content
     assert len(content.achievements) == 74
-    assert len(content.titles) == 20
+    assert len(content.titles) == 21
     metrics = {entry.metric for entry in content.achievements.values()}
     assert set(NEW_METRICS) <= metrics
     maxima = {
@@ -71,7 +71,7 @@ def test_content_defines_the_new_metrics_and_their_milestones(game):
     }
     for name, top in maxima.items():
         assert top in {entry.target for entry in content.achievements.values() if entry.metric == name}
-    assert len({title.name for title in content.titles.values()}) == 20
+    assert len({title.name for title in content.titles.values()}) == 21
 
 
 def test_claim_markers_drive_the_three_metrics(game, play):
@@ -150,7 +150,7 @@ def test_top_titles_appear_once_the_systems_are_complete(game, play):
     page = play("titles", "4").text()
     assert "18. 万籁归心 · 已获得" in page
     assert "19. 秘境行家 · 已获得" in page
-    assert "当前称号：秘境行家 · 已获得 4/20 项" in page
+    assert "当前称号：秘境行家 · 已获得 4/21 项" in page
 
 
 def test_hub_reports_the_new_achievement(game, play):
