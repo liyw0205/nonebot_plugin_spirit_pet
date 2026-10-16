@@ -480,11 +480,11 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 聚焦回归 `.venv/bin/python -m pytest -q tests/test_quest_interaction.py -k 'day_refresh or stale_daily'`：`2 passed`。develop CI `38855715805` 与 main CI `38855982696` 均全绿（Python 3.10/3.13 全量 pytest、compile、shell 入口与安装冒烟）；提交 `d2c1e55`、`62e9635` 已推送 develop 并 fast-forward 合入 main。无部署、无真实 QQ 或设备验收。
 
-### 装备套装一键配装闭环（2026-10-16，本地验证完成，CI 验收中）
+### 装备套装一键配装闭环（2026-10-16，已完成）
 
 套装详情逐件显示槽位、当前宠物适配、背包强化等级和商店/打造入口。备齐部件且当前出战宠物适配、无未结行程时提供 `灵宠套装穿戴 <宠物编号> <套装名>`；命令绑定详情所示宠物并在执行时重验当前出战身份、行程、兼容性和库存。一次性预检全部部件后才交换现有 `equipment` 与背包记录，保留部件强化、返还被替换装备；已穿部件不重复消耗。未完成、缺件、不兼容、宠物忙碌或过期目标均拒绝且不部分换装。完成后仍走既有套装奖励凭证和领取流程。
 
-不新增 schema、表、列或玩家模型；套装定义、属性加成、奖励金额、战斗和既有领奖逻辑不变。新增聚焦合同 `tests/test_equipment_set_loadout.py` 6 项，覆盖部件来源/入口、宠物切换后的过期链接、强化保留与替换返还、领奖衔接、兼容/行程/缺件拒绝、事务失败回滚和操作重放。装备套装受影响合同中先前通过的用例未重复运行；修正的三个断言与五个装配用例随后单独通过。`tests/test_messaging.py` `28 passed`；`compileall` 和 `git diff --check` 通过。develop 与 main CI、普通合入及 main CI 结果待本目标推送后补记。
+不新增 schema、表、列或玩家模型；套装定义、属性加成、奖励金额、战斗和既有领奖逻辑不变。新增聚焦合同 `tests/test_equipment_set_loadout.py` 6 项，覆盖部件来源/入口、宠物切换后的过期链接、强化保留与替换返还、领奖衔接、兼容/行程/缺件拒绝、事务失败回滚和操作重放。装备套装受影响合同中先前通过的用例未重复运行；修正断言和装配回归随后单独通过。`tests/test_messaging.py` `28 passed`；`compileall` 和 `git diff --check` 通过。实现提交 `07ef3b2` 的 develop CI `38888597059`、main CI `38889082306` 全绿（Python 3.10/3.13 全量测试、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；辅助目标卡 `docs/goals/pet-equipment-set-auto-equip.md` 仅本地保留、不提交。
 
 ### 开发阶段流程
 
