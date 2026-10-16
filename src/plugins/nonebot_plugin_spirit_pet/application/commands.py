@@ -23,6 +23,7 @@ from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
 from ..gameplay import expedition_history
+from ..gameplay import realm_milestone_rewards
 from ..gameplay import skill_mastery_rewards
 from ..gameplay import stage_stars
 from ..gameplay import checkin_rewards
@@ -161,6 +162,8 @@ ACTIONS = {
     "skill_catalog": Command(skills.catalog, True, registered=False),
     "skill_mastery_rewards": Command(skill_mastery_rewards.catalog, True, registered=False),
     "skill_mastery_claim": Command(skill_mastery_rewards.claim, True),
+    "realm_milestone_rewards": Command(realm_milestone_rewards.catalog, True, registered=False),
+    "realm_milestone_claim": Command(realm_milestone_rewards.claim, True),
     "learn": Command(skills.learn, True),
     "equip_skill": Command(skills.equip, True),
     "unequip_skill": Command(skills.unequip, True),
@@ -215,4 +218,5 @@ COMMANDS = {
     "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠学习": "learn",
     "灵宠携带": "equip_skill", "灵宠卸技": "unequip_skill",
     "灵宠灵术赏": "skill_mastery_rewards", "灵宠灵术领奖": "skill_mastery_claim",
+    "灵宠境界赏": "realm_milestone_rewards", "灵宠境界领奖": "realm_milestone_claim",
 }

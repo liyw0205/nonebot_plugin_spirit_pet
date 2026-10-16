@@ -204,6 +204,7 @@ def test_help_and_objectives_expose_mastery_rewards(game, play):
     add_skill(game, pet_id)
     hub = play("objectives")
     assert "灵术精进奖励：可领 1 项（青鸾·风刃术）· 五阶精通 1 项" in hub.text()
-    assert hub.inline_commands[-1].command == "灵宠灵术赏"
+    assert hub.inline_commands[-2].command == "灵宠灵术赏"
+    assert hub.inline_commands[-1].command == "灵宠境界赏"
     play("skill_mastery_claim", f"{pet_id} 风刃术")
     assert "灵术精进奖励：暂无可领 · 五阶精通 1 项" in play("objectives").text()

@@ -7,6 +7,7 @@ from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
 from . import checkin_rewards, companionship_rewards, companionship
 from . import equipment_set_rewards
+from . import realm_milestone_rewards
 from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
 
@@ -16,6 +17,7 @@ HUB_PAGES = (
     "灵宠段位奖励",
     "灵宠套装",
     "灵宠灵术赏",
+    "灵宠境界赏",
 )
 
 
@@ -180,6 +182,10 @@ def _skill_mastery_line(ctx: Context, user_id: str) -> str:
     return f"灵术精进奖励：暂无可领 · 五阶精通 {len(rows)} 项"
 
 
+def _realm_milestone_line(ctx: Context, user_id: str) -> str:
+    return realm_milestone_rewards.summary(ctx, user_id)
+
+
 def _codex_line(ctx: Context, user_id: str) -> str:
     entries = tuple(ctx.content.species.values())
     owned = codex.collected(ctx, user_id)
@@ -284,6 +290,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _arena_tier_line(ctx, player.user_id),
         _equipment_set_line(ctx, player.user_id),
         _skill_mastery_line(ctx, player.user_id),
+        _realm_milestone_line(ctx, player.user_id),
     ]
     links = tuple(
         InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)
