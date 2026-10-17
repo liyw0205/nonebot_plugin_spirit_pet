@@ -11,6 +11,7 @@ from .titles import current as current_title
 from .titles import earned as earned_titles
 from .titles import selected as selected_title
 from .rank_rewards import leaderboard_rows
+from . import adventure_collection_rewards
 
 
 def element_line(ctx: Context, species: Species) -> str:
@@ -186,7 +187,18 @@ def adventure_rank(ctx: Context, arg: str) -> Reply:
         encounter_ids,
     ).fetchall()
     total = len(encounter_ids)
-    return Reply("山海奇闻榜", tuple(
+    board = tuple(
         f"{index}. UID {row['uid']} · 奇闻 {row['found']}/{total}"
         for index, row in enumerate(rows, 1)
-    ) or ("尚无修士发现历练奇闻。",))
+    ) or ("尚无修士发现历练奇闻。",)
+    player = ctx.repo.player(ctx.user_id)
+    if player is None:
+        return Reply("山海奇闻榜", board)
+    lines, links = adventure_collection_rewards.milestone_lines(ctx, player.user_id)
+    offset = len(board) + 1
+    inline = [InlineCommand(offset, "查看奖励页", "灵宠奇闻奖励")]
+    inline.extend(InlineCommand(offset + link.line, link.label, link.command) for link in links)
+    return Reply(
+        "山海奇闻榜", (*board, "", *lines),
+        ("灵宠奇闻奖励", "灵宠目标"), tuple(inline),
+    )

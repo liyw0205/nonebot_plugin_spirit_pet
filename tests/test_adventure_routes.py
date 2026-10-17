@@ -222,9 +222,10 @@ def test_adventure_rank_orders_unique_discoveries_and_hides_user_ids(game, play)
 
     reply = play("adventure_rank", now=now + 1)
     labels = [uid_label(game[1], user_id) for user_id in ("u2", "u3", "u1")]
+    board_lines = tuple(line for line in reply.lines if line[:1].isdigit() and ". " in line)
 
     assert reply.title == "山海奇闻榜"
-    assert [line.split(". ", 1)[1].split(" · ", 1)[0] for line in reply.lines] == labels
+    assert [line.split(". ", 1)[1].split(" · ", 1)[0] for line in board_lines] == labels
     assert "奇闻 2/21" in reply.lines[0]
     assert "奇闻 1/21" in reply.lines[2]
     assert all(user_id not in reply.text() for user_id in ("u1", "u2", "u3"))

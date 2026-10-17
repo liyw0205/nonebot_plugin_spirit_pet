@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
+from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
@@ -18,7 +18,7 @@ from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
+    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠战斗功勋",
     "灵宠排行奖励",
@@ -247,6 +247,10 @@ def _echo_line(ctx: Context, user_id: str) -> str:
     return f"回响：暂无可回响 · 已发现 {discovered}/{len(ctx.content.encounters)} 条奇闻"
 
 
+def _adventure_collection_line(ctx: Context, user_id: str) -> str:
+    return adventure_collection_rewards.summary(ctx, user_id)
+
+
 def _season_line(ctx: Context, user_id: str) -> str:
     entries = tuple(ctx.content.season_missions.values())
     _, start, _ = season_missions.window(ctx)
@@ -329,6 +333,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _free_summon_line(ctx, player.user_id),
         _journey_line(ctx, player.user_id),
         _echo_line(ctx, player.user_id),
+        _adventure_collection_line(ctx, player.user_id),
         _season_line(ctx, player.user_id),
         _assignment_line(ctx, player.user_id),
         _codex_line(ctx, player.user_id),

@@ -66,14 +66,17 @@ def explore(ctx: Context, arg: str) -> Reply:
     ctx.repo.invalidate_ready(ctx.user_id)
     advance(ctx, "explore")
     lines = [f"奇遇：{encounter.name}", encounter.text]
+    links = []
     if discovered:
         lines.append("新奇闻已收入灵宠奇闻。")
+        links.append(InlineCommand(len(lines) - 1, "查看收集奖励", "灵宠奇闻奖励"))
     lines.extend(grant(ctx, encounter.reward))
     lines.append(f"精力 -{energy}。")
     return Reply(
         f"山海历练 · {route.name}",
         tuple(lines),
         ("灵宠奇闻", "灵宠历练", "灵宠秘境", "灵宠任务"),
+        tuple(links),
     )
 
 
