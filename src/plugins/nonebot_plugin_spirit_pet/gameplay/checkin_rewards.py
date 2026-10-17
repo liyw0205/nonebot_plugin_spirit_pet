@@ -17,7 +17,7 @@ MILESTONES = (
 )
 
 
-def _stored_days(ctx: Context, user_id: str) -> set[date]:
+def stored_days(ctx: Context, user_id: str) -> set[date]:
     rows = ctx.repo.conn.execute(
         "SELECT quest_id FROM quest_progress WHERE user_id=? "
         "AND substr(quest_id, 1, ?) = ? AND claimed=1",
@@ -32,9 +32,13 @@ def _stored_days(ctx: Context, user_id: str) -> set[date]:
     return days
 
 
-def _days(ctx: Context, player: Player) -> set[date]:
+# Historic alias: the calendar module and legacy callers read the same rows.
+_stored_days = stored_days
+
+
+def known_days(ctx: Context, player: Player) -> set[date]:
     today = date.fromisoformat(beijing_day(ctx.now))
-    days = {day for day in _stored_days(ctx, player.user_id) if day <= today}
+    days = {day for day in stored_days(ctx, player.user_id) if day <= today}
     # Existing accounts retain only their latest sign-in date; do not invent older history.
     try:
         previous = date.fromisoformat(player.sign_day)
@@ -43,6 +47,10 @@ def _days(ctx: Context, player: Player) -> set[date]:
     if previous is not None and previous <= today:
         days.add(previous)
     return days
+
+
+def _days(ctx: Context, player: Player) -> set[date]:
+    return known_days(ctx, player)
 
 
 def current_streak(ctx: Context, player: Player) -> int:
@@ -145,7 +153,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         lines.append(f"{days} 天 · {name} · {_reward_text(ctx, milestone)} · {state}")
         if state == "可领取":
             links.append(InlineCommand(len(lines) - 1, "领取奖励", f"灵宠签到领奖 {days}"))
-    return Reply("连续签到奖励", tuple(lines), ("灵宠签到", "灵宠目标"), tuple(links))
+    return Reply("连续签到奖励", tuple(lines), ("灵宠签到", "灵宠签到月历", "灵宠目标"), tuple(links))
 
 
 def claim(ctx: Context, arg: str) -> Reply:

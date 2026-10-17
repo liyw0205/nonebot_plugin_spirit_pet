@@ -26,7 +26,7 @@ from ..gameplay import expedition_history
 from ..gameplay import realm_milestone_rewards
 from ..gameplay import skill_mastery_rewards
 from ..gameplay import stage_stars
-from ..gameplay import checkin_rewards
+from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
@@ -72,6 +72,7 @@ ACTIONS = {
     "sign": Command(economy.sign),
     "checkin_rewards": Command(checkin_rewards.catalog, True, registered=False),
     "checkin_reward_claim": Command(checkin_rewards.claim, True),
+    "checkin_calendar": Command(checkin_calendar.calendar_reply, True, registered=False),
     "affinity_milestone_rewards": Command(affinity_milestone_rewards.catalog, True, registered=False),
     "affinity_milestone_claim": Command(affinity_milestone_rewards.claim, True),
     "bloodline_milestone_rewards": Command(bloodline_milestone_rewards.catalog, True, registered=False),
@@ -196,7 +197,7 @@ COMMANDS = {
     "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
-    "灵宠签到领奖": "checkin_reward_claim", "灵宠背包": "bag", "灵宠商店": "shop",
+    "灵宠签到领奖": "checkin_reward_claim", "灵宠签到月历": "checkin_calendar", "灵宠背包": "bag", "灵宠商店": "shop",
     "灵宠亲密赏": "affinity_milestone_rewards", "灵宠亲密领奖": "affinity_milestone_claim",
     "灵宠血脉赏": "bloodline_milestone_rewards", "灵宠血脉领奖": "bloodline_milestone_claim",
     "灵宠分支赏": "lineage_awakening_rewards", "灵宠分支领奖": "lineage_awakening_claim",
