@@ -34,7 +34,7 @@ def collection(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠收集 {page - 1}")
     if page < pages:
         commands.append(f"灵宠收集 {page + 1}")
-    commands.extend(("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励"))
+    commands.extend(("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励", "灵宠收集榜"))
     collected = len(owned & set(ctx.content.species))
     duplicate_species = sum(amount >= 2 for amount in owned_counts.values())
     lines = [f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种"]

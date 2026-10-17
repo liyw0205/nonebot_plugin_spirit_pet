@@ -44,7 +44,7 @@ def test_collection_rows_show_reward_state_and_link_claimable_species(game, play
         index for index, line in enumerate(page.lines) if line.startswith("青鸾 · ")
     )
     assert "灵宠图鉴奖励" in page.commands
-    assert page.commands[-3:] == ("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励")
+    assert page.commands[-4:] == ("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励", "灵宠收集榜")
 
 
 def test_claimed_species_show_claimed_without_a_link(game, play):

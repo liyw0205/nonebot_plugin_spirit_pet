@@ -30,7 +30,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, help, rank_rewards
+from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, help, rank_rewards
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -131,6 +131,7 @@ ACTIONS = {
     "achievement_detail": Command(achievements.detail, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
     "collection": Command(achievements.collection, True, registered=False),
+    "collection_rank": Command(collection_rank.collection_rank, True, registered=False),
     "codex": Command(codex.catalog, True, registered=False),
     "codex_claim": Command(codex.claim, True),
     "stage_stars": Command(stage_stars.catalog, True, registered=False),
@@ -219,7 +220,7 @@ COMMANDS = {
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",
-    "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection",
+    "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
     "灵宠图鉴奖励": "codex", "灵宠图鉴领奖": "codex_claim",
     "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
