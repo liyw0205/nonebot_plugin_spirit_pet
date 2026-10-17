@@ -7,6 +7,7 @@ from ..domain.achievement_content import Achievement
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.time import BEIJING
+from . import codex
 from .equipment_set_rewards import SET_REWARDS, claim_id
 
 COLLECTION_PAGE_SIZE = 9
@@ -19,6 +20,7 @@ def collection(ctx: Context, arg: str) -> Reply:
     pages = max(1, (len(species) + COLLECTION_PAGE_SIZE - 1) // COLLECTION_PAGE_SIZE)
     if page > pages:
         raise GameError(f"灵宠收集共 {pages} 页。")
+    player = ctx.repo.player(ctx.user_id)
     owned_counts = {
         row["species_id"]: row["amount"] for row in ctx.repo.conn.execute(
             "SELECT species_id, COUNT(*) AS amount FROM pets WHERE user_id=? GROUP BY species_id",
@@ -32,17 +34,32 @@ def collection(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠收集 {page - 1}")
     if page < pages:
         commands.append(f"灵宠收集 {page + 1}")
-    commands.extend(("灵宠图鉴", "灵宠成就"))
+    commands.extend(("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励"))
     collected = len(owned & set(ctx.content.species))
     duplicate_species = sum(amount >= 2 for amount in owned_counts.values())
     lines = [f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种"]
+    links = []
+    claimable = 0
     for entry in entries:
         amount = owned_counts.get(entry.id, 0)
-        status = f"已拥有（{amount}只）" if amount else "未收集"
+        # Reward state mirrors 灵宠图鉴奖励: claimed beats owned beats uncollected.
+        if player is not None and codex.claimed(ctx, ctx.user_id, entry.id):
+            status = "已领取"
+        elif amount:
+            status = f"已拥有（{amount}只）· 奖励可领取"
+            claimable += 1
+        else:
+            status = "未收集"
         lines.append(f"{entry.name} · {status}")
+        if amount and player is not None and status != "已领取":
+            links.append(InlineCommand(
+                len(lines) - 1, "领取收集奖励", f"灵宠图鉴领奖 {entry.name}",
+            ))
+    if claimable:
+        lines.append(f"本页有 {claimable} 族收集奖励可领取，也可在 灵宠图鉴奖励 逐页查看。")
     return Reply(f"灵宠收集 {page}/{pages}", (
         *lines,
-    ), tuple(commands))
+    ), tuple(commands), tuple(links))
 
 
 def _metric(ctx: Context, user_id: str, metric: str) -> int:
