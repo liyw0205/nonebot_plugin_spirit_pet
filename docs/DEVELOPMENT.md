@@ -510,9 +510,11 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_rank_milestone_rewards.py` `6 passed`，覆盖排序、每人单宠、封存/损坏过滤、三档领取与名次快照、失败回滚、帮助/目标/native 蓝字去重；受影响信息/命令/消息/目标/战斗功勋合同合计 `116 passed`，`compileall` 与 `git diff --check` 通过。实现提交 `17967bd` 的 develop CI `38952125097` 与 main CI `38952450013` 全绿（Python 3.10/3.13 全量 pytest、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-rank-milestone-rewards.md` 不提交。
 
-### 下一目标：奇闻收集里程碑奖励闭环
+### 奇闻收集里程碑奖励闭环（2026-10-17，已完成）
 
-现有 `灵宠奇闻`/`灵宠奇闻榜` 能展示发现记录，但收集数量只影响成就与回响，没有独立的可领取成长线。下一目标从永久 `adventure_discoveries` 派生 3/7/14/21 条独立奇闻，提供一次性奖励、历史凭证、目标页与行内入口；保持奇闻路线、回响选择、掉落和战斗规则不变，先建立本地长 goal 卡再实现全闭环。
+从永久 `adventure_discoveries` 派生独立发现的不同奇闻数（退役记录行不计入），新增 3/7/14/21 条四档一次性收集奖励、`灵宠奇闻奖励` 与 `灵宠奇闻领奖 <数量>`、`灵宠奇闻榜` 底部个人里程碑状态、`灵宠目标` 汇总行和帮助入口；首次发现新奇闻的历练回复挂“查看收集奖励”蓝字直达奖励页。奖励 3 档 120 灵石+灵粮、7 档 300 灵石+锻灵矿、14 档 700 灵石+同心丹、21 档 1800 灵石+血脉精华。凭证 `adventure_collection_<数量>` 与发奖同事务写入 `quest_progress`，重复发现不重复发奖，跨日/重启/内容调整不影响已领取状态；未结契只读，参数错误、未知/未达成档位、重复领取、奖励物品定义异常均稳定拒绝且不改资源。不新增 schema、玩家模型、奇闻路线、回响选择或战斗规则。
+
+新增 `tests/test_adventure_collection_rewards.py` `10 passed`，覆盖未结契只读与命令解析、重复发现去重与奇闻榜里程碑、四档领取与幂等重放、无效/未达标参数拒绝、奖励定义缺失回滚、目标/帮助/native 蓝字按钮去重；受影响历练/信息/命令/消息/目标/运行时合同合计 `367 passed`，`compileall` 与 `git diff --check` 通过。实现提交 `9c068c2` 的 develop CI `39018947013` 与 main CI `39019114400` 全绿（Python 3.10/3.13 全量 pytest、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-adventure-collection-rewards.md` 不提交。
 
 ### 开发阶段流程
 
