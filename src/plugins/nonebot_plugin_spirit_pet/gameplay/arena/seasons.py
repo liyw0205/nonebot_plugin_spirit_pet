@@ -83,7 +83,8 @@ def status(ctx: Context, arg: str) -> Reply:
         f"{'最终' if ended else '当前'}积分档位：{tier.name} · 奖励状态：{reward_state}。",
         f"该档奖励：{_reward_text(ctx, tier)}。",
         "镜像防守不扣资源、不增加领奖资格；新赛季积分与战绩独立，只查看不入榜。",
-    ), tuple(commands))
+        "想回顾与某位对手的历史交锋，可发送 灵宠论剑交锋 <对方UID>。",
+    ), tuple(commands), (InlineCommand(9, "查看交锋回顾", "灵宠论剑交锋 "),))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
