@@ -76,7 +76,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠秘境首通 {page - 1}")
     if page < pages:
         commands.append(f"灵宠秘境首通 {page + 1}")
-    commands.extend(("灵宠秘境", "灵宠目标"))
+    commands.extend(("灵宠秘境", "灵宠秘境战绩", "灵宠目标"))
     return Reply(f"灵宠秘境首通 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
 
 
