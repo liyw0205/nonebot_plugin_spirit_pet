@@ -26,7 +26,7 @@ def view(ctx: Context, arg: str) -> Reply:
         for key, active in skills.items()
     ) or ("尚未学习灵术。",)
     return Reply(f"{pet.name}的技能", (*lines, f"携带上限：{ctx.content.rules.max_skill_slots} 个。"),
-                 ("灵宠技能图鉴", "灵宠商店"))
+                 ("灵宠技能图鉴", "灵宠万法总览", "灵宠商店"))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

@@ -30,7 +30,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, help, rank_rewards, stage_stats
+from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, help, rank_rewards, skill_overview, stage_stats
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -134,6 +134,7 @@ ACTIONS = {
     "collection_rank": Command(collection_rank.collection_rank, True, registered=False),
     "dungeon_stats": Command(dungeon_stats.catalog, True, registered=False),
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
+    "skill_overview": Command(skill_overview.catalog, True, registered=False),
     "codex": Command(codex.catalog, True, registered=False),
     "codex_claim": Command(codex.claim, True),
     "stage_stars": Command(stage_stars.catalog, True, registered=False),
@@ -243,7 +244,7 @@ COMMANDS = {
     "灵宠强化": "enhance",
     "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",
     "灵宠工坊": "recipe_catalog", "灵宠打造": "craft", "灵宠分解": "salvage",
-    "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠学习": "learn",
+    "灵宠技能": "skills", "灵宠技能图鉴": "skill_catalog", "灵宠万法总览": "skill_overview", "灵宠学习": "learn",
     "灵宠携带": "equip_skill", "灵宠卸技": "unequip_skill",
     "灵宠灵术赏": "skill_mastery_rewards", "灵宠灵术领奖": "skill_mastery_claim",
     "灵宠境界赏": "realm_milestone_rewards", "灵宠境界领奖": "realm_milestone_claim",
