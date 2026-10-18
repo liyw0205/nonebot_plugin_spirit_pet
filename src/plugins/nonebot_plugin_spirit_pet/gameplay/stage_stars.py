@@ -124,7 +124,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠关卡星级 {page - 1}")
     if page < pages:
         commands.append(f"灵宠关卡星级 {page + 1}")
-    commands.extend(("灵宠关卡", "灵宠目标"))
+    commands.extend(("灵宠关卡", "灵宠关卡战绩", "灵宠目标"))
     return Reply(f"灵宠关卡星级 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
 
 
