@@ -1,3 +1,4 @@
+import math
 from sqlite3 import Row
 
 from pydantic import ValidationError
@@ -8,6 +9,15 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
 from .quests import advance
+
+# Hasten pricing: 10 stones per remaining minute (rounded up), capped.
+HASTEN_STONES_PER_MINUTE = 10
+HASTEN_MAX_STONES = 600
+
+
+def hasten_cost(remaining_seconds: int) -> int:
+    minutes = math.ceil(remaining_seconds / 60)
+    return min(HASTEN_STONES_PER_MINUTE * minutes, HASTEN_MAX_STONES)
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
@@ -60,9 +70,14 @@ def _describe(ctx: Context, row: Row) -> Reply:
             commands.append(f"灵宠归来 {row['job_id']}")
             links = (InlineCommand(1, "领取归来奖励", f"灵宠归来 {row['job_id']}"),)
         else:
-            state = f"外出中，剩余 {row['finishes_at'] - ctx.now} 秒。"
+            remaining = row["finishes_at"] - ctx.now
+            cost = hasten_cost(remaining)
+            state = f"外出中，剩余 {remaining} 秒；加急需 {cost} 灵石。"
             commands.append(f"灵宠召回 {row['job_id']}")
-            links = (InlineCommand(1, "提前召回", f"灵宠召回 {row['job_id']}"),)
+            links = (
+                InlineCommand(1, "提前召回", f"灵宠召回 {row['job_id']}"),
+                InlineCommand(1, "加急完成", f"灵宠加急 {row['job_id']}"),
+            )
         commands.append(f"灵宠行程 {row['job_id']}")
     else:
         state = "奖励已领取。" if row["state"] == "claimed" else "已提前召回，无奖励，已消耗精力不退。"
@@ -183,3 +198,32 @@ def cancel(ctx: Context, arg: str) -> Reply:
         f"{pet.name}已从{row['task_name']}提前返回，行程 {row['job_id']}。",
         "本次没有奖励，出发时消耗的精力不退。",
     ), ("灵宠委托", "我的灵宠"))
+
+
+def hasten(ctx: Context, arg: str) -> Reply:
+    if not arg:
+        return status(ctx, "")
+    row = _owned(ctx, arg)
+    _require_running(row)
+    if ctx.now >= row["finishes_at"]:
+        raise GameError(f"行程已经完成，请发送 灵宠归来 {row['job_id']} 领取奖励。")
+    if ctx.now < row["started_at"]:
+        raise GameError("当前时间早于出发时间，请稍后再加急。")
+    remaining = row["finishes_at"] - ctx.now
+    cost = hasten_cost(remaining)
+    player = ctx.player()
+    if player.stones < cost:
+        raise GameError(f"加急需要 {cost} 灵石，当前灵石不足。")
+    player.stones -= cost
+    ctx.repo.conn.execute(
+        "UPDATE expeditions SET finishes_at=? WHERE job_id=?", (ctx.now, row["job_id"]),
+    )
+    pet = ctx.repo.pet(row["pet_id"])
+    return Reply("委托加急", (
+        f"已支付 {cost} 灵石，{pet.name}的{row['task_name']}（行程 {row['job_id']}）立即完成。",
+        f"剩余 {remaining} 秒按每分钟 {HASTEN_STONES_PER_MINUTE} 灵石计费。"
+        + ("（已达单次加急上限）" if cost == HASTEN_MAX_STONES else ""),
+        "现在发送 灵宠归来 领取完整奖励。",
+    ), (f"灵宠归来 {row['job_id']}", "灵宠行程", "灵宠委托"), (
+        InlineCommand(2, "领取归来奖励", f"灵宠归来 {row['job_id']}"),
+    ))
