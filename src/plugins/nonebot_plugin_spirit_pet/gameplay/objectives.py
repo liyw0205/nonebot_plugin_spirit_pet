@@ -21,6 +21,7 @@ HUB_PAGES = (
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠战斗功勋",
+    "灵宠连胜奖励",
     "灵宠排行奖励",
     "灵宠血脉赏",
     "灵宠分支赏",
@@ -295,6 +296,18 @@ def _battle_merit_line(ctx: Context, user_id: str) -> str:
     return f"战斗功勋：暂无可领 · 当前 {total} 胜/{battle_merits.MILESTONES[-1][0]} 胜"
 
 
+def _pvp_streak_line(ctx: Context, user_id: str) -> str:
+    from .arena import streak_rewards
+    best = streak_rewards.best_streak(ctx, user_id)
+    claimable = [
+        f"{milestone[0]} 连胜" for milestone in streak_rewards.MILESTONES
+        if best >= milestone[0] and not streak_rewards.claimed(ctx, user_id, milestone[0])
+    ]
+    if claimable:
+        return f"论剑连胜：可领 {len(claimable)} 档（{'、'.join(claimable)}）· 历史最佳 {best} 连胜"
+    return f"论剑连胜：暂无可领 · 历史最佳 {best} 连胜"
+
+
 def _rank_reward_line(ctx: Context, user_id: str) -> str:
     rank = rank_rewards.current_rank(ctx, user_id)
     if rank is None:
@@ -340,6 +353,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _stage_star_line(ctx, player.user_id),
         _arena_tier_line(ctx, player.user_id),
         _battle_merit_line(ctx, player.user_id),
+        _pvp_streak_line(ctx, player.user_id),
         _rank_reward_line(ctx, player.user_id),
         _bloodline_milestone_line(ctx, player.user_id),
         _lineage_awakening_line(ctx, player.user_id),

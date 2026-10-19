@@ -71,9 +71,11 @@ def status(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠赛季领奖 {season.season_id}")
     elif not ended:
         commands.append("灵宠匹配")
+    from .streak_rewards import momentum_text
     return Reply(f"论剑赛季 · {season.season_id}", (
         f"北京时间 {start} 至 {end}，{'已结束' if ended else '进行中'}；结束时刻起不再计分。",
         f"{player.uid_label} · 积分 {state['rating']} · {state['wins']} 胜 {state['losses']} 负 {state['draws']} 平。",
+        f"连胜势头：{momentum_text(ctx, ctx.user_id)}。",
         f"准入：双方同大境界且达到{realm}，分差不超过 {season.rules.max_rating_gap}；"
         f"每场挑战者精力 {season.rules.energy}，胜负转移最多 {season.rules.rating_delta} 分。",
         f"今日主动挑战 {state['today_matches']}/{season.rules.daily_matches} 场；平局占用场次但不增加奖励资格。",
@@ -84,7 +86,10 @@ def status(ctx: Context, arg: str) -> Reply:
         f"该档奖励：{_reward_text(ctx, tier)}。",
         "镜像防守不扣资源、不增加领奖资格；新赛季积分与战绩独立，只查看不入榜。",
         "想回顾与某位对手的历史交锋，可发送 灵宠论剑交锋 <对方UID>。",
-    ), tuple(commands), (InlineCommand(9, "查看交锋回顾", "灵宠论剑交锋 "),))
+    ), tuple(commands), (
+        InlineCommand(9, "查看交锋回顾", "灵宠论剑交锋 "),
+        InlineCommand(2, "查看连胜奖励", "灵宠连胜奖励"),
+    ))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:

@@ -32,7 +32,7 @@ from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, help, rank_rewards, skill_overview, stage_stats
 from ..gameplay.arena import battles, matching, reward_history, seasons
-from ..gameplay.arena import head_to_head, tier_rewards
+from ..gameplay.arena import head_to_head, streak_rewards, tier_rewards
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -57,6 +57,8 @@ ACTIONS = {
     "adventure_collection_reward_claim": Command(adventure_collection_rewards.claim, True),
     "pvp_rank": Command(seasons.rank, True, registered=False),
     "pvp_head_to_head": Command(head_to_head.head_to_head, True),
+    "pvp_streak_rewards": Command(streak_rewards.catalog, True, registered=False),
+    "pvp_streak_claim": Command(streak_rewards.claim, True),
     "season": Command(seasons.status, True),
     "season_rewards": Command(seasons.catalog, True),
     "arena_reward_history": Command(reward_history.catalog, True, registered=False),
@@ -229,7 +231,8 @@ COMMANDS = {
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",
     "灵宠行程记录": "expedition_history", "灵宠行程回顾": "expedition_history_detail",
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel",
-    "灵宠论剑": "pvp", "灵宠论剑交锋": "pvp_head_to_head", "灵宠切磋": "spar",
+    "灵宠论剑": "pvp", "灵宠论剑交锋": "pvp_head_to_head", "灵宠论剑战绩": "pvp_head_to_head",
+    "灵宠连胜奖励": "pvp_streak_rewards", "灵宠连胜领奖": "pvp_streak_claim", "灵宠切磋": "spar",
     "灵宠战报": "battle_reports",
     "灵宠战斗功勋": "battle_merits", "灵宠战斗功勋领奖": "battle_merit_claim",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
