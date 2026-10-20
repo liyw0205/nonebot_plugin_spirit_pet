@@ -25,6 +25,8 @@
   },
   "training_energy": 15,
   "explore_energy": 25,
+  "explore_ambush_chance": 0.2,
+  "explore_ambush_energy": 10,
   "max_team_size": 3,
   "max_skill_slots": 2,
   "skill_proficiency_per_use": 5,

@@ -203,6 +203,13 @@ class Catalog:
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
+            if route.ambush_reward is None:
+                raise ValueError(f"exploration route {route.id} requires an ambush_reward")
+            self._require(
+                route.ambush_reward.items, self.items, f"exploration route {route.id} ambush reward items",
+            )
+            if route.ambush_reward.stones.maximum <= 0 or route.ambush_reward.exp.maximum <= 0:
+                raise ValueError(f"exploration route {route.id} ambush reward must grant stones and exp")
         missing_route_realms = realm_ids - {
             route.min_realm for route in self.exploration_routes.values()
         }

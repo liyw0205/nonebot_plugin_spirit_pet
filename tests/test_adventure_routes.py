@@ -48,6 +48,11 @@ def test_selected_route_limits_encounters_and_replay_does_not_grant_twice(game, 
     play("adopt", "青鸾")
     sql(game[1], "UPDATE pets SET realm=1")
     game[0].rng.random = lambda: 0.99
+    # First randint call is the ambush roll; force it high, keep later rolls default.
+    original_randint = game[0].rng.randint
+    game[0].rng.randint = lambda start, stop: (
+        stop if stop == 100 else original_randint(start, stop)
+    )
 
     reply = play("explore", "星谷采集", op="star-valley-explore")
 
@@ -112,6 +117,7 @@ def test_high_realm_routes_gate_and_settle_rewards(game, play, realm, route, enc
 
     sql(game[1], "UPDATE pets SET realm=?, energy=100, exp=0", (realm,))
     game[0].rng.random = lambda: 0.99
+    game[0].rng.randint = lambda start, stop: stop  # never ambush
     reply = play("explore", route)
 
     assert reply.title == f"山海历练 · {route}"
@@ -129,7 +135,9 @@ def test_adventure_codex_hides_undiscovered_text_and_records_first_discovery(gam
     assert "踏入青岚秘境，在古树下寻得一处灵泉。" not in before.text()
     assert "灵宠奇闻 2" in before.commands
 
+    # random() = 0.0 picks 灵泉寻踪; randint patched high skips the ambush.
     game[0].rng.random = lambda: 0.0
+    game[0].rng.randint = lambda start, stop: stop
     result = play("explore", "灵泉修行", now=now, op="discover-spring")
     assert "新奇闻已收入灵宠奇闻。" in result.lines
     assert play("explore", "不存在的路线", now=now, op="discover-spring") == result
@@ -150,6 +158,7 @@ def test_adventure_discovery_rolls_back_with_a_failed_reward(game, play):
     play("adopt", "青鸾", now=now)
     sql(game[1], "UPDATE pets SET realm=1, energy=100")
     game[0].rng.random = lambda: 0.99
+    game[0].rng.randint = lambda start, stop: stop  # never ambush
     with game[1].connect() as conn:
         conn.execute(
             "CREATE TRIGGER fail_exploration_reward BEFORE INSERT ON inventory "
@@ -175,6 +184,7 @@ def test_all_adventure_discoveries_unlock_and_claim_codex_milestones(game, play)
         for index, encounter_id in enumerate(route.encounters):
             sql(game[1], "UPDATE pets SET energy=100")
             game[0].rng.random = lambda value=index: (value + 0.5) / len(route.encounters)
+            game[0].rng.randint = lambda start, stop: stop  # never ambush
             play(
                 "explore", route.name, now=now + encounter_index * 901,
                 op=f"discover-{encounter_id}",

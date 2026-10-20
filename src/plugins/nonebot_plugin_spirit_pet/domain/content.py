@@ -144,6 +144,7 @@ class ExplorationRoute(Definition):
     description: str
     min_realm: Identifier
     encounters: list[Identifier] = Field(min_length=2, max_length=5)
+    ambush_reward: Reward | None = None
 
     @model_validator(mode="after")
     def check_encounters(self):
@@ -255,6 +256,8 @@ class Rules(Definition):
     training_exp: Range
     training_energy: Positive
     explore_energy: Positive
+    explore_ambush_chance: Annotated[float, Field(gt=0, lt=1)] = 0.2
+    explore_ambush_energy: Positive = 10
     max_team_size: Annotated[int, Field(ge=2, le=5)]
     max_skill_slots: Annotated[int, Field(ge=1, le=4)]
     skill_proficiency_per_use: Positive = 5

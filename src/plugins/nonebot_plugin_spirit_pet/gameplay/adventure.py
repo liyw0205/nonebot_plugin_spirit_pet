@@ -12,6 +12,54 @@ from .rewards import grant
 ADVENTURE_CODEX_PAGE_SIZE = 4
 
 
+def _ambush_enemy(ctx: Context, route):
+    """Pick a same-realm dungeon enemy deterministically from the route's realm."""
+    realm_enemies = []
+    for dungeon in ctx.content.dungeons.values():
+        if dungeon.min_realm == route.min_realm:
+            realm_enemies.extend(dungeon.enemies)
+    if not realm_enemies:
+        return None
+    index = sum(ctx.rng.randint(0, 9) for _ in range(1)) % len(realm_enemies)
+    return ctx.content.enemies[realm_enemies[index]]
+
+
+def _run_ambush(ctx: Context, route, pet, energy: int) -> Reply:
+    """Single-acting-pet ambush: the pet that explored fights and pays all costs."""
+    enemy = _ambush_enemy(ctx, route)
+    if enemy is None:
+        raise GameError("该路线没有可用的伏击敌人。")
+    allies = [combatant(ctx, ctx.user_id, recover_energy=False, pet_id=pet.pet_id)]
+    enemies = [enemy_fighter(enemy, ctx.content.skills)]
+    capture = capture_snapshot(ctx, (allies, enemies), ([ctx.user_id], []))
+    battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
+    player = ctx.player()
+    lines = [f"伏击！{enemy.name}从暗处扑出，{pet.name}被迫应战。", *battle.lines]
+    lines.extend(award_mastery(
+        ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+    ))
+    if battle.winner == 0:
+        lines.append("伏击者被击退，战利品落入你手中。")
+        lines.append(f"{player.uid_label}的{pet.name}：" + "，".join(grant(ctx, route.ambush_reward)))
+        title = "历练伏击 · 胜"
+    else:
+        lost = min(ctx.content.rules.explore_ambush_energy, pet.energy)
+        pet.energy -= lost
+        lines.append(f"仓皇撤退，脱离了战斗；额外精力 -{lost}。")
+        title = "历练伏击 · 败"
+    ctx.repo.invalidate_ready(ctx.user_id)
+    lines.append(f"精力 -{energy}。")
+    reply = Reply(
+        f"山海历练 · {route.name}", tuple(lines),
+        ("灵宠战报", "灵宠奇闻", "灵宠历练", "灵宠任务"),
+    )
+    record_battle(
+        ctx, kind="pve", battle_key=f"ambush_{route.id}", battle_name=f"{route.name}伏击",
+        battle=battle, capture=capture, reply=reply,
+    )
+    return reply
+
+
 def explore(ctx: Context, arg: str) -> Reply:
     routes = tuple(ctx.content.exploration_routes.values())
     if not arg:
@@ -40,7 +88,9 @@ def explore(ctx: Context, arg: str) -> Reply:
             odds = "奇遇概率：" + " · ".join(
                 f"{entry.name} {entry.weight / total_weight:.0%}" for entry in encounters
             )
-            lines.extend((f"{route.name}：{route.description} · {realm}起", reward, odds))
+            ambush = ctx.content.rules.explore_ambush_chance
+            lines.extend((f"{route.name}：{route.description} · {realm}起", reward, odds,
+                          f"伏击概率：{ambush:.0%} · 胜利可获额外战利品，失利额外损失精力"))
         return Reply(
             "山海历练路线", tuple(lines),
             tuple(f"灵宠历练 {route.name}" for route in routes)
@@ -55,16 +105,22 @@ def explore(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{route.name}需要{realm}境界。")
     energy = ctx.content.rules.explore_energy
     ctx.check_action(player, pet, "explore", energy, ctx.config.spirit_pet_explore_cooldown)
+    pet.energy -= energy
+    player.last_explore = ctx.now
+    ctx.repo.invalidate_ready(ctx.user_id)
+    advance(ctx, "explore")
+    # One settlement per exploration: an ambush replaces the encounter roll
+    # entirely, so discovery/echo semantics and task progress stay single-shot.
+    # The ambush roll uses randint(1,100): FixedRandom returns `start`, so tests
+    # seed random() for the encounter and randint for the ambush independently.
+    if ctx.rng.randint(1, 100) <= round(ctx.content.rules.explore_ambush_chance * 100):
+        return _run_ambush(ctx, route, pet, energy)
     entries = [ctx.content.encounters[key] for key in route.encounters]
     encounter = weighted_choice(ctx.rng, entries, [entry.weight for entry in entries])
     discovered = ctx.repo.conn.execute(
         "INSERT OR IGNORE INTO adventure_discoveries(user_id, encounter_id, discovered_at) "
         "VALUES (?, ?, ?)", (ctx.user_id, encounter.id, ctx.now),
     ).rowcount == 1
-    pet.energy -= energy
-    player.last_explore = ctx.now
-    ctx.repo.invalidate_ready(ctx.user_id)
-    advance(ctx, "explore")
     lines = [f"奇遇：{encounter.name}", encounter.text]
     links = []
     if discovered:
