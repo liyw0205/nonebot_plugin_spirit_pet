@@ -22,6 +22,7 @@ HUB_PAGES = (
     "灵宠段位奖励",
     "灵宠战斗功勋",
     "灵宠连胜奖励",
+    "灵宠赛季征途",
     "灵宠排行奖励",
     "灵宠血脉赏",
     "灵宠分支赏",
@@ -296,6 +297,21 @@ def _battle_merit_line(ctx: Context, user_id: str) -> str:
     return f"战斗功勋：暂无可领 · 当前 {total} 胜/{battle_merits.MILESTONES[-1][0]} 胜"
 
 
+def _season_road_line(ctx: Context, user_id: str) -> str:
+    from .arena import season_road
+    from .arena.seasons import current_season
+    season = current_season(ctx)
+    wins, opponents = season_road._progress(ctx, season.season_id, user_id)
+    claimable = [
+        m[0] for m in season_road.MILESTONES
+        if wins >= m[2] and opponents >= m[3]
+        and not season_road._claimed(ctx, user_id, m[0], season.season_id)
+    ]
+    if claimable:
+        return f"论剑征途：可领 {len(claimable)} 阶（第 {'、'.join(str(t) for t in claimable)} 阶）"
+    return f"论剑征途：暂无可领 · 本季胜 {wins} 场"
+
+
 def _farm_line(ctx: Context, user_id: str) -> str:
     ready = 0
     growing = 0
@@ -374,6 +390,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _arena_tier_line(ctx, player.user_id),
         _battle_merit_line(ctx, player.user_id),
         _pvp_streak_line(ctx, player.user_id),
+        _season_road_line(ctx, player.user_id),
         _rank_reward_line(ctx, player.user_id),
         _bloodline_milestone_line(ctx, player.user_id),
         _lineage_awakening_line(ctx, player.user_id),
