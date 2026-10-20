@@ -84,7 +84,14 @@ def test_start_persists_reward_and_schedule_and_charges_exact_task_cost(game, pl
     assert set(snapshot) == {"exp", "stones", "items"}
     assert snapshot["exp"] == definition.exp.minimum
     assert snapshot["stones"] == definition.stones.minimum
-    assert snapshot["items"] == {key: bounds.minimum for key, bounds in definition.items.items()}
+    # The 15% seed drop is deterministic under FixedRandom (randint(1,100)=1):
+    # the realm-tier seed joins the frozen snapshot at departure.
+    seed_by_realm = {
+        0: "seed_spirit_rice", 1: "seed_ore_sprout", 2: "seed_blood_herb",
+    }
+    expected_items = {key: bounds.minimum for key, bounds in definition.items.items()}
+    expected_items[seed_by_realm[realm]] = 1
+    assert snapshot["items"] == expected_items
     assert pet(game[1], OWNER)["energy"] == 100 - cost
     assert (player(game[1], OWNER), items(game[1], OWNER)) == before
     assert OWNER not in result.text() + " ".join(result.commands)

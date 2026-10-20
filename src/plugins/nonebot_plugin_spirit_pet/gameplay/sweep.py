@@ -49,5 +49,10 @@ def sweep(ctx: Context, arg: str) -> Reply:
     ctx.repo.invalidate_ready(ctx.user_id)
 
     lines = [f"扫荡：{dungeon.name}", *grant(ctx, dungeon.reward)]
+    from .farming import roll_seed_drop
+    seed_id = roll_seed_drop(ctx, dungeon.min_realm, 8)
+    if seed_id:
+        ctx.repo.add_item(ctx.user_id, seed_id, 1)
+        lines.append(f"{ctx.content.items[seed_id].name} +1")
     lines.append(f"每只灵宠精力 -{dungeon.energy}；扫荡不写入战报，也不计入获胜场次。")
     return Reply("秘境扫荡", tuple(lines), ("灵宠秘境", "灵宠战报", "我的灵宠", "灵宠任务"))

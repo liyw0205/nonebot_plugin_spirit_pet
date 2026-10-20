@@ -41,6 +41,11 @@ def _run_ambush(ctx: Context, route, pet, energy: int) -> Reply:
     if battle.winner == 0:
         lines.append("伏击者被击退，战利品落入你手中。")
         lines.append(f"{player.uid_label}的{pet.name}：" + "，".join(grant(ctx, route.ambush_reward)))
+        from .farming import roll_seed_drop
+        seed_id = roll_seed_drop(ctx, route.min_realm, 25)
+        if seed_id:
+            ctx.repo.add_item(ctx.user_id, seed_id, 1)
+            lines.append(f"{ctx.content.items[seed_id].name} +1")
         title = "历练伏击 · 胜"
     else:
         lost = min(ctx.content.rules.explore_ambush_energy, pet.energy)
@@ -264,10 +269,15 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
         ))
     if battle.winner == 0:
         # 掉落和每日任务按参战成员结算一次；多宠阵容只提高战力，不叠加单位时间收益。
+        from .farming import roll_seed_drop
+        seed_id = roll_seed_drop(ctx, dungeon.min_realm, 8)
         for user_id in user_ids:
             advance(ctx, "pve", user_id)
             names = "、".join(pet.name for owner, pet in selected if owner == user_id)
             lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+            if seed_id:
+                ctx.repo.add_item(user_id, seed_id, 1)
+                lines.append(f"{ctx.content.items[seed_id].name} +1")
     for user_id in user_ids:
         ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")

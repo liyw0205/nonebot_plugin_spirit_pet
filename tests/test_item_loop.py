@@ -58,7 +58,7 @@ def stock(game, *item_ids):
 def test_shop_list_links_each_item_detail_on_its_own_row(game, play):
     listing = play("shop")
     selected = priced(game)[:5]
-    assert listing.title == "山海灵坊 1/9"
+    assert listing.title == "山海灵坊 1/10"
     assert links(listing) == [
         (index, "查看详情", f"灵宠商店 {item.name}") for index, item in enumerate(selected)
     ]
@@ -76,7 +76,7 @@ def test_shop_list_links_each_item_detail_on_its_own_row(game, play):
 def test_shop_second_page_links_its_own_rows_and_keeps_both_page_buttons(game, play):
     listing = play("shop", "2")
     selected = priced(game)[5:10]
-    assert listing.title == "山海灵坊 2/9"
+    assert listing.title == "山海灵坊 2/10"
     assert [command for _, _, command in links(listing)] == [
         f"灵宠商店 {item.name}" for item in selected
     ]

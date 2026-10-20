@@ -24,6 +24,7 @@ from ..domain.journey_content import Journey
 from ..domain.season_mission_content import SeasonMission
 from ..domain.daily_assignment_content import DailyAssignment
 from ..domain.codex_content import CodexReward
+from ..domain.crop_content import Crop
 from ..domain.stage_star_content import StageStarReward
 from ..domain.arena_tier_content import ArenaTierReward
 from ..utils.elements import expand_elements
@@ -94,6 +95,7 @@ class Catalog:
     season_missions: dict[str, SeasonMission]
     daily_assignments: dict[str, DailyAssignment]
     codex_rewards: dict[str, CodexReward]
+    crops: dict[str, Crop]
     stage_star_rewards: dict[int, StageStarReward]
     arena_tier_rewards: dict[str, ArenaTierReward]
 
@@ -135,6 +137,7 @@ class Catalog:
             season_missions=_index(directory / "season_missions.json", SeasonMission),
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
+            crops=_index(directory / "crops.json", Crop),
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
         )
@@ -236,6 +239,7 @@ class Catalog:
         self._validate_season_missions()
         self._validate_daily_assignments()
         self._validate_codex_rewards()
+        self._validate_crops()
         self._validate_stage_star_rewards()
         self._validate_arena_tier_rewards()
         for energy in (
@@ -565,6 +569,15 @@ class Catalog:
             raise ValueError("every species needs exactly one codex reward")
         for reward in self.codex_rewards.values():
             self._require(reward.items, self.items, "codex reward items")
+
+    def _validate_crops(self):
+        if not self.crops:
+            raise ValueError("farm crops are required")
+        for crop in self.crops.values():
+            seed = self.items.get(crop.seed_item)
+            if seed is None or seed.kind != "material":
+                raise ValueError(f"crop {crop.id} needs a material seed item")
+            self._require(crop.reward_items, self.items, f"crop {crop.id} reward items")
 
     def _validate_resonances(self):
         covered = set()

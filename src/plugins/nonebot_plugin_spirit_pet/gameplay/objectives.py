@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
+from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
@@ -296,6 +296,25 @@ def _battle_merit_line(ctx: Context, user_id: str) -> str:
     return f"战斗功勋：暂无可领 · 当前 {total} 胜/{battle_merits.MILESTONES[-1][0]} 胜"
 
 
+def _farm_line(ctx: Context, user_id: str) -> str:
+    ready = 0
+    growing = 0
+    for plot in range(1, farming.PLOT_COUNT + 1):
+        crop_row = farming._crop_row(ctx, plot)
+        if crop_row is None:
+            continue
+        crop = farming._crop(ctx, crop_row)
+        if ctx.now - crop_row["progress"] >= crop.duration:
+            ready += 1
+        else:
+            growing += 1
+    if ready:
+        return f"灵田：{ready} 块可收获 · {growing} 块生长中"
+    if growing:
+        return f"灵田：暂无可收获 · {growing} 块生长中"
+    return "灵田：暂无可收获 · 尚未播种"
+
+
 def _pvp_streak_line(ctx: Context, user_id: str) -> str:
     from .arena import streak_rewards
     best = streak_rewards.best_streak(ctx, user_id)
@@ -338,6 +357,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _bond_reward_line(ctx, player.user_id),
         _daily_line(ctx, player.user_id),
         _dungeon_line(ctx, player.user_id),
+        _farm_line(ctx, player.user_id),
         _weekly_line(ctx, player.user_id),
         _main_quest_line(ctx, player.user_id),
         _achievement_line(ctx, player.user_id),

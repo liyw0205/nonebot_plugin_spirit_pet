@@ -378,5 +378,21 @@
   {
     "id": "book_spirit_wave", "name": "灵潮荡阵诀", "description": "学习灵潮荡阵所需，凝气境通用群攻灵术。",
     "kind": "skill_book", "price": 260, "skill_id": "spirit_wave"
+  },
+  {
+    "id": "seed_spirit_rice", "name": "灵稻种", "description": "播种灵稻，1800 秒后收获灵粮。",
+    "kind": "material", "price": 40
+  },
+  {
+    "id": "seed_ore_sprout", "name": "矿苗种", "description": "播种矿苗，3600 秒后收获锻灵矿。",
+    "kind": "material", "price": 80
+  },
+  {
+    "id": "seed_blood_herb", "name": "灵血草种", "description": "播种灵血草，5400 秒后收获血脉精华。",
+    "kind": "material", "price": 120
+  },
+  {
+    "id": "seed_aura_ear", "name": "蕴灵穗种", "description": "播种蕴灵穗，7200 秒后收获修为与灵粮。",
+    "kind": "material", "price": 150
   }
 ]

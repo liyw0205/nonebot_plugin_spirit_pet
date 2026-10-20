@@ -88,13 +88,19 @@ def test_history_tracks_running_pending_claimed_and_cancelled_jobs(game, play):
     assert running.inline_commands[0].command == f"灵宠召回 {job_id}"
 
     snapshot = json.loads(job["reward_snapshot"])
+    # FixedRandom also hits the 15% seed roll, so the snapshot carries the
+    # realm-tier seed alongside the task items; the preview lists every entry.
     first_item = next((item, amount) for item, amount in snapshot["items"].items() if amount)
     item_name = game[0].content.items[first_item[0]].name
     pending = play("expedition_history_detail", job_id, now=job["finishes_at"])
     assert "已完成，待归来领取" in pending.lines
+    preview_parts = [
+        f"{game[0].content.items[key].name} +{amount}"
+        for key, amount in snapshot["items"].items() if amount
+    ]
     preview = (
         f"待领取预览：修为 +{snapshot['exp']}、灵石 +{snapshot['stones']}、"
-        f"{item_name} +{first_item[1]}"
+        + "、".join(preview_parts)
     )
     assert preview in pending.lines
     assert pending.inline_commands[0].command == f"灵宠归来 {job_id}"
@@ -107,7 +113,11 @@ def test_history_tracks_running_pending_claimed_and_cancelled_jobs(game, play):
     claimed = play("expedition_history_detail", job_id, now=job["finishes_at"])
     assert "奖励已领取" in claimed.lines
     assert f"实际发放：修为 +{snapshot['exp']}、灵石 +{snapshot['stones']}" in claimed.lines
-    assert f"实际道具：{item_name} +{first_item[1]}" in claimed.lines
+    actual_items = "、".join(
+        f"{game[0].content.items[key].name} +{amount}"
+        for key, amount in snapshot["items"].items() if amount
+    )
+    assert f"实际道具：{actual_items}" in claimed.lines
     assert "领取凭证：已永久保存" in claimed.lines
     assert claimed.inline_commands == ()
     restarted = Game(Store(game[1].path), game[0].config, content=game[0].content)

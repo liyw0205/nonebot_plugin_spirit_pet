@@ -125,11 +125,17 @@ def start(ctx: Context, arg: str) -> Reply:
     if pet.energy < task.energy:
         raise GameError(f"{pet.name}精力不足，需要 {task.energy} 点。")
     reward = task.reward
+    from .farming import roll_seed_drop
+    seed_drop = roll_seed_drop(ctx, task.min_realm, 15)
     snapshot = RewardSnapshot(
         exp=ctx.rng.randint(reward.exp.minimum, reward.exp.maximum),
         stones=ctx.rng.randint(reward.stones.minimum, reward.stones.maximum),
-        items={key: ctx.rng.randint(bounds.minimum, bounds.maximum) for key, bounds in reward.items.items()},
+        items={
+            key: ctx.rng.randint(bounds.minimum, bounds.maximum) for key, bounds in reward.items.items()
+        },
     )
+    if seed_drop:
+        snapshot = snapshot.model_copy(update={"items": {**snapshot.items, seed_drop: 1}})
     duration = ctx.config.spirit_pet_expedition_duration
     cursor = conn.execute(
         "INSERT INTO expeditions(user_id, pet_id, task_id, task_name, source_operation_id, started_at, "

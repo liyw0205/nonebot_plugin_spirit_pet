@@ -1,0 +1,35 @@
+[
+  {
+    "id": "spirit_rice",
+    "name": "灵稻",
+    "seed_item": "seed_spirit_rice",
+    "duration": 1800,
+    "reward_stones": 0,
+    "reward_items": {"spirit_food": {"minimum": 3, "maximum": 5}}
+  },
+  {
+    "id": "ore_sprout",
+    "name": "矿苗",
+    "seed_item": "seed_ore_sprout",
+    "duration": 3600,
+    "reward_stones": 0,
+    "reward_items": {"forge_ore": {"minimum": 1, "maximum": 2}}
+  },
+  {
+    "id": "blood_herb",
+    "name": "灵血草",
+    "seed_item": "seed_blood_herb",
+    "duration": 5400,
+    "reward_stones": 0,
+    "reward_items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+  },
+  {
+    "id": "aura_ear",
+    "name": "蕴灵穗",
+    "seed_item": "seed_aura_ear",
+    "duration": 7200,
+    "reward_exp": 30,
+    "reward_stones": 0,
+    "reward_items": {"spirit_food": {"minimum": 1, "maximum": 2}}
+  }
+]
