@@ -30,7 +30,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, help, pet_outing, play_games, rank_rewards, skill_overview, stage_stats
+from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -148,6 +148,7 @@ ACTIONS = {
     "pet_outing": Command(pet_outing.go_out, True),
     "pet_outing_board": Command(pet_outing.catalog, True, registered=False),
     "pet_outing_claim": Command(pet_outing.claim, True),
+    "reforge": Command(reforge.reforge, True, registered=False),
     "codex": Command(codex.catalog, True, registered=False),
     "codex_claim": Command(codex.claim, True),
     "stage_stars": Command(stage_stars.catalog, True, registered=False),
@@ -219,6 +220,7 @@ COMMANDS = {
     "灵宠签到领奖": "checkin_reward_claim", "灵宠签到月历": "checkin_calendar", "灵宠背包": "bag", "灵宠商店": "shop",
     "灵宠灵田": "farm", "灵宠开垦": "farm_open", "灵宠播种": "farm_plant", "灵宠收获": "farm_harvest", "灵宠翻新": "farm_renew",
     "灵宠嬉戏": "play_game", "灵宠出游": "pet_outing", "灵宠游历赏": "pet_outing_board", "灵宠游历领奖": "pet_outing_claim",
+    "灵宠重铸": "reforge",
     "灵宠亲密赏": "affinity_milestone_rewards", "灵宠亲密领奖": "affinity_milestone_claim",
     "灵宠血脉赏": "bloodline_milestone_rewards", "灵宠血脉领奖": "bloodline_milestone_claim",
     "灵宠分支赏": "lineage_awakening_rewards", "灵宠分支领奖": "lineage_awakening_claim",
