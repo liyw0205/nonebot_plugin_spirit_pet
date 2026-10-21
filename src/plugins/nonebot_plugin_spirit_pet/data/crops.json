@@ -31,5 +31,42 @@
     "reward_exp": 30,
     "reward_stones": 0,
     "reward_items": {"spirit_food": {"minimum": 1, "maximum": 2}}
+  },
+  {
+    "id": "twin_grain",
+    "name": "双穗麦",
+    "seed_item": "seed_twin_grain",
+    "duration": 10800,
+    "reward_stones": 0,
+    "reward_items": {
+      "spirit_food": {"minimum": 2, "maximum": 3},
+      "forge_ore": {"minimum": 2, "maximum": 3}
+    }
+  },
+  {
+    "id": "essence_lotus",
+    "name": "元灵莲",
+    "seed_item": "seed_essence_lotus",
+    "duration": 10800,
+    "reward_exp": 60,
+    "reward_stones": 0,
+    "reward_items": {"bloodline_essence": {"minimum": 1, "maximum": 2}}
+  },
+  {
+    "id": "ancient_root",
+    "name": "古灵根",
+    "seed_item": "seed_ancient_root",
+    "duration": 14400,
+    "reward_stones": 200,
+    "reward_items": {"forge_ore": {"minimum": 4, "maximum": 6}}
+  },
+  {
+    "id": "void_lotus",
+    "name": "虚灵仙葩",
+    "seed_item": "seed_void_lotus",
+    "duration": 14400,
+    "reward_exp": 120,
+    "reward_stones": 150,
+    "reward_items": {"bloodline_essence": {"minimum": 2, "maximum": 3}}
   }
 ]

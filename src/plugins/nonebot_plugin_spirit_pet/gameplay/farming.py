@@ -6,10 +6,14 @@ PLOT_COUNT = 4
 OPEN_COST = (200, 500, 1200, 2500)
 RENEW_COST = 80
 RENEW_FRACTION = 10  # percent of remaining time cut, once per growth
+TIER_COST = (800, 2000)  # per-plot upgrade levels 1 and 2
+TIER_TIME_CUT = 15  # percent of growth duration per tier level
+WILT_AFTER = 48 * 3600  # unharvested crops wilt after 48 hours
 
 OPEN_PREFIX = "farm_open_"
 CROP_PREFIX = "farm_crop_"
 RENEW_PREFIX = "farm_renew_"
+TIER_PREFIX = "farm_tier_"
 
 # Seed drop tiers by realm index: qiling→灵稻, ningqi→矿苗, zhuji/jindan→灵血草,
 # yuanying and above→蕴灵穗. Crops are content, so the mapping stays data-driven.
@@ -19,6 +23,18 @@ SEED_DROPS = (
     ("seed_blood_herb", "blood_herb"),
     ("seed_aura_ear", "aura_ear"),
 )
+
+
+def _tier(ctx: Context, plot: int) -> int:
+    row = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (ctx.user_id, f"{TIER_PREFIX}{plot}"),
+    ).fetchone()
+    return row["progress"] if row else 0
+
+
+def _effective_duration(ctx: Context, plot: int, base_duration: int) -> int:
+    return base_duration * (100 - _tier(ctx, plot) * TIER_TIME_CUT) // 100
 
 
 def seed_for_realm(ctx: Context, realm_id: str) -> str | None:
@@ -128,15 +144,22 @@ def catalog(ctx: Context, arg: str) -> Reply:
         else:
             crop = _crop(ctx, crop_row)
             planted = crop_row["progress"]
-            if ctx.now - planted >= crop.duration:
+            duration = _effective_duration(ctx, plot, crop.duration)
+            if ctx.now - planted >= duration + WILT_AFTER:
+                lines.append(f"田位 {plot} · {crop.name}已枯萎，收获仅返还种子")
+                links.append(InlineCommand(len(lines) - 1, "清理枯萎", f"灵宠收获 {plot}"))
+            elif ctx.now - planted >= duration:
                 lines.append(f"田位 {plot} · {crop.name}已成熟，可收获")
                 links.append(InlineCommand(len(lines) - 1, "收获作物", f"灵宠收获 {plot}"))
             else:
                 renew = "（已翻新）" if crop_row["claimed"] else ""
                 lines.append(
-                    f"田位 {plot} · {crop.name}生长中，剩余 {crop.duration - (ctx.now - planted)} 秒{renew}"
+                    f"田位 {plot} · {crop.name}生长中，剩余 {duration - (ctx.now - planted)} 秒{renew}"
                 )
                 links.append(InlineCommand(len(lines) - 1, "查看种子", "灵宠商店"))
+        if opened and _tier(ctx, plot) < len(TIER_COST):
+            lines.append(f"  可升级：{TIER_COST[_tier(ctx, plot)]} 灵石缩短该田 15% 生长时长")
+            links.append(InlineCommand(len(lines) - 1, "升级灵田", f"灵宠升级 {plot}"))
     return Reply("灵宠灵田", tuple(lines), ("灵宠商店", "灵宠背包", "灵宠目标"), tuple(links))
 
 
@@ -188,29 +211,38 @@ def plant(ctx: Context, arg: str) -> Reply:
         (ctx.user_id, f"{CROP_PREFIX}{plot}_{crop.id}", ctx.now),
     )
     return Reply("灵田播种", (
-        f"田位 {plot} 播下了{seed.name}，{crop.duration} 秒后成熟。",
+        f"田位 {plot} 播下了{seed.name}，{_effective_duration(ctx, plot, crop.duration)} 秒后成熟。",
         "成熟后可在灵宠灵田收获。",
     ), ("灵宠灵田", "灵宠背包"))
 
 
 def harvest(ctx: Context, arg: str) -> Reply:
     plot = _plot_arg(ctx, arg)
-    opened, crop_row, renew_row = _plot_state(ctx, plot)
+    opened, crop_row, _ = _plot_state(ctx, plot)
     if not opened:
         raise GameError(f"田位 {plot} 尚未开垦。")
     if crop_row is None:
         raise GameError(f"田位 {plot} 还没有播种。")
     crop = _crop(ctx, crop_row)
     planted = crop_row["progress"]
+    duration = _effective_duration(ctx, plot, crop.duration)
     if ctx.now < planted:
         raise GameError("当前时间早于种植时间，请稍后再收获。")
-    if ctx.now - planted < crop.duration:
-        raise GameError(f"{crop.name}还在生长，剩余 {crop.duration - (ctx.now - planted)} 秒。")
-    gained = _grant_reward(ctx, crop)
+    elapsed = ctx.now - planted
+    if elapsed < duration:
+        raise GameError(f"{crop.name}还在生长，剩余 {duration - elapsed} 秒。")
     ctx.repo.conn.execute(
         "DELETE FROM quest_progress WHERE user_id=? AND quest_id IN (?, ?)",
         (ctx.user_id, crop_row["quest_id"], f"{RENEW_PREFIX}{plot}"),
     )
+    if elapsed >= duration + WILT_AFTER:
+        # Wilted: no yield, only the seed back.
+        ctx.repo.add_item(ctx.user_id, crop.seed_item, 1)
+        return Reply("灵田清理", (
+            f"田位 {plot} 的{crop.name}已枯萎，只返还了种子。",
+            "下次记得及时收获。",
+        ), ("灵宠灵田", "灵宠背包"))
+    gained = _grant_reward(ctx, crop)
     return Reply("灵田收获", (
         f"田位 {plot} 的{crop.name}成熟收获。",
         *gained,
@@ -230,7 +262,7 @@ def renew(ctx: Context, arg: str) -> Reply:
     planted = crop_row["progress"]
     if ctx.now < planted:
         raise GameError("当前时间早于种植时间，请稍后再翻新。")
-    remaining = crop.duration - (ctx.now - planted)
+    remaining = _effective_duration(ctx, plot, crop.duration) - (ctx.now - planted)
     if remaining <= 0:
         raise GameError(f"{crop.name}已经成熟，无需翻新，请直接收获。")
     cost = max(1, remaining * RENEW_FRACTION // 100)
@@ -244,4 +276,28 @@ def renew(ctx: Context, arg: str) -> Reply:
     )
     return Reply("灵田翻新", (
         f"田位 {plot} 已翻新，花费 {cost} 灵石，成熟时间缩短 {remaining * RENEW_FRACTION // 100} 秒。",
+    ), ("灵宠灵田",))
+
+
+def upgrade(ctx: Context, arg: str) -> Reply:
+    plot = _plot_arg(ctx, arg)
+    opened, _, _ = _plot_state(ctx, plot)
+    if not opened:
+        raise GameError(f"田位 {plot} 尚未开垦，请先发送 灵宠开垦 {plot}。")
+    level = _tier(ctx, plot)
+    if level >= len(TIER_COST):
+        raise GameError(f"田位 {plot} 已升至最高等级。")
+    cost = TIER_COST[level]
+    player = ctx.player()
+    if player.stones < cost:
+        raise GameError(f"升级田位 {plot} 需要 {cost} 灵石，当前灵石不足。")
+    player.stones -= cost
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
+        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (ctx.user_id, f"{TIER_PREFIX}{plot}", level + 1),
+    )
+    return Reply("灵田升级", (
+        f"田位 {plot} 升至 {level + 1} 级，花费 {cost} 灵石。",
+        f"该田生长时长缩短 {TIER_TIME_CUT}%。",
     ), ("灵宠灵田",))

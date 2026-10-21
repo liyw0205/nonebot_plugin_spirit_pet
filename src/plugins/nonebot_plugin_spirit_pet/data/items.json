@@ -394,5 +394,21 @@
   {
     "id": "seed_aura_ear", "name": "蕴灵穗种", "description": "播种蕴灵穗，7200 秒后收获修为与灵粮。",
     "kind": "material", "price": 150
+  },
+  {
+    "id": "seed_twin_grain", "name": "双穗麦种", "description": "播种双穗麦，10800 秒后收获灵粮与锻灵矿。",
+    "kind": "material", "price": 180
+  },
+  {
+    "id": "seed_essence_lotus", "name": "元灵莲种", "description": "播种元灵莲，10800 秒后收获血脉精华。",
+    "kind": "material", "price": 200
+  },
+  {
+    "id": "seed_ancient_root", "name": "古灵根种", "description": "播种古灵根，14400 秒后收获灵石与锻灵矿。",
+    "kind": "material", "price": 230
+  },
+  {
+    "id": "seed_void_lotus", "name": "虚灵仙葩种", "description": "播种虚灵仙葩，14400 秒后收获修为、灵石与血脉精华。",
+    "kind": "material", "price": 260
   }
 ]
