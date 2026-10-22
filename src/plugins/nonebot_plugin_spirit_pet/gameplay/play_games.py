@@ -101,6 +101,8 @@ def play_game(ctx: Context, arg: str) -> Reply:
         2: f"{pet.name}和你玩得开心（{game_name}·寻常）。",
         1: f"{pet.name}有点兴致缺缺，但也陪你玩完了（{game_name}·失手）。",
     }
+    from .bond_levels import add_exp
+    add_exp(ctx, pet.pet_id, 6)
     lines = [grade_lines[grade], f"亲密 +{gained}（{pet.affinity}/100）。"]
     if food:
         lines.append("灵粮 +1")

@@ -40,6 +40,8 @@ def bond(ctx: Context, arg: str) -> Reply:
     pet.affinity += gained
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     advance(ctx, "bond")
+    from .bond_levels import add_exp
+    add_exp(ctx, pet.pet_id, 10)
     affinity = f"亲密 +{gained}（{pet.affinity}/100）；每日互动次数已用尽。" if gained else (
         "亲密已满，本次陪伴不再增加；每日互动次数已用尽。"
     )

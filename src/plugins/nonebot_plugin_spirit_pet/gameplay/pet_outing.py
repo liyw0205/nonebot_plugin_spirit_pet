@@ -104,6 +104,8 @@ def go_out(ctx: Context, arg: str) -> Reply:
         "INSERT OR IGNORE INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)",
         (ctx.user_id, f"{DAY_PREFIX}{day}_{pet.pet_id}"),
     )
+    from .bond_levels import add_exp
+    add_exp(ctx, pet.pet_id, 10)
     lines.append(f"游历值 +{VALUE_PER_OUTING}（累计 {total}）。")
     return Reply("灵宠出游", tuple(lines), ("灵宠游历赏", "我的灵宠", "灵宠任务"))
 

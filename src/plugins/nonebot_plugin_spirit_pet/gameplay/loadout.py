@@ -45,6 +45,8 @@ def combatant(
         for word_id, value in gear_word_rows(ctx, item_id, enhancement):
             word = ctx.content.gear_words[word_id]
             stats[word.stat] += max(1, int(stats[word.stat] * value / 100))
+    from .bond_levels import current_level, apply_bonus
+    apply_bonus(current_level(ctx, pet.pet_id), stats)
     equipment_set_names = []
     for equipment_set in active_sets(ctx, pet.pet_id):
         equipment_set_names.append(equipment_set.name)

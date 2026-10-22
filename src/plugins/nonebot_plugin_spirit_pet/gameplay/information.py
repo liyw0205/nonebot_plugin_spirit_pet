@@ -12,7 +12,7 @@ from .titles import earned as earned_titles
 from .titles import selected as selected_title
 from .rank_rewards import leaderboard_rows
 from .talent_reforge import current_talent
-from . import adventure_collection_rewards
+from . import adventure_collection_rewards, bond_levels
 
 
 def element_line(ctx: Context, species: Species) -> str:
@@ -88,6 +88,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"境界：{ctx.content.realms[pet.realm].name} {pet.layer}层 · 血脉：{bloodline.name}",
         branch_line,
         f"天赋神通：{talent.name} · {talent.description}",
+        f"羁绊等级：{bond_levels.current_level(ctx, pet.pet_id)} · 经验 {bond_levels.exp(ctx, pet.pet_id)}",
         f"修为：{pet.exp} · 灵石：{player.stones}",
         "状态",
         f"精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
