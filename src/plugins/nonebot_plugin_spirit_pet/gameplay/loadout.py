@@ -23,6 +23,8 @@ def combatant(
         pet = ctx.repo.pet(active_pet_id)
     species = ctx.content.species[pet.species_id]
     stats = pet_stats(pet, ctx.content).model_dump()
+    from .talent_reforge import current_talent
+    talent_id = current_talent(ctx, pet)
     resonance_name = None
     resonance = ctx.repo.player_resonance(ctx.player(user_id).user_id)
     if resonance is not None:
@@ -57,7 +59,7 @@ def combatant(
     return Fighter.create(
         name, Stats(**stats), tuple(species.elements), tuple(selected),
         primary_element=species.primary_element, pet_id=pet.pet_id,
-        talent=ctx.content.talents[species.talent], skill_multipliers=skill_multipliers,
+        talent=ctx.content.talents[talent_id], skill_multipliers=skill_multipliers,
         resonance_name=resonance_name, affinity=pet.affinity,
         equipment_sets=tuple(equipment_set_names),
     )

@@ -11,6 +11,7 @@ from .titles import current as current_title
 from .titles import earned as earned_titles
 from .titles import selected as selected_title
 from .rank_rewards import leaderboard_rows
+from .talent_reforge import current_talent
 from . import adventure_collection_rewards
 
 
@@ -40,7 +41,7 @@ def status(ctx: Context, arg: str) -> Reply:
         f"{resonance.name}（当前出战灵宠不匹配）" if resonance else "无"
     )
     species = ctx.content.species[pet.species_id]
-    talent = ctx.content.talents[species.talent]
+    talent = ctx.content.talents[current_talent(ctx, pet)]
     major = pet.layer == 10
     cost = ctx.content.realms[pet.realm].advancement if major else ctx.content.layers[pet.layer].advancement
     scale = 1 if major else pet.realm + 1
