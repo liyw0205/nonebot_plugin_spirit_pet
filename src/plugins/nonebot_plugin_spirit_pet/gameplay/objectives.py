@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests
+from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
@@ -17,7 +17,7 @@ from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
-    "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
+    "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
     "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠战斗功勋",
@@ -331,6 +331,16 @@ def _farm_line(ctx: Context, user_id: str) -> str:
     return "灵田：暂无可收获 · 尚未播种"
 
 
+def _world_boss_line(ctx: Context, user_id: str) -> str:
+    week = world_boss.week_ordinal(ctx.now)
+    progress = world_boss.threat(ctx)
+    if world_boss.claimed(ctx, user_id, world_boss.REWARD_PREFIX, week):
+        return f"周首领：威胁 {progress}/{world_boss.THREAT_GOAL} · 击退奖励已领取"
+    if world_boss.defeated(ctx):
+        return f"周首领：威胁 {progress}/{world_boss.THREAT_GOAL} · 击退奖励可领取"
+    return f"周首领：威胁 {progress}/{world_boss.THREAT_GOAL}"
+
+
 def _pvp_streak_line(ctx: Context, user_id: str) -> str:
     from .arena import streak_rewards
     best = streak_rewards.best_streak(ctx, user_id)
@@ -374,6 +384,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _daily_line(ctx, player.user_id),
         _dungeon_line(ctx, player.user_id),
         _farm_line(ctx, player.user_id),
+        _world_boss_line(ctx, player.user_id),
         _weekly_line(ctx, player.user_id),
         _main_quest_line(ctx, player.user_id),
         _achievement_line(ctx, player.user_id),
