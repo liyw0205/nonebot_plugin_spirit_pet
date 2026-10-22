@@ -34,7 +34,7 @@ from ..gameplay import adventure_collection_rewards, battle_merits, battle_recor
 from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay.arena import battles, matching, reward_history, seasons
-from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards
+from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards, team_arena
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -115,6 +115,9 @@ ACTIONS = {
     "foster": Command(gifting.foster, True),
     "foster_feed": Command(gifting.foster_feed, True),
     "foster_return": Command(gifting.foster_return, True),
+    "team_arena": Command(team_arena.catalog, True, registered=False),
+    "team_arena_battle": Command(team_arena.team_pvp, True),
+    "team_arena_claim": Command(team_arena.claim_tier, True),
     "weekly_quests": Command(weekly_quests.catalog, True, registered=False),
     "weekly_quest_claim": Command(weekly_quests.claim, True),
     "inheritance": Command(inheritance.inherit, True),
@@ -251,6 +254,7 @@ COMMANDS = {
     "灵宠词条重铸": "gear_word_reforge",
     "灵宠羁绊": "bond_levels",
     "灵宠赠送": "gift", "灵宠寄养": "foster", "灵宠寄养喂食": "foster_feed", "灵宠归还": "foster_return",
+    "灵宠组队论剑": "team_arena", "灵宠组队论剑挑战": "team_arena_battle", "灵宠组队段位领奖": "team_arena_claim",
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠称号佩戴": "title_equip", "灵宠目标": "objectives",
