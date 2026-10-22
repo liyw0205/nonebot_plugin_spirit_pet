@@ -32,6 +32,7 @@ from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats, talent_reforge, world_boss
 from ..gameplay import bond_levels
+from ..gameplay import gifting
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards
 from ..gameplay.teams import management, party, requests
@@ -110,6 +111,10 @@ ACTIONS = {
     "talent_history": Command(talent_reforge.history, True, registered=False),
     "gear_word_reforge": Command(gear_words.word_reforge, True),
     "bond_levels": Command(bond_levels.catalog, True, registered=False),
+    "gift": Command(gifting.gift, True),
+    "foster": Command(gifting.foster, True),
+    "foster_feed": Command(gifting.foster_feed, True),
+    "foster_return": Command(gifting.foster_return, True),
     "weekly_quests": Command(weekly_quests.catalog, True, registered=False),
     "weekly_quest_claim": Command(weekly_quests.claim, True),
     "inheritance": Command(inheritance.inherit, True),
@@ -245,6 +250,7 @@ COMMANDS = {
     "灵宠洗练": "talent_reforge", "灵宠锁定天赋": "talent_lock", "灵宠解锁天赋": "talent_unlock", "灵宠洗练记录": "talent_history",
     "灵宠词条重铸": "gear_word_reforge",
     "灵宠羁绊": "bond_levels",
+    "灵宠赠送": "gift", "灵宠寄养": "foster", "灵宠寄养喂食": "foster_feed", "灵宠归还": "foster_return",
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠称号佩戴": "title_equip", "灵宠目标": "objectives",
