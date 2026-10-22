@@ -27,6 +27,7 @@ from ..domain.codex_content import CodexReward
 from ..domain.crop_content import Crop
 from ..domain.stage_star_content import StageStarReward
 from ..domain.arena_tier_content import ArenaTierReward
+from ..domain.gear_word_content import GearWord
 from ..utils.elements import expand_elements
 
 from ..domain.content import (
@@ -98,6 +99,7 @@ class Catalog:
     crops: dict[str, Crop]
     stage_star_rewards: dict[int, StageStarReward]
     arena_tier_rewards: dict[str, ArenaTierReward]
+    gear_words: dict[str, GearWord]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -138,6 +140,7 @@ class Catalog:
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
             crops=_index(directory / "crops.json", Crop),
+            gear_words=_index(directory / "gear_words.json", GearWord),
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
         )

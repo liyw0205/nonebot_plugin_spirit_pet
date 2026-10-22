@@ -72,8 +72,12 @@ def reforge(ctx: Context, arg: str) -> Reply:
     if ore:
         ctx.repo.consume_item(ctx.user_id, "forge_ore", ore)
     inv.put(ctx, target_id, 0, 1)
+    from .gear_words import roll as roll_words, describe as describe_words
+    roll_words(ctx, target_id, 0)
+    word_line = describe_words(ctx, target_id, 0)
     return Reply("装备重铸", (
         f"{item.name} +{enhancement} 已重铸为 {target.name} +0。",
         f"花费灵石 {stones}、锻灵矿 {ore}。",
+        *([word_line] if word_line else []),
         "重铸后的装备可以在背包中穿戴或继续强化。",
     ), ("灵宠背包", "灵宠工坊", "灵宠装备"))

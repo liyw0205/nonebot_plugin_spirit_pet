@@ -65,6 +65,10 @@ def view(ctx: Context, arg: str) -> Reply:
             f"{label}：{item.name} +{level} · 气血 +{bonuses['hp']} 攻击 +{bonuses['attack']}"
             f" 防御 +{bonuses['defense']} 速度 +{bonuses['speed']}"
         )
+        from .gear_words import describe as describe_words
+        word_line = describe_words(ctx, item_id, level)
+        if word_line:
+            lines.append(word_line)
         if forge.upgrade_stones is None:
             lines.append("强化：已满级。")
             continue

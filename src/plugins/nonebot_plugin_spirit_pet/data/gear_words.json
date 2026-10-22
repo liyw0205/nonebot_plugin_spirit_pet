@@ -1,0 +1,10 @@
+[
+  {"id": "hp_word", "name": "气血之息", "stat": "hp", "minimum": 1, "maximum": 5},
+  {"id": "attack_word", "name": "锐锋之芒", "stat": "attack", "minimum": 1, "maximum": 5},
+  {"id": "defense_word", "name": "磐石之御", "stat": "defense", "minimum": 1, "maximum": 5},
+  {"id": "speed_word", "name": "疾风之步", "stat": "speed", "minimum": 1, "maximum": 5},
+  {"id": "guard_word", "name": "守心之印", "stat": "defense", "minimum": 2, "maximum": 4},
+  {"id": "swift_word", "name": "灵迅之影", "stat": "speed", "minimum": 2, "maximum": 4},
+  {"id": "vigor_word", "name": "生机之涌", "stat": "hp", "minimum": 2, "maximum": 4},
+  {"id": "force_word", "name": "碎岳之力", "stat": "attack", "minimum": 2, "maximum": 4}
+]

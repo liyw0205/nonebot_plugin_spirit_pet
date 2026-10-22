@@ -67,10 +67,14 @@ def craft(ctx: Context, arg: str) -> Reply:
         ctx.repo.consume_item(ctx.user_id, key, count * amount)
     player.stones -= cost
     put(ctx, recipe.item_id, 0, amount)
-    return Reply("百工铸灵", (
-        f"{recipe.name} +0 获得 {amount} 件，已放入背包。",
-        f"消耗 {cost} 灵石、{_materials(ctx, recipe.materials, amount)}。",
-    ), (f"灵宠装备 {recipe.name}", "灵宠背包", f"灵宠工坊 {recipe.name}"))
+    from .gear_words import roll
+    words = roll(ctx, recipe.item_id, 0) if amount == 1 else 0
+    lines = [f"{recipe.name} +0 获得 {amount} 件，已放入背包。",
+             f"消耗 {cost} 灵石、{_materials(ctx, recipe.materials, amount)}。"]
+    if words:
+        from .gear_words import describe
+        lines.insert(1, describe(ctx, recipe.item_id, 0))
+    return Reply("百工铸灵", tuple(lines), (f"灵宠装备 {recipe.name}", "灵宠背包", f"灵宠工坊 {recipe.name}"))
 
 
 def salvage(ctx: Context, arg: str) -> Reply:

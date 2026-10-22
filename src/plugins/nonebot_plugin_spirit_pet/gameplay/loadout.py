@@ -41,6 +41,10 @@ def combatant(
         multiplier = ctx.content.forge_levels[enhancement].bonus_multiplier
         for key, bonus in gear.bonuses.model_dump().items():
             stats[key] += int(bonus * multiplier)
+        from .gear_words import rows as gear_word_rows
+        for word_id, value in gear_word_rows(ctx, item_id, enhancement):
+            word = ctx.content.gear_words[word_id]
+            stats[word.stat] += max(1, int(stats[word.stat] * value / 100))
     equipment_set_names = []
     for equipment_set in active_sets(ctx, pet.pet_id):
         equipment_set_names.append(equipment_set.name)
