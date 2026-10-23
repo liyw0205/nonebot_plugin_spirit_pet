@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.content import Species
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
+from .combat import effectiveness
 from .companionship import active_bond_streak
 from .cultivation import MAJOR_BREAKTHROUGH_PITY, breakthrough_chance
 from .effects import BOND_GUARD_AFFINITY
@@ -14,11 +15,9 @@ from .rank_rewards import leaderboard_rows
 from .talent_reforge import current_talent
 from . import adventure_collection_rewards, bond_levels
 
-
 def element_line(ctx: Context, species: Species) -> str:
     secondary = [ctx.content.elements[key].name for key in species.elements if key != species.primary_element]
     return f"主属性：{ctx.content.elements[species.primary_element].name} · 副属性：{'、'.join(secondary) or '无'}"
-
 
 def status(ctx: Context, arg: str) -> Reply:
     player, pet = ctx.player(), ctx.pet()
@@ -102,8 +101,15 @@ def status(ctx: Context, arg: str) -> Reply:
     ]
     return Reply(pet.name, tuple(lines), commands)
 
-
 def catalog(ctx: Context, arg: str) -> Reply:
+    parts = arg.split(maxsplit=1)
+    if len(parts) == 2 and parts[0] == "克制":
+        return counter_lookup(ctx, parts[1])
+    if len(parts) == 2 and parts[0] == "掉落":
+        return drop_lookup(ctx, parts[1])
+    if parts and parts[0] in {"克制", "掉落"} and len(parts) == 1:
+        raise GameError(f"格式：灵宠图鉴 {parts[0]} <名称>，例如 灵宠图鉴 {parts[0]} "
+                        + ("火。" if parts[0] == "克制" else "锻灵矿。"))
     if arg and not arg.isdecimal():
         species = named(ctx.content.species, arg)
         talent = ctx.content.talents[species.talent]
@@ -139,7 +145,6 @@ def catalog(ctx: Context, arg: str) -> Reply:
         actions.append(f"灵宠图鉴 {page + 1}")
     return Reply(f"万灵图鉴 {page}/{pages}", tuple(lines), tuple(actions), tuple(links))
 
-
 def acquisition(ctx: Context, species: Species) -> str:
     sources = ["初始可选"] if species.starter else []
     pool = ctx.content.pools["standard"]
@@ -157,6 +162,105 @@ def acquisition(ctx: Context, species: Species) -> str:
     return "获取：" + "；".join(sources)
 
 
+def _species_with_primary(ctx: Context, element_id: str) -> list[Species]:
+    return [
+        species for species in ctx.content.species.values()
+        if species.primary_element == element_id
+    ]
+
+
+def counter_lookup(ctx: Context, arg: str) -> Reply:
+    """List the species a queried element beats and is beaten by, in the codex.
+
+    The matchup is read from the same content data the battle engine uses, so the
+    page can never disagree with `effectiveness`; element branches (冰 counting as
+    水) come along for free because the comparison walks the element parents.
+    """
+    value = arg.strip()
+    if not value:
+        raise GameError("格式：灵宠图鉴 克制 元素名，例如 灵宠图鉴 克制 火。")
+    element = ctx.content.elements.get(value) or next(
+        (entry for entry in ctx.content.elements.values() if entry.name == value), None,
+    )
+    if element is None:
+        raise GameError("未找到该属性，可选：" + "、".join(
+            entry.name for entry in ctx.content.elements.values()
+        ) + "。")
+    beats = [
+        key for key in ctx.content.elements
+        if effectiveness(element.id, key, ctx.content.elements) > 1
+    ]
+    loses_to = [
+        key for key in ctx.content.elements
+        if effectiveness(key, element.id, ctx.content.elements) > 1
+    ]
+    own = _species_with_primary(ctx, element.id)
+    lines = [f"{element.name}属性灵宠：{'、'.join(species.name for species in own) or '暂无'}"]
+    lines.append("克制：" + (
+        "、".join(
+            f"{ctx.content.elements[key].name}（{'、'.join(s.name for s in _species_with_primary(ctx, key)) or '暂无'}）"
+            for key in beats
+        ) if beats else "无"
+    ))
+    lines.append("被克制：" + (
+        "、".join(
+            f"{ctx.content.elements[key].name}（{'、'.join(s.name for s in _species_with_primary(ctx, key)) or '暂无'}）"
+            for key in loses_to
+        ) if loses_to else "无"
+    ))
+    lines.append("属性加成以主属性结算，副属性不影响克制方向。")
+    return Reply(f"图鉴克制 · {element.name}", tuple(lines), (
+        "灵宠图鉴", "灵宠技能图鉴", "灵宠帮助",
+    ))
+
+
+def _drop_sources(ctx: Context, item_id: str) -> list[str]:
+    """Every place the item can drop from, as human-readable labels."""
+    sources = []
+    for dungeon in ctx.content.dungeons.values():
+        bounds = dungeon.reward.items.get(item_id)
+        if bounds is None or bounds.maximum <= 0:
+            continue
+        sources.append(f"秘境 {dungeon.name}")
+    for stage in ctx.content.stages.values():
+        bounds = stage.reward.items.get(item_id)
+        if bounds is None or bounds.maximum <= 0:
+            continue
+        sources.append(f"关卡 {stage.name}")
+    for floor in ctx.content.tower.values():
+        bounds = floor.reward.items.get(item_id)
+        if bounds is None or bounds.maximum <= 0:
+            continue
+        sources.append(f"万灵塔 {floor.name}")
+    for expedition in ctx.content.expeditions.values():
+        bounds = expedition.reward.items.get(item_id)
+        if bounds is None or bounds.maximum <= 0:
+            continue
+        sources.append(f"委托 {expedition.name}")
+    return sources
+
+
+def drop_lookup(ctx: Context, arg: str) -> Reply:
+    """List the dungeons, stages, tower floors and expeditions that drop an item."""
+    value = arg.strip()
+    if not value:
+        raise GameError("格式：灵宠图鉴 掉落 物品名，例如 灵宠图鉴 掉落 锻灵矿。")
+    item = ctx.content.items.get(value) or next(
+        (entry for entry in ctx.content.items.values() if entry.name == value), None,
+    )
+    if item is None:
+        raise GameError("未找到该物品，请检查名称。")
+    sources = _drop_sources(ctx, item.id)
+    lines = [f"{item.name}：{item.description}"]
+    if sources:
+        lines.append(f"掉落来源（{len(sources)} 处）：")
+        lines.extend(f"· {source}" for source in sources)
+    else:
+        lines.append("暂无掉落来源；可在灵坊购买或从其他系统获得。")
+    return Reply(f"图鉴掉落 · {item.name}", tuple(lines), (
+        "灵宠秘境", "灵宠关卡", "灵宠万灵塔", "灵宠委托",
+    ))
+
 def rank(ctx: Context, arg: str) -> Reply:
     rows = leaderboard_rows(ctx)
     lines = tuple(
@@ -173,7 +277,6 @@ def rank(ctx: Context, arg: str) -> Reply:
     suffix = f"你的当前名次：第 {rank_value} 名。" if rank_value else "你尚未入榜（需有在册灵宠）。"
     return Reply("万灵榜", (*lines, suffix) if lines else ("尚无灵宠入榜。", suffix),
                  ("灵宠排行奖励", "灵宠目标"))
-
 
 def adventure_rank(ctx: Context, arg: str) -> Reply:
     encounter_ids = tuple(ctx.content.encounters)
