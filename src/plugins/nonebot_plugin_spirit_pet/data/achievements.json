@@ -73,5 +73,8 @@
   {"id":"first_clear_all","name":"秘境全通","description":"领取全部二十处秘境的一次性首通奖励。","metric":"first_clear_claims","target":20,"reward":{"stones":1500,"items":{"bloodline_essence":4}}},
   {"id":"equipment_set_first","name":"套装初成","description":"领取一套装备的首次完成奖励。","metric":"equipment_set_claims","target":1,"reward":{"stones":200,"items":{"spirit_food":1}}},
   {"id":"equipment_set_pair","name":"套装兼收","description":"领取两套装备的首次完成奖励。","metric":"equipment_set_claims","target":2,"reward":{"stones":500,"items":{"forge_ore":3}}},
-  {"id":"equipment_set_all","name":"套装全收","description":"领取全部四套装备的首次完成奖励。","metric":"equipment_set_claims","target":4,"reward":{"stones":1200,"items":{"bloodline_essence":3}}}
+  {"id":"equipment_set_all","name":"套装全收","description":"领取全部四套装备的首次完成奖励。","metric":"equipment_set_claims","target":4,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
+  {"id":"lineage_all","name":"万脉同归","description":"觉醒全部五十四支血脉分支。","metric":"lineage_branches","target":54,"reward":{"stones":3000,"items":{"bloodline_essence":8}}},
+  {"id":"skill_codex_all","name":"万法通鉴","description":"收录全部二十四门灵术。","metric":"skills_learned","target":24,"reward":{"stones":2500,"items":{"book_spirit_wave":2}}},
+  {"id":"dungeon_clear_all","name":"秘境踏遍","description":"亲自通关全部二十处秘境。","metric":"dungeon_clears","target":20,"reward":{"stones":3500,"items":{"bloodline_essence":6}}}
 ]

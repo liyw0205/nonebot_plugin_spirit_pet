@@ -161,6 +161,18 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         params = (user_id, user_id)
     elif metric == "achievements_claimed":
         query, params = "SELECT COUNT(*) FROM achievement_claims WHERE user_id=?", (user_id,)
+    elif metric == "dungeon_clears":
+        # Derived from battle reports, never stored: a defeat or draw is not a clear,
+        # and the row's side must match the winner side or a loser counts as cleared.
+        dungeon_ids = tuple(ctx.content.dungeons)
+        placeholders = ",".join("?" for _ in dungeon_ids)
+        query = (
+            f"SELECT COUNT(DISTINCT r.battle_key) FROM battle_records AS r "
+            f"JOIN battle_participants AS p ON p.battle_id = r.battle_id "
+            f"WHERE p.user_id=? AND r.kind='pve' AND r.winner_side = p.side "
+            f"AND r.battle_key IN ({placeholders})"
+        )
+        params = (user_id, *dungeon_ids)
     elif metric == "resonances_enabled":
         query, params = "SELECT COUNT(*) FROM player_resonance WHERE user_id=?", (user_id,)
     elif metric in ("journey_claims", "echo_claims", "first_clear_claims"):

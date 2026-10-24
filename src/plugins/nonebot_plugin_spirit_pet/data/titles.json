@@ -166,5 +166,13 @@
     "metric": "skill_mastery_rewards",
     "target": 8,
     "order": 21
+  },
+  {
+    "id": "lineage_grandmaster",
+    "name": "万脉宗师",
+    "description": "觉醒全部五十四支血脉分支。",
+    "metric": "lineage_branches",
+    "target": 54,
+    "order": 22
   }
 ]

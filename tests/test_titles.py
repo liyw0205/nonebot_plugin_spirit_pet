@@ -29,11 +29,11 @@ def claim_rows(game, ids, user="u1"):
         )
 
 
-def test_content_defines_twenty_one_ordered_titles(game):
+def test_content_defines_twenty_two_ordered_titles(game):
     titles = sorted(game[0].content.titles.values(), key=lambda title: title.order)
-    assert len(titles) == 21
-    assert [title.order for title in titles] == list(range(1, 22))
-    assert len({title.name for title in titles}) == 21
+    assert len(titles) == 22
+    assert [title.order for title in titles] == list(range(1, 23))
+    assert len({title.name for title in titles}) == 22
     for title in titles:
         assert title.target > 0 and title.description
 
@@ -50,7 +50,7 @@ def test_catalog_shows_the_current_title_and_progress(game, play):
     account(game, play)
     listing = play("titles")
     assert listing.title == "灵宠称号 1/5"
-    assert "当前称号：初入仙途 · 已获得 1/21 项" in listing.text()
+    assert "当前称号：初入仙途 · 已获得 1/22 项" in listing.text()
     assert "1. 初入仙途 · 已获得 · 与第一位伙伴结下灵契。" in listing.text()
     assert "2. 双灵同修 · 进度 0/1 · 拥有两只同族灵宠。" in listing.text()
     # 论剑客 is the eighth title, so it sits on the second page.
@@ -71,7 +71,7 @@ def test_highest_ordered_held_title_wins(game, play):
     sql(game[1], "UPDATE pets SET realm=6")
     listing = play("titles")
     # 初入仙途、金丹真人、塔门守卫、万灵塔主、渡劫问鼎 are all satisfied.
-    assert "当前称号：渡劫问鼎 · 已获得 5/21 项" in listing.text()
+    assert "当前称号：渡劫问鼎 · 已获得 5/22 项" in listing.text()
     assert "15. 万灵塔主 · 已获得" in play("titles", "3").text()
     assert "16. 渡劫问鼎 · 已获得" in play("titles", "4").text()
 
@@ -84,19 +84,19 @@ def test_main_quest_and_weekly_claim_titles(game, play):
     listing = play("titles", "3")
     assert "11. 主线行者 · 已获得" in listing.text()
     assert "12. 周常不辍 · 已获得" in listing.text()
-    assert "当前称号：周常不辍 · 已获得 3/21 项" in listing.text()
+    assert "当前称号：周常不辍 · 已获得 3/22 项" in listing.text()
 
 
 def test_duplicate_species_title_needs_two_of_one_species(game, play):
     account(game, play)
     add_pet(game, "qingluan")
     assert "2. 双灵同修 · 已获得" in play("titles").text()
-    assert "当前称号：双灵同修 · 已获得 2/21 项" in play("titles").text()
+    assert "当前称号：双灵同修 · 已获得 2/22 项" in play("titles").text()
 
 
 def test_profile_shows_the_current_title(game, play):
     account(game, play)
-    assert "称号：初入仙途 · 已获得 1/21 项" in play("status").text()
+    assert "称号：初入仙途 · 已获得 1/22 项" in play("status").text()
 
 
 def test_help_lists_the_title_entry(game, play):

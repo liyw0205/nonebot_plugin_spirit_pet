@@ -133,7 +133,7 @@ def test_claim_is_specific_to_pet_and_skill_and_drives_master_title(game, play):
                        "AND substr(quest_id, 1, ?) = ?", (len(CLAIM_PREFIX), CLAIM_PREFIX)) == [{"total": 9}]
     title_page = play("titles", "5")
     assert "21. 万法宗师 · 已获得 · 领取八份灵术精进奖励。" in title_page.text()
-    assert "当前称号：万法宗师 · 已获得 4/21 项" in title_page.text()
+    assert "当前称号：万法宗师 · 已获得 4/22 项" in title_page.text()
 
 
 def test_unlearned_unmastered_foreign_and_stale_entries_are_rejected(game, play):

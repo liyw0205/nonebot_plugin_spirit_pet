@@ -59,7 +59,7 @@ def test_catalog_detail_links_starter_adoption_and_pool_summon(game, play):
 
     _, message = _qq_segments(starter, Config(spirit_pet_qq_mode="native"))
     links = markdown_links(message)
-    assert links == [("结契该族", "/灵宠领养 青鸾")]
+    assert links == [("结契该族", "/灵宠领养 青鸾"), ("查看掉落秘境", "/灵宠秘境")]
     button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
     assert "灵宠召唤" in button_commands
 
@@ -80,7 +80,9 @@ def test_qq_catalog_adopt_from_detail_link(game, play, mode):
         spirit_pet_qq_mode=mode, spirit_pet_qq_template_id="test.catalog",
     ))
     if mode == "native":
-        assert markdown_links(message) == [("结契该族", "/灵宠领养 青鸾")]
+        assert markdown_links(message) == [
+            ("结契该族", "/灵宠领养 青鸾"), ("查看掉落秘境", "/灵宠秘境"),
+        ]
     adopted = play("adopt", "青鸾")
     assert adopted.title == "领养成功"
 

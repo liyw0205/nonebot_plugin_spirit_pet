@@ -114,6 +114,18 @@ def catalog(ctx: Context, arg: str) -> Reply:
         species = named(ctx.content.species, arg)
         talent = ctx.content.talents[species.talent]
         stats = species.stats
+        beats = [ctx.content.elements[key].name for key in ctx.content.elements
+                 if effectiveness(species.primary_element, key, ctx.content.elements) > 1]
+        beaten = [ctx.content.elements[key].name for key in ctx.content.elements
+                  if effectiveness(key, species.primary_element, ctx.content.elements) > 1]
+        branches = [b for b in ctx.content.lineages.values() if b.species_id == species.id]
+        preview = "；".join(
+            f"{branch.name} · {describe_multipliers(branch.stat_multipliers)}" for branch in branches
+        )
+        egg = next((item.id for item in ctx.content.items.values()
+                    if item.kind == "pet_egg" and item.species_id == species.id), None)
+        homes = [dungeon.name for dungeon in ctx.content.dungeons.values()
+                 if egg and egg in dungeon.reward.items and dungeon.reward.items[egg].maximum > 0]
         return Reply(f"万灵图鉴 · {species.name}", (
             species.description,
             f"类别：{ctx.content.categories[species.category].name} · {element_line(ctx, species)}",
@@ -121,9 +133,14 @@ def catalog(ctx: Context, arg: str) -> Reply:
             f"初始气血 {stats.hp} · 攻击 {stats.attack} · 防御 {stats.defense} · 速度 {stats.speed}",
             f"初始亲密 {species.initial_affinity} · 修炼加成 {species.training_bonus:.0%}",
             acquisition(ctx, species),
+            f"克制速览：克制{'、'.join(beats) if beats else '无'} · "
+            f"被克制{'、'.join(beaten) if beaten else '无'}；以主属性结算，副属性不影响克制方向。",
+            f"血脉分支预览：{preview}",
+            f"灵卵掉落秘境：{'、'.join(homes) if homes else '无秘境掉落'}",
         ), ("灵宠图鉴", "灵宠召唤", "灵宠秘境"),
-            (InlineCommand(5, "结契该族", f"灵宠领养 {species.name}"),) if species.starter
-            else (InlineCommand(5, "寻访该族", "灵宠召唤 "),))
+            ((InlineCommand(5, "结契该族", f"灵宠领养 {species.name}")
+              if species.starter else InlineCommand(5, "寻访该族", "灵宠召唤 ")),
+             InlineCommand(8, "查看掉落秘境", "灵宠秘境")))
     species_list = list(ctx.content.species.values())
     page = quantity(arg or "1", 999)
     pages = (len(species_list) + 4) // 5

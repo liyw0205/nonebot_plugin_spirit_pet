@@ -95,7 +95,7 @@ def test_set_achievement_rewards_and_master_title_follow_claimed_milestones(game
 
     title_page = play("titles", "4")
     assert "20. 套装宗师 · 已获得 · 领取全部四套装备的完成奖励。" in title_page.text()
-    assert "当前称号：套装宗师 · 已获得 2/21 项" in title_page.text()
+    assert "当前称号：套装宗师 · 已获得 2/22 项" in title_page.text()
 
     before_stones = player(game[1])["stones"]
     before_essence = items(game[1]).get("bloodline_essence", 0)
@@ -114,7 +114,7 @@ def test_content_requires_set_milestone_targets_and_top_title(game):
     assert targets == {1, 2, len(SET_REWARDS)}
     title = content.titles["equipment_set_master"]
     assert (title.metric, title.target, title.order) == (
-        "equipment_set_claims", len(SET_REWARDS), len(content.titles) - 1,
+        "equipment_set_claims", len(SET_REWARDS), len(content.titles) - 2,
     )
 
 
@@ -132,6 +132,7 @@ def test_help_and_native_achievement_link_expose_the_new_progress(game, play):
     } == {
         "灵宠成就详情 套装初成", "灵宠成就详情 套装兼收",
         "灵宠成就详情 套装全收", "灵宠成就详情 秘境全通",
+        "灵宠成就详情 万脉同归",
     }
 
     _, native = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))

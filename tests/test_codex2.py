@@ -6,9 +6,10 @@ from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay.help import _HELP_SECTIONS
 
-from .support import sql
+from .support import items, player, sql
 
 NOW = 1_800_000_000
+SEQUENCE = __import__("itertools").count()
 
 
 def snapshot(store):
@@ -163,3 +164,211 @@ def test_parse_and_help_contract():
         "灵宠图鉴 掉落 物品名", "灵宠图鉴掉落 ",
         "查看某件物品在秘境、关卡、万灵塔与委托中的掉落来源。",
     ) in entries
+
+
+# --- Goal 8 second-order collection: three achievements and one title ---
+
+
+def _account(game, play, user="u1"):
+    play("adopt", "青鸾", user=user, now=NOW)
+
+
+def _metric(game, user, name):
+    import itertools
+
+    from nonebot_plugin_spirit_pet.application.context import Context
+    from nonebot_plugin_spirit_pet.domain.models import Reply
+    from nonebot_plugin_spirit_pet.gameplay import achievements
+    from nonebot_plugin_spirit_pet.storage.repository import Repository
+
+    values = []
+
+    def run(conn):
+        ctx = Context(Repository(conn), game[0].content, game[0].config, game[0].rng, user, NOW, "metric")
+        values.append(achievements._metric(ctx, user, name))
+        return Reply("metric", ())
+
+    game[1].transact(user, f"metric-{user}-{name}-{next(SEQUENCE)}", NOW, run)
+    return values[-1]
+
+
+def _clear(game, play, dungeon_id, side=0, winner_side=None, user="u2"):
+    """Seed a battle record for `user`; by default that participant wins."""
+    if not sql(game[1], "SELECT 1 FROM players WHERE user_id=?", (user,)):
+        play("adopt", "青鸾", user=user, now=NOW)
+    ops = f"seed-{next(SEQUENCE)}-{user}-{dungeon_id}-{side}-{winner_side}"
+    with game[1].connect() as conn:
+        battle = conn.execute(
+            "INSERT INTO battle_records(operation_id, initiator_id, kind, battle_key, title,"
+            " winner_side, rounds, played_at, reply, snapshot, battle_log)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (ops, user, "pve", dungeon_id, dungeon_id,
+             side if winner_side is None else winner_side, 3, NOW, "", "{}", "[]"),
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO battle_participants(battle_id, user_id, side, permission) VALUES (?,?,?,?)",
+            (battle, user, side, "participant"),
+        )
+
+
+def test_content_defines_the_second_order_collection_goals(game):
+    content = game[0].content
+    assert len(content.achievements) == 77
+    assert len(content.titles) == 22
+    goals = {
+        "lineage_all": ("lineage_branches", len(content.lineages)),
+        "skill_codex_all": ("skills_learned", len(content.skills)),
+        "dungeon_clear_all": ("dungeon_clears", len(content.dungeons)),
+    }
+    for entry_id, (metric, target) in goals.items():
+        entry = content.achievements[entry_id]
+        assert (entry.metric, entry.target) == (metric, target)
+        assert all(item in content.items for item in entry.reward.items)
+    assert (len(content.lineages), len(content.skills), len(content.dungeons)) == (54, 24, 20)
+    title = content.titles["lineage_grandmaster"]
+    assert (title.name, title.metric, title.target) == ("万脉宗师", "lineage_branches", 54)
+
+
+def test_lineage_and_skill_metrics_are_derived_from_saved_progress(game, play):
+    _account(game, play)
+    assert _metric(game, "u1", "lineage_branches") == 0
+    assert _metric(game, "u1", "skills_learned") == 0
+    lineage = next(iter(game[0].content.lineages.values()))
+    sql(game[1], "UPDATE pets SET lineage_id=? WHERE user_id='u1'", (lineage.id,))
+    assert _metric(game, "u1", "lineage_branches") == 1
+    skill = next(iter(game[0].content.skills))
+    sql(
+        game[1],
+        "INSERT INTO learned_skills(pet_id, skill_id, equipped, level) SELECT pet_id, ?, 0, 1 FROM pets WHERE user_id='u1'",
+        (skill,),
+    )
+    assert _metric(game, "u1", "skills_learned") == 1
+
+
+def test_dungeon_clears_count_wins_only_and_ignore_retired_keys(game, play):
+    _account(game, play)
+    assert _metric(game, "u2", "dungeon_clears") == 0
+    first, second = list(game[0].content.dungeons)[:2]
+    _clear(game, play, first)
+    assert _metric(game, "u2", "dungeon_clears") == 1
+    # A defeat and a draw are not clears.
+    _clear(game, play, second, winner_side=1)
+    assert _metric(game, "u2", "dungeon_clears") == 1
+    _clear(game, play, second, winner_side=-1)
+    assert _metric(game, "u2", "dungeon_clears") == 1
+    # A winning row whose participant sat on the losing side is not a clear either.
+    _clear(game, play, second, side=1, winner_side=0)
+    assert _metric(game, "u2", "dungeon_clears") == 1
+    # Re-winning the same dungeon still counts once.
+    _clear(game, play, first)
+    assert _metric(game, "u2", "dungeon_clears") == 1
+
+
+def test_second_order_achievements_unlock_and_claim_once(game, play):
+    _account(game, play)
+    content = game[0].content
+    lineage_ids = [entry.id for entry in content.lineages.values()]
+    skill_ids = list(content.skills)
+    dungeon_ids = list(content.dungeons)
+    assert (len(lineage_ids), len(skill_ids), len(dungeon_ids)) == (54, 24, 20)
+
+    before = player(game[1])["stones"]
+
+    def page(name):
+        return play("achievement_detail", name, now=NOW + 1)
+
+    assert "可领奖" not in page("万脉同归").text()
+    assert "可领奖" not in page("万法通鉴").text()
+    assert "可领奖" not in page("秘境踏遍").text()
+
+    # Only the LAST branch/skill/dungeon is missing: the gates must still be closed.
+    with game[1].connect() as conn:
+        for index, lineage in enumerate(lineage_ids[:-1]):
+            conn.execute(
+                "INSERT INTO pets(user_id, species_id, name, lineage_id, energy_updated)"
+                " VALUES ('u1', ?, ?, ?, ?)",
+                (content.lineages[lineage].species_id, f"p{index}", lineage, NOW),
+            )
+        for skill in skill_ids[:-1]:
+            conn.execute(
+                "INSERT INTO learned_skills(pet_id, skill_id, equipped, level)"
+                " SELECT pet_id, ?, 0, 1 FROM pets WHERE user_id='u1' LIMIT 1",
+                (skill,),
+            )
+    for dungeon in dungeon_ids[:-1]:
+        _clear(game, play, dungeon, user="u1")
+
+    assert _metric(game, "u1", "lineage_branches") == 53
+    assert _metric(game, "u1", "skills_learned") == 23
+    assert _metric(game, "u1", "dungeon_clears") == 19
+    assert "可领奖" not in page("万脉同归").text()
+
+    # Close the last gap of each collection.
+    with game[1].connect() as conn:
+        conn.execute(
+            "INSERT INTO pets(user_id, species_id, name, lineage_id, energy_updated)"
+            " VALUES ('u1', ?, 'plast', ?, ?)",
+            (content.lineages[lineage_ids[-1]].species_id, lineage_ids[-1], NOW),
+        )
+        conn.execute(
+            "INSERT INTO learned_skills(pet_id, skill_id, equipped, level)"
+            " SELECT pet_id, ?, 0, 1 FROM pets WHERE user_id='u1' LIMIT 1",
+            (skill_ids[-1],),
+        )
+    _clear(game, play, dungeon_ids[-1], user="u1")
+
+    for name in ("万脉同归", "万法通鉴", "秘境踏遍"):
+        assert "可领奖" in page(name).text()
+
+    for name, stones, item, count in (
+        ("万脉同归", 3000, "bloodline_essence", 8),
+        ("万法通鉴", 2500, "book_spirit_wave", 2),
+        ("秘境踏遍", 3500, "bloodline_essence", 6),
+    ):
+        before = player(game[1])["stones"]
+        before_item = items(game[1]).get(item, 0)
+        play("achievement_claim", name, now=NOW + 2)
+        assert player(game[1])["stones"] == before + stones
+        assert items(game[1]).get(item, 0) == before_item + count
+        # Idempotent: a second claim pays nothing.
+        with pytest.raises(GameError):
+            play("achievement_claim", name, now=NOW + 3)
+
+
+def test_species_detail_is_an_encyclopedia(game, play):
+    from nonebot_plugin_spirit_pet.gameplay.combat import effectiveness
+
+    content = game[0].content
+    species = content.species["qingluan"]
+    detail = play("catalog", "青鸾")
+    assert detail.title == "万灵图鉴 · 青鸾"
+    assert detail.lines[5].startswith("获取：")
+
+    beats = [content.elements[key].name for key in content.elements
+             if effectiveness(species.primary_element, key, content.elements) > 1]
+    beaten = [content.elements[key].name for key in content.elements
+              if effectiveness(key, species.primary_element, content.elements) > 1]
+    line = detail.lines[6]
+    for name in beats:
+        assert f"克制{name}" in line or f"、{name}" in line.split("·")[0]
+    for name in beaten:
+        assert name in line.split("·", 1)[1]
+    assert line.endswith("以主属性结算，副属性不影响克制方向。")
+
+    branches = [b for b in content.lineages.values() if b.species_id == species.id]
+    assert len(branches) == 2
+    assert detail.lines[7].startswith("血脉分支预览：")
+    for branch in branches:
+        assert branch.name in detail.lines[7]
+
+    egg = next(item for item in content.items.values()
+               if item.kind == "pet_egg" and item.species_id == species.id)
+    homes = [d.name for d in content.dungeons.values()
+             if egg.id in d.reward.items and d.reward.items[egg.id].maximum > 0]
+    drop_line = detail.lines[8]
+    assert drop_line == f"灵卵掉落秘境：{'、'.join(homes) if homes else '无秘境掉落'}"
+
+    labels = [(link.label, link.command) for link in detail.inline_commands]
+    assert ("查看掉落秘境", "灵宠秘境") in labels
+    # Every derived name in the matchup line must be an element that really exists.
+    assert all(name in {e.name for e in content.elements.values()} for name in beats + beaten)

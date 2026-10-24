@@ -137,7 +137,7 @@ def test_onebot_achievements_keep_claim_links_readable(game, monkeypatch):
 
 def test_all_achievements_are_discoverable_with_preview_and_read_only_details(game, play):
     seen = set()
-    for page in range(1, 16):
+    for page in range(1, 17):
         listing = play("achievements", str(page), now=NOW)
         status_lines = [line for line in listing.lines if " · " in line and "进度：" in line]
         assert 1 <= len(status_lines) <= 5
@@ -153,10 +153,10 @@ def test_all_achievements_are_discoverable_with_preview_and_read_only_details(ga
             assert any(value.startswith("当前进度：") for value in detail.lines)
             assert any(value.startswith("奖励预览：") for value in detail.lines)
             assert "领取状态：未结契" in detail.lines
-    assert len(seen) == 74
+    assert len(seen) == 77
     assert not sql(game[1], "SELECT * FROM players")
-    with pytest.raises(GameError, match="灵宠成就共 15 页"):
-        play("achievements", "16", now=NOW)
+    with pytest.raises(GameError, match="灵宠成就共 16 页"):
+        play("achievements", "17", now=NOW)
 
 
 def test_claimed_achievement_detail_uses_saved_reward_snapshot(game, play):
