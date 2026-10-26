@@ -8,6 +8,8 @@ the claimed flag. The 1v1 ladder and its scoring are untouched. Schema 20
 stays.
 """
 
+import json
+
 from ...application.context import Context
 from ...domain.content import Range, Reward
 from ...domain.models import GameError, InlineCommand, Reply
@@ -15,7 +17,7 @@ from ...utils.arguments import quantity
 from ...utils.time import beijing_day
 from ..battle_records import capture_snapshot, record_battle
 from ..combat import fight
-from ..loadout import combatants
+from ..loadout import combatant, team_pets
 from ..mastery import award_mastery
 from ..quests import advance
 from .. import battle_pass
@@ -47,11 +49,39 @@ def _members(ctx: Context, team_id: int) -> list[str]:
     ]
 
 
-def _ready(ctx: Context, user_id: str) -> bool:
+def _ready_ids(ctx: Context, user_id: str) -> list[int]:
+    """Pet ids the member prepared; the same row the ready check reads."""
     row = ctx.repo.conn.execute(
         "SELECT ready_pet_ids FROM team_members WHERE user_id=?", (user_id,),
     ).fetchone()
-    return bool(row and row["ready_pet_ids"])
+    if row is None or not row["ready_pet_ids"]:
+        return []
+    return [int(item) for item in json.loads(row["ready_pet_ids"])]
+
+
+def _ready(ctx: Context, user_id: str) -> bool:
+    return bool(_ready_ids(ctx, user_id))
+
+
+def _side_pets(ctx: Context, team_id: int) -> list[tuple[str, int]]:
+    """One side of a ranked team battle, as (owner, pet_id) pairs.
+
+    Team battles share one loadout rule (`loadout.team_pets`): the captain
+    fields up to three pets, each teammate fields one, at most five per side.
+    `灵宠准备` previews exactly these pets, so the battle must use them too.
+    """
+    members = _members(ctx, team_id)
+    return [(user_id, pet.pet_id) for user_id, pet in team_pets(ctx, members, _captain(ctx, team_id))]
+
+
+def _check_ready(ctx: Context, team_id: int, side: list[tuple[str, int]]) -> None:
+    """Reject when a member's ready row no longer matches the side that fights."""
+    expected: dict[str, list[int]] = {}
+    for user_id, pet_id in side:
+        expected.setdefault(user_id, []).append(pet_id)
+    for user_id in _members(ctx, team_id):
+        if _ready_ids(ctx, user_id) != expected.get(user_id, []):
+            raise GameError(f"{ctx.player(user_id).uid_label}尚未准备当前出战灵宠，请全队重新 灵宠准备。")
 
 
 def rating(ctx: Context, season_id: str, team_id: int) -> int:
@@ -161,14 +191,18 @@ def team_pvp(ctx: Context, arg: str) -> Reply:
         raise GameError("双方今日已结算至同对组队论剑上限，明日再战。")
     if total >= season.rules.pair_season_matches:
         raise GameError("双方本赛季同对组队论剑次数已用尽。")
-    attackers = [fighter for user in members for fighter in combatants(ctx, user, recover_energy=False)]
-    defenders = [fighter for user in opponents for fighter in combatants(ctx, user, recover_energy=False)]
-    if len(attackers) > 5 or len(defenders) > 5:
-        raise GameError("组队论剑每侧最多出战五只灵宠。")
+    my_side = _side_pets(ctx, my_team)
+    their_side = _side_pets(ctx, their_team)
+    _check_ready(ctx, my_team, my_side)
+    _check_ready(ctx, their_team, their_side)
+    for user in (*members, *opponents):
+        for pet in ctx.repo.active_pets(user):
+            ctx.require_idle_pet(pet)
+    attackers = [combatant(ctx, user, recover_energy=False, pet_id=pet_id) for user, pet_id in my_side]
+    defenders = [combatant(ctx, user, recover_energy=False, pet_id=pet_id) for user, pet_id in their_side]
     capture = capture_snapshot(
         ctx, (attackers, defenders),
-        ([user for user in members for _ in combatants(ctx, user, recover_energy=False)],
-         [user for user in opponents for _ in combatants(ctx, user, recover_energy=False)]),
+        ([user for user, _ in my_side], [user for user, _ in their_side]),
     )
     battle = fight(attackers, defenders, ctx.rng, ctx.content.elements)
     my_rating = rating(ctx, season.season_id, my_team)
@@ -185,10 +219,11 @@ def team_pvp(ctx: Context, arg: str) -> Reply:
         battle_pass.add_experience(ctx, "pvp_challenge", user)
     mastery_lines = []
     for user in members:
-        for pet in ctx.repo.active_pets(user):
-            pet.energy -= season.rules.energy
+        # Only pets that actually fought pay energy and earn mastery.
+        for pet_id in [pid for owner, pid in my_side if owner == user]:
+            ctx.repo.pet(pet_id).energy -= season.rules.energy
             mastery_lines.extend(award_mastery(
-                ctx, user, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
+                ctx, user, battle.skill_uses[0].get(pet_id, {}), pet_id=pet_id,
             ))
         ctx.repo.invalidate_ready(user)
     result = "双方战平。" if battle.winner == -1 else (
