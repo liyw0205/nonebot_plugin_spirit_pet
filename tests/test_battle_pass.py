@@ -131,7 +131,8 @@ def test_premium_levels_are_every_fifth_level(game, play):
     with pytest.raises(GameError, match="没有进阶奖励"):
         play("battle_pass_claim", "6 进阶", now=NOW, op="bp-prem-6")
     result = play("battle_pass_claim", "30 进阶", now=NOW, op="bp-prem-30")
-    assert "限定称号「赛季行者」" in result.text()
+    # Level 30 alone does not finish the ladder: the title needs every node.
+    assert "限定称号" not in result.text()
 
 
 def test_season_walker_title_unlocks_with_all_six_premium_claims(game, play):
@@ -140,8 +141,13 @@ def test_season_walker_title_unlocks_with_all_six_premium_claims(game, play):
     play("battle_pass_unlock", "", now=NOW, op="bp-title-unlock")
     titles = play("titles", now=NOW, op="bp-title-before")
     assert "赛季行者" not in titles.text()
+    announced = []
     for level in battle_pass.PREMIUM_LEVELS:
-        play("battle_pass_claim", f"{level} 进阶", now=NOW, op=f"bp-title-{level}")
+        reply = play("battle_pass_claim", f"{level} 进阶", now=NOW, op=f"bp-title-{level}")
+        if "获得限定称号「赛季行者」" in reply.text():
+            announced.append(level)
+    # The title is announced exactly once, on the claim that completes it.
+    assert announced == [battle_pass.PREMIUM_LEVELS[-1]]
     titles = play("titles", now=NOW, op="bp-title-after")
     assert "赛季行者" in titles.text()
 
@@ -173,6 +179,15 @@ def test_catalog_pages_and_states(game, play):
     assert "灵宠战令 5" in last.commands
     with pytest.raises(GameError, match="共 6 页"):
         play("battle_pass", "7", now=NOW, op="bp-catalog-7")
+
+
+def test_final_row_names_the_title_as_a_requirement(game, play):
+    setup_account(play, game)
+    grant_exp(play, game, battle_pass.MAX_EXP)
+    page = play("battle_pass", "6", now=NOW, op="bp-title-row")
+    assert "走满进阶轨授予称号「赛季行者」" in page.text()
+    # The row must not claim the title is already held before it is earned.
+    assert "已获得称号" not in page.text()
 
 
 def test_catalog_previews_without_an_account(game, play):

@@ -163,8 +163,26 @@ def _reward_text(ctx: Context, reward: Reward) -> str:
     return "，".join(parts) or "无"
 
 
-def _title_line(level: int) -> str:
-    return f"限定称号「{PREMIUM_TITLE}」" if level >= LEVELS else ""
+def premium_title(ctx: Context):
+    """The title definition this ladder grants, if the content still declares one."""
+    for title in ctx.content.titles.values():
+        if title.metric == "battle_pass_premium_claims":
+            return title
+    return None
+
+
+def premium_title_earned(ctx: Context, user_id: str) -> bool:
+    """The title is held only once every premium node has been claimed."""
+    title = premium_title(ctx)
+    return title is not None and premium_claim_count(ctx, user_id) >= title.target
+
+
+def _title_line(ctx: Context, level: int) -> str:
+    """Name the ladder's title on its final row without promising it early."""
+    if level < LEVELS:
+        return ""
+    title = premium_title(ctx)
+    return f"走满进阶轨授予称号「{title.name if title else PREMIUM_TITLE}」"
 
 
 def _state(ctx: Context, user_id: str, level: int, track: str, current: int) -> str:
@@ -206,7 +224,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         premium_reward = _reward_for("进阶", level)
         if premium_reward is not None:
             premium_state = _state(ctx, player.user_id if player else "", level, "进阶", current)
-            title = " · 限定称号「赛季行者」" if level >= LEVELS else ""
+            title = f" · {_title_line(ctx, level)}" if level >= LEVELS else ""
             lines.append(
                 f"{level} 级 · 进阶：{_reward_text(ctx, premium_reward)}{title} · {premium_state}"
             )
@@ -276,8 +294,9 @@ def claim(ctx: Context, arg: str) -> Reply:
         (player.user_id, claim_id(season, level, track), level),
     )
     lines = [f"赛季 {season} · {level} 级{track}奖励", *result]
-    if track == "进阶" and level >= LEVELS:
-        lines.append(f"获得限定称号「{PREMIUM_TITLE}」，可在 灵宠称号 佩戴。")
+    if track == "进阶" and premium_title_earned(ctx, player.user_id):
+        title = premium_title(ctx)
+        lines.append(f"获得限定称号「{title.name if title else PREMIUM_TITLE}」，可在 灵宠称号 佩戴。")
     return Reply("战令奖励", tuple(lines), ("灵宠战令", "灵宠称号", "灵宠目标"))
 
 
