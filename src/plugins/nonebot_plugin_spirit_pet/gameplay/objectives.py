@@ -402,40 +402,43 @@ def objectives(ctx: Context, arg: str) -> Reply:
         ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
 
     quests.refresh(ctx)
-    lines = [
-        _checkin_line(ctx, player.user_id),
-        _bond_reward_line(ctx, player.user_id),
-        _daily_line(ctx, player.user_id),
-        _dungeon_line(ctx, player.user_id),
-        _farm_line(ctx, player.user_id),
-        _world_boss_line(ctx, player.user_id),
-        _weekly_line(ctx, player.user_id),
-        _main_quest_line(ctx, player.user_id),
-        _achievement_line(ctx, player.user_id),
-        _title_line(ctx, player.user_id),
-        _first_clear_line(ctx, player.user_id),
-        _free_summon_line(ctx, player.user_id),
-        _journey_line(ctx, player.user_id),
-        _echo_line(ctx, player.user_id),
-        _adventure_collection_line(ctx, player.user_id),
-        _season_line(ctx, player.user_id),
-        _assignment_line(ctx, player.user_id),
-        _codex_line(ctx, player.user_id),
-        _stage_star_line(ctx, player.user_id),
-        _arena_tier_line(ctx, player.user_id),
-        _battle_merit_line(ctx, player.user_id),
-        _pvp_streak_line(ctx, player.user_id),
-        _season_road_line(ctx, player.user_id),
-        _battle_pass_line(ctx, player.user_id),
-        _rank_reward_line(ctx, player.user_id),
-        _bloodline_milestone_line(ctx, player.user_id),
-        _lineage_awakening_line(ctx, player.user_id),
-        _equipment_set_line(ctx, player.user_id),
-        _skill_mastery_line(ctx, player.user_id),
-        _affinity_milestone_line(ctx, player.user_id),
-        _realm_milestone_line(ctx, player.user_id),
+    # Each row is paired with its hub command so a link can never drift onto a
+    # neighbouring row when a new objective row is inserted.
+    rows = [
+        (_checkin_line(ctx, player.user_id), "灵宠签到奖励"),
+        (_bond_reward_line(ctx, player.user_id), "灵宠陪伴奖励"),
+        (_daily_line(ctx, player.user_id), "灵宠任务"),
+        (_dungeon_line(ctx, player.user_id), "灵宠今日秘境"),
+        (_farm_line(ctx, player.user_id), "灵宠灵田"),
+        (_world_boss_line(ctx, player.user_id), "灵宠首领"),
+        (_weekly_line(ctx, player.user_id), "灵宠周常"),
+        (_main_quest_line(ctx, player.user_id), "灵宠主线"),
+        (_achievement_line(ctx, player.user_id), "灵宠成就"),
+        (_title_line(ctx, player.user_id), "灵宠称号"),
+        (_first_clear_line(ctx, player.user_id), "灵宠秘境首通"),
+        (_free_summon_line(ctx, player.user_id), "灵宠每周召唤"),
+        (_journey_line(ctx, player.user_id), "灵宠行纪"),
+        (_echo_line(ctx, player.user_id), "灵宠回响"),
+        (_adventure_collection_line(ctx, player.user_id), "灵宠奇闻奖励"),
+        (_season_line(ctx, player.user_id), "灵宠赛季任务"),
+        (_assignment_line(ctx, player.user_id), "灵宠课题"),
+        (_codex_line(ctx, player.user_id), "灵宠图鉴奖励"),
+        (_stage_star_line(ctx, player.user_id), "灵宠关卡星级"),
+        (_arena_tier_line(ctx, player.user_id), "灵宠段位奖励"),
+        (_battle_merit_line(ctx, player.user_id), "灵宠战斗功勋"),
+        (_pvp_streak_line(ctx, player.user_id), "灵宠连胜奖励"),
+        (_season_road_line(ctx, player.user_id), "灵宠赛季征途"),
+        (_battle_pass_line(ctx, player.user_id), "灵宠战令"),
+        (_rank_reward_line(ctx, player.user_id), "灵宠排行奖励"),
+        (_bloodline_milestone_line(ctx, player.user_id), "灵宠血脉赏"),
+        (_lineage_awakening_line(ctx, player.user_id), "灵宠分支赏"),
+        (_equipment_set_line(ctx, player.user_id), "灵宠套装"),
+        (_skill_mastery_line(ctx, player.user_id), "灵宠灵术赏"),
+        (_affinity_milestone_line(ctx, player.user_id), "灵宠亲密赏"),
+        (_realm_milestone_line(ctx, player.user_id), "灵宠境界赏"),
     ]
+    lines = [text for text, _ in rows]
     links = tuple(
-        InlineCommand(index, "前往", command) for index, command in enumerate(HUB_PAGES)
+        InlineCommand(index, "前往", command) for index, (_, command) in enumerate(rows)
     )
     return Reply("灵宠目标", tuple(lines), ("灵宠帮助", "我的灵宠"), links)

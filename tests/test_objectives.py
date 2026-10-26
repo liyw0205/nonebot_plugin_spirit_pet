@@ -107,3 +107,31 @@ def test_native_payload_keeps_buttons_without_links(game, play):
     links = {link.command for link in reply.inline_commands}
     assert buttons == set(reply.commands)
     assert buttons & links == set()
+
+
+def test_every_hub_link_points_at_its_own_row(game, play):
+    """Each 前往 link must land on the row of the system it opens.
+
+    The hub used to enumerate HUB_PAGES independently of the row builders, so
+    adding a row (season battle pass) shifted every later link one line up and
+    the last entries drifted off the page entirely.
+    """
+    account(game, play)
+    reply = play("objectives")
+    rows = {line.split("：", 1)[0]: index for index, line in enumerate(reply.lines)}
+    expected = {
+        "灵宠签到奖励": "连续签到",
+        "灵宠灵田": "灵田",
+        "灵宠首领": "周首领",
+        "灵宠战令": "赛季战令",
+        "灵宠排行奖励": "万灵榜奖励",
+        "灵宠套装": "套装完成奖励",
+        "灵宠境界赏": "境界里程碑奖励",
+    }
+    for link in reply.inline_commands:
+        assert link.line < len(reply.lines), f"{link.command} points past the page"
+    for command, prefix in expected.items():
+        link = next(link for link in reply.inline_commands if link.command == command)
+        assert reply.lines[link.line].startswith(prefix), (
+            f"{command} points at {reply.lines[link.line][:24]!r}"
+        )
