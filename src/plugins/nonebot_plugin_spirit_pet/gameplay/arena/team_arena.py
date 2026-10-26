@@ -25,6 +25,7 @@ from .common import current_season
 RATING_PREFIX = "team_rating_"
 TIER_PREFIX = "team_tier_"
 DELTA = 20
+PAGE_SIZE = 5
 
 
 def _team_id(ctx: Context, user_id: str) -> int:
@@ -165,6 +166,88 @@ def catalog(ctx: Context, arg: str) -> Reply:
         if state == "可领取":
             links.append(InlineCommand(len(lines) - 1, f"领取{tier.name}", f"灵宠组队段位领奖 {tier.name}"))
     return Reply("组队论剑", tuple(lines), ("灵宠赛季", "灵宠帮助"), tuple(links))
+
+
+def _uid(ctx: Context, user_id: str) -> int:
+    row = ctx.repo.conn.execute(
+        "SELECT id FROM player_identity WHERE user_id=?", (user_id,),
+    ).fetchone()
+    return int(row["id"]) + 9999 if row else 0
+
+
+def _captain(ctx: Context, team_id: int) -> str:
+    row = ctx.repo.conn.execute(
+        "SELECT leader_id FROM teams WHERE team_id=?", (team_id,),
+    ).fetchone()
+    return row["leader_id"]
+
+
+def matchmaking(ctx: Context, arg: str) -> Reply:
+    """List opposing teams within the season rating gap for the captain.
+
+    Read-only: it writes no report, rating or credential. Candidates mirror the
+    rules team_pvp enforces -- a team of the same size, at least two members,
+    every member ready -- and same-size plus rating-gap filtering happens before
+    paging so unavailable teams never consume a slot.
+    """
+    page = quantity(arg or "1", 999)
+    season = current_season(ctx)
+    player = ctx.player()
+    my_team = _team_id(ctx, player.user_id)
+    if _captain(ctx, my_team) != player.user_id:
+        raise GameError("只有队长可以发起组队论剑匹配。")
+    members = _members(ctx, my_team)
+    if len(members) < 2:
+        raise GameError("组队论剑需要至少两名在队成员。")
+    if not all(_ready(ctx, user) for user in members):
+        raise GameError("本队须全员准备后才能匹配对手。")
+    mine = rating(ctx, season.season_id, my_team)
+    rows = ctx.repo.conn.execute(
+        "SELECT leader.leader_id AS captain, leader.team_id AS team_id "
+        "FROM teams leader "
+        "WHERE leader.team_id!=? ORDER BY leader.team_id",
+        (my_team,),
+    ).fetchall()
+    candidates = []
+    for row in rows:
+        their_team = int(row["team_id"])
+        opponents = _members(ctx, their_team)
+        if len(opponents) != len(members) or len(opponents) < 2:
+            continue
+        if not all(_ready(ctx, user) for user in opponents):
+            continue
+        theirs = rating(ctx, season.season_id, their_team)
+        if abs(mine - theirs) > season.rules.max_rating_gap:
+            continue
+        candidates.append({
+            "uid": _uid(ctx, row["captain"]),
+            "size": len(opponents),
+            "rating": theirs,
+        })
+    candidates.sort(key=lambda entry: (abs(mine - entry["rating"]), entry["uid"]))
+    window = candidates[(page - 1) * PAGE_SIZE:page * PAGE_SIZE]
+    if page > 1 and not window:
+        raise GameError("该页暂无候选队伍。")
+    links = tuple(
+        InlineCommand(index, "挑战该队伍", f"灵宠组队论剑 {entry['uid']}")
+        for index, entry in enumerate(window)
+    )
+    lines = tuple(
+        f"UID {entry['uid']} · {entry['size']} 人队 · 积分 {entry['rating']}"
+        f" · 相差 {abs(mine - entry['rating'])} 分"
+        for entry in window
+    ) or ("暂无符合条件的候选队伍。",)
+    commands = [link.command for link in links]
+    if page > 1:
+        commands.append(f"灵宠组队匹配 {page - 1}")
+    if len(candidates) > page * PAGE_SIZE:
+        commands.append(f"灵宠组队匹配 {page + 1}")
+    commands.extend(("灵宠组队论剑", "灵宠目标"))
+    return Reply(
+        f"组队论剑候选 · {season.season_id} · 第{page}页",
+        lines + ("向对方队长发起挑战，无需对方在线。",),
+        tuple(commands), links,
+    )
 
 
 def claim_tier(ctx: Context, arg: str) -> Reply:
