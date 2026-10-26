@@ -413,8 +413,9 @@ class Catalog:
         owned items all grow without limit (equipment can be owned in multiples
         and claims can be repeated across seasons), so those are deliberately
         not checked and content may keep raising their targets. ``pets_owned``
-        is capped by the configurable roster limit rather than by content, and
-        only one resonance can be enabled at a time, so both are fixed here.
+        and ``skill_mastery_rewards`` are capped by the configurable roster limit
+        rather than by content, so they are not bounded here either; only one
+        resonance can be enabled at a time, which is fixed.
         """
         return {
             "species_collected": len(self.species),
@@ -437,7 +438,6 @@ class Catalog:
             "dungeon_clears": len(self.dungeons),
             "equipment_set_claims": len(self.equipment_sets),
             "resonances_enabled": 1,
-            "skill_mastery_rewards": len(self.skills) * len(self.species),
             "main_quest_claims": len(self.main_quests),
             "weekly_claims": len(self.weekly_quests),
             # The season ladder lives in gameplay; tests/test_contract_audit.py
