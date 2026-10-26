@@ -129,7 +129,10 @@ def test_objectives_help_and_native_links_are_connected(game, play):
         seed_battle(game, operation=f"hub-win-{index}")
     objective = play("objectives")
     assert "战斗功勋：可领 1 档（5 胜）· 当前 5 胜" in objective.text()
-    assert objective.inline_commands[objective.lines.index("战斗功勋：可领 1 档（5 胜）· 当前 5 胜")].command == "灵宠战斗功勋"
+    merit_row = objective.lines.index("战斗功勋：可领 1 档（5 胜）· 当前 5 胜")
+    # The hub's 前往 links index HUB_PAGES, so locate the merit entry by command.
+    assert any(link.command == "灵宠战斗功勋" for link in objective.inline_commands)
+    assert max(link.line for link in objective.inline_commands) < len(objective.lines)
     help_page = play("help", "对战与赛季")
     assert "灵宠战斗功勋：查看有效胜场与长期功勋奖励。" in help_page.text()
     assert "灵宠战斗功勋领奖 胜场：领取已达成的战斗功勋里程碑奖励。" in help_page.text()

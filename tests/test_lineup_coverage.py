@@ -15,6 +15,7 @@ import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay import adventure, pve_stages
+from nonebot_plugin_spirit_pet.gameplay.battle_pass import ACTIVITY_EXP, season_id
 from nonebot_plugin_spirit_pet.gameplay.arena import battles as arena_battles
 from nonebot_plugin_spirit_pet.gameplay.combat import Battle
 from nonebot_plugin_spirit_pet.storage.repository import Repository
@@ -118,7 +119,11 @@ def test_replayed_operation_key_charges_and_rewards_three_pet_dungeon_once(game,
         game[0].content.rules.skill_proficiency_per_use
     ] * 3
     quests = sql(game[1], "SELECT quest_id, progress FROM quest_progress ORDER BY quest_id")
-    assert quests == [{"quest_id": "pve_once", "progress": 1}]
+    # The clear also records its battle-pass activity EXP row for this season.
+    assert quests == [
+        {"quest_id": f"battle_pass_exp_{season_id(NOW)}", "progress": ACTIVITY_EXP["pve_win"]},
+        {"quest_id": "pve_once", "progress": 1},
+    ]
     snapshots = sql(game[1], "SELECT pet_id, energy FROM pets ORDER BY pet_id")
 
     assert play("challenge", "青岚林", op="lineup-replay") == first
