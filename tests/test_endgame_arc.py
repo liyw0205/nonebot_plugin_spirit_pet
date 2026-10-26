@@ -188,4 +188,4 @@ def test_content_loads_with_the_arc():
     assert len(content.dungeons) == 20
     assert len(content.journey) == 16
     assert len(content.achievements) == 77
-    assert len(content.titles) == 22
+    assert len(content.titles) == 23

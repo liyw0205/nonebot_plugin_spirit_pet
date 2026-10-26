@@ -29,6 +29,9 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         return _claim_count(ctx, user_id, ctx.content.weekly_quests)
     if metric == "skill_mastery_rewards":
         return _skill_mastery_claim_count(ctx, user_id)
+    if metric == "battle_pass_premium_claims":
+        from . import battle_pass
+        return battle_pass.premium_claim_count(ctx, user_id)
     return _achievement_metric(ctx, user_id, metric)
 
 

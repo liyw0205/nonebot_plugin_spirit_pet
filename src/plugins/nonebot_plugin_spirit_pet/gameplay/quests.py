@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.time import beijing_day
+from . import battle_pass
 from .rewards import grant
 
 
@@ -76,4 +77,14 @@ def claim(ctx: Context, arg: str) -> Reply:
     ctx.repo.conn.execute(
         "UPDATE quest_progress SET claimed=1 WHERE user_id=? AND quest_id=?", (player.user_id, quest.id),
     )
-    return Reply("任务领奖", (f"{quest.name}已完成。", *result))
+    # Battle pass EXP only once per day, when the whole daily board is claimed.
+    daily = tuple(ctx.content.quests)
+    placeholders = ", ".join("?" for _ in daily)
+    done = ctx.repo.conn.execute(
+        f"SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND claimed=1 AND quest_id IN ({placeholders})",
+        (player.user_id, *daily),
+    ).fetchone()[0]
+    lines = [f"{quest.name}已完成。", *result]
+    if done == len(daily) and battle_pass.claim_daily_clear(ctx, player.user_id):
+        lines.append(f"今日任务全清，战令经验 +{battle_pass.ACTIVITY_EXP['daily_all_clear']}。")
+    return Reply("任务领奖", tuple(lines))

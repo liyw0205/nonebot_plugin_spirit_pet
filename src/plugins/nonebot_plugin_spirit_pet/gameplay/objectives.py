@@ -18,7 +18,7 @@ from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠图鉴奖励", "灵宠关卡星级",
+    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠战令", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠战斗功勋",
     "灵宠连胜奖励",
@@ -312,6 +312,21 @@ def _season_road_line(ctx: Context, user_id: str) -> str:
     return f"论剑征途：暂无可领 · 本季胜 {wins} 场"
 
 
+def _battle_pass_line(ctx: Context, user_id: str) -> str:
+    from . import battle_pass
+    level = battle_pass.level_of(battle_pass.experience(ctx, user_id))
+    claimable = sum(
+        1 for level_id in range(1, battle_pass.LEVELS + 1)
+        for track in battle_pass.TRACKS
+        if battle_pass._reward_for(track, level_id) is not None
+        and battle_pass._state(ctx, user_id, level_id, track, level) == "可领取"
+    )
+    track = "进阶已解锁" if battle_pass.premium(ctx, user_id) else "进阶未解锁"
+    if claimable:
+        return f"赛季战令：{level} 级 · 可领 {claimable} 项 · {track}"
+    return f"赛季战令：{level}/{battle_pass.LEVELS} 级 · 暂无可领 · {track}"
+
+
 def _farm_line(ctx: Context, user_id: str) -> str:
     ready = 0
     growing = 0
@@ -411,6 +426,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         _battle_merit_line(ctx, player.user_id),
         _pvp_streak_line(ctx, player.user_id),
         _season_road_line(ctx, player.user_id),
+        _battle_pass_line(ctx, player.user_id),
         _rank_reward_line(ctx, player.user_id),
         _bloodline_milestone_line(ctx, player.user_id),
         _lineage_awakening_line(ctx, player.user_id),

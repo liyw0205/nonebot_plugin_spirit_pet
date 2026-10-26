@@ -174,5 +174,13 @@
     "metric": "lineage_branches",
     "target": 54,
     "order": 22
+  },
+  {
+    "id": "season_walker",
+    "name": "赛季行者",
+    "description": "在一季内把进阶战令走满三十级。",
+    "metric": "battle_pass_premium_claims",
+    "target": 6,
+    "order": 23
   }
 ]

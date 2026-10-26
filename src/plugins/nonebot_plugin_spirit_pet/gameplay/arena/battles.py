@@ -9,6 +9,7 @@ from ..battle_records import capture_snapshot, record_battle
 from ..loadout import combatants
 from ..mastery import award_mastery
 from ..quests import advance
+from .. import battle_pass
 from .common import current_season
 from .eligibility import check_ranked
 from .scoring import settle_ranked
@@ -50,6 +51,9 @@ def pvp(ctx: Context, arg: str) -> Reply:
     )
     battle = fight(attackers, defenders, ctx.rng, ctx.content.elements)
     delta, scores = settle_ranked(ctx, season, target.user_id, battle)
+    # A ranked challenge counts as season activity whatever the outcome, but
+    # only once: the settlement above already fixed the single-challenge rule.
+    battle_pass.add_experience(ctx, "pvp_challenge", ctx.user_id)
     if battle.winner == 0:
         advance(ctx, "pvp")
     for pet in ctx.active_pets(ctx.user_id):

@@ -21,6 +21,7 @@ from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
 from . import stage_stars
+from . import battle_pass
 from .teams.common import membership, require_leader
 
 
@@ -218,6 +219,7 @@ def challenge(ctx: Context, arg: str) -> Reply:
     if battle.winner == 0:
         for user_id in user_ids:
             advance(ctx, "pve", user_id)
+            battle_pass.add_experience(ctx, "pve_win", user_id)
         first_clear_users: list[str] = []
         for user_id in user_ids:
             inserted = ctx.repo.conn.execute(

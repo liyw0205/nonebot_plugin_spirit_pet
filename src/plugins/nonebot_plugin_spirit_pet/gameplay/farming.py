@@ -1,6 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
+from . import battle_pass
 
 PLOT_COUNT = 4
 OPEN_COST = (200, 500, 1200, 2500)
@@ -260,6 +261,7 @@ def harvest(ctx: Context, arg: str) -> Reply:
             "下次记得及时收获。",
         ), ("灵宠灵田", "灵宠背包"))
     gained = _grant_reward(ctx, crop)
+    battle_pass.add_experience(ctx, "farm_harvest")
     if replant is not None:
         _sow(ctx, plot, replant)
         return Reply("灵田补种", (

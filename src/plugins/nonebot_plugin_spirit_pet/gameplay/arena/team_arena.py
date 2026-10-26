@@ -18,6 +18,7 @@ from ..combat import fight
 from ..loadout import combatants
 from ..mastery import award_mastery
 from ..quests import advance
+from .. import battle_pass
 from ..rewards import grant
 from .common import current_season
 
@@ -116,6 +117,9 @@ def team_pvp(ctx: Context, arg: str) -> Reply:
         my_rating, their_rating = max(0, my_rating - DELTA), their_rating + DELTA
     set_rating(ctx, season.season_id, my_team, my_rating)
     set_rating(ctx, season.season_id, their_team, their_rating)
+    # Every challenger completed a ranked challenge, so each earns season activity once.
+    for user in members:
+        battle_pass.add_experience(ctx, "pvp_challenge", user)
     mastery_lines = []
     for user in members:
         for pet in ctx.repo.active_pets(user):

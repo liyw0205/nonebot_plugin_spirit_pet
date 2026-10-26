@@ -8,6 +8,7 @@ from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
+from . import battle_pass
 
 ADVENTURE_CODEX_PAGE_SIZE = 4
 
@@ -273,6 +274,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
         seed_id = roll_seed_drop(ctx, dungeon.min_realm, 8)
         for user_id in user_ids:
             advance(ctx, "pve", user_id)
+            battle_pass.add_experience(ctx, "pve_win", user_id)
             names = "、".join(pet.name for owner, pet in selected if owner == user_id)
             lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
             if seed_id:

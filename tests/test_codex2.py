@@ -214,7 +214,7 @@ def _clear(game, play, dungeon_id, side=0, winner_side=None, user="u2"):
 def test_content_defines_the_second_order_collection_goals(game):
     content = game[0].content
     assert len(content.achievements) == 77
-    assert len(content.titles) == 22
+    assert len(content.titles) == 23
     goals = {
         "lineage_all": ("lineage_branches", len(content.lineages)),
         "skill_codex_all": ("skills_learned", len(content.skills)),

@@ -9,6 +9,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
 from .quests import advance
+from . import battle_pass
 
 # Hasten pricing: 10 stones per remaining minute (rounded up), capped.
 HASTEN_STONES_PER_MINUTE = 10
@@ -184,6 +185,7 @@ def claim(ctx: Context, arg: str) -> Reply:
         if amount:
             lines.append(f"{ctx.content.items[key].name} +{amount}")
     advance(ctx, "expedition")
+    battle_pass.add_experience(ctx, "expedition_return")
     return Reply("委托归来", tuple(lines), ("灵宠委托", "灵宠列表", "灵宠背包"))
 
 
