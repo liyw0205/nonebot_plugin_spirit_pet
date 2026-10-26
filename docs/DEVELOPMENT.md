@@ -516,11 +516,11 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_adventure_collection_rewards.py` `10 passed`，覆盖未结契只读与命令解析、重复发现去重与奇闻榜里程碑、四档领取与幂等重放、无效/未达标参数拒绝、奖励定义缺失回滚、目标/帮助/native 蓝字按钮去重；受影响历练/信息/命令/消息/目标/运行时合同合计 `367 passed`，`compileall` 与 `git diff --check` 通过。实现提交 `9c068c2` 的 develop CI `39018947013` 与 main CI `39019114400` 全绿（Python 3.10/3.13 全量 pytest、编译、shell 入口和安装冒烟）；已普通推送 develop 并 fast-forward 合入 main。未部署、未发送真实 QQ；本地辅助目标卡 `docs/goals/pet-adventure-collection-rewards.md` 不提交。
 
-### 图鉴百科与收集二阶（2026-10-25，进行中，待 develop 提交/CI/合并）
+### 图鉴百科与收集二阶（2026-10-25，已完成）
 
 图鉴详情百科化与检索已由提交 `97e2e1e` 交付（图鉴详情页获取途径含灵卵孵化来源、`灵宠图鉴 克制 <元素>` 与 `灵宠图鉴 掉落 <物品>` 检索、`灵宠图鉴克制`/`灵宠图鉴掉落` 独立别名与 `克制`/`掉落` 关键字分支，结果从战斗引擎与秘境/关卡/万灵塔/委托奖励表派生，全部只读、未结契可浏览）。本切片补齐该目标的收集二阶部分：新增三条只读派生成就——`lineage_branches` 达 54“万脉同归”、`skills_learned` 达 24“万法通鉴”、新指标 `dungeon_clears` 达 20“秘境踏遍”；`dungeon_clears` 按永久战报 `kind='pve'` 且参与者 `side == winner_side` 去重 `battle_key` 计数，战败、平局与已下线秘境均不计入，不新增 schema 或计数列。新增派生称号“万脉宗师”（54 支血脉分支全觉醒）。成就升至 77 项、称号升至 22 项，`_validate_achievements` 的 required/maxima 与既有计数合同、成就分页断言（16 页）、称号总数展示断言同步更新；`docs/GAMEPLAY.md` 图鉴/成就/称号段落已更新。不新增离线战斗或 schema 改动，未部署、未发送真实 QQ。
 
-本切片同时在图鉴详情页派生三行百科内容：克制速览（从战斗引擎 effectiveness 双向遍历）、该族两条血脉分支预览、灵卵掉落秘境行，并把掉落行挂“查看掉落秘境”直达蓝字（`tests/test_catalog_interaction.py` 两条 native 蓝字合同按新形状同步）。聚焦 `tests/test_codex2.py` `22 passed`（原 17 项检索/百科合同 + 新增 5 项：详情百科派生、内容定义、指标派生、战报通关判定边界、三条成就解锁/领取/幂等）；受影响成就/称号/图鉴交互/目标/内容/运行时合同 `258 passed`；`compileall` 与 `git diff --check` 通过。全量 `pytest -q tests/` 在 180 秒工具限时内退出 124（约 34% 处中断），未作为成功证据，不重跑。待办：在 develop 白名单提交（不含 `docs/goals/` 本地卡片与无关 farm2 改动）、推送、develop CI 绿后 fast-forward 合入 main 并核验 main CI。辅助目标卡 `docs/goals/pet-goal-codex2.md` 仅本地保留、不提交。
+本切片同时在图鉴详情页派生三行百科内容：克制速览（从战斗引擎 effectiveness 双向遍历）、该族两条血脉分支预览、灵卵掉落秘境行，并把掉落行挂“查看掉落秘境”直达蓝字（`tests/test_catalog_interaction.py` 两条 native 蓝字合同按新形状同步）。聚焦 `tests/test_codex2.py` `22 passed`（原 17 项检索/百科合同 + 新增 5 项：详情百科派生、内容定义、指标派生、战报通关判定边界、三条成就解锁/领取/幂等）；受影响成就/称号/图鉴交互/目标/内容/运行时合同 `258 passed`；`compileall` 与 `git diff --check` 通过。全量 `pytest -q tests/` 在 180 秒工具限时内退出 124（约 34% 处中断），未作为成功证据，不重跑。已提交 `be0b0b4` 并普通推送 develop，develop CI `40120894595` 全绿；随后 `git merge --ff-only develop` 快进合入 main 并推送，main CI `40121356939` 全绿（均对应同一提交 `be0b0b4`）。提交范围为白名单 18 个文件，未包含 `docs/goals/` 本地卡片、`gameplay/farming.py` 与 `tests/test_farm2.py` 的既有脏改动。未部署、未发送真实 QQ。
 
 ### 开发阶段流程
 
