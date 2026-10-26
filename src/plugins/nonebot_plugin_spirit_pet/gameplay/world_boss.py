@@ -106,23 +106,44 @@ def wins_this_week(ctx: Context, user_id: str) -> int:
 
 
 def claimed(ctx: Context, user_id: str, prefix: str, week: int) -> bool:
+    return _claimed_id(ctx, user_id, f"{prefix}{week}")
+
+
+def _claimed_id(ctx: Context, user_id: str, quest_id: str) -> bool:
     row = ctx.repo.conn.execute(
         "SELECT claimed FROM quest_progress WHERE user_id=? AND quest_id=? AND claimed=1",
-        (user_id, f"{prefix}{week}"),
+        (user_id, quest_id),
     ).fetchone()
     return row is not None
 
 
 def _mark(ctx: Context, user_id: str, prefix: str, week: int, progress: int) -> None:
+    _mark_id(ctx, user_id, f"{prefix}{week}", progress)
+
+
+def _mark_id(ctx: Context, user_id: str, quest_id: str, progress: int) -> None:
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1) "
         "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
-        (user_id, f"{prefix}{week}", progress),
+        (user_id, quest_id, progress),
     )
 
 
+def tier_credential(week: int, wins: int) -> str:
+    """Each win tier is its own weekly credential, so tiers never block each other."""
+    return f"{TIER_PREFIX}{week}_{wins}"
+
+
+def tier_claimed(ctx: Context, user_id: str, week: int, wins: int) -> bool:
+    if _claimed_id(ctx, user_id, tier_credential(week, wins)):
+        return True
+    # Saves written before per-tier credentials only ever recorded the first
+    # tier under the shared weekly key, so honour that row as tier 1 claimed.
+    return wins == 1 and _claimed_id(ctx, user_id, f"{TIER_PREFIX}{week}")
+
+
 def _tier_state(ctx: Context, user_id: str, week: int, wins: int) -> str:
-    if claimed(ctx, user_id, TIER_PREFIX, week):
+    if tier_claimed(ctx, user_id, week, wins):
         return "已领取"
     actual = wins_this_week(ctx, user_id)
     if actual >= wins:
@@ -224,12 +245,12 @@ def claim(ctx: Context, arg: str) -> Reply:
     if tier is None:
         raise GameError("没有该档位：可选 1、3、7 或 击退。")
     wins, stones, items = tier
-    if claimed(ctx, player.user_id, TIER_PREFIX, week):
+    if tier_claimed(ctx, player.user_id, week, wins):
         raise GameError(f"第 {wins} 档奖励已领取，下周再战。")
     actual = wins_this_week(ctx, player.user_id)
     if actual < wins:
         raise GameError(f"本周已胜 {actual} 场，还需 {wins - actual} 场才能领取第 {wins} 档。")
-    _mark(ctx, player.user_id, TIER_PREFIX, week, actual)
+    _mark_id(ctx, player.user_id, tier_credential(week, wins), actual)
     reward = Reward.model_validate({
         "exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": stones, "maximum": stones},
         "items": {key: {"minimum": amount, "maximum": amount} for key, amount in items.items()},

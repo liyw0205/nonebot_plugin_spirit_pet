@@ -149,6 +149,72 @@ def test_tier_claim_rejects_when_under_wins(game, play):
     assert sql(game[1], "SELECT * FROM quest_progress WHERE quest_id LIKE 'world_boss_tier_%'") == []
 
 
+def seed_wins(game, count, user="u1", now=NOW):
+    """Seed this week's boss wins directly, bypassing the three-per-day cap."""
+    key = f"world_boss_{week_start(now) // (7 * 86400)}"
+    with game[1].connect() as conn:
+        for index in range(count):
+            cursor = conn.execute(
+                "INSERT INTO battle_records(operation_id, initiator_id, kind, battle_key, title, "
+                "winner_side, rounds, played_at, reply, snapshot, battle_log) "
+                "VALUES (?, ?, 'pve', ?, 'seed', 0, 3, ?, '{}', '[]', '[]')",
+                (f"seed-win-{user}-{index}", user, key, now - index * 60),
+            )
+            conn.execute(
+                "INSERT INTO battle_participants(battle_id, user_id, side, permission) "
+                "VALUES (?, ?, 0, 'participant')",
+                (cursor.lastrowid, user),
+            )
+
+
+def test_each_win_tier_claims_independently(game, play):
+    play("adopt", "青鸾")
+    seed_wins(game, 7)
+    page = play("world_boss")
+    assert "第 1 档：灵石 120 · 可领取" in page.text()
+    assert "第 7 档：灵石 700 · 可领取" in page.text()
+
+    play("world_boss_claim", "1", op="tier-independent-1")
+    # Claiming the first tier must not consume the other two.
+    page = play("world_boss")
+    assert "第 1 档：灵石 120 · 已领取" in page.text()
+    assert "第 3 档：灵石 300 · 可领取" in page.text()
+    assert "第 7 档：灵石 700 · 可领取" in page.text()
+
+    stones = player(game[1])["stones"]
+    play("world_boss_claim", "3", op="tier-independent-3")
+    play("world_boss_claim", "7", op="tier-independent-7")
+    assert player(game[1])["stones"] == stones + 300 + 700
+    for tier in (1, 3, 7):
+        with pytest.raises(GameError, match="已领取"):
+            play("world_boss_claim", str(tier), op=f"tier-independent-{tier}-again")
+    rows = sql(game[1], "SELECT quest_id FROM quest_progress WHERE quest_id LIKE 'world_boss_tier_%' ORDER BY quest_id")
+    week = week_start() // (7 * 86400)
+    assert [row["quest_id"] for row in rows] == [f"world_boss_tier_{week}_{tier}" for tier in (1, 3, 7)]
+
+
+def test_legacy_shared_tier_credential_still_counts_as_the_first_tier(game, play):
+    play("adopt", "青鸾")
+    seed_wins(game, 7)
+    week = week_start() // (7 * 86400)
+    # Older saves wrote one shared row per week; it must keep meaning "tier 1".
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 7, 1)",
+        (f"world_boss_tier_{week}",),
+    )
+    page = play("world_boss")
+    assert "第 1 档：灵石 120 · 已领取" in page.text()
+    assert "第 3 档：灵石 300 · 可领取" in page.text()
+    with pytest.raises(GameError, match="已领取"):
+        play("world_boss_claim", "1", op="legacy-tier-1")
+    play("world_boss_claim", "3", op="legacy-tier-3")
+    # The remaining tiers stay claimable next to the legacy row.
+    assert "第 7 档奖励已领取" in play("world_boss_claim", "7", op="legacy-tier-7").text()
+    with pytest.raises(GameError, match="已领取"):
+        play("world_boss_claim", "7", op="legacy-tier-7-again")
+
+
 def test_claims_reject_unknown_and_malformed_arguments(game, play):
     play("adopt", "青鸾")
     with pytest.raises(GameError, match="格式|没有该档位"):
