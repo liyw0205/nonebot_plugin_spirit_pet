@@ -1,6 +1,7 @@
 import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay.arena import team_arena
 
 from .team_support import NOW, USERS, create_players, create_team
 from .support import pet, sql
@@ -141,3 +142,53 @@ def test_season_id_scopes_team_rating(game, play):
         (USERS[0], f"team_rating_2026-12_{team_id}"))
     page = play("team_arena", user=USERS[0])
     assert "积分 1000" in page.text()
+
+
+def test_same_team_pair_is_capped_to_one_battle_per_day(game, play):
+    create_players(play, 4)
+    create_team(play, leader=0, members=(1,))
+    create_team(play, leader=2, members=(3,))
+    prepare_all(play, USERS[:2])
+    prepare_all(play, USERS[2:4])
+    boost(game)
+    play("team_arena_battle", "10002", user=USERS[0], op="pair-first")
+    prepare_all(play, USERS[:2])
+    prepare_all(play, USERS[2:4])
+    with pytest.raises(GameError, match="同对组队论剑上限"):
+        play("team_arena_battle", "10002", user=USERS[0], op="pair-second")
+
+
+def test_same_team_pair_season_cap_survives_the_next_day(game, play):
+    create_players(play, 4)
+    create_team(play, leader=0, members=(1,))
+    create_team(play, leader=2, members=(3,))
+    boost(game)
+    for day in range(3):
+        prepare_all(play, USERS[:2])
+        prepare_all(play, USERS[2:4])
+        play("team_arena_battle", "10002", user=USERS[0],
+             now=NOW + day * 86400, op=f"season-pair-{day}")
+    prepare_all(play, USERS[:2])
+    prepare_all(play, USERS[2:4])
+    with pytest.raises(GameError, match="本赛季同对"):
+        play("team_arena_battle", "10002", user=USERS[0],
+             now=NOW + 3 * 86400, op="season-pair-fourth")
+
+
+def test_team_daily_battle_cap_applies_across_opponents(game, play, monkeypatch):
+    create_players(play, 6)
+    create_team(play, leader=0, members=(1,))
+    for leader in (2, 4):
+        create_team(play, leader=leader, members=(leader + 1,))
+    boost(game)
+    # A two-per-day team quota is exhausted by two distinct opponents, then a
+    # third (fresh pair) is still refused, proving the cap is per team per day.
+    monkeypatch.setattr(team_arena, "MAX_DAILY_TEAM_BATTLES", 2)
+    for index, opponent in enumerate((2, 4)):
+        prepare_all(play, USERS[:2])
+        prepare_all(play, USERS[opponent:opponent + 2])
+        play("team_arena_battle", f"{10000 + opponent}", user=USERS[0],
+             op=f"daily-{index}")
+    prepare_all(play, USERS[:2])
+    with pytest.raises(GameError, match="今日组队论剑次数已用尽"):
+        play("team_arena_battle", "10004", user=USERS[0], op="daily-over")

@@ -26,6 +26,8 @@ RATING_PREFIX = "team_rating_"
 TIER_PREFIX = "team_tier_"
 DELTA = 20
 PAGE_SIZE = 5
+# Per-team daily battle cap: mirrors season.rules.daily_matches (5) for team play.
+MAX_DAILY_TEAM_BATTLES = 5
 
 
 def _team_id(ctx: Context, user_id: str) -> int:
@@ -79,6 +81,58 @@ def tier_claimed(ctx: Context, season_id: str, team_id: int, tier_id: str) -> bo
     return row is not None
 
 
+def _team_battles(ctx: Context, season_id: str) -> list:
+    """Every recorded team battle this season, oldest first, with both sides.
+
+    Team battles write battle_records only (key `team_<season>`), so the
+    1v1 pvp_results quotas cannot apply; these rows are the team equivalent.
+    """
+    rows = ctx.repo.conn.execute(
+        "SELECT b.battle_id, b.played_at FROM battle_records b "
+        "WHERE b.kind='pvp' AND b.battle_key=? ORDER BY b.battle_id",
+        (f"team_{season_id}",),
+    ).fetchall()
+    return [dict(battle_id=row["battle_id"], played_at=row["played_at"]) for row in rows]
+
+
+def _side_captain(ctx: Context, battle_id: int, side: int) -> str | None:
+    """The captain of one side of a recorded team battle."""
+    row = ctx.repo.conn.execute(
+        "SELECT tm.team_id FROM battle_participants p "
+        "JOIN team_members tm ON tm.user_id=p.user_id "
+        "WHERE p.battle_id=? AND p.side=? LIMIT 1",
+        (battle_id, side),
+    ).fetchone()
+    return _captain(ctx, row["team_id"]) if row else None
+
+
+def _daily_battles(ctx: Context, season_id: str, team_id: int) -> int:
+    """How many ranked battles this team started today (Beijing)."""
+    captain = _captain(ctx, team_id)
+    today = beijing_day(ctx.now)
+    return sum(
+        1 for battle in _team_battles(ctx, season_id)
+        if _side_captain(ctx, battle["battle_id"], 0) == captain
+        and beijing_day(battle["played_at"]) == today
+    )
+
+
+def _pair_battles(ctx: Context, season_id: str, first: int, second: int) -> tuple[int, int]:
+    """How often these two teams met today and this season."""
+    captains = {_captain(ctx, first), _captain(ctx, second)}
+    today, total = 0, 0
+    day = beijing_day(ctx.now)
+    for battle in _team_battles(ctx, season_id):
+        first_captain = _side_captain(ctx, battle["battle_id"], 0)
+        second_captain = _side_captain(ctx, battle["battle_id"], 1)
+        if {first_captain, second_captain} != captains:
+            continue
+        total += 1
+        if beijing_day(battle["played_at"]) == day:
+            today += 1
+    return today, total
+
+
 def team_pvp(ctx: Context, arg: str) -> Reply:
     """Captain-initiated ranked team battle against another ready team."""
     if not arg.strip():
@@ -99,6 +153,14 @@ def team_pvp(ctx: Context, arg: str) -> Reply:
         raise GameError("本队须全员准备后才能发起组队论剑。")
     if not all(_ready(ctx, user) for user in opponents):
         raise GameError("对方队伍尚未全员准备，无法应战。")
+    daily_cap = min(season.rules.daily_matches, MAX_DAILY_TEAM_BATTLES)
+    if _daily_battles(ctx, season.season_id, my_team) >= daily_cap:
+        raise GameError(f"本队今日组队论剑次数已用尽（{daily_cap} 场）。")
+    today, total = _pair_battles(ctx, season.season_id, my_team, their_team)
+    if today >= season.rules.pair_daily_matches:
+        raise GameError("双方今日已结算至同对组队论剑上限，明日再战。")
+    if total >= season.rules.pair_season_matches:
+        raise GameError("双方本赛季同对组队论剑次数已用尽。")
     attackers = [fighter for user in members for fighter in combatants(ctx, user, recover_energy=False)]
     defenders = [fighter for user in opponents for fighter in combatants(ctx, user, recover_energy=False)]
     if len(attackers) > 5 or len(defenders) > 5:
