@@ -106,10 +106,13 @@ def add_experience(ctx: Context, source: str, user_id: str | None = None) -> int
     if amount is None:
         raise ValueError(f"unknown battle pass activity: {source}")
     owner = user_id or ctx.user_id
+    # Only the season row may accumulate EXP: even if a credential row ever
+    # carries progress, it must never be turned into experience.
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
-        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress",
-        (owner, exp_id(season_id(ctx.now)), amount),
+        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress "
+        "WHERE quest_progress.quest_id LIKE ?",
+        (owner, exp_id(season_id(ctx.now)), amount, f"{EXP_PREFIX}%"),
     )
     return amount
 
@@ -122,10 +125,12 @@ def claim_daily_clear(ctx: Context, user_id: str | None = None) -> bool:
     """
     owner = user_id or ctx.user_id
     credential = f"{DAILY_CLEAR_PREFIX}{beijing_day(ctx.now)}"
+    # The credential row is not an EXP row: its progress must stay 0 so the
+    # unmatched ON CONFLICT inside add_experience can never inflate season EXP.
     inserted = ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1) "
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 0, 1) "
         "ON CONFLICT(user_id, quest_id) DO NOTHING",
-        (owner, credential, ctx.now),
+        (owner, credential),
     )
     if inserted.rowcount != 1:
         return False

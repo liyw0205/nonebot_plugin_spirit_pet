@@ -8,7 +8,7 @@ from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay import battle_pass
-from nonebot_plugin_spirit_pet.utils.time import season_bounds
+from nonebot_plugin_spirit_pet.utils.time import beijing_day, season_bounds
 
 from .support import items, player, sql
 
@@ -63,12 +63,12 @@ def test_activity_sources_award_the_documented_experience(game, play):
         assert experience(game) == expected, source
 
 
-def _context(game, user):
+def _context(game, user, now=NOW):
     from nonebot_plugin_spirit_pet.application.context import Context
     from nonebot_plugin_spirit_pet.storage.repository import Repository
 
     conn = game[1].connect()
-    return Context(Repository(conn), game[0].content, game[0].config, game[0].rng, user, NOW, "bp-ctx")
+    return Context(Repository(conn), game[0].content, game[0].config, game[0].rng, user, now, "bp-ctx")
 
 
 def test_level_derivation_and_cap():
@@ -219,6 +219,41 @@ def test_objectives_row_and_native_keyboard(game, play):
         for button in row.buttons
     ]
     assert not set(buttons) & {link.command for link in page.inline_commands}
+
+
+def test_daily_all_clear_pays_once_and_never_leaks_into_experience(game, play):
+    setup_account(play, game)
+    ctx = _context(game, "u1")
+    assert battle_pass.claim_daily_clear(ctx, "u1") is True
+    assert battle_pass.experience(ctx, "u1") == 50
+    credential = f"{battle_pass.DAILY_CLEAR_PREFIX}{beijing_day(NOW)}"
+    rows = sql(game[1], "SELECT progress, claimed FROM quest_progress WHERE quest_id=?", (credential,))
+    assert rows == [{"progress": 0, "claimed": 1}]
+    for _ in range(3):
+        assert battle_pass.claim_daily_clear(ctx, "u1") is False
+        assert battle_pass.experience(ctx, "u1") == 50
+    later = NOW + 60
+    assert battle_pass.claim_daily_clear(
+        _context(game, "u1", now=later), "u1"
+    ) is False
+    assert battle_pass.experience(_context(game, "u1", now=later), "u1") == 50
+    tomorrow = _context(game, "u1", now=NOW + DAY)
+    assert battle_pass.claim_daily_clear(tomorrow, "u1") is True
+    assert battle_pass.experience(tomorrow, "u1") == 100
+
+
+def test_legacy_daily_credential_with_timestamp_progress_is_not_converted_to_exp(game, play):
+    setup_account(play, game)
+    credential = f"{battle_pass.DAILY_CLEAR_PREFIX}{beijing_day(NOW)}"
+    with game[1].connect() as conn:
+        conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, ?, 1)",
+            (credential, NOW),
+        )
+    ctx = _context(game, "u1")
+    assert battle_pass.experience(ctx, "u1") == 0
+    assert battle_pass.claim_daily_clear(ctx, "u1") is False
+    assert battle_pass.experience(ctx, "u1") == 0
 
 
 def test_help_and_parse_contract(game, play):
