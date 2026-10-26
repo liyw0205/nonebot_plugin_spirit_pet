@@ -291,6 +291,13 @@ class Catalog:
         titles = sorted(self.titles.values(), key=lambda title: title.order)
         if [title.order for title in titles] != list(range(1, len(titles) + 1)):
             raise ValueError("title order must be contiguous from 1")
+        pairs = [(title.metric, title.target) for title in titles]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("duplicate title metric target")
+        for title in titles:
+            # A title a player can never earn is a content bug: the same check
+            # achievements already get, so an edit cannot ship an unreachable goal.
+            self._require_within_ceiling("title", title.name, title.metric, title.target)
 
     def _validate_breeding(self) -> None:
         eggs = {item.species_id for item in self.items.values() if item.kind == "pet_egg"}
@@ -399,23 +406,17 @@ class Catalog:
             if floor.previous_id != expected:
                 raise ValueError("tower previous_id must form the ordered chain")
 
-    def _validate_achievements(self):
-        required = {
-            "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
-            "stage_clears", "tower_depth", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
-            "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
-            "best_bond_streak", "adventures_discovered", "max_enhancement", "spar_wins",
-            "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
-            "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
-            "dungeon_clears",
-        }
-        present = {achievement.metric for achievement in self.achievements.values()}
-        if not required.issubset(present):
-            raise ValueError(f"missing achievement metrics: {sorted(required - present)}")
-        pairs = [(entry.metric, entry.target) for entry in self.achievements.values()]
-        if len(set(pairs)) != len(pairs):
-            raise ValueError("duplicate achievement metric target")
-        maxima = {
+    def _metric_ceilings(self):
+        """Largest value each bounded metric can reach with the shipped content.
+
+        A metric is absent when nothing caps it: wins, battles, streaks and
+        owned items all grow without limit (equipment can be owned in multiples
+        and claims can be repeated across seasons), so those are deliberately
+        not checked and content may keep raising their targets. ``pets_owned``
+        is capped by the configurable roster limit rather than by content, and
+        only one resonance can be enabled at a time, so both are fixed here.
+        """
+        return {
             "species_collected": len(self.species),
             "duplicate_species": len(self.species),
             "max_realm": len(self.realms),
@@ -435,7 +436,39 @@ class Catalog:
             "first_clear_claims": len(self.dungeons),
             "dungeon_clears": len(self.dungeons),
             "equipment_set_claims": len(self.equipment_sets),
+            "resonances_enabled": 1,
+            "skill_mastery_rewards": len(self.skills) * len(self.species),
+            "main_quest_claims": len(self.main_quests),
+            "weekly_claims": len(self.weekly_quests),
+            # The season ladder lives in gameplay; tests/test_contract_audit.py
+            # asserts this ceiling still equals battle_pass.PREMIUM_LEVELS.
+            "battle_pass_premium_claims": 6,
         }
+
+    def _require_within_ceiling(self, kind: str, name: str, metric: str, target: int) -> None:
+        ceiling = self._metric_ceilings().get(metric)
+        if ceiling is not None and target > ceiling:
+            raise ValueError(
+                f"{kind} {name} target {target} exceeds available {metric} ({ceiling})"
+            )
+
+    def _validate_achievements(self):
+        required = {
+            "species_collected", "duplicate_species", "pets_owned", "max_realm", "max_layer", "max_bloodline",
+            "stage_clears", "tower_depth", "pvp_wins", "pve_wins", "team_pve_wins", "lineage_branches",
+            "skills_learned", "max_skill_level", "skill_level_sum", "expedition_claims", "max_affinity",
+            "best_bond_streak", "adventures_discovered", "max_enhancement", "spar_wins",
+            "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
+            "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
+            "dungeon_clears",
+        }
+        present = {achievement.metric for achievement in self.achievements.values()}
+        if not required.issubset(present):
+            raise ValueError(f"missing achievement metrics: {sorted(required - present)}")
+        pairs = [(entry.metric, entry.target) for entry in self.achievements.values()]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("duplicate achievement metric target")
+        maxima = self._metric_ceilings()
         targets = {}
         for entry in self.achievements.values():
             targets.setdefault(entry.metric, set()).add(entry.target)
