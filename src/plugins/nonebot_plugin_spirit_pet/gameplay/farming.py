@@ -120,6 +120,16 @@ def _grant_reward(ctx: Context, crop) -> tuple[str, ...]:
     return tuple(lines)
 
 
+def _seed_arg(ctx: Context, query: str):
+    """A crop by name, id, or seed name, or None."""
+    return next(
+        (entry for entry in ctx.content.crops.values()
+         if entry.name == query or entry.id == query
+         or ctx.content.items[entry.seed_item].name == query),
+        None,
+    )
+
+
 def catalog(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠灵田 不接受参数，直接发送即可。")
@@ -194,30 +204,35 @@ def plant(ctx: Context, arg: str) -> Reply:
         raise GameError(f"田位 {plot} 尚未开垦，请先发送 灵宠开垦 {plot}。")
     if crop_row is not None:
         raise GameError(f"田位 {plot} 已有作物在生长或待收获。")
-    query = parts[1]
-    crop = next(
-        (entry for entry in ctx.content.crops.values()
-         if entry.name == query or entry.id == query
-         or ctx.content.items[entry.seed_item].name == query),
-        None,
-    )
+    crop = _seed_arg(ctx, parts[1])
     if crop is None:
         raise GameError("未找到该作物，请检查种子名称。")
+    _sow(ctx, plot, crop)
     seed = ctx.content.items[crop.seed_item]
-    ctx.repo.consume_item(ctx.user_id, crop.seed_item, 1)
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
-        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=0",
-        (ctx.user_id, f"{CROP_PREFIX}{plot}_{crop.id}", ctx.now),
-    )
     return Reply("灵田播种", (
         f"田位 {plot} 播下了{seed.name}，{_effective_duration(ctx, plot, crop.duration)} 秒后成熟。",
         "成熟后可在灵宠灵田收获。",
     ), ("灵宠灵田", "灵宠背包"))
 
 
+def _sow(ctx: Context, plot: int, crop) -> None:
+    """Consume one seed and start a growth row on the plot."""
+    ctx.repo.consume_item(ctx.user_id, crop.seed_item, 1)
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
+        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=0",
+        (ctx.user_id, f"{CROP_PREFIX}{plot}_{crop.id}", ctx.now),
+    )
+
+
 def harvest(ctx: Context, arg: str) -> Reply:
-    plot = _plot_arg(ctx, arg)
+    parts = arg.split()
+    if len(parts) not in (1, 2):
+        raise GameError("格式：灵宠收获 <田位> [补种种子名]。")
+    plot = _plot_arg(ctx, parts[0])
+    replant = _seed_arg(ctx, parts[1]) if len(parts) == 2 else None
+    if replant is None and len(parts) == 2:
+        raise GameError("未找到该作物，请检查种子名称。")
     opened, crop_row, _ = _plot_state(ctx, plot)
     if not opened:
         raise GameError(f"田位 {plot} 尚未开垦。")
@@ -236,6 +251,8 @@ def harvest(ctx: Context, arg: str) -> Reply:
         (ctx.user_id, crop_row["quest_id"], f"{RENEW_PREFIX}{plot}"),
     )
     if elapsed >= duration + WILT_AFTER:
+        if replant is not None:
+            raise GameError(f"{crop.name}已枯萎，不能补种。")
         # Wilted: no yield, only the seed back.
         ctx.repo.add_item(ctx.user_id, crop.seed_item, 1)
         return Reply("灵田清理", (
@@ -243,6 +260,14 @@ def harvest(ctx: Context, arg: str) -> Reply:
             "下次记得及时收获。",
         ), ("灵宠灵田", "灵宠背包"))
     gained = _grant_reward(ctx, crop)
+    if replant is not None:
+        _sow(ctx, plot, replant)
+        return Reply("灵田补种", (
+            f"田位 {plot} 的{crop.name}成熟收获并已补种。",
+            *gained,
+            f"已消耗 1 个{ctx.content.items[replant.seed_item].name}，"
+            f"{_effective_duration(ctx, plot, replant.duration)} 秒后成熟。",
+        ), ("灵宠灵田", "灵宠背包"))
     return Reply("灵田收获", (
         f"田位 {plot} 的{crop.name}成熟收获。",
         *gained,

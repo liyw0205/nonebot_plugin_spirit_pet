@@ -135,3 +135,127 @@ def test_native_clean_and_parse(game, play):
     from nonebot_plugin_spirit_pet.adapters import handlers
 
     assert handlers._parse("灵宠升级 1") == ("farm_upgrade", "1")
+
+
+def test_default_harvest_keeps_existing_behavior(game, play):
+    open_and_plant(play, game, op="default")
+    result = play("farm_harvest", "1", now=NOW + 1 + RICE, op="default-harvest")
+    assert "成熟收获" in result.lines[0]
+    assert "种子" not in result.text()
+    assert items(game[1])["seed_spirit_rice"] == 4
+
+
+def test_successful_replant_consumes_seed_and_starts_crop(game, play):
+    open_and_plant(play, game, op="replant")
+    now = NOW + 1 + RICE
+    result = play("farm_harvest", "1 灵稻种", now=now, op="replant-harvest")
+    assert "成熟收获并已补种" in result.lines[0]
+    assert "已消耗 1 个灵稻种" in result.text()
+    assert "1800 秒后成熟" in result.text()
+    assert items(game[1])["seed_spirit_rice"] == 3
+    with game[1].connect() as conn:
+        row = conn.execute(
+            "SELECT quest_id, progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()
+    assert row["quest_id"] == "farm_crop_1_spirit_rice"
+    assert row["progress"] == now
+
+
+def test_replant_can_sow_a_different_crop(game, play):
+    open_and_plant(play, game, op="swap")
+    sql(game[1], "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('u1','seed_twin_grain',1)")
+    now = NOW + 1 + RICE
+    result = play("farm_harvest", "1 双穗麦种", now=now, op="swap-harvest")
+    assert "成熟收获并已补种" in result.lines[0]
+    assert "10800 秒后成熟" in result.text()
+    assert items(game[1])["seed_twin_grain"] == 0
+    with game[1].connect() as conn:
+        row = conn.execute(
+            "SELECT quest_id FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()
+    assert row["quest_id"] == "farm_crop_1_twin_grain"
+    page = play("farm", now=now + 1)
+    assert "田位 1 · 双穗麦生长中，剩余 10799 秒" in page.lines
+
+
+def test_replant_without_seed_rolls_back_harvest(game, play):
+    open_and_plant(play, game, op="no-seed")
+    sql(game[1], "DELETE FROM inventory WHERE user_id='u1' AND item_id='seed_spirit_rice'")
+    before_food = items(game[1])["spirit_food"]
+    with pytest.raises(GameError, match="道具数量不足"):
+        play("farm_harvest", "1 灵稻种", now=NOW + 1 + RICE, op="no-seed-harvest")
+    assert items(game[1]).get("seed_spirit_rice", 0) == 0
+    assert items(game[1])["spirit_food"] == before_food
+    with game[1].connect() as conn:
+        row = conn.execute(
+            "SELECT progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()
+    assert row is not None and row["progress"] == NOW + 1
+
+
+def test_replant_rejects_unknown_seed_and_extra_arguments(game, play):
+    open_and_plant(play, game, op="bad")
+    with pytest.raises(GameError, match="未找到该作物"):
+        play("farm_harvest", "1 不存在种", now=NOW + 1 + RICE, op="bad-name")
+    with pytest.raises(GameError, match="格式"):
+        play("farm_harvest", "1 灵稻种 多余", now=NOW + 1 + RICE, op="bad-extra")
+    with game[1].connect() as conn:
+        row = conn.execute(
+            "SELECT progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()
+    assert row["progress"] == NOW + 1
+
+
+def test_wilted_crop_rejects_replant_and_keeps_cleanup(game, play):
+    open_and_plant(play, game, op="wilt-replant")
+    wilt_time = NOW + 1 + RICE + WILT_AFTER
+    with pytest.raises(GameError, match="不能补种"):
+        play("farm_harvest", "1 灵稻种", now=wilt_time, op="wilt-replant-fail")
+    with game[1].connect() as conn:
+        row = conn.execute(
+            "SELECT progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()
+    assert row is not None
+    result = play("farm_harvest", "1", now=wilt_time, op="wilt-clean")
+    assert "已枯萎" in result.lines[0]
+    assert items(game[1])["seed_spirit_rice"] == 5
+
+
+def test_replant_replay_is_idempotent(game, play):
+    open_and_plant(play, game, op="replay")
+    now = NOW + 1 + RICE
+    first = play("farm_harvest", "1 灵稻种", now=now, op="replay-harvest")
+    replay = play("farm_harvest", "1 灵稻种", now=now, op="replay-harvest")
+    assert replay == first
+    assert items(game[1])["seed_spirit_rice"] == 3
+    with game[1].connect() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()[0] == 1
+
+
+def test_objectives_counts_wilted_plot_as_cleanup_not_harvest(game, play):
+    open_and_plant(play, game, op="obj-wilt")
+    # Past mature+48h no crop is still growing, so the hub must not promise a harvest.
+    hub = play("objectives", now=NOW + 1 + RICE + WILT_AFTER)
+    assert "灵田：1 块枯萎待清理" in hub.text()
+    assert "可收获" not in hub.text()
+
+
+def test_replanted_plot_harvests_its_own_crop(game, play):
+    open_and_plant(play, game, op="chain")
+    first = NOW + 1 + RICE
+    with game[1].connect() as conn:
+        conn.execute(
+            "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('u1','seed_ore_sprout',1)"
+        )
+    play("farm_harvest", "1 矿苗种", now=first, op="chain-replant")
+    page = play("farm", now=first + 1)
+    assert "田位 1 · 矿苗生长中，剩余 3599 秒" in page.lines
+    result = play("farm_harvest", "1", now=first + 3600, op="chain-harvest")
+    assert "矿苗成熟收获" in result.lines[0]
+    assert "锻灵矿 +1" in result.text()
+    with game[1].connect() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'farm_crop_1_%'"
+        ).fetchone()[0] == 0

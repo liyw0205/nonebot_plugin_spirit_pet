@@ -315,17 +315,26 @@ def _season_road_line(ctx: Context, user_id: str) -> str:
 def _farm_line(ctx: Context, user_id: str) -> str:
     ready = 0
     growing = 0
+    wilted = 0
     for plot in range(1, farming.PLOT_COUNT + 1):
         crop_row = farming._crop_row(ctx, plot)
         if crop_row is None:
             continue
         crop = farming._crop(ctx, crop_row)
-        if ctx.now - crop_row["progress"] >= crop.duration:
+        elapsed = ctx.now - crop_row["progress"]
+        duration = farming._effective_duration(ctx, plot, crop.duration)
+        if elapsed >= duration + farming.WILT_AFTER:
+            wilted += 1
+        elif elapsed >= duration:
             ready += 1
         else:
             growing += 1
     if ready:
         return f"灵田：{ready} 块可收获 · {growing} 块生长中"
+    if wilted and growing:
+        return f"灵田：{wilted} 块枯萎待清理 · {growing} 块生长中"
+    if wilted:
+        return f"灵田：{wilted} 块枯萎待清理"
     if growing:
         return f"灵田：暂无可收获 · {growing} 块生长中"
     return "灵田：暂无可收获 · 尚未播种"
