@@ -82,6 +82,40 @@ def test_drop_lookup_accepts_item_ids_and_names_an_item_without_drops(game, play
     assert "灵宠秘境" in page.commands and "灵宠委托" in page.commands
 
 
+def test_drop_lookup_names_the_seed_supply_paths(game, play):
+    """Seeds drop from the realm-tier roll, so the static tables never list them.
+
+    The lookup used to answer "暂无掉落来源" for every seed, telling players a
+    seed they can farm from ambushes, dungeons and expeditions drops nowhere.
+    """
+    page = play("catalog_drop", "灵稻种", now=NOW)
+    assert page.lines[1] == "掉落来源（6 处）："
+    assert "· 历练伏击 灵泉修行（25%）" in page.lines
+    assert "· 秘境 青岚林（挑战与扫荡 8%）" in page.lines
+    # Sweep shares the challenge chance, and the label says so.
+    assert "· 委托 采灵药（15%）" in page.lines
+
+
+def test_drop_lookup_keeps_shop_only_seeds_unsourced(game, play):
+    """The high-tier seeds are bought, not farmed, so no drop may be invented."""
+    page = play("catalog_drop", "古灵根种", now=NOW)
+    assert page.lines[1] == "暂无掉落来源；可在灵坊购买或从其他系统获得。"
+
+
+def test_seed_drop_chances_come_from_one_table(game, play):
+    """The lookup and the settlement roll must read the same chance table."""
+    from nonebot_plugin_spirit_pet.gameplay import farming
+
+    assert farming.SEED_DROP_CHANCE["ambush"] == 25
+    assert farming.SEED_DROP_CHANCE["dungeon"] == 8
+    assert farming.SEED_DROP_CHANCE["sweep"] == 8
+    assert farming.SEED_DROP_CHANCE["expedition"] == 15
+    page = play("catalog_drop", "灵稻种", now=NOW)
+    for key, label in (("ambush", "历练伏击"), ("dungeon", "秘境"), ("expedition", "委托")):
+        assert any(line.startswith(f"· {label} ") for line in page.lines), key
+        assert f"{farming.SEED_DROP_CHANCE[key]}%）" in "".join(page.lines)
+
+
 def test_drop_lookup_routes_through_the_plain_catalog_alias(game, play):
     assert play("catalog", "掉落 锻灵矿").lines == play("catalog_drop", "锻灵矿").lines
 

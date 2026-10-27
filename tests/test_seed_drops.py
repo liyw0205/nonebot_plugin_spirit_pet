@@ -69,6 +69,71 @@ def test_seed_drop_miss_leaves_inventory_untouched(game, play):
     assert items(game[1]).get("seed_spirit_rice", 0) == 0
 
 
+def miss_all_rolls(game):
+    """Every randint returns its stop, so a 1-100 roll can never hit."""
+    game[0].rng.randint = lambda start, stop: stop
+
+
+def test_dungeon_and_sweep_misses_leave_the_pack_untouched(game, play):
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE pets SET realm=6, energy=100, bloodline=4, layer=10")
+    miss_all_rolls(game)
+    game[0].rng.random = lambda: 0.99
+    play("challenge", "青岚林", now=NOW + 1, op="miss-dungeon")
+    assert items(game[1]).get("seed_spirit_rice", 0) == 0
+    sql(game[1], "UPDATE pets SET energy=100")
+    play("sweep", "青岚林", now=NOW + 900, op="miss-sweep")
+    assert items(game[1]).get("seed_spirit_rice", 0) == 0
+
+
+def test_expedition_miss_keeps_the_seed_out_of_the_snapshot(game, play):
+    play("adopt", "青鸾", now=NOW)
+    miss_all_rolls(game)
+    play("expedition_start", "采灵药", now=NOW, op="miss-exp")
+    snapshot = sql(game[1], "SELECT reward_snapshot FROM expeditions")[0]["reward_snapshot"]
+    assert "seed_" not in snapshot
+    job_id = sql(game[1], "SELECT job_id FROM expeditions")[0]["job_id"]
+    result = play("expedition_claim", str(job_id), now=NOW + 3600, op="miss-exp-claim")
+    assert "灵稻种" not in result.text()
+    assert items(game[1]).get("seed_spirit_rice", 0) == 0
+
+
+def test_ambush_seed_chance_matches_the_documented_rate(game, play):
+    """The ambush roll must use the shared chance table, not a local literal."""
+    from nonebot_plugin_spirit_pet.gameplay import farming
+
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE pets SET realm=6, energy=100")
+    seen = []
+    original = game[0].rng.randint
+
+    def record(start, stop):
+        if start == 1 and stop == 100:
+            seen.append("seed-roll")
+            return stop + 1  # always miss
+        return original(start, stop)
+
+    game[0].rng.randint = record
+    game[0].rng.random = lambda: 0.0  # force the ambush branch
+    play("explore", "灵泉修行", now=NOW + 1, op="chance-ambush")
+    assert seen, "the ambush settlement never rolled a seed drop"
+    assert farming.SEED_DROP_CHANCE["ambush"] == 25
+    assert items(game[1]).get("seed_spirit_rice", 0) == 0  # the miss was honoured
+
+
+def test_shop_bought_high_tier_seed_closes_the_loop(game, play):
+    """The two highest crops are bought, so the purchase path must reach harvest."""
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE players SET stones=100000")
+    play("farm_open", "1", now=NOW, op="hi2-open")
+    play("buy", "古灵根种 1", now=NOW, op="hi2-buy")
+    assert items(game[1])["seed_ancient_root"] == 1
+    play("farm_plant", "1 古灵根种", now=NOW + 1, op="hi2-plant")
+    result = play("farm_harvest", "1", now=NOW + 1 + 14400, op="hi2-harvest")
+    assert "灵石 +200" in result.text()
+    assert "锻灵矿 +4" in result.text()  # FixedRandom minimum of 4-6
+
+
 def test_seeds_are_materials_and_recyclable(game, play):
     play("adopt", "青鸾", now=NOW)
     sql(game[1], "UPDATE players SET stones=10000")

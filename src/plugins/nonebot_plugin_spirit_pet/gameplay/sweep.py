@@ -50,7 +50,7 @@ def sweep(ctx: Context, arg: str) -> Reply:
 
     lines = [f"扫荡：{dungeon.name}", *grant(ctx, dungeon.reward)]
     from .farming import roll_seed_drop
-    seed_id = roll_seed_drop(ctx, dungeon.min_realm, 8)
+    seed_id = roll_seed_drop(ctx, dungeon.min_realm, "sweep")
     if seed_id:
         ctx.repo.add_item(ctx.user_id, seed_id, 1)
         lines.append(f"{ctx.content.items[seed_id].name} +1")

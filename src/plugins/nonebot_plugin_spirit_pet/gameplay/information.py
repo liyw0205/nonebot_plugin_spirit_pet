@@ -231,8 +231,8 @@ def counter_lookup(ctx: Context, arg: str) -> Reply:
     ))
 
 
-def _drop_sources(ctx: Context, item_id: str) -> list[str]:
-    """Every place the item can drop from, as human-readable labels."""
+def _static_drop_sources(ctx: Context, item_id: str) -> list[str]:
+    """Sources that list the item in a static reward table."""
     sources = []
     for dungeon in ctx.content.dungeons.values():
         bounds = dungeon.reward.items.get(item_id)
@@ -255,6 +255,46 @@ def _drop_sources(ctx: Context, item_id: str) -> list[str]:
             continue
         sources.append(f"委托 {expedition.name}")
     return sources
+
+
+def _seed_drop_sources(ctx: Context, item_id: str) -> list[str]:
+    """Seeds drop from a realm-tier roll, not from a static reward table.
+
+    The roll lives in the settlement paths (`farming.roll_seed_drop`), so the
+    static reward tables never list a seed and this lookup used to report that
+    seeds drop nowhere. Derive the same sources those rolls cover: the seed a
+    realm yields is offered by every ambush, dungeon (challenge and sweep) and
+    expedition of that realm, at each path's documented chance.
+    """
+    from .farming import SEED_DROP_CHANCE, seed_for_realm
+
+    if item_id not in {crop.seed_item for crop in ctx.content.crops.values()}:
+        return []
+    ambush, dungeon, sweep, expedition = (
+        SEED_DROP_CHANCE["ambush"], SEED_DROP_CHANCE["dungeon"],
+        SEED_DROP_CHANCE["sweep"], SEED_DROP_CHANCE["expedition"],
+    )
+    sources = []
+    for route in ctx.content.exploration_routes.values():
+        if seed_for_realm(ctx, route.min_realm) == item_id:
+            sources.append(f"历练伏击 {route.name}（{ambush}%）")
+    for dungeon_entry in ctx.content.dungeons.values():
+        if seed_for_realm(ctx, dungeon_entry.min_realm) != item_id:
+            continue
+        chance = (
+            f"挑战与扫荡 {dungeon}%" if dungeon == sweep
+            else f"挑战 {dungeon}% · 扫荡 {sweep}%"
+        )
+        sources.append(f"秘境 {dungeon_entry.name}（{chance}）")
+    for expedition_entry in ctx.content.expeditions.values():
+        if seed_for_realm(ctx, expedition_entry.min_realm) == item_id:
+            sources.append(f"委托 {expedition_entry.name}（{expedition}%）")
+    return sources
+
+
+def _drop_sources(ctx: Context, item_id: str) -> list[str]:
+    """Every place the item can drop from, as human-readable labels."""
+    return _static_drop_sources(ctx, item_id) + _seed_drop_sources(ctx, item_id)
 
 
 def drop_lookup(ctx: Context, arg: str) -> Reply:

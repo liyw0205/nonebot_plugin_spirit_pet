@@ -127,7 +127,7 @@ def start(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{pet.name}精力不足，需要 {task.energy} 点。")
     reward = task.reward
     from .farming import roll_seed_drop
-    seed_drop = roll_seed_drop(ctx, task.min_realm, 15)
+    seed_drop = roll_seed_drop(ctx, task.min_realm, "expedition")
     snapshot = RewardSnapshot(
         exp=ctx.rng.randint(reward.exp.minimum, reward.exp.maximum),
         stones=ctx.rng.randint(reward.stones.minimum, reward.stones.maximum),
