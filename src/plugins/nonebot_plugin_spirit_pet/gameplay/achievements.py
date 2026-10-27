@@ -5,6 +5,7 @@ from datetime import datetime
 from ..application.context import Context
 from ..domain.achievement_content import Achievement
 from ..domain.models import GameError, InlineCommand, Reply
+from ..domain.state import ASCENDED_PREFIX
 from ..utils.arguments import named, quantity
 from ..utils.time import BEIJING
 from . import codex
@@ -175,6 +176,17 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
         params = (user_id, *dungeon_ids)
     elif metric == "resonances_enabled":
         query, params = "SELECT COUNT(*) FROM player_resonance WHERE user_id=?", (user_id,)
+    elif metric == "ascended_pets":
+        query, params = (
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND claimed=1 AND quest_id LIKE ?",
+            (user_id, f"{ASCENDED_PREFIX}%"),
+        )
+    elif metric == "rebirth_count":
+        query = (
+            "SELECT COALESCE((SELECT progress FROM quest_progress "
+            "WHERE user_id=? AND quest_id='rebirth_count'), 0)"
+        )
+        params = (user_id,)
     elif metric in ("journey_claims", "echo_claims", "first_clear_claims"):
         # The three claim systems share the progress table, so each counts its own prefix.
         prefix = {"journey_claims": "journey_", "echo_claims": "echo_", "first_clear_claims": "first_clear_"}

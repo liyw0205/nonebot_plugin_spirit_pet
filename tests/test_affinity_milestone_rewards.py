@@ -212,8 +212,9 @@ def test_help_objectives_and_native_commands_expose_affinity_rewards(game, play)
 
     hub = play("objectives")
     assert "亲密里程碑奖励：可领 2 项 · 已达成 2 项" in hub.text()
-    assert hub.inline_commands[-2].command == "灵宠亲密赏"
-    assert hub.inline_commands[-1].command == "灵宠境界赏"
+    assert hub.inline_commands[-3].command == "灵宠亲密赏"
+    assert hub.inline_commands[-2].command == "灵宠境界赏"
+    assert hub.inline_commands[-1].command == "灵宠飞升"
     listing = play("affinity_milestone_rewards")
     _, message = _qq_segments(listing, Config(spirit_pet_qq_mode="native"))
     buttons = {

@@ -202,6 +202,29 @@ def _affinity_milestone_line(ctx: Context, user_id: str) -> str:
     return affinity_milestone_rewards.summary(ctx, user_id)
 
 
+def _ascension_line(ctx: Context, user_id: str) -> str:
+    from . import ascension_rules
+
+    pets = ctx.repo.owned_pets(user_id)
+    final = len(ctx.content.realms) - 1
+    ascended = [pet for pet in pets if pet.ascended]
+    ready = [pet for pet in pets if not pet.ascended and pet.realm == final and pet.layer == 10]
+    week = ascension_rules.week_start(ctx.now)
+    repeats = [
+        pet for pet in ascended
+        if ascension_rules.repeat_week(ctx, pet.pet_id) != week
+    ]
+    detail = (
+        f"可挑战：{ready[0].name}" if ready
+        else f"本周可轮回：{repeats[0].name}" if repeats
+        else "暂无可挑战"
+    )
+    return (
+        f"飞升：已飞升 {len(ascended)} 只 · 轮回 "
+        f"{ascension_rules.rebirth_count(ctx, user_id)} 周目 · {detail}"
+    )
+
+
 def _bloodline_milestone_line(ctx: Context, user_id: str) -> str:
     return bloodline_milestone_rewards.summary(ctx, user_id)
 
@@ -436,6 +459,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_skill_mastery_line(ctx, player.user_id), "灵宠灵术赏"),
         (_affinity_milestone_line(ctx, player.user_id), "灵宠亲密赏"),
         (_realm_milestone_line(ctx, player.user_id), "灵宠境界赏"),
+        (_ascension_line(ctx, player.user_id), "灵宠飞升"),
     ]
     lines = [text for text, _ in rows]
     links = tuple(

@@ -133,7 +133,7 @@ def test_claim_is_specific_to_pet_and_skill_and_drives_master_title(game, play):
                        "AND substr(quest_id, 1, ?) = ?", (len(CLAIM_PREFIX), CLAIM_PREFIX)) == [{"total": 9}]
     title_page = play("titles", "5")
     assert "21. 万法宗师 · 已获得 · 领取八份灵术精进奖励。" in title_page.text()
-    assert "当前称号：万法宗师 · 已获得 4/23 项" in title_page.text()
+    assert "当前称号：万法宗师 · 已获得 4/25 项" in title_page.text()
 
 
 def test_unlearned_unmastered_foreign_and_stale_entries_are_rejected(game, play):
@@ -204,8 +204,9 @@ def test_help_and_objectives_expose_mastery_rewards(game, play):
     add_skill(game, pet_id)
     hub = play("objectives")
     assert "灵术精进奖励：可领 1 项（青鸾·风刃术）· 五阶精通 1 项" in hub.text()
-    assert hub.inline_commands[-3].command == "灵宠灵术赏"
-    assert hub.inline_commands[-2].command == "灵宠亲密赏"
-    assert hub.inline_commands[-1].command == "灵宠境界赏"
+    assert hub.inline_commands[-4].command == "灵宠灵术赏"
+    assert hub.inline_commands[-3].command == "灵宠亲密赏"
+    assert hub.inline_commands[-2].command == "灵宠境界赏"
+    assert hub.inline_commands[-1].command == "灵宠飞升"
     play("skill_mastery_claim", f"{pet_id} 风刃术")
     assert "灵术精进奖励：暂无可领 · 五阶精通 1 项" in play("objectives").text()

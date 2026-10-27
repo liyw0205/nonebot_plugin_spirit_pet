@@ -4,7 +4,7 @@ import sqlite3
 from dataclasses import asdict
 
 from ..domain.models import GameError
-from ..domain.state import Pet, Player
+from ..domain.state import ASCENDED_PREFIX, Pet, Player
 
 
 class Repository:
@@ -33,7 +33,12 @@ class Repository:
                 raise GameError("灵宠不存在。")
             data = dict(row)
             data["archived"] = bool(data["archived"])
-            self.pets[pet_id] = Pet(**data)
+            pet = Pet(**data)
+            pet.ascended = bool(self.conn.execute(
+                "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id=? AND claimed=1",
+                (pet.user_id, f"{ASCENDED_PREFIX}{pet.pet_id}"),
+            ).fetchone())
+            self.pets[pet_id] = pet
         return self.pets[pet_id]
 
     def active_expedition(self, pet_id: int) -> sqlite3.Row | None:

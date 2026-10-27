@@ -5,7 +5,10 @@ from pydantic import Field
 from .achievement_content import AchievementMetric
 from .content import Definition, Identifier, Name
 
-TitleMetric = AchievementMetric | Literal["main_quest_claims", "weekly_claims", "battle_pass_premium_claims"]
+TitleMetric = AchievementMetric | Literal[
+    "main_quest_claims", "weekly_claims", "battle_pass_premium_claims",
+    "ascended_pets", "rebirth_count",
+]
 
 
 class Title(Definition):

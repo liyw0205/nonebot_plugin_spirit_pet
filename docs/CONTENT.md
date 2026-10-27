@@ -31,7 +31,8 @@
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
 | weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置；每个指标 1-2 个难度 |
 | season_missions.json | 赛季目标的指标、目标值与每赛季一次性奖励，按自然月重置；每个指标 1-2 个难度 |
-| titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生；可统计五阶灵术精进奖励的永久领取凭证 |
+| titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生；可统计五阶灵术精进奖励的永久领取凭证与飞升周目 |
+| ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
 | rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛与灵坊回收比例 |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
@@ -141,7 +142,7 @@
 
 `achievements.json` 的每项只定义稳定 ID、名称、说明、指标、目标和一次性奖励，不保存玩家进度。`duplicate_species` 指至少拥有两只实例的种族数量；封存宠物仍属于玩家，也计入此指标。动态进度从 SQLite 当前存档与永久记录计算，领取凭证和奖励快照单独持久化。玩家页与详情按当前定义展示说明、派生进度、状态和奖励预览；领取时必须把成就 ID/名称、指标/目标、领取时进度、灵石、物品 ID/当时名称/数量及幂等回复写入既有 `achievement_claims` 记录。已领取详情只读这份快照，不能从更新后的静态目录重新计算实际奖励；发奖、领取凭证、快照与回复必须在同一事务内提交，任一奖励写入失败时全部回滚。新增成就时同步验证稳定 ID、唯一名称、目标可达及奖励物品引用，不向内容目录写玩家状态或累计计数。指标词汇同时覆盖装备强化等级（`max_enhancement`，取 `equipment` 与 `unequipped_equipment` 的最大强化等级）、切磋胜场（`spar_wins`）、累计战斗场次（`battles_fought`）、装备收藏（`equipment_owned`）、成就领取数（`achievements_claimed`）与共鸣启用（`resonances_enabled`），全部只读派生，不新增表或计数列。`max_enhancement` 的上限由 `forge_levels` 阶梯决定，因此 +10 里程碑必须在册。领取式系统也各有指标：`journey_claims`、`echo_claims` 与 `first_clear_claims` 分别统计 `quest_progress` 中 `journey_`、`echo_` 与 `first_clear_` 前缀的已领取标记；`equipment_set_claims` 只统计配置有奖励且当前仍存在于套装目录的精确领奖凭证。上限由对应目录条目数决定，成就目标不能超出可达上限。
 
-`titles.json` 的每项只定义稳定 ID、名称、说明、指标、目标值与优先级（`order` 从 1 连续），不保存玩家状态；称号由当前存档即时派生，取已获得中优先级最高的一个。指标词汇复用成就指标，另加 `main_quest_claims`、`weekly_claims`、`skill_mastery_rewards` 与 `battle_pass_premium_claims` 四个领取计数指标。校验与成就同一套：`order` 连续、名称唯一、`指标 + 目标` 组合不得重复，且目标值不得超出该指标的可达上限（上限由对应目录条目数决定，例如 `lineage_branches` 为血脉分支数、`battle_pass_premium_claims` 为进阶节点数、`max_affinity` 为 100、`resonances_enabled` 为 1），因此不能定义玩家永远拿不到的称号。两类指标不做上限校验，追加内容时可以继续抬高目标：一类随游玩次数无限累积（论剑/秘境胜场、战斗场次、切磋胜场、连胜、成就领取数、`expedition_claims`、`best_bond_streak`）；一类由玩家配置的上限决定而非内容（`pets_owned` 取 `spirit_pet_max_pets`、`skill_mastery_rewards` 取名册上限 × 灵术数、`equipment_owned` 可重复持有同一件装备）。上限表由成就与称号共用，任一侧新增内容后都要重新核对。
+`titles.json` 的每项只定义稳定 ID、名称、说明、指标、目标值与优先级（`order` 从 1 连续），不保存玩家状态；称号由当前存档即时派生，取已获得中优先级最高的一个。指标词汇复用成就指标，另加 `main_quest_claims`、`weekly_claims`、`skill_mastery_rewards`、`battle_pass_premium_claims`、`ascended_pets` 与 `rebirth_count` 六个领取/派生指标。`ascended_pets` 统计 `ascended_<宠物编号>` 飞升凭证数量，`rebirth_count` 读取 `quest_progress` 的周目计数；两者都不新增列。校验与成就同一套：`order` 连续、名称唯一、`指标 + 目标` 组合不得重复，且目标值不得超出该指标的可达上限（上限由对应目录条目数决定，例如 `lineage_branches` 为血脉分支数、`battle_pass_premium_claims` 为进阶节点数、`max_affinity` 为 100、`resonances_enabled` 为 1），因此不能定义玩家永远拿不到的称号。两类指标不做上限校验，追加内容时可以继续抬高目标：一类随游玩次数无限累积（论剑/秘境胜场、战斗场次、切磋胜场、连胜、成就领取数、`expedition_claims`、`best_bond_streak`、`ascended_pets`、`rebirth_count`）；一类由玩家配置的上限决定而非内容（`pets_owned` 取 `spirit_pet_max_pets`、`skill_mastery_rewards` 取名册上限 × 灵术数、`equipment_owned` 可重复持有同一件装备）。上限表由成就与称号共用，任一侧新增内容后都要重新核对。
 
 `journey.json` 的每章只定义境界、前置章节、故事文案、任务与一次性奖励，不保存玩家进度。校验要求：境界必须存在；每个境界至少一章；恰好一个首章（`previous_id` 为空），其余章节的前置必须存在且境界不倒退；整条链必须无环、无分叉且覆盖全部章节；任务目标按类型引用对应目录（秘境、奇闻、种族、共鸣、境界），且秘境 `min_realm`、奇闻所属路线的 `min_realm` 与 `reach_realm` 目标都不得高于本章境界（避免出现无法达成的章节）；只有 `win_at` 允许 `count` 大于 1；奖励物品必须存在。前置境界不得倒退，因此追加章节只能接在链尾且境界不低于末章（渡劫境的终章 `journey_15`/`journey_16` 即如此）。进度由永久战报、奇闻发现记录、灵宠种族与境界、当前共鸣即时派生，领取标记写入 `quest_progress`。
 

@@ -31,6 +31,7 @@ GAMEPLAY = ROOT / "docs" / "GAMEPLAY.md"
 # Read-only pages a freshly adopted player can render.
 READ_ONLY_PAGES = (
     "achievements", "adventure_codex", "adventure_collection_rewards", "adventure_rank",
+    "ascension",
     "arena_reward_history", "arena_tier_rewards", "battle_merits", "battle_pass",
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
     "bond_rewards", "breeding", "catalog", "checkin_calendar", "checkin_rewards",
@@ -55,11 +56,11 @@ SHARED_HELP_ENTRIES = {
 }
 
 DOCUMENTED_COUNTS = {
-    "achievements": 77, "titles": 23, "dungeons": 20, "stages": 16, "tower": 16,
+    "achievements": 77, "titles": 25, "dungeons": 20, "stages": 16, "tower": 16,
     "adventures": 21, "expeditions": 21, "pets": 27, "lineages": 54, "skills": 24,
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
-    "equipment": 14, "equipment_sets": 4, "enemies": 20,
+    "equipment": 14, "equipment_sets": 4, "enemies": 23,
 }
 
 
@@ -147,7 +148,10 @@ def test_title_beyond_the_reachable_ceiling_is_rejected(tmp_path):
     """A title no player can ever earn must fail at load, like achievements do."""
     root = copy_content(tmp_path)
     titles = json.loads((root / "titles.json").read_text())
-    titles[-1]["target"] = 999
+    # Pick a content-bounded metric: unbounded metrics (rebirth_count,
+    # ascended_pets) legitimately accept any target.
+    season_walker = next(title for title in titles if title["metric"] == "battle_pass_premium_claims")
+    season_walker["target"] = 999
     (root / "titles.json").write_text(json.dumps(titles, ensure_ascii=False))
     with pytest.raises(ValueError, match="exceeds available"):
         Catalog.load(root)

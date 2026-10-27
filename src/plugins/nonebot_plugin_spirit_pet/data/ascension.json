@@ -1,0 +1,23 @@
+[
+  {
+    "id": "thunder",
+    "name": "雷劫",
+    "order": 1,
+    "enemy": "ascension_thunder",
+    "description": "九霄雷火洗炼肉身，扛过天雷才能窥见飞升之门。"
+  },
+  {
+    "id": "demon",
+    "name": "心魔",
+    "order": 2,
+    "enemy": "ascension_demon",
+    "description": "心魔化作最熟悉的执念，斩断它才不会被自己的道困住。"
+  },
+  {
+    "id": "heaven",
+    "name": "天道",
+    "order": 3,
+    "enemy": "ascension_heaven",
+    "description": "天道无情，以规则压身；唯有正面破开，才算真正跳出樊笼。"
+  }
+]

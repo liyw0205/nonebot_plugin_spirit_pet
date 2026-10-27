@@ -6,6 +6,7 @@ from ..domain.battle_content import Element, Skill, Talent
 from ..domain.state import Pet
 from ..utils.elements import element_ancestors
 from . import effects, talents
+from .ascension_rules import STAT_BONUS
 from .effects import EffectState
 from .lineage import stat_multipliers
 
@@ -17,6 +18,10 @@ def pet_stats(pet: Pet, content: Catalog) -> Stats:
         * content.bloodlines[pet.bloodline].multiplier
         * (1 + pet.affinity / 1000)
     )
+    if pet.ascended:
+        # Ascension raises every attribute by 10%; the flag is derived from
+        # quest_progress and travels with the pet into battle snapshots.
+        multiplier *= 1 + STAT_BONUS
     base = content.species[pet.species_id].stats
     growth = stat_multipliers(pet, content).model_dump()
     return Stats(**{key: max(1, int(value * multiplier * growth[key])) for key, value in base.model_dump().items()})

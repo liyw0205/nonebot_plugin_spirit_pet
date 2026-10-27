@@ -189,5 +189,47 @@
     },
     "signature_skill": "vine_lash",
     "skill_every": 3
+  },
+  {
+    "id": "ascension_thunder",
+    "name": "雷劫天罚",
+    "primary_element": "thunder",
+    "elements": [
+      "thunder"
+    ],
+    "stats": {
+      "hp": 16000,
+      "attack": 1500,
+      "defense": 800,
+      "speed": 900
+    }
+  },
+  {
+    "id": "ascension_demon",
+    "name": "心魔执念",
+    "primary_element": "poison",
+    "elements": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 19000,
+      "attack": 1700,
+      "defense": 900,
+      "speed": 950
+    }
+  },
+  {
+    "id": "ascension_heaven",
+    "name": "天道无情",
+    "primary_element": "metal",
+    "elements": [
+      "metal"
+    ],
+    "stats": {
+      "hp": 23000,
+      "attack": 1900,
+      "defense": 1000,
+      "speed": 1000
+    }
   }
 ]

@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, Reply
 from ..utils.arguments import named
 from ..utils.pagination import paginate
+from .ascension_rules import skill_slots
 from .compatibility import check_requirements, requirement_text
 from .mastery import progress, progress_text
 
@@ -25,7 +26,7 @@ def view(ctx: Context, arg: str) -> Reply:
         f" · {'已携带' if active else '未携带'}"
         for key, active in skills.items()
     ) or ("尚未学习灵术。",)
-    return Reply(f"{pet.name}的技能", (*lines, f"携带上限：{ctx.content.rules.max_skill_slots} 个。"),
+    return Reply(f"{pet.name}的技能", (*lines, f"携带上限：{skill_slots(ctx, pet)} 个。"),
                  ("灵宠技能图鉴", "灵宠万法总览", "灵宠商店"))
 
 
@@ -59,7 +60,7 @@ def learn(ctx: Context, arg: str) -> Reply:
     if skill.id in current:
         raise GameError("该宠物已经学会此技能，不会重复消耗秘笈。")
     ctx.repo.consume_item(ctx.user_id, skill.book_item, 1)
-    active = int(sum(current.values()) < ctx.content.rules.max_skill_slots)
+    active = int(sum(current.values()) < skill_slots(ctx, pet))
     ctx.repo.conn.execute(
         "INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, ?, ?)",
         (pet.pet_id, skill.id, active),
@@ -81,7 +82,7 @@ def equip(ctx: Context, arg: str) -> Reply:
         raise GameError("当前宠物尚未学会该技能。")
     if current[skill.id]:
         raise GameError("该技能已携带。")
-    if sum(current.values()) >= ctx.content.rules.max_skill_slots:
+    if sum(current.values()) >= skill_slots(ctx, pet):
         raise GameError("技能位已满，请先卸下一个技能。")
     ctx.repo.conn.execute(
         "UPDATE learned_skills SET equipped=1 WHERE pet_id=? AND skill_id=?", (pet.pet_id, skill.id),

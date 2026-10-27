@@ -522,6 +522,14 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 本切片同时在图鉴详情页派生三行百科内容：克制速览（从战斗引擎 effectiveness 双向遍历）、该族两条血脉分支预览、灵卵掉落秘境行，并把掉落行挂“查看掉落秘境”直达蓝字（`tests/test_catalog_interaction.py` 两条 native 蓝字合同按新形状同步）。聚焦 `tests/test_codex2.py` `22 passed`（原 17 项检索/百科合同 + 新增 5 项：详情百科派生、内容定义、指标派生、战报通关判定边界、三条成就解锁/领取/幂等）；受影响成就/称号/图鉴交互/目标/内容/运行时合同 `258 passed`；`compileall` 与 `git diff --check` 通过。全量 `pytest -q tests/` 在 180 秒工具限时内退出 124（约 34% 处中断），未作为成功证据，不重跑。已提交 `be0b0b4` 并普通推送 develop，develop CI `40120894595` 全绿；随后 `git merge --ff-only develop` 快进合入 main 并推送，main CI `40121356939` 全绿（均对应同一提交 `be0b0b4`）。提交范围为白名单 18 个文件，未包含 `docs/goals/` 本地卡片、`gameplay/farming.py` 与 `tests/test_farm2.py` 的既有脏改动。未部署、未发送真实 QQ。
 
+### 渡劫终局飞升与轮回（2026-10-27，已完成）
+
+大目标 10/10，解除此前对“飞升/二周目”的排除。新增 `data/ascension.json` 三段试炼（雷劫、心魔、天道）与 `enemies.json` 三个专属敌手（雷劫天罚 16000/1500/800/900、心魔执念 19000/1700/900/950、天道无情 23000/1900/1000/1000）；敌手数值按渡劫十层、仙血脉、满亲密伙伴的既有战斗公式实测标定，仙血伙伴可连续通过，血脉不足会停在雷劫或心魔。`灵宠飞升` 分页展示周目、已飞升数量与逐宠状态，`灵宠飞升 <宠物编号>` 在同一事务内依次开战，每段以全新 Fighter 满血开始，任意一段败北/平局即停止；试炼不消耗灵石、灵粮、精力或冷却，失败不写标记且可立即重试，只有三段全胜才写入 `quest_progress` 的 `ascended_<宠物编号>`。
+
+飞升标记由 `Repository.pet()` 从 `quest_progress` 派生（不新增列，schema 20 不动），`pet_stats` 对飞升宠全属性乘 1.10，因此秘境、关卡、万灵塔、论剑、组队与战报快照使用同一份数值；`capture_snapshot` 成员快照新增 `ascended` 字段，战报详情显示“飞升”。`skills` 的携带上限改为按宠物派生：普通宠沿用 `rules.max_skill_slots`（2），飞升宠为 5（专属第五栏位），学习与携带都走同一 helper。每次全队飞升记 1 周目（`rebirth_count`），名册仍有未飞升伙伴时不记；已飞升伙伴每周可重走一次试炼（`ascension_week_<编号>`），全胜且全队仍飞升时同样记周目，重走不发任何货币或道具。首只飞升解锁称号“破界者”，三个周目解锁“轮回行者”；`灵宠目标` 增加飞升行与入口，帮助、`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。称号由 23 项增至 25 项，敌手由 20 个增至 23 个，计数合同与 `DOCUMENTED_COUNTS` 同批更新。
+
+新增 `tests/test_ascension.py` 23 项：三段流程与每段满血重开、全胜/部分胜/失败三态、飞升标记与 +10% 属性、第五技能栏位、战报快照与持久战报、全队周目与三次轮回称号、成功/失败重投幂等、跨重启与封存复原持久、未达境界/非本人/派遣中/已封存/同周重复拒绝、未结契只读、目录状态与蓝字、QQ native 按钮与蓝字分离、帮助与目标入口、内容校验。聚焦命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_ascension.py`（23 passed）；受影响目标/称号/成就/内容/命令/战报/技能/运行时/契约审计合同 381 passed；`compileall` 与 `git diff --check` 通过。未部署、未发送真实 QQ、未跑全量；`docs/goals/pet-goal-ascension.md` 与索引仅本地保留、不提交。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

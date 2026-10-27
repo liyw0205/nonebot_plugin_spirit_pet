@@ -72,12 +72,14 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
         "resonance": fighter.resonance_name,
         "affinity": fighter.affinity,
         "bond_protection": fighter.affinity == BOND_GUARD_AFFINITY,
+        "ascended": False,
     }
     if fighter.pet_id is None:
         return member
     pet = ctx.repo.pet(fighter.pet_id)
     member["pet_name"] = pet.name
     member["species_id"] = pet.species_id
+    member["ascended"] = bool(pet.ascended)
     species = ctx.content.species[pet.species_id]
     member["realm"] = pet.realm
     member["realm_name"] = ctx.content.realms[pet.realm].name
@@ -191,10 +193,11 @@ def _member_text(member: dict) -> str:
     resonance = f" · 共鸣 {member['resonance']}" if member.get("resonance") else ""
     affinity = f" · 亲密 {member['affinity']}/100" if isinstance(member.get("affinity"), int) else ""
     bond_protection = " · 心契护佑" if member.get("bond_protection") else ""
+    ascended = " · 飞升" if member.get("ascended") else ""
     title = f" · 称号 {member['title']}" if member.get("title") else ""
     return (
         f"{player}的{member.get('pet_name', '未知灵宠')}{title}{realm_text}{resonance}"
-        f"{affinity}{bond_protection} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
+        f"{affinity}{bond_protection}{ascended} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
     )
 
 

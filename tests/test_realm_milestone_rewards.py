@@ -172,6 +172,7 @@ def test_help_and_objectives_expose_realm_rewards(game, play):
 
     hub = play("objectives")
     assert "境界里程碑奖励：可领 2 项 · 已达成 2 项" in hub.text()
-    assert hub.inline_commands[-1].command == "灵宠境界赏"
+    assert hub.inline_commands[-2].command == "灵宠境界赏"
+    assert hub.inline_commands[-1].command == "灵宠飞升"
     play("realm_milestone_claim", f"{pet_id} 凝气")
     assert "境界里程碑奖励：可领 1 项 · 已达成 2 项" in play("objectives").text()

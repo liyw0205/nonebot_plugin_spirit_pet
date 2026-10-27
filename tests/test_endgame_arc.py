@@ -59,7 +59,7 @@ def profile(enemy):
 def test_new_dungeons_are_endgame_tier(game):
     content = game[0].content
     assert len(content.dungeons) == 20
-    assert len(content.enemies) == 20
+    assert len(content.enemies) == 23
     for dungeon_id in NEW_DUNGEONS:
         dungeon = content.dungeons[dungeon_id]
         assert dungeon.min_realm == "dujie"
@@ -188,4 +188,4 @@ def test_content_loads_with_the_arc():
     assert len(content.dungeons) == 20
     assert len(content.journey) == 16
     assert len(content.achievements) == 77
-    assert len(content.titles) == 23
+    assert len(content.titles) == 25

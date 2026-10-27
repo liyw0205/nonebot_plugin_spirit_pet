@@ -182,5 +182,21 @@
     "metric": "battle_pass_premium_claims",
     "target": 6,
     "order": 23
+  },
+  {
+    "id": "ascension_breaker",
+    "name": "破界者",
+    "description": "让第一只伙伴完成雷劫、心魔、天道三段飞升试炼。",
+    "metric": "ascended_pets",
+    "target": 1,
+    "order": 24
+  },
+  {
+    "id": "rebirth_walker",
+    "name": "轮回行者",
+    "description": "走过三个周目，累计完成三次飞升试炼。",
+    "metric": "rebirth_count",
+    "target": 3,
+    "order": 25
   }
 ]

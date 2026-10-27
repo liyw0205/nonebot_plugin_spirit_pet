@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+# Ascension is stored per pet in `quest_progress` so schema 20 stays frozen.
+ASCENDED_PREFIX = "ascended_"
+
 
 @dataclass
 class Player:
@@ -43,3 +46,5 @@ class Pet:
     lineage_id: str | None = None
     archived: bool = False
     major_breakthrough_failures: int = 0
+    # Derived from `quest_progress` by Repository.pet(); never a pets column.
+    ascended: bool = False
