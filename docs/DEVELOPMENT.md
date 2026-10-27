@@ -536,7 +536,7 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 `灵宠特供` 页面逐行给出原价、特供价、今日总件数、剩余与本人已购，可购买行挂 `灵宠特供 <物品>` 蓝字；`灵宠特供 <物品> [数量]` 按折扣价扣灵石、加道具并把已购件数累加到 `quest_progress` 的 `shop_offer_<北京日期>_<特供id>`，库存 = 定义库存 - 当日已购，跨日换 key 自动重置。普通 `灵宠购买` 的价格、数量与无限购语义不变；`灵宠商店` 增加 `灵宠特供` 页面级入口，按钮仍不超过四条。未结契只读；非当日特供、售罄、超库存、灵石不足、格式错误整笔拒绝且不改变任何状态；同一操作重投返回原回复。帮助、`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步，未改 schema、玩家表、道具售价或回收比例。
 
-新增 `tests/test_daily_shop.py` 15 项；受影响商店/分页/命令/帮助/内容/运行时/契约审计/目标/成就/称号/战令/飞升合同 340 passed；`compileall` 与 `git diff --check` 通过。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-daily-shop.md` 仅本地保留、不提交。
+新增 `tests/test_daily_shop.py` 15 项；受影响商店/分页/命令/帮助/内容/运行时/契约审计/目标/成就/称号/战令/飞升合同 340 passed；`compileall` 与 `git diff --check` 通过。提交 `81b34ef` 已推送 develop，develop CI `40528647073` 全绿，fast-forward 合入 main 后 main CI `40529233227` 全绿。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-daily-shop.md` 仅本地保留、不提交。
 
 ### 开发阶段流程
 
