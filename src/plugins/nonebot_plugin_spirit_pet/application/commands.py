@@ -22,6 +22,7 @@ from ..gameplay import season_missions
 from ..gameplay import battle_pass
 from ..gameplay import ascension
 from ..gameplay import daily_shop
+from ..gameplay import skill_presets
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
@@ -147,6 +148,7 @@ ACTIONS = {
     "battle_pass_history": Command(battle_pass.history, True, registered=False),
     "ascension": Command(ascension.dispatch, True, registered=False),
     "daily_shop": Command(daily_shop.entry, True, registered=False),
+    "skill_presets": Command(skill_presets.entry, True, registered=False),
     "daily_assignment": Command(daily_assignment.catalog, True, registered=False),
     "daily_assignment_claim": Command(daily_assignment.claim, True),
     "breakthrough": Command(cultivation.breakthrough, True),
@@ -273,7 +275,7 @@ COMMANDS = {
     "灵宠称号": "titles", "灵宠称号佩戴": "title_equip", "灵宠目标": "objectives",
     "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim", "灵宠每周召唤": "free_summon", "灵宠每周召唤领取": "free_summon_claim", "灵宠行纪": "journey", "灵宠行纪领奖": "journey_claim", "灵宠回响": "echoes", "灵宠回响选择": "echo_choose", "灵宠赛季任务": "season_missions", "灵宠赛季任务领奖": "season_mission_claim", "灵宠课题": "daily_assignment", "灵宠课题领奖": "daily_assignment_claim",
     "灵宠战令": "battle_pass", "灵宠战令进阶": "battle_pass_unlock", "灵宠战令领奖": "battle_pass_claim", "灵宠战令回顾": "battle_pass_history",
-    "灵宠飞升": "ascension", "灵宠特供": "daily_shop",
+    "灵宠飞升": "ascension", "灵宠特供": "daily_shop", "灵宠技能预设": "skill_presets",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠秘境战绩": "dungeon_stats", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge",

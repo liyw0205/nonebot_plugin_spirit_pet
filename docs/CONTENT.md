@@ -320,6 +320,8 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 `skill_levels.json` 从 1 连续编号，当前级的 required_proficiency 是升下一级所需的熟练度，不是累积总量；满级为 null。power_multiplier 从 1 严格递增，实际技能系数乘此倍率。每次施放的熟练度由 rules.skill_proficiency_per_use 定义。运行中的 level/proficiency 存 learned_skills，不能写回 JSON。
 
+技能预设只保存“携带了哪些技能”，不保存等级或熟练度。每只宠物三个方案，标记 `skill_preset_<宠物编号>_<方案>` 的 `progress` 记录技能数，`skill_preset_<宠物编号>_<方案>_<技能id>` 每门技能一行；应用时逐项校验技能仍存在、仍已学会、需求仍满足且不超过当前携带上限，再在同一事务内批量更新 `learned_skills.equipped`。技能目录追加新条目不会改变既有方案的含义，已删除的技能会明确报错而不是静默换位。
+
 天赋 kind 支持 fury、first_strike、lifesteal、counter、shield、regeneration、execute、evasion、venom、pierce。power 为 (0, 1] 的比例，只有 fury 可以设置 element 过滤，且应与所属宠物灵根兼容。所有天赋均由 `gameplay/talents.py` 解释，描述文案不能代替实际效果实现。毒伤剩余行动数、当前护盾、首次攻击状态只存在单场 Fighter 内存中。
 
 学习、携带、穿戴以及构建战斗单位时均执行适用条件检查。只在图鉴显示限制但实际战斗不检查，或者只限制学习却允许借其他宠物携带，都是不允许的实现。
