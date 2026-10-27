@@ -128,6 +128,56 @@ def test_replay_returns_original_reply(game, play):
     assert items(game[1])["spirit_food"] == 3 + 3  # starter 3 + FixedRandom minimum 3
 
 
+def test_renew_replay_is_idempotent(game, play):
+    """The card requires 翻新 to replay without charging twice."""
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE players SET stones=10000")
+    play("farm_open", "1", now=NOW, op="rn-open")
+    buy_seed(game)
+    play("farm_plant", "1 灵稻种", now=NOW, op="rn-plant")
+    charged = play("farm_renew", "1", now=NOW + 900, op="rn-renew")
+    stones = player(game[1])["stones"]
+    assert play("farm_renew", "1", now=NOW + 901, op="rn-renew") == charged
+    assert player(game[1])["stones"] == stones
+    with pytest.raises(GameError, match="已经翻新过"):
+        play("farm_renew", "1", now=NOW + 902, op="rn-renew-again")
+
+
+def test_renew_shortens_the_growth_the_harvest_uses(game, play):
+    """The 10% cut must reach harvest, not just the reply text.
+
+    1800s crop renewed immediately: 180s comes off, so it matures at 1620s and
+    a harvest at 1619s is still refused.
+    """
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE players SET stones=10000")
+    play("farm_open", "1", now=NOW, op="rc-open")
+    buy_seed(game)
+    play("farm_plant", "1 灵稻种", now=NOW, op="rc-plant")
+    play("farm_renew", "1", now=NOW, op="rc-renew")
+    # Without the cut this plot would still need the full 1800s.
+    with pytest.raises(GameError, match="还在生长，剩余 1 秒"):
+        play("farm_harvest", "1", now=NOW + 1619, op="rc-early")
+    assert "灵稻成熟收获" in play("farm_harvest", "1", now=NOW + 1620, op="rc-ok").lines[0]
+
+
+def test_renew_cut_clears_with_the_harvest(game, play):
+    """A replanted plot must not inherit the previous growth's shortcut."""
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "UPDATE players SET stones=10000")
+    play("farm_open", "1", now=NOW, op="rcc-open")
+    buy_seed(game, seed_id="seed_spirit_rice")
+    play("farm_plant", "1 灵稻种", now=NOW, op="rcc-plant")
+    play("farm_renew", "1", now=NOW, op="rcc-renew")
+    play("farm_harvest", "1 灵稻种", now=NOW + 1620, op="rcc-harvest")
+    # The replanted crop starts fresh: the full 1800s is required again.
+    with pytest.raises(GameError, match="还在生长，剩余 1 秒"):
+        play("farm_harvest", "1", now=NOW + 1620 + 1799, op="rcc-early")
+    assert "灵稻成熟收获" in play(
+        "farm_harvest", "1", now=NOW + 1620 + 1800, op="rcc-ok"
+    ).lines[0]
+
+
 def test_objectives_hub_and_help_contract(game, play):
     play("adopt", "青鸾", now=NOW)
     sql(game[1], "UPDATE players SET stones=10000")

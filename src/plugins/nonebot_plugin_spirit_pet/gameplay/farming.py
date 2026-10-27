@@ -38,6 +38,24 @@ def _effective_duration(ctx: Context, plot: int, base_duration: int) -> int:
     return base_duration * (100 - _tier(ctx, plot) * TIER_TIME_CUT) // 100
 
 
+def _renew_cut(ctx: Context, plot: int) -> int:
+    """Seconds already taken off this plot's current growth by 灵宠翻新."""
+    row = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (ctx.user_id, f"{RENEW_PREFIX}{plot}"),
+    ).fetchone()
+    return int(row["progress"]) if row else 0
+
+
+def _growth_seconds(ctx: Context, plot: int, crop) -> int:
+    """The growth time this plot actually needs: tier cut and 翻新 cut applied.
+
+    Every reader (overview, harvest, renew, replant preview) must use this so the
+    remaining time a player is shown is the time the settlement enforces.
+    """
+    return max(1, _effective_duration(ctx, plot, crop.duration) - _renew_cut(ctx, plot))
+
+
 def seed_for_realm(ctx: Context, realm_id: str) -> str | None:
     """The seed item id for a realm tier, or None when the realm is unknown."""
     realm_ids = [realm.id for realm in ctx.content.realms]
@@ -47,12 +65,28 @@ def seed_for_realm(ctx: Context, realm_id: str) -> str | None:
     return SEED_DROPS[index][0]
 
 
-def roll_seed_drop(ctx: Context, realm_id: str, percent: int) -> str | None:
-    """Roll one seed drop; returns the item id or None. percent is 0-100."""
+# Seed supply chances, one per settlement path. Single source of truth: the
+# rolls below and the 图鉴 drop lookup both read these, so a page can never
+# advertise a chance the settlement does not use.
+SEED_DROP_CHANCE = {"ambush": 25, "dungeon": 8, "sweep": 8, "expedition": 15}
+# Labels for the settlement path each chance belongs to, shared with the lookup.
+SEED_DROP_PATH_LABEL = {
+    "ambush": "历练伏击",
+    "dungeon": "秘境",
+    "sweep": "秘境",
+    "expedition": "委托",
+}
+
+
+def roll_seed_drop(ctx: Context, realm_id: str, path: str) -> str | None:
+    """Roll one seed drop for a settlement path; returns the item id or None.
+
+    `path` must be a key of SEED_DROP_CHANCE so every caller shares one chance.
+    """
     seed_id = seed_for_realm(ctx, realm_id)
     if seed_id is None:
         return None
-    return seed_id if ctx.rng.randint(1, 100) <= percent else None
+    return seed_id if ctx.rng.randint(1, 100) <= SEED_DROP_CHANCE[path] else None
 
 
 def _plot_arg(ctx: Context, arg: str) -> int:
@@ -155,7 +189,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         else:
             crop = _crop(ctx, crop_row)
             planted = crop_row["progress"]
-            duration = _effective_duration(ctx, plot, crop.duration)
+            duration = _growth_seconds(ctx, plot, crop)
             if ctx.now - planted >= duration + WILT_AFTER:
                 lines.append(f"田位 {plot} · {crop.name}已枯萎，收获仅返还种子")
                 links.append(InlineCommand(len(lines) - 1, "清理枯萎", f"灵宠收获 {plot}"))
@@ -241,7 +275,7 @@ def harvest(ctx: Context, arg: str) -> Reply:
         raise GameError(f"田位 {plot} 还没有播种。")
     crop = _crop(ctx, crop_row)
     planted = crop_row["progress"]
-    duration = _effective_duration(ctx, plot, crop.duration)
+    duration = _growth_seconds(ctx, plot, crop)
     if ctx.now < planted:
         raise GameError("当前时间早于种植时间，请稍后再收获。")
     elapsed = ctx.now - planted
@@ -289,20 +323,28 @@ def renew(ctx: Context, arg: str) -> Reply:
     planted = crop_row["progress"]
     if ctx.now < planted:
         raise GameError("当前时间早于种植时间，请稍后再翻新。")
-    remaining = _effective_duration(ctx, plot, crop.duration) - (ctx.now - planted)
+    remaining = _growth_seconds(ctx, plot, crop) - (ctx.now - planted)
     if remaining <= 0:
         raise GameError(f"{crop.name}已经成熟，无需翻新，请直接收获。")
     cost = max(1, remaining * RENEW_FRACTION // 100)
+    cut = max(1, remaining * RENEW_FRACTION // 100)
     player = ctx.player()
     if player.stones < cost:
         raise GameError(f"翻新需要 {cost} 灵石，当前灵石不足。")
     player.stones -= cost
+    # Persist the cut so harvest honours it, and flag the crop row so this growth
+    # can only be renewed once. Both rows move in the caller's transaction.
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
+        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (ctx.user_id, f"{RENEW_PREFIX}{plot}", cut),
+    )
     ctx.repo.conn.execute(
         "UPDATE quest_progress SET claimed=1 WHERE user_id=? AND quest_id=?",
         (ctx.user_id, crop_row["quest_id"]),
     )
     return Reply("灵田翻新", (
-        f"田位 {plot} 已翻新，花费 {cost} 灵石，成熟时间缩短 {remaining * RENEW_FRACTION // 100} 秒。",
+        f"田位 {plot} 已翻新，花费 {cost} 灵石，成熟时间缩短 {cut} 秒。",
     ), ("灵宠灵田",))
 
 
