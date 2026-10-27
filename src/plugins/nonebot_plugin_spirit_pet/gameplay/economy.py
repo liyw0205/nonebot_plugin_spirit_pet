@@ -164,7 +164,7 @@ def shop(ctx: Context, arg: str) -> Reply:
         for index, item in enumerate(page.entries)
     )
     return Reply(
-        f"山海灵坊 {page.number}/{page.total}", lines, (*page.navigation, "灵宠背包"), links,
+        f"山海灵坊 {page.number}/{page.total}", lines, (*page.navigation, "灵宠背包", "灵宠特供"), links,
     )
 
 

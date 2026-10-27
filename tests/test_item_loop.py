@@ -65,8 +65,8 @@ def test_shop_list_links_each_item_detail_on_its_own_row(game, play):
     for link, item in zip(listing.inline_commands, selected):
         assert item.name in listing.lines[link.line]
     # Row details leave the button set; only pagination and the bag remain.
-    assert listing.commands == ("灵宠商店 2", "灵宠背包")
-    assert keyboard_commands(listing) == ["灵宠商店 2", "灵宠背包"]
+    assert listing.commands == ("灵宠商店 2", "灵宠背包", "灵宠特供")
+    assert keyboard_commands(listing) == ["灵宠商店 2", "灵宠背包", "灵宠特供"]
     _, message = _qq_segments(listing, Config(spirit_pet_qq_mode="native"))
     assert markdown_links(message) == [
         ("查看详情", f"/灵宠商店 {item.name}") for item in selected
@@ -80,8 +80,8 @@ def test_shop_second_page_links_its_own_rows_and_keeps_both_page_buttons(game, p
     assert [command for _, _, command in links(listing)] == [
         f"灵宠商店 {item.name}" for item in selected
     ]
-    assert listing.commands == ("灵宠商店 1", "灵宠商店 3", "灵宠背包")
-    assert keyboard_commands(listing) == ["灵宠商店 1", "灵宠商店 3", "灵宠背包"]
+    assert listing.commands == ("灵宠商店 1", "灵宠商店 3", "灵宠背包", "灵宠特供")
+    assert keyboard_commands(listing) == ["灵宠商店 1", "灵宠商店 3", "灵宠背包", "灵宠特供"]
 
 
 def test_bag_groups_items_with_purpose_and_gated_actions(game, play):

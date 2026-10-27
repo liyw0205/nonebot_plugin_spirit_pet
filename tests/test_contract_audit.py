@@ -31,7 +31,7 @@ GAMEPLAY = ROOT / "docs" / "GAMEPLAY.md"
 # Read-only pages a freshly adopted player can render.
 READ_ONLY_PAGES = (
     "achievements", "adventure_codex", "adventure_collection_rewards", "adventure_rank",
-    "ascension",
+    "ascension", "daily_shop",
     "arena_reward_history", "arena_tier_rewards", "battle_merits", "battle_pass",
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
     "bond_rewards", "breeding", "catalog", "checkin_calendar", "checkin_rewards",
@@ -60,7 +60,7 @@ DOCUMENTED_COUNTS = {
     "adventures": 21, "expeditions": 21, "pets": 27, "lineages": 54, "skills": 24,
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
-    "equipment": 14, "equipment_sets": 4, "enemies": 23,
+    "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
 }
 
 

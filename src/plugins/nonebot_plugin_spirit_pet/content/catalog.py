@@ -6,6 +6,7 @@ from pydantic import BaseModel, TypeAdapter
 from ..domain.achievement_content import Achievement
 from ..domain.arena_content import ArenaRules
 from ..domain.ascension_content import AscensionStage
+from ..domain.shop_content import ShopOffer
 from ..domain.battle_content import (
     Category, Element, Equipment, EquipmentSet, ForgeLevel, Skill, SkillLevel, Talent,
 )
@@ -102,6 +103,7 @@ class Catalog:
     arena_tier_rewards: dict[str, ArenaTierReward]
     gear_words: dict[str, GearWord]
     ascension: dict[str, AscensionStage]
+    shop_offers: dict[str, ShopOffer]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -144,6 +146,7 @@ class Catalog:
             crops=_index(directory / "crops.json", Crop),
             gear_words=_index(directory / "gear_words.json", GearWord),
             ascension=_index(directory / "ascension.json", AscensionStage),
+            shop_offers=_index(directory / "shop_rotation.json", ShopOffer),
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
         )
@@ -242,6 +245,7 @@ class Catalog:
         self._validate_tower(realm_ids)
         self._validate_main_quests()
         self._validate_ascension()
+        self._validate_shop_rotation()
         self._validate_journey(realm_ids)
         self._validate_season_missions()
         self._validate_daily_assignments()
@@ -299,6 +303,18 @@ class Catalog:
             raise ValueError("ascension stage orders must be exactly 1, 2 and 3")
         for stage in stages:
             self._require([stage.enemy], self.enemies, "ascension trial enemy")
+
+    def _validate_shop_rotation(self) -> None:
+        offers = list(self.shop_offers.values())
+        if len(offers) < 3:
+            raise ValueError("shop rotation requires at least three offers")
+        items = [offer.item for offer in offers]
+        if len(set(items)) != len(items):
+            raise ValueError("shop rotation repeats an item")
+        for offer in offers:
+            self._require([offer.item], self.items, "shop offer item")
+            if self.items[offer.item].price is None:
+                raise ValueError(f"shop offer {offer.id} item has no price")
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

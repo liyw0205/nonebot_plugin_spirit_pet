@@ -1,0 +1,56 @@
+[
+  {
+    "id": "offer_spirit_food",
+    "item": "spirit_food",
+    "discount": 25,
+    "stock": 3
+  },
+  {
+    "id": "offer_energy_pill",
+    "item": "energy_pill",
+    "discount": 20,
+    "stock": 2
+  },
+  {
+    "id": "offer_exp_pill",
+    "item": "exp_pill",
+    "discount": 15,
+    "stock": 2
+  },
+  {
+    "id": "offer_affinity_pill",
+    "item": "affinity_pill",
+    "discount": 20,
+    "stock": 2
+  },
+  {
+    "id": "offer_breakthrough_pill",
+    "item": "breakthrough_pill",
+    "discount": 10,
+    "stock": 1
+  },
+  {
+    "id": "offer_bloodline_essence",
+    "item": "bloodline_essence",
+    "discount": 10,
+    "stock": 1
+  },
+  {
+    "id": "offer_forge_ore",
+    "item": "forge_ore",
+    "discount": 20,
+    "stock": 2
+  },
+  {
+    "id": "offer_blood_herb_seed",
+    "item": "seed_blood_herb",
+    "discount": 25,
+    "stock": 2
+  },
+  {
+    "id": "offer_meditation_book",
+    "item": "book_meditation",
+    "discount": 15,
+    "stock": 1
+  }
+]
