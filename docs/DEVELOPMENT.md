@@ -544,7 +544,7 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 浇水缩短量写入所有者 `quest_progress` 的 `farm_water_cut_<田位>`，当日田位标记 `farm_water_day_<北京日期>_<队友UID>_<田位>`，每日次数 `farm_water_daily_<北京日期>`；收获/补种/重新播种一并清除，下一轮不继承。只有同队队友可互相浇水，不能浇自己或跨队；空田、成熟、枯萎、次数用尽、未知 UID、越界田位与格式错误整笔拒绝，不扣灵石、不发灵石、不写计数；未结契只读，同一操作重投幂等。帮助、`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步；未改 schema、表结构、作物基础时长/产量/枯萎窗口/翻新价格/升级规则。
 
-新增 `tests/test_farm_help.py` 16 项；受影响灵田/队伍/命令/帮助/内容/运行时/契约审计/目标合同 373 passed；`compileall` 与 `git diff --check` 通过。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-farm-help.md` 仅本地保留、不提交。
+新增 `tests/test_farm_help.py` 16 项；受影响灵田/队伍/命令/帮助/内容/运行时/契约审计/目标合同 373 passed；`compileall` 与 `git diff --check` 通过。提交 `0df6f75` 已推送 develop，develop CI `40549589042` 全绿，fast-forward 合入 main 后 main CI `40550049616` 全绿。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-farm-help.md` 仅本地保留、不提交。
 
 ### 开发阶段流程
 
