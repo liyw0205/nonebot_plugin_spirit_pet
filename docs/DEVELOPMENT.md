@@ -528,7 +528,7 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 飞升标记由 `Repository.pet()` 从 `quest_progress` 派生（不新增列，schema 20 不动），`pet_stats` 对飞升宠全属性乘 1.10，因此秘境、关卡、万灵塔、论剑、组队与战报快照使用同一份数值；`capture_snapshot` 成员快照新增 `ascended` 字段，战报详情显示“飞升”。`skills` 的携带上限改为按宠物派生：普通宠沿用 `rules.max_skill_slots`（2），飞升宠为 5（专属第五栏位），学习与携带都走同一 helper。每次全队飞升记 1 周目（`rebirth_count`），名册仍有未飞升伙伴时不记；已飞升伙伴每周可重走一次试炼（`ascension_week_<编号>`），全胜且全队仍飞升时同样记周目，重走不发任何货币或道具。首只飞升解锁称号“破界者”，三个周目解锁“轮回行者”；`灵宠目标` 增加飞升行与入口，帮助、`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。称号由 23 项增至 25 项，敌手由 20 个增至 23 个，计数合同与 `DOCUMENTED_COUNTS` 同批更新。
 
-新增 `tests/test_ascension.py` 23 项：三段流程与每段满血重开、全胜/部分胜/失败三态、飞升标记与 +10% 属性、第五技能栏位、战报快照与持久战报、全队周目与三次轮回称号、成功/失败重投幂等、跨重启与封存复原持久、未达境界/非本人/派遣中/已封存/同周重复拒绝、未结契只读、目录状态与蓝字、QQ native 按钮与蓝字分离、帮助与目标入口、内容校验。聚焦命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_ascension.py`（23 passed）；受影响目标/称号/成就/内容/命令/战报/技能/运行时/契约审计合同 392 passed；`compileall` 与 `git diff --check` 通过。未部署、未发送真实 QQ、未跑全量；`docs/goals/pet-goal-ascension.md` 与索引仅本地保留、不提交。
+新增 `tests/test_ascension.py` 23 项：三段流程与每段满血重开、全胜/部分胜/失败三态、飞升标记与 +10% 属性、第五技能栏位、战报快照与持久战报、全队周目与三次轮回称号、成功/失败重投幂等、跨重启与封存复原持久、未达境界/非本人/派遣中/已封存/同周重复拒绝、未结契只读、目录状态与蓝字、QQ native 按钮与蓝字分离、帮助与目标入口、内容校验。聚焦命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_ascension.py`（23 passed）；受影响目标/称号/成就/内容/命令/战报/技能/运行时/契约审计合同 392 passed；`compileall` 与 `git diff --check` 通过。提交 `b229632` 与 `0be8a45` 已推送 develop，develop CI `40522849411` 全绿，fast-forward 合入 main 后 main CI `40523759757` 全绿；首次 develop CI `40521913772` 因目标页末尾链接断言未更新而失败，已在 `0be8a45` 修复。未部署、未发送真实 QQ、未跑本地全量；`docs/goals/pet-goal-ascension.md` 与索引仅本地保留、不提交。
 
 ### 开发阶段流程
 
