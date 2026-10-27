@@ -78,5 +78,6 @@
     "items": {"forge_ore": 1}
   },
   "stage_star_rounds": {"three": 3, "two": 5},
-  "recycle_percent": 40
+  "recycle_percent": 40,
+  "farm_water": {"seconds": 60, "daily_limit": 3, "stones": 10}
 }

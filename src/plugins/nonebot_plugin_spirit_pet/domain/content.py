@@ -249,6 +249,12 @@ class StageStarRule(Definition):
         return self
 
 
+class FarmWaterRule(Definition):
+    seconds: Positive
+    daily_limit: Annotated[int, Field(ge=1, le=10)]
+    stones: NonNegative
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -267,3 +273,4 @@ class Rules(Definition):
     inheritance_cost: ResourceCost
     stage_star_rounds: StageStarRule
     recycle_percent: Annotated[int, Field(gt=0, lt=100)]
+    farm_water: FarmWaterRule
