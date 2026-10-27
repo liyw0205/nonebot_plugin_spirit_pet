@@ -552,7 +552,7 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 预设写入 `quest_progress` 的 `skill_preset_<宠物编号>_<方案>` 标记（`progress` 记录技能数）与 `skill_preset_<宠物编号>_<方案>_<技能id>` 逐技能行，不新增表/列/货币；逐技能行避免内容追加导致位序漂移，已删除技能会明确报错而不是静默换位。保存不消耗资源、不写战报、不推进任务；应用要求伙伴未外出派遣，保存与查看不要求；封存/切换出战伙伴后按宠物编号保留。帮助、`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步，未改技能数值、携带上限、学习成本、熟练度或战斗规则。
 
-新增 `tests/test_skill_presets.py` 19 项；受影响技能/飞升/命令/帮助/内容/运行时/契约审计/目标/成就/称号/战报/阵容合同 371 passed；`compileall` 与 `git diff --check` 通过。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-skill-presets.md` 仅本地保留、不提交。
+新增 `tests/test_skill_presets.py` 19 项；受影响技能/飞升/命令/帮助/内容/运行时/契约审计/目标/成就/称号/战报/阵容合同 371 passed；`compileall` 与 `git diff --check` 通过。提交 `7a10e44` 已推送 develop，develop CI `40604405338` 全绿，fast-forward 合入 main 后 main CI `40604721222` 全绿。未部署、未发送真实 QQ、未跑本地全量；目标卡 `docs/goals/pet-goal-skill-presets.md` 仅本地保留、不提交。
 
 ### 开发阶段流程
 
