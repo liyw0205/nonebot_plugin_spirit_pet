@@ -38,7 +38,7 @@ READ_ONLY_PAGES = (
     "codex", "collection", "collection_rank", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "equipment_sets", "expedition_catalog", "expedition_history", "expedition_status",
-    "farm", "first_clear", "free_summon", "identity", "journey", "lineage_catalog",
+    "farm", "first_clear", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",
     "rank", "rank_rewards", "realm_milestone_rewards", "recipe_catalog", "reforge",
@@ -61,6 +61,7 @@ DOCUMENTED_COUNTS = {
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
     "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
+    "forbidden": 3,
 }
 
 

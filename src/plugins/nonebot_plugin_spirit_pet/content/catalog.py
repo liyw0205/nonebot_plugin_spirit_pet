@@ -15,6 +15,7 @@ from .crafting_validation import validate_crafting_content
 from .lineage_validation import validate_lineages
 from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
+from ..domain.forbidden_content import ForbiddenZone
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -104,6 +105,7 @@ class Catalog:
     gear_words: dict[str, GearWord]
     ascension: dict[str, AscensionStage]
     shop_offers: dict[str, ShopOffer]
+    forbidden: dict[str, ForbiddenZone]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -149,6 +151,7 @@ class Catalog:
             shop_offers=_index(directory / "shop_rotation.json", ShopOffer),
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
+            forbidden=_index(directory / "forbidden.json", ForbiddenZone),
         )
         catalog.validate()
         return catalog
@@ -245,6 +248,7 @@ class Catalog:
                 raise ValueError(f"dungeon {dungeon.id} is missing a first-clear reward")
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
+        self._validate_forbidden(realm_ids)
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -436,6 +440,26 @@ class Catalog:
             expected = ordered[index - 1].id if index else None
             if floor.previous_id != expected:
                 raise ValueError("tower previous_id must form the ordered chain")
+
+    def _validate_forbidden(self, realm_ids):
+        if not self.forbidden:
+            raise ValueError("forbidden zones must not be empty")
+        depth_ids = []
+        for zone in self.forbidden.values():
+            self._require([depth.min_realm for depth in zone.depths], realm_ids, "forbidden depth realm")
+            self._require(zone.bonus.items, self.items, "forbidden bonus items")
+            if zone.bonus.stones.maximum <= 0 and not zone.bonus.items:
+                raise ValueError(f"forbidden zone {zone.id} needs a bonus reward")
+            for depth in zone.depths:
+                depth_ids.append(depth.id)
+                self._require(depth.enemies, self.enemies, "forbidden depth enemies")
+                self._require(depth.reward.items, self.items, "forbidden depth reward items")
+                if depth.energy > 100:
+                    raise ValueError("forbidden depth energy exceeds capacity")
+                if depth.reward.stones.maximum <= 0 and not depth.reward.items:
+                    raise ValueError(f"forbidden depth {depth.id} needs a reward")
+        if len(set(depth_ids)) != len(depth_ids):
+            raise ValueError("forbidden depth ids must be globally unique")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

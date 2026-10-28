@@ -157,6 +157,44 @@
 
 `codex_rewards.json` 的每项只定义 `species`、`stones` 与 `items`，不保存玩家进度。`species` 必须引用已有种族且每个种族恰好一条（不多不少），`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间，领取时按单值发放；收集状态由 `pets` 表即时派生（封存宠物仍计入），领取标记写入 `quest_progress` 的 `codex_<种族>` 行，因此每族只发一次且永久有效。
 
+## 禁地定义
+
+`forbidden.json` 是禁地对象数组，由 `domain/forbidden_content.py` 严格校验，当前三处禁地按北京时间自然周轮换开放。每处禁地定义 `id`、`name`、`description`、`restriction`、`bonus` 与 `depths`，不接受额外字段。
+
+```json
+{
+  "id": "ember_crypt",
+  "name": "焚骨禁地",
+  "description": "地火未熄的古战场，焦土上只容一道身影独行。",
+  "restriction": {"type": "solo"},
+  "bonus": {
+    "exp": {"minimum": 0, "maximum": 0},
+    "stones": {"minimum": 200, "maximum": 260},
+    "items": {"forge_ore": {"minimum": 3, "maximum": 3}}
+  },
+  "depths": [
+    {
+      "id": "ember_crypt_1",
+      "name": "焦土外环",
+      "description": "余烬里游荡的傀儡仍在守着旧日的门。",
+      "order": 1,
+      "min_realm": "ningqi",
+      "enemies": ["wood_guard"],
+      "energy": 20,
+      "reward": {
+        "exp": {"minimum": 120, "maximum": 180},
+        "stones": {"minimum": 100, "maximum": 140},
+        "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+      }
+    }
+  ]
+}
+```
+
+`restriction.type` 只能是 `solo`（只允许一只灵宠出战）、`duo`（只允许两只）或 `same_element`（出战灵宠须同属一种主属性）。每处禁地的 `depths` 为 2-5 层，`order` 必须从 1 连续递增，层 `id` 与层名在同一禁地内唯一，且层 `id` 在全部禁地间也唯一（周进度凭证以层 id 结尾）。`min_realm` 引用 `realms.json`，`enemies` 引用 `enemies.json`，`energy` 为正且不超过 100，`reward` 与 `bonus` 的物品必须存在，单层奖励与全清奖励至少各有一项非空奖励（`bonus.exp` 可为 0，此时不要求出战宠物闲置）。禁地层只复用现有敌手，不定义新属性或新战斗规则。
+
+轮换、周进度与本周最佳回合属于运行逻辑：禁地按 id 排序后以 `(周一零点时间戳 // 86400) % 禁地数` 选择，同一周稳定、下周前移；每层首通写入 `quest_progress` 的 `forbidden_<周一零点时间戳>_<层id>`（`progress` 为该场回合数），全清写入 `forbidden_<周一零点时间戳>_all`，换周自动重新开始，旧周凭证保留为历史。本周最佳回合由永久 `battle_records`（`kind='pve_stage'`、本人为胜方、`played_at` 在当周内）取最少回合派生，不写入 JSON 或玩家档案。
+
 ## 奇遇定义
 
 `adventures.json` 为奇遇对象数组。`id`、`name`、`text`、`weight`、`reward` 均必填且不接受额外字段；名称在奇遇间唯一，权重为正整数。同一路线内的权重按总和归一为出现概率，路线目录显示各奇遇概率。每条奇闻还必须定义 `options`（2-3 个互斥回响选项），每个选项含 `id`、`label`、`text` 与 `reward`；选项 id 在奇闻内唯一，选项奖励物品必须存在，选项奖励并入统一的奖励物品校验。`reward` 与 `text` 仍然是探索触发时的即时奖励与文案，回响只在玩家主动选择时结算选项奖励，两者互不影响。

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "ember_crypt",
+    "name": "焚骨禁地",
+    "description": "地火未熄的古战场，焦土上只容一道身影独行。",
+    "restriction": {"type": "solo"},
+    "bonus": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 200, "maximum": 260},
+      "items": {
+        "forge_ore": {"minimum": 3, "maximum": 3},
+        "bloodline_essence": {"minimum": 1, "maximum": 1}
+      }
+    },
+    "depths": [
+      {
+        "id": "ember_crypt_1",
+        "name": "焦土外环",
+        "description": "余烬里游荡的傀儡仍在守着旧日的门。",
+        "order": 1,
+        "min_realm": "ningqi",
+        "enemies": ["wood_guard"],
+        "energy": 20,
+        "reward": {
+          "exp": {"minimum": 120, "maximum": 180},
+          "stones": {"minimum": 100, "maximum": 140},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "ember_crypt_2",
+        "name": "熔岩回廊",
+        "description": "熔岩沿石壁滴落，狼影在热浪里忽隐忽现。",
+        "order": 2,
+        "min_realm": "zhuji",
+        "enemies": ["moon_wolf"],
+        "energy": 25,
+        "reward": {
+          "exp": {"minimum": 220, "maximum": 300},
+          "stones": {"minimum": 220, "maximum": 280},
+          "items": {
+            "forge_ore": {"minimum": 1, "maximum": 2},
+            "bloodline_essence": {"minimum": 1, "maximum": 1}
+          }
+        }
+      },
+      {
+        "id": "ember_crypt_3",
+        "name": "焚心祭坛",
+        "description": "祭坛中央的地火仍未熄灭，古殿守卫与残傀同守此处。",
+        "order": 3,
+        "min_realm": "jindan",
+        "enemies": ["ancient_guard", "wood_guard"],
+        "energy": 30,
+        "reward": {
+          "exp": {"minimum": 380, "maximum": 480},
+          "stones": {"minimum": 400, "maximum": 520},
+          "items": {
+            "exp_pill": {"minimum": 1, "maximum": 1},
+            "forge_ore": {"minimum": 2, "maximum": 2}
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "frost_prison",
+    "name": "霜狱",
+    "description": "永冻的牢狱里，寒气把每一步都凝成霜。",
+    "restriction": {"type": "duo"},
+    "bonus": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 200, "maximum": 260},
+      "items": {
+        "forge_ore": {"minimum": 3, "maximum": 3},
+        "bloodline_essence": {"minimum": 1, "maximum": 1}
+      }
+    },
+    "depths": [
+      {
+        "id": "frost_prison_1",
+        "name": "寒铁牢门",
+        "description": "牢门后的守灵仍保持着生前最后一战的姿势。",
+        "order": 1,
+        "min_realm": "ningqi",
+        "enemies": ["ice_guard"],
+        "energy": 20,
+        "reward": {
+          "exp": {"minimum": 120, "maximum": 180},
+          "stones": {"minimum": 100, "maximum": 140},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "frost_prison_2",
+        "name": "冰渊栈道",
+        "description": "栈道下是看不见底的冰渊，毒灵与残傀伏在暗处。",
+        "order": 2,
+        "min_realm": "zhuji",
+        "enemies": ["venom_guard", "wood_guard"],
+        "energy": 25,
+        "reward": {
+          "exp": {"minimum": 220, "maximum": 300},
+          "stones": {"minimum": 220, "maximum": 280},
+          "items": {
+            "forge_ore": {"minimum": 1, "maximum": 2},
+            "bloodline_essence": {"minimum": 1, "maximum": 1}
+          }
+        }
+      },
+      {
+        "id": "frost_prison_3",
+        "name": "霜心大殿",
+        "description": "潮宫镇守被冻在殿心，霜壳之下仍有潮声。",
+        "order": 3,
+        "min_realm": "jindan",
+        "enemies": ["tide_sentinel"],
+        "energy": 30,
+        "reward": {
+          "exp": {"minimum": 380, "maximum": 480},
+          "stones": {"minimum": 400, "maximum": 520},
+          "items": {
+            "exp_pill": {"minimum": 1, "maximum": 1},
+            "forge_ore": {"minimum": 2, "maximum": 2}
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "void_shrine",
+    "name": "虚空祠",
+    "description": "没有方位的神祠，只有同源的灵息才能在此并行。",
+    "restriction": {"type": "same_element"},
+    "bonus": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 200, "maximum": 260},
+      "items": {
+        "forge_ore": {"minimum": 3, "maximum": 3},
+        "bloodline_essence": {"minimum": 1, "maximum": 1}
+      }
+    },
+    "depths": [
+      {
+        "id": "void_shrine_1",
+        "name": "无光前庭",
+        "description": "前庭没有影子，狼王在无光处踱步。",
+        "order": 1,
+        "min_realm": "ningqi",
+        "enemies": ["moon_wolf"],
+        "energy": 20,
+        "reward": {
+          "exp": {"minimum": 120, "maximum": 180},
+          "stones": {"minimum": 100, "maximum": 140},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "void_shrine_2",
+        "name": "镜影回廊",
+        "description": "回廊把灵息折成两面，守卫与残傀各守一端。",
+        "order": 2,
+        "min_realm": "zhuji",
+        "enemies": ["ancient_guard", "wood_guard"],
+        "energy": 25,
+        "reward": {
+          "exp": {"minimum": 220, "maximum": 300},
+          "stones": {"minimum": 220, "maximum": 280},
+          "items": {
+            "forge_ore": {"minimum": 1, "maximum": 2},
+            "bloodline_essence": {"minimum": 1, "maximum": 1}
+          }
+        }
+      },
+      {
+        "id": "void_shrine_3",
+        "name": "太虚主殿",
+        "description": "主殿悬在虚空里，雷泽蛟灵盘踞其上，雷声先于身影而至。",
+        "order": 3,
+        "min_realm": "jindan",
+        "enemies": ["thunder_dragon"],
+        "energy": 30,
+        "reward": {
+          "exp": {"minimum": 380, "maximum": 480},
+          "stones": {"minimum": 400, "maximum": 520},
+          "items": {
+            "exp_pill": {"minimum": 1, "maximum": 1},
+            "forge_ore": {"minimum": 2, "maximum": 2}
+          }
+        }
+      }
+    ]
+  }
+]

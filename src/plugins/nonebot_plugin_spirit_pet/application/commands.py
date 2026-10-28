@@ -23,6 +23,7 @@ from ..gameplay import battle_pass
 from ..gameplay import ascension
 from ..gameplay import daily_shop
 from ..gameplay import defense
+from ..gameplay import forbidden
 from ..gameplay import skill_presets
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
@@ -165,6 +166,8 @@ ACTIONS = {
     "stage_challenge": Command(pve_stages.challenge, True),
     "tower_catalog": Command(tower.catalog, True, registered=False),
     "tower_challenge": Command(tower.challenge, True),
+    "forbidden": Command(forbidden.catalog, True, registered=False),
+    "forbidden_challenge": Command(forbidden.challenge, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
@@ -284,6 +287,7 @@ COMMANDS = {
     "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge",
     "灵宠关卡星级": "stage_stars", "灵宠关卡星级领奖": "stage_stars_claim",
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
+    "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",
     "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
