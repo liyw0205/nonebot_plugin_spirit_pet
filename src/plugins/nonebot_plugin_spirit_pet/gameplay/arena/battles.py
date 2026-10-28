@@ -9,19 +9,22 @@ from ..battle_records import capture_snapshot, record_battle
 from ..loadout import combatants
 from ..mastery import award_mastery
 from ..quests import advance
+from .. import defense
 from .. import battle_pass
 from .common import current_season
 from .eligibility import check_ranked
 from .scoring import settle_ranked
 
 
-def _target(ctx: Context, uid: str):
+def _target(ctx: Context, uid: str, *, allow_preset: bool = False):
     target = ctx.repo.player_by_uid(uid)
     if target is None:
         raise GameError("没有找到这位玩家，请填写有效的 UID。")
     if target.user_id == ctx.user_id:
         raise GameError("不能向自己发起对战。")
-    if not ctx.repo.active_pets(target.user_id):
+    if not ctx.repo.active_pets(target.user_id) and not (
+        allow_preset and defense.has_valid(ctx, target.user_id)
+    ):
         raise GameError("对方尚未选择出战灵宠。")
     return target
 
@@ -40,11 +43,11 @@ def pvp(ctx: Context, arg: str) -> Reply:
         from .seasons import rank
 
         return rank(ctx, "")
-    target = _target(ctx, arg)
+    target = _target(ctx, arg, allow_preset=True)
     season = current_season(ctx)
     attacking_pet, defending_pet = check_ranked(ctx, season, ctx.user_id, target.user_id)
     attackers = combatants(ctx, recover_energy=False)
-    defenders = combatants(ctx, target.user_id, recover_energy=False)
+    defenders = defense.fighters(ctx, target.user_id)
     capture = capture_snapshot(
         ctx, (attackers, defenders),
         ([ctx.user_id] * len(attackers), [target.user_id] * len(defenders)),

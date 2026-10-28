@@ -10,6 +10,7 @@ from . import affinity_milestone_rewards
 from . import bloodline_milestone_rewards
 from . import lineage_awakening_rewards
 from . import battle_merits
+from . import defense
 from . import rank_rewards
 from . import equipment_set_rewards
 from . import realm_milestone_rewards
@@ -335,6 +336,15 @@ def _season_road_line(ctx: Context, user_id: str) -> str:
     return f"论剑征途：暂无可领 · 本季胜 {wins} 场"
 
 
+def _defense_line(ctx: Context, user_id: str) -> str:
+    _, wins = defense.weekly_record(ctx, user_id)
+    claimable = defense.claimable(ctx, user_id)
+    if claimable:
+        names = "、".join(tier.name for tier in claimable)
+        return f"灵宠防守：可领 {len(claimable)} 档（{names}）· 本周守擂 {wins} 胜"
+    return f"灵宠防守：暂无可领 · 本周守擂 {wins} 胜"
+
+
 def _battle_pass_line(ctx: Context, user_id: str) -> str:
     from . import battle_pass
     level = battle_pass.level_of(battle_pass.experience(ctx, user_id))
@@ -451,6 +461,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_battle_merit_line(ctx, player.user_id), "灵宠战斗功勋"),
         (_pvp_streak_line(ctx, player.user_id), "灵宠连胜奖励"),
         (_season_road_line(ctx, player.user_id), "灵宠赛季征途"),
+        (_defense_line(ctx, player.user_id), "灵宠防守"),
         (_battle_pass_line(ctx, player.user_id), "灵宠战令"),
         (_rank_reward_line(ctx, player.user_id), "灵宠排行奖励"),
         (_bloodline_milestone_line(ctx, player.user_id), "灵宠血脉赏"),

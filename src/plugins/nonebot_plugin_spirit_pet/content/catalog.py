@@ -232,6 +232,8 @@ class Catalog:
         self._require([self.arena.min_realm], realm_ids, "arena realm")
         for tier in self.arena.tiers:
             self._require(tier.items, self.items, "arena tier reward items")
+        for tier in self.arena.defense_tiers:
+            self._require(tier.items, self.items, "defense tier reward items")
         for expedition in self.expeditions.values():
             self._require([expedition.min_realm], realm_ids, "expedition realm")
         for dungeon in self.dungeons.values():

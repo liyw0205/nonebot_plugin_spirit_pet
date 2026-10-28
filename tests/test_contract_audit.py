@@ -36,7 +36,7 @@ READ_ONLY_PAGES = (
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
     "bond_rewards", "breeding", "catalog", "checkin_calendar", "checkin_rewards",
     "codex", "collection", "collection_rank", "daily_assignment", "daily_dungeon",
-    "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
+    "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "equipment_sets", "expedition_catalog", "expedition_history", "expedition_status",
     "farm", "first_clear", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",

@@ -9,6 +9,22 @@
   "reward_opponents": 4,
   "rating_delta": 20,
   "energy": 20,
+  "defense_tiers": [
+    {
+      "id": "first",
+      "name": "初守",
+      "wins": 2,
+      "stones": 100,
+      "items": {"spirit_food": 1}
+    },
+    {
+      "id": "steady",
+      "name": "稳守",
+      "wins": 5,
+      "stones": 300,
+      "items": {"spirit_food": 2, "forge_ore": 2}
+    }
+  ],
   "tiers": [
     {
       "id": "qingyun",

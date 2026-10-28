@@ -2,6 +2,7 @@ from ...application.context import Context
 from ...domain.models import GameError
 from ...domain.state import Pet
 from ...utils.time import beijing_day
+from .. import defense
 from .common import Season, rating
 
 
@@ -38,12 +39,13 @@ def check_ranked(ctx: Context, season: Season, first: str, second: str) -> tuple
         raise GameError("该赛季已结束，请重新发起论剑。")
     left = check_participant(ctx, season, first)
     target = ctx.player(second)
-    target_pets = ctx.repo.active_pets(second)
-    if not target_pets:
+    defenders, preset = defense.resolve(ctx, second)
+    if not defenders:
         raise GameError("该道友尚未选择出战灵宠。")
-    right = target_pets[0]
-    if any(active.realm != right.realm for active in target_pets):
-        raise GameError(f"{target.uid_label}的出战阵容处于不同大境界，当前不能参与论剑。")
+    right = defenders[0]
+    if any(active.realm != right.realm for active in defenders):
+        label = "防守阵容" if preset else "出战阵容"
+        raise GameError(f"{target.uid_label}的{label}处于不同大境界，当前不能参与论剑。")
     if left.realm != right.realm:
         raise GameError("论剑双方需处于相同大境界。")
     if abs(rating(ctx, season, first) - rating(ctx, season, second)) > season.rules.max_rating_gap:

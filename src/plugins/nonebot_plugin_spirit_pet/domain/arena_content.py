@@ -19,6 +19,20 @@ class ArenaTier(Definition):
         return self
 
 
+class DefenseTier(Definition):
+    id: Identifier
+    name: Name
+    wins: Positive
+    stones: NonNegative
+    items: dict[Identifier, Positive]
+
+    @model_validator(mode="after")
+    def check_reward(self):
+        if not self.stones and not self.items:
+            raise ValueError("defense tier reward must not be empty")
+        return self
+
+
 class ArenaRules(Definition):
     initial_rating: NonNegative
     min_realm: Identifier
@@ -31,6 +45,7 @@ class ArenaRules(Definition):
     rating_delta: Annotated[int, Field(ge=1, le=10_000)]
     energy: Annotated[int, Field(ge=1, le=100)]
     tiers: list[ArenaTier] = Field(min_length=1, max_length=100)
+    defense_tiers: list[DefenseTier] = Field(min_length=1, max_length=10)
 
     @model_validator(mode="after")
     def check_quotas_and_tiers(self):
@@ -56,4 +71,18 @@ class ArenaRules(Definition):
                 for item_id, quantity in previous.items.items()
             ):
                 raise ValueError("arena tier rewards must not decrease")
+        if len({tier.id for tier in self.defense_tiers}) != len(self.defense_tiers):
+            raise ValueError("duplicate defense tier id")
+        if len({tier.name for tier in self.defense_tiers}) != len(self.defense_tiers):
+            raise ValueError("duplicate defense tier name")
+        if len({tier.wins for tier in self.defense_tiers}) != len(self.defense_tiers):
+            raise ValueError("duplicate defense tier wins")
+        for previous, current in zip(self.defense_tiers, self.defense_tiers[1:]):
+            if current.wins <= previous.wins:
+                raise ValueError("defense tier wins must strictly increase")
+            if current.stones < previous.stones or any(
+                current.items.get(item_id, 0) < quantity
+                for item_id, quantity in previous.items.items()
+            ):
+                raise ValueError("defense tier rewards must not decrease")
         return self

@@ -36,6 +36,16 @@ def test_default_arena_rules_and_rewards_are_explicit():
         "reward_opponents": 4,
         "rating_delta": 20,
         "energy": 20,
+        "defense_tiers": [
+            {
+                "id": "first", "name": "初守", "wins": 2,
+                "stones": 100, "items": {"spirit_food": 1},
+            },
+            {
+                "id": "steady", "name": "稳守", "wins": 5,
+                "stones": 300, "items": {"spirit_food": 2, "forge_ore": 2},
+            },
+        ],
     }
     assert [tier.model_dump() for tier in rules.tiers] == [
         {
@@ -71,7 +81,7 @@ def test_default_arena_rules_and_rewards_are_explicit():
 @pytest.mark.parametrize("field", [
     "initial_rating", "min_realm", "max_rating_gap", "daily_matches",
     "pair_daily_matches", "pair_season_matches", "reward_matches",
-    "reward_opponents", "rating_delta", "energy", "tiers",
+    "reward_opponents", "rating_delta", "energy", "tiers", "defense_tiers",
 ])
 def test_all_arena_rule_fields_are_required(arena_dir, field):
     edit(arena_dir, lambda data: data.pop(field))
@@ -82,6 +92,13 @@ def test_all_arena_rule_fields_are_required(arena_dir, field):
 @pytest.mark.parametrize("field", ["id", "name", "minimum_rating", "stones", "items"])
 def test_all_arena_tier_fields_are_required(arena_dir, field):
     edit(arena_dir, lambda data: data["tiers"][0].pop(field))
+    with pytest.raises(ValidationError, match=field):
+        Catalog.load(arena_dir)
+
+
+@pytest.mark.parametrize("field", ["id", "name", "wins", "stones", "items"])
+def test_all_defense_tier_fields_are_required(arena_dir, field):
+    edit(arena_dir, lambda data: data["defense_tiers"][0].pop(field))
     with pytest.raises(ValidationError, match=field):
         Catalog.load(arena_dir)
 
@@ -213,6 +230,12 @@ def test_arena_realm_reference_is_required(arena_dir):
 def test_arena_reward_item_reference_is_required(arena_dir):
     edit(arena_dir, lambda data: data["tiers"][-1]["items"].update(unknown=1))
     with pytest.raises(ValueError, match="unknown arena tier reward items"):
+        Catalog.load(arena_dir)
+
+
+def test_defense_reward_item_reference_is_required(arena_dir):
+    edit(arena_dir, lambda data: data["defense_tiers"][-1]["items"].update(unknown=1))
+    with pytest.raises(ValueError, match="unknown defense tier reward items"):
         Catalog.load(arena_dir)
 
 

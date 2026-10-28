@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from sqlite3 import Row
 
@@ -16,9 +17,21 @@ class Season:
     rules: ArenaRules
 
 
-def _season(row: Row) -> Season:
+def _season(ctx: Context, row: Row) -> Season:
+    """Parse a stored rules snapshot.
+
+    Seasons created before a rule field existed keep their frozen snapshot; the
+    only field allowed to be backfilled is `defense_tiers`, because defense
+    rewards are read from the live content and the snapshot value never affects
+    a settlement.
+    """
+    data = json.loads(row["rules_snapshot"])
+    data.setdefault(
+        "defense_tiers",
+        [tier.model_dump() for tier in ctx.content.arena.defense_tiers],
+    )
     return Season(row["season_id"], row["starts_at"], row["ends_at"], row["closed_at"],
-                  ArenaRules.model_validate_json(row["rules_snapshot"]))
+                  ArenaRules.model_validate(data))
 
 
 def current_season(ctx: Context) -> Season:
@@ -35,7 +48,7 @@ def current_season(ctx: Context) -> Season:
         "VALUES (?, ?, ?, ?, ?) ON CONFLICT(season_id) DO UPDATE SET observed_at=excluded.observed_at",
         (season_id, starts_at, ends_at, ctx.now, ctx.content.arena.model_dump_json()),
     )
-    return _season(conn.execute("SELECT * FROM seasons WHERE season_id=?", (season_id,)).fetchone())
+    return _season(ctx, conn.execute("SELECT * FROM seasons WHERE season_id=?", (season_id,)).fetchone())
 
 
 def load_season(ctx: Context, season_id: str) -> Season:
@@ -46,7 +59,7 @@ def load_season(ctx: Context, season_id: str) -> Season:
     row = ctx.repo.conn.execute("SELECT * FROM seasons WHERE season_id=?", (season_id,)).fetchone()
     if row is None:
         raise GameError("未找到该赛季记录；尚未发生的赛季和未开放月份不能查询。")
-    return _season(row)
+    return _season(ctx, row)
 
 
 def rating(ctx: Context, season: Season, user_id: str) -> int:
