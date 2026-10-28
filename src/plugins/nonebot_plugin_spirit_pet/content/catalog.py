@@ -16,6 +16,7 @@ from .lineage_validation import validate_lineages
 from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.forbidden_content import ForbiddenZone
+from ..domain.cuisine_content import CuisineDish
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -106,6 +107,7 @@ class Catalog:
     ascension: dict[str, AscensionStage]
     shop_offers: dict[str, ShopOffer]
     forbidden: dict[str, ForbiddenZone]
+    cuisine: dict[str, CuisineDish]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -152,6 +154,7 @@ class Catalog:
             stage_star_rewards=_index(directory / "stage_star_rewards.json", StageStarReward, "stars"),
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
             forbidden=_index(directory / "forbidden.json", ForbiddenZone),
+            cuisine=_index(directory / "cuisine.json", CuisineDish),
         )
         catalog.validate()
         return catalog
@@ -249,6 +252,7 @@ class Catalog:
         self._validate_stages(realm_ids)
         self._validate_tower(realm_ids)
         self._validate_forbidden(realm_ids)
+        self._validate_cuisine()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -460,6 +464,26 @@ class Catalog:
                     raise ValueError(f"forbidden depth {depth.id} needs a reward")
         if len(set(depth_ids)) != len(depth_ids):
             raise ValueError("forbidden depth ids must be globally unique")
+
+    def _validate_cuisine(self):
+        if not self.cuisine:
+            raise ValueError("cuisine dishes must not be empty")
+        limit = self.rules.cuisine.max_level
+        for dish in self.cuisine.values():
+            if dish.level > limit:
+                raise ValueError(f"cuisine dish {dish.id} exceeds the maximum cuisine level")
+            if dish.stones <= 0 and not dish.ingredients:
+                raise ValueError(f"cuisine dish {dish.id} needs a cost")
+            self._require(dish.ingredients, self.items, "cuisine ingredients")
+            if dish.item is not None:
+                self._require([dish.item], self.items, "cuisine meal item")
+                if self.items[dish.item].kind != "consumable":
+                    raise ValueError(f"cuisine dish {dish.id} must produce a consumable")
+                if self.items[dish.item].price is not None:
+                    raise ValueError(f"cuisine meal {dish.item} must not be sold in the shop")
+        levels = {dish.level for dish in self.cuisine.values()}
+        if levels != set(range(1, max(levels) + 1)):
+            raise ValueError("cuisine levels must be contiguous from 1")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

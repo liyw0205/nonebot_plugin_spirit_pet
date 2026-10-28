@@ -79,5 +79,6 @@
   },
   "stage_star_rounds": {"three": 3, "two": 5},
   "recycle_percent": 40,
-  "farm_water": {"seconds": 60, "daily_limit": 3, "stones": 10}
+  "farm_water": {"seconds": 60, "daily_limit": 3, "stones": 10},
+  "cuisine": {"daily_heat": 6, "max_level": 5}
 }

@@ -255,6 +255,11 @@ class FarmWaterRule(Definition):
     stones: NonNegative
 
 
+class CuisineRule(Definition):
+    daily_heat: Annotated[int, Field(ge=1, le=20)]
+    max_level: Annotated[int, Field(ge=1, le=10)] = 5
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -274,3 +279,4 @@ class Rules(Definition):
     stage_star_rounds: StageStarRule
     recycle_percent: Annotated[int, Field(gt=0, lt=100)]
     farm_water: FarmWaterRule
+    cuisine: CuisineRule

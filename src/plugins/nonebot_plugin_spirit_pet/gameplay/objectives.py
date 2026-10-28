@@ -12,6 +12,7 @@ from . import lineage_awakening_rewards
 from . import battle_merits
 from . import defense
 from . import forbidden
+from . import cuisine
 from . import rank_rewards
 from . import equipment_set_rewards
 from . import realm_milestone_rewards
@@ -445,6 +446,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_dungeon_line(ctx, player.user_id), "灵宠今日秘境"),
         (forbidden.objective_line(ctx, player.user_id), "灵宠禁地"),
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
+        (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
         (_weekly_line(ctx, player.user_id), "灵宠周常"),
         (_main_quest_line(ctx, player.user_id), "灵宠主线"),

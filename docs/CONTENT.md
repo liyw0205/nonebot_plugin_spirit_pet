@@ -195,6 +195,27 @@
 
 轮换、周进度与本周最佳回合属于运行逻辑：禁地按 id 排序后以 `(周一零点时间戳 // 86400) % 禁地数` 选择，同一周稳定、下周前移；每层首通写入 `quest_progress` 的 `forbidden_<周一零点时间戳>_<层id>`（`progress` 为该场回合数），全清写入 `forbidden_<周一零点时间戳>_all`，换周自动重新开始，旧周凭证保留为历史。本周最佳回合由永久 `battle_records`（`kind='pve_stage'`、本人为胜方、`played_at` 在当周内）取最少回合派生，不写入 JSON 或玩家档案。
 
+## 膳房定义
+
+`cuisine.json` 是菜谱对象数组，由 `domain/cuisine_content.py` 严格校验。每道菜定义 `id`、`name`、`description`、`level`（1-10，但不得超过 `rules.json` 的 `cuisine.max_level`）、`heat`（1-5）、`stones`、`ingredients`，以及 `item` 与 `effects` 中的**恰好一个**：`item` 指向单膳产出的消耗品，`effects` 表示宴席当场作用于全体伙伴的恢复量。
+
+```json
+{
+  "id": "rice_porridge",
+  "name": "灵米粥",
+  "description": "以灵米慢煨的暖粥，最寻常也最养人。",
+  "level": 1,
+  "heat": 1,
+  "stones": 10,
+  "ingredients": {"spirit_food": 2},
+  "item": "meal_rice"
+}
+```
+
+菜谱等级必须从 1 起连续（当前 1-5），`ingredients` 1-4 项且引用已有物品，单膳的 `item` 必须引用 `kind='consumable'` 且 `price` 为空的物品（只在膳房产出，不进入灵坊、不可回收），宴席的 `effects` 只能含精力/修为/亲密且至少一项为正、不得包含破境加成。`stones` 与 `ingredients` 合计不能为空；`heat` 参与每日灶火预算。
+
+厨艺等级与灶火属于运行逻辑：等级 = `min(max_level, 1 + 已烹饪过的不同菜谱数)`，由 `quest_progress` 的 `cuisine_dish_<菜谱id>`（值为累计份数）派生；当日灶火消耗记在 `cuisine_heat_<北京日期>`，换日自动重置。宴席只作用于在册、未封存且未外出派遣的伙伴，精力与亲密按 100 封顶，修为照常累加；单膳产物通过既有 `灵宠使用`/`灵宠喂养` 生效。以上状态不进入静态 JSON，也不新增表列。
+
 ## 奇遇定义
 
 `adventures.json` 为奇遇对象数组。`id`、`name`、`text`、`weight`、`reward` 均必填且不接受额外字段；名称在奇遇间唯一，权重为正整数。同一路线内的权重按总和归一为出现概率，路线目录显示各奇遇概率。每条奇闻还必须定义 `options`（2-3 个互斥回响选项），每个选项含 `id`、`label`、`text` 与 `reward`；选项 id 在奇闻内唯一，选项奖励物品必须存在，选项奖励并入统一的奖励物品校验。`reward` 与 `text` 仍然是探索触发时的即时奖励与文案，回响只在玩家主动选择时结算选项奖励，两者互不影响。

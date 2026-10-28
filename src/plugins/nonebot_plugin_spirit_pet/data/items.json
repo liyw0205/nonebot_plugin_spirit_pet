@@ -410,5 +410,25 @@
   {
     "id": "seed_void_lotus", "name": "虚灵仙葩种", "description": "播种虚灵仙葩，14400 秒后收获修为、灵石与血脉精华。",
     "kind": "material", "price": 260
+  },
+  {
+    "id": "meal_rice", "name": "灵米粥", "description": "膳房以灵米慢煨的暖粥，精力 +45，修为 +20，亲密 +10。",
+    "kind": "consumable", "price": null,
+    "effects": {"energy": 45, "exp": 20, "affinity": 10}
+  },
+  {
+    "id": "meal_herb", "name": "百草羹", "description": "百草与矿泉同煨的浓羹，精力 +40，修为 +10，亲密 +15。",
+    "kind": "consumable", "price": null,
+    "effects": {"energy": 40, "exp": 10, "affinity": 15}
+  },
+  {
+    "id": "meal_lotus", "name": "元灵莲酥", "description": "元灵莲蓉烘成的酥点，精力 +20，修为 +70，亲密 +10。",
+    "kind": "consumable", "price": null,
+    "effects": {"energy": 20, "exp": 70, "affinity": 10}
+  },
+  {
+    "id": "meal_grain", "name": "双穗麦饼", "description": "双穗麦与锻灵矿粉烙的厚饼，精力 +60，修为 +40，亲密 +20。",
+    "kind": "consumable", "price": null,
+    "effects": {"energy": 60, "exp": 40, "affinity": 20}
   }
 ]
