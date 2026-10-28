@@ -1,0 +1,18 @@
+[
+  {
+    "id": "codex",
+    "name": "灵宠图鉴试炼",
+    "boost": 2.2,
+    "energy": 10,
+    "reward": {
+      "exp": {"minimum": 150, "maximum": 150},
+      "stones": {"minimum": 200, "maximum": 200},
+      "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+    },
+    "milestones": [
+      {"count": 9, "items": {"forge_ore": 4}},
+      {"count": 18, "items": {"bloodline_essence": 4}},
+      {"count": 27, "items": {"exp_pill": 4}}
+    ]
+  }
+]

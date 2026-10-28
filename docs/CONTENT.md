@@ -287,6 +287,31 @@
 
 每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
 
+## 图鉴试炼定义
+
+`codex_trials.json` 是试炼配置数组（当前只有一条 `codex`），由 `domain/codex_trial_content.py` 校验。配置定义 `id`、`name`、`boost`（1.0-5.0）、`energy`（1-100）、`reward`（修为/灵石区间加物品）与 `milestones`（通关数量唯一递增、物品存在）。种族列表来自 `pets.json`，不在此文件重复。
+
+```json
+{
+  "id": "codex",
+  "name": "灵宠图鉴试炼",
+  "boost": 2.2,
+  "energy": 10,
+  "reward": {
+    "exp": {"minimum": 150, "maximum": 150},
+    "stones": {"minimum": 200, "maximum": 200},
+    "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+  },
+  "milestones": [
+    {"count": 9, "items": {"forge_ore": 4}},
+    {"count": 18, "items": {"bloodline_essence": 4}},
+    {"count": 27, "items": {"exp_pill": 4}}
+  ]
+}
+```
+
+幻影属性 = 该族 `stats` × `boost`（取整，`hp/attack/speed` 至少 1），元素与主属性沿用种族定义，不配置灵术；里程碑数量不得超过种族总数，载入时由 `Catalog` 校验。首通与进度存 `quest_progress` 的 `codex_trial_<种族id>`（回合数）与 `codex_trial_milestone_<数量>`，战报键为 `codex_<种族id>`，不写 `pve_stage_progress`。
+
 ## 团队试炼定义
 
 `team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
