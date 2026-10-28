@@ -260,6 +260,13 @@ class CuisineRule(Definition):
     max_level: Annotated[int, Field(ge=1, le=10)] = 5
 
 
+class SectRule(Definition):
+    daily_contribution: Positive
+    practice_energy: Positive
+    practice_exp: Positive
+    switch_stones: NonNegative
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -280,3 +287,4 @@ class Rules(Definition):
     recycle_percent: Annotated[int, Field(gt=0, lt=100)]
     farm_water: FarmWaterRule
     cuisine: CuisineRule
+    sect: SectRule

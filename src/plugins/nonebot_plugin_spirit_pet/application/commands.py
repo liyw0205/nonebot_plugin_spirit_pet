@@ -26,6 +26,7 @@ from ..gameplay import defense
 from ..gameplay import forbidden
 from ..gameplay import cave
 from ..gameplay import corridor
+from ..gameplay import sects
 from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import skill_presets
@@ -176,6 +177,7 @@ ACTIONS = {
     "cuisine_cook": Command(cuisine.cook, True),
     "cave": Command(cave.dispatch, True, registered=False),
     "corridor": Command(corridor.dispatch, True, registered=False),
+    "sect": Command(sects.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
@@ -300,6 +302,7 @@ COMMANDS = {
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
     "灵宠洞府": "cave",
     "灵宠回廊": "corridor",
+    "灵宠师门": "sect",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",

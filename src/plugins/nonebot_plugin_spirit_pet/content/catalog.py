@@ -20,6 +20,7 @@ from ..domain.cuisine_content import CuisineDish
 from ..domain.team_trial_content import TeamTrial
 from ..domain.cave_content import CaveFacility
 from ..domain.corridor_content import Corridor
+from ..domain.sect_content import Sect
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -114,6 +115,7 @@ class Catalog:
     team_trials: dict[str, TeamTrial]
     cave: dict[str, CaveFacility]
     corridor: dict[str, Corridor]
+    sects: dict[str, Sect]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -164,6 +166,7 @@ class Catalog:
             team_trials=_index(directory / "team_trials.json", TeamTrial),
             cave=_index(directory / "cave.json", CaveFacility),
             corridor=_index(directory / "corridor.json", Corridor),
+            sects=_index(directory / "sects.json", Sect),
         )
         catalog.validate()
         return catalog
@@ -265,6 +268,7 @@ class Catalog:
         self._validate_team_trials(realm_ids)
         self._validate_cave()
         self._validate_corridor()
+        self._validate_sects()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -527,6 +531,16 @@ class Catalog:
             self._require([corridor.base_enemy], self.enemies, "corridor base enemy")
             for milestone in corridor.milestones:
                 self._require(milestone.items, self.items, "corridor milestone items")
+
+    def _validate_sects(self):
+        if not self.sects:
+            raise ValueError("sects must not be empty")
+        stats = {"hp", "attack", "defense", "speed"}
+        for sect in self.sects.values():
+            if sect.stat not in stats:
+                raise ValueError(f"sect {sect.id} has an unknown stat")
+            for entry in sect.ranks:
+                self._require(entry.items, self.items, "sect rank items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

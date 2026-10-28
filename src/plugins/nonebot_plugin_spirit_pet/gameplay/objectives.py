@@ -14,6 +14,7 @@ from . import defense
 from . import forbidden
 from . import cave
 from . import corridor
+from . import sects
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -451,6 +452,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (corridor.objective_line(ctx, player.user_id), "灵宠回廊"),
+        (sects.objective_line(ctx, player.user_id), "灵宠师门"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

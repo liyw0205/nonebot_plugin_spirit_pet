@@ -34,6 +34,11 @@ def combatant(
                 if rate:
                     stats[key] = int(stats[key] * (1 + rate) + 0.5)
             resonance_name = definition.name
+    from .sects import passive as sect_passive
+    sect_bonus = sect_passive(ctx, user_id or ctx.user_id)
+    if sect_bonus is not None:
+        stat, rate = sect_bonus
+        stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():
         item = ctx.content.items[item_id]
         gear = ctx.content.equipment[item.equipment_id]

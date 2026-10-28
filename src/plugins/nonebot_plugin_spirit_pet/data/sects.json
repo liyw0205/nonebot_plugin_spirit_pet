@@ -1,0 +1,54 @@
+[
+  {
+    "id": "jian_ge",
+    "name": "剑阁",
+    "description": "以剑证道，门人出剑更快也更狠；贡献愈深，剑意愈盛。",
+    "stat": "attack",
+    "ranks": [
+      {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"forge_ore": 1}},
+      {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"forge_ore": 2}},
+      {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"forge_ore": 3}},
+      {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"forge_ore": 5}},
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"forge_ore": 8}}
+    ]
+  },
+  {
+    "id": "xuan_men",
+    "name": "玄门",
+    "description": "守一抱元，重视根基与气血；门人愈是沉潜，气血愈厚。",
+    "stat": "hp",
+    "ranks": [
+      {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"spirit_food": 2}},
+      {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"spirit_food": 4}},
+      {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"spirit_food": 6}},
+      {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"spirit_food": 8}},
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"spirit_food": 12}}
+    ]
+  },
+  {
+    "id": "dan_ding",
+    "name": "丹鼎门",
+    "description": "以丹养身、以炉炼骨；门人久居丹火之侧，护体更稳。",
+    "stat": "defense",
+    "ranks": [
+      {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"exp_pill": 1}},
+      {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"exp_pill": 2}},
+      {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"exp_pill": 3}},
+      {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"exp_pill": 4}},
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"exp_pill": 6}}
+    ]
+  },
+  {
+    "id": "yu_shou",
+    "name": "御兽宗",
+    "description": "与灵兽同息同动，讲究先手与身法；门人愈熟兽性，出手愈快。",
+    "stat": "speed",
+    "ranks": [
+      {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"bloodline_essence": 1}},
+      {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"bloodline_essence": 2}},
+      {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"bloodline_essence": 3}},
+      {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"bloodline_essence": 4}},
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"bloodline_essence": 6}}
+    ]
+  }
+]

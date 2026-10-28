@@ -266,6 +266,27 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 师门定义
+
+`sects.json` 是门派对象数组，由 `domain/sect_content.py` 校验。每个门派定义 `id`、`name`、`description`、`stat`（`hp` / `attack` / `defense` / `speed`）与 `ranks`（2-5 阶，必须从 1 连续）。每阶含 `rank`、`contribution`、`rate`、`stones` 与固定数量的 `items`。
+
+```json
+{
+  "id": "jian_ge",
+  "name": "剑阁",
+  "description": "以剑证道，门人出剑更快也更狠；贡献愈深，剑意愈盛。",
+  "stat": "attack",
+  "ranks": [
+    {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"forge_ore": 1}},
+    {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"forge_ore": 2}}
+  ]
+}
+```
+
+校验规则：阶位号从 1 连续、第一阶贡献必须为 0、贡献阈值严格递增、被动比率严格递增且不超过 50%、奖励物品必须存在。当前四派共用 0/60/160/320/560 的阶位曲线，加成 2%→10%，奖励灵石 120/240/480/900/1600 与各派材料 1/2/3/5/8 份。
+
+每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
+
 ## 团队试炼定义
 
 `team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
