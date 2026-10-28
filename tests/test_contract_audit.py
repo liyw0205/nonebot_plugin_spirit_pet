@@ -34,7 +34,7 @@ READ_ONLY_PAGES = (
     "ascension", "daily_shop",
     "arena_reward_history", "arena_tier_rewards", "battle_merits", "battle_pass",
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
-    "bond_rewards", "breeding", "catalog", "checkin_calendar", "checkin_rewards",
+    "bond_rewards", "breeding", "catalog", "cave", "checkin_calendar", "checkin_rewards",
     "codex", "collection", "collection_rank", "cuisine", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "equipment_sets", "expedition_catalog", "expedition_history", "expedition_status",
@@ -61,7 +61,7 @@ DOCUMENTED_COUNTS = {
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
     "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
-    "forbidden": 3, "cuisine": 6, "team_trials": 3,
+    "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3,
 }
 
 

@@ -216,6 +216,30 @@
 
 厨艺等级与灶火属于运行逻辑：等级 = `min(max_level, 1 + 已烹饪过的不同菜谱数)`，由 `quest_progress` 的 `cuisine_dish_<菜谱id>`（值为累计份数）派生；当日灶火消耗记在 `cuisine_heat_<北京日期>`，换日自动重置。宴席只作用于在册、未封存且未外出派遣的伙伴，精力与亲密按 100 封顶，修为照常累加；单膳产物通过既有 `灵宠使用`/`灵宠喂养` 生效。以上状态不进入静态 JSON，也不新增表列。
 
+## 洞府定义
+
+`cave.json` 是洞府设施对象数组，由 `domain/cave_content.py` 校验。每处设施定义 `id`、`name`、`description`、`effect`（`energy` / `affinity` / `item`）、`yields`（每级一个正整数，2-10 级且不得递减）、可选的 `item`（仅 `effect='item'` 必填）与 `upgrades`（级数减一步，每步含 `stones` 与 `items`）。
+
+```json
+{
+  "id": "spring",
+  "name": "灵泉",
+  "description": "引地脉灵泉入洞府，每日凝神一次，为一只伙伴补回精力。",
+  "effect": "energy",
+  "yields": [30, 45, 60, 75, 100],
+  "upgrades": [
+    {"stones": 300, "items": {"spirit_food": 2}},
+    {"stones": 700, "items": {"spirit_food": 4}},
+    {"stones": 1500, "items": {"spirit_food": 6}},
+    {"stones": 3000, "items": {"spirit_food": 8}}
+  ]
+}
+```
+
+`effect='item'` 时必须给 `item` 且指向已有物品（当前为 `exp_pill` 蕴灵丹），其余两类不得带 `item`；`upgrades` 数量必须正好是 `yields` 长度减一，每步至少要花灵石或材料（不接受免费升级）。所有升级材料与产出物品都会在 `Catalog` 载入时校验存在性。
+
+等级与每日状态属于运行逻辑：`cave_<设施id>_level` 存当前等级（缺省 1），`cave_<设施id>_day_<北京日期>` 记录当日是否已使用，均写入既有 `quest_progress`，不新增表列。精力与亲密按 100 封顶，丹房产物直接进入乾坤袋；设施不产生被动收益，也不影响战斗、掉落或商店价格。
+
 ## 团队试炼定义
 
 `team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。

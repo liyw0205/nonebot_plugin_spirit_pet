@@ -12,6 +12,7 @@ from . import lineage_awakening_rewards
 from . import battle_merits
 from . import defense
 from . import forbidden
+from . import cave
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -448,6 +449,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (forbidden.objective_line(ctx, player.user_id), "灵宠禁地"),
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
+        (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
         (_weekly_line(ctx, player.user_id), "灵宠周常"),

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "spring",
+    "name": "灵泉",
+    "description": "引地脉灵泉入洞府，每日凝神一次，为一只伙伴补回精力。",
+    "effect": "energy",
+    "yields": [30, 45, 60, 75, 100],
+    "upgrades": [
+      {"stones": 300, "items": {"spirit_food": 2}},
+      {"stones": 700, "items": {"spirit_food": 4}},
+      {"stones": 1500, "items": {"spirit_food": 6}},
+      {"stones": 3000, "items": {"spirit_food": 8}}
+    ]
+  },
+  {
+    "id": "pen",
+    "name": "兽栏",
+    "description": "洞府深处的安静兽栏，每日抚慰一次，与伙伴更亲近。",
+    "effect": "affinity",
+    "yields": [3, 5, 7, 9, 12],
+    "upgrades": [
+      {"stones": 300, "items": {"bloodline_essence": 2}},
+      {"stones": 700, "items": {"bloodline_essence": 4}},
+      {"stones": 1500, "items": {"bloodline_essence": 6}},
+      {"stones": 3000, "items": {"bloodline_essence": 8}}
+    ]
+  },
+  {
+    "id": "alchemy",
+    "name": "丹房",
+    "description": "借洞府灵火温养丹炉，每日开炉一次，炼出蕴灵丹。",
+    "effect": "item",
+    "item": "exp_pill",
+    "yields": [1, 1, 2, 2, 3],
+    "upgrades": [
+      {"stones": 300, "items": {"forge_ore": 2}},
+      {"stones": 700, "items": {"forge_ore": 4}},
+      {"stones": 1500, "items": {"forge_ore": 6}},
+      {"stones": 3000, "items": {"forge_ore": 8}}
+    ]
+  }
+]

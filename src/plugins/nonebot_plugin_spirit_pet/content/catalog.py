@@ -18,6 +18,7 @@ from ..domain.expedition_content import Expedition
 from ..domain.forbidden_content import ForbiddenZone
 from ..domain.cuisine_content import CuisineDish
 from ..domain.team_trial_content import TeamTrial
+from ..domain.cave_content import CaveFacility
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -110,6 +111,7 @@ class Catalog:
     forbidden: dict[str, ForbiddenZone]
     cuisine: dict[str, CuisineDish]
     team_trials: dict[str, TeamTrial]
+    cave: dict[str, CaveFacility]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -158,6 +160,7 @@ class Catalog:
             forbidden=_index(directory / "forbidden.json", ForbiddenZone),
             cuisine=_index(directory / "cuisine.json", CuisineDish),
             team_trials=_index(directory / "team_trials.json", TeamTrial),
+            cave=_index(directory / "cave.json", CaveFacility),
         )
         catalog.validate()
         return catalog
@@ -257,6 +260,7 @@ class Catalog:
         self._validate_forbidden(realm_ids)
         self._validate_cuisine()
         self._validate_team_trials(realm_ids)
+        self._validate_cave()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -500,6 +504,17 @@ class Catalog:
                 raise ValueError("team trial energy exceeds capacity")
             if trial.reward.stones.maximum <= 0 and not trial.reward.items:
                 raise ValueError(f"team trial {trial.id} needs a reward")
+
+    def _validate_cave(self):
+        if not self.cave:
+            raise ValueError("cave facilities must not be empty")
+        for facility in self.cave.values():
+            if facility.item is not None:
+                self._require([facility.item], self.items, "cave facility item")
+            for step in facility.upgrades:
+                self._require(step.items, self.items, "cave upgrade item")
+                if step.stones <= 0 and not step.items:
+                    raise ValueError(f"cave facility {facility.id} has a free upgrade")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
