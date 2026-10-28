@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from pydantic import ValidationError
 
 from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
@@ -76,6 +77,33 @@ def test_content_defines_the_scaling_corridor(game):
     assert all(item in game[0].content.items for milestone in content.milestones for item in milestone.items)
 
 
+def test_content_validation_rejects_broken_corridors():
+    from nonebot_plugin_spirit_pet.domain.corridor_content import Corridor
+
+    base = {
+        "id": "corridor",
+        "name": "无尽回廊",
+        "description": "测试",
+        "energy": 6,
+        "max_floor": 30,
+        "base_enemy": "wood_guard",
+        "scaling": {"hp": 0.18},
+        "stones_per_floor": {"base": 10, "growth": 6},
+        "exp_per_floor": {"base": 8, "growth": 4},
+        "milestones": [{"floor": 5, "items": {"forge_ore": 1}}],
+    }
+    assert Corridor.model_validate(base).max_floor == 30
+    beyond = {**base, "milestones": [{"floor": 31, "items": {"forge_ore": 1}}]}
+    with pytest.raises(ValidationError, match="beyond the last floor"):
+        Corridor.model_validate(beyond)
+    descending = {**base, "milestones": [{"floor": 10}, {"floor": 5}]}
+    with pytest.raises(ValidationError, match="ascending"):
+        Corridor.model_validate(descending)
+    flat = {**base, "scaling": {"hp": 0, "attack": 0, "defense": 0, "speed": 0}}
+    with pytest.raises(ValidationError, match="does not scale"):
+        Corridor.model_validate(flat)
+
+
 def test_page_without_a_pet_is_read_only(game, play):
     page = play("corridor", user="ghost")
     assert "尚未结契" in page.text()
@@ -88,6 +116,21 @@ def test_fresh_page_offers_only_the_entry(game, play):
     assert "当前：第 1 层待战 · 已清 0 层 · 待领 灵石 0 · 修为 0" in page.text()
     assert "本周最深：0 层" in page.text()
     assert {link.label for link in page.inline_commands} == {"挑战"}
+
+
+def test_the_page_hides_actions_the_player_cannot_take(game, play):
+    play("adopt", "青鸾")
+    boost(game)
+    set_energy(game, 5)
+    page = play("corridor")
+    assert "精力不足" in page.text()
+    assert page.inline_commands == ()
+    set_energy(game, 100)
+    page = play("corridor")
+    assert {link.label for link in page.inline_commands} == {"挑战"}
+    play("corridor", "挑战")
+    page = play("corridor")
+    assert {link.label for link in page.inline_commands} == {"挑战", "收手"}
 
 
 def test_winning_a_floor_advances_the_run_and_counts_the_energy(game, play):
