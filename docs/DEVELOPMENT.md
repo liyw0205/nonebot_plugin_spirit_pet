@@ -582,7 +582,7 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 状态全部落在 `quest_progress`：`cuisine_dish_<菜谱id>` 记录累计份数并派生等级，`cuisine_heat_<北京日期>` 记录当日灶火消耗，`rules.json` 的 `cuisine.daily_heat/max_level` 是唯二数值入口；不新增表列，也不写战报、不推进任务或成就。页面给出厨艺、已掌握数、剩余灶火与每道菜的等级/灶火/成本/效果/状态，只有可烹饪行挂「烹饪」蓝字；`灵宠目标` 新增灵膳行，帮助「成长」新增两条，`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。
 
-新增 `tests/test_cuisine.py` 18 项（内容形状、未结契只读、页面状态与蓝字、单膳产出与扣费、重复菜不升级、等级门槛、材料/灵石整笔拒绝、每日灶火与跨日重置、超量拒绝、宴席覆盖全部在册并跳过派遣、无伙伴可宴请拒绝、精力亲密封顶、产物不可购买/回收、经既有使用路径生效、重投幂等、重启持久、帮助/目标/解析、QQ 按钮与蓝字分离）；`test_contract_audit.py` 将 `cuisine` 纳入只读页面审计并登记 `DOCUMENTED_COUNTS` 6 项。聚焦合同 8 个文件 `196 passed`，另跑商店/分页/消息/信息/灵田/周常/成就/战令批次 `190 passed`；`compileall` 与 `git diff --check` 通过。排除项：未部署、未发送真实 QQ、未跑本地全量、未改 schema 与玩家存档。
+新增 `tests/test_cuisine.py` 18 项（内容形状、未结契只读、页面状态与蓝字、单膳产出与扣费、重复菜不升级、等级门槛、材料/灵石整笔拒绝、每日灶火与跨日重置、超量拒绝、宴席覆盖全部在册并跳过派遣、无伙伴可宴请拒绝、精力亲密封顶、产物不可购买/回收、经既有使用路径生效、重投幂等、重启持久、帮助/目标/解析、QQ 按钮与蓝字分离）；`test_contract_audit.py` 将 `cuisine` 纳入只读页面审计并登记 `DOCUMENTED_COUNTS` 6 项。聚焦合同 8 个文件 `196 passed`，另跑商店/分页/消息/信息/灵田/周常/成就/战令批次 `190 passed`；`compileall` 与 `git diff --check` 通过。提交 `516e4ba` 已推送 develop，develop CI `40733259006` 全绿，fast-forward 合入 main 后 main CI `40733856173` 全绿。排除项：未部署、未发送真实 QQ、未跑本地全量、未改 schema 与玩家存档。
 
 ### 开发阶段流程
 
