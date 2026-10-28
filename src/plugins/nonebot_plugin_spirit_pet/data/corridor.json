@@ -1,0 +1,21 @@
+[
+  {
+    "id": "corridor",
+    "name": "无尽回廊",
+    "description": "回廊深处每一层都比上一层更凶险；随时可以收手兑现，也可以再赌一层。",
+    "energy": 6,
+    "max_floor": 30,
+    "base_enemy": "wood_guard",
+    "scaling": {"hp": 0.18, "attack": 0.14, "defense": 0.12, "speed": 0.10},
+    "stones_per_floor": {"base": 10, "growth": 6},
+    "exp_per_floor": {"base": 8, "growth": 4},
+    "milestones": [
+      {"floor": 5, "items": {"forge_ore": 2}},
+      {"floor": 10, "items": {"bloodline_essence": 2}},
+      {"floor": 15, "items": {"exp_pill": 2}},
+      {"floor": 20, "items": {"forge_ore": 4}},
+      {"floor": 25, "items": {"bloodline_essence": 4}},
+      {"floor": 30, "items": {"exp_pill": 5}}
+    ]
+  }
+]

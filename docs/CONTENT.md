@@ -240,6 +240,32 @@
 
 等级与每日状态属于运行逻辑：`cave_<设施id>_level` 存当前等级（缺省 1），`cave_<设施id>_day_<北京日期>` 记录当日是否已使用，均写入既有 `quest_progress`，不新增表列。精力与亲密按 100 封顶，丹房产物直接进入乾坤袋；设施不产生被动收益，也不影响战斗、掉落或商店价格。
 
+## 回廊定义
+
+`corridor.json` 是回廊对象数组，由 `domain/corridor_content.py` 校验。每条回廊定义 `id`、`name`、`description`、`energy`（1-100）、`max_floor`（5-60）、`base_enemy`（已有敌人）、`scaling`（气血/攻击/防御/速度的每层复利率，至少一项为正）、`stones_per_floor` 与 `exp_per_floor`（`base` + `growth × (层数-1)`）以及 `milestones`（层数唯一递增、不超过 `max_floor`，物品必须存在）。
+
+```json
+{
+  "id": "corridor",
+  "name": "无尽回廊",
+  "description": "回廊深处每一层都比上一层更凶险；随时可以收手兑现，也可以再赌一层。",
+  "energy": 6,
+  "max_floor": 30,
+  "base_enemy": "wood_guard",
+  "scaling": {"hp": 0.18, "attack": 0.14, "defense": 0.12, "speed": 0.10},
+  "stones_per_floor": {"base": 10, "growth": 6},
+  "exp_per_floor": {"base": 8, "growth": 4},
+  "milestones": [
+    {"floor": 5, "items": {"forge_ore": 2}},
+    {"floor": 30, "items": {"exp_pill": 5}}
+  ]
+}
+```
+
+敌人属性按 `(1 + rate) ** (层数 - 1)` 复利放大后取整，`hp/attack/speed` 至少为 1；因此不需要为回廊新增敌人数值，调平衡只改 `base_enemy` 与 `scaling`。层奖励是线性的，深度收益靠层数本身放大，里程碑只补材料，不设额外货币。
+
+运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
+
 ## 团队试炼定义
 
 `team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
