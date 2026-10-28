@@ -1,0 +1,47 @@
+[
+  {
+    "id": "thunder_raid",
+    "name": "雷泽合击",
+    "description": "雷泽蛟灵盘踞云泽，全队须在它蓄满雷势前合力击破。",
+    "min_realm": "ningqi",
+    "enemies": ["thunder_dragon"],
+    "energy": 25,
+    "round_limit": 10,
+    "reward": {
+      "exp": {"minimum": 200, "maximum": 260},
+      "stones": {"minimum": 300, "maximum": 380},
+      "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+    }
+  },
+  {
+    "id": "tide_hunt",
+    "name": "潮宫围猎",
+    "description": "潮宫镇守借潮汐卸力，拖得越久越难破防，速战才是正解。",
+    "min_realm": "zhuji",
+    "enemies": ["tide_sentinel"],
+    "energy": 25,
+    "round_limit": 8,
+    "reward": {
+      "exp": {"minimum": 220, "maximum": 280},
+      "stones": {"minimum": 280, "maximum": 340},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+    }
+  },
+  {
+    "id": "hall_break",
+    "name": "古殿破阵",
+    "description": "古殿守卫与寒晶守灵结阵相护，破阵须在阵眼重亮之前。",
+    "min_realm": "jindan",
+    "enemies": ["ancient_guard", "ice_guard"],
+    "energy": 30,
+    "round_limit": 8,
+    "reward": {
+      "exp": {"minimum": 260, "maximum": 320},
+      "stones": {"minimum": 320, "maximum": 400},
+      "items": {
+        "forge_ore": {"minimum": 2, "maximum": 2},
+        "bloodline_essence": {"minimum": 1, "maximum": 1}
+      }
+    }
+  }
+]

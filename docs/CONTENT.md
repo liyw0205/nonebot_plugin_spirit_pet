@@ -216,6 +216,29 @@
 
 厨艺等级与灶火属于运行逻辑：等级 = `min(max_level, 1 + 已烹饪过的不同菜谱数)`，由 `quest_progress` 的 `cuisine_dish_<菜谱id>`（值为累计份数）派生；当日灶火消耗记在 `cuisine_heat_<北京日期>`，换日自动重置。宴席只作用于在册、未封存且未外出派遣的伙伴，精力与亲密按 100 封顶，修为照常累加；单膳产物通过既有 `灵宠使用`/`灵宠喂养` 生效。以上状态不进入静态 JSON，也不新增表列。
 
+## 团队试炼定义
+
+`team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
+
+```json
+{
+  "id": "thunder_raid",
+  "name": "雷泽合击",
+  "description": "雷泽蛟灵盘踞云泽，全队须在它蓄满雷势前合力击破。",
+  "min_realm": "ningqi",
+  "enemies": ["thunder_dragon"],
+  "energy": 25,
+  "round_limit": 10,
+  "reward": {
+    "exp": {"minimum": 200, "maximum": 260},
+    "stones": {"minimum": 300, "maximum": 380},
+    "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+  }
+}
+```
+
+试炼按 `id` 排序、以北京时间周一零点的 `时间戳 // 86400 % 试炼数` 轮换，因此同周内固定、跨周自动换题；当前三道题为古殿破阵、雷泽合击、潮宫围猎。`round_limit` 是唯一的失败条件之外的限时规则：战斗判胜但回合数超过上限时记为超时，不结算奖励。每周进度写在 `quest_progress` 的 `team_trial_<周一零点时间戳>_<试炼id>`，值为该成员本周最好通关回合数；不新增表、列或货币。
+
 ## 奇遇定义
 
 `adventures.json` 为奇遇对象数组。`id`、`name`、`text`、`weight`、`reward` 均必填且不接受额外字段；名称在奇遇间唯一，权重为正整数。同一路线内的权重按总和归一为出现概率，路线目录显示各奇遇概率。每条奇闻还必须定义 `options`（2-3 个互斥回响选项），每个选项含 `id`、`label`、`text` 与 `reward`；选项 id 在奇闻内唯一，选项奖励物品必须存在，选项奖励并入统一的奖励物品校验。`reward` 与 `text` 仍然是探索触发时的即时奖励与文案，回响只在玩家主动选择时结算选项奖励，两者互不影响。

@@ -17,6 +17,7 @@ from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.forbidden_content import ForbiddenZone
 from ..domain.cuisine_content import CuisineDish
+from ..domain.team_trial_content import TeamTrial
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -108,6 +109,7 @@ class Catalog:
     shop_offers: dict[str, ShopOffer]
     forbidden: dict[str, ForbiddenZone]
     cuisine: dict[str, CuisineDish]
+    team_trials: dict[str, TeamTrial]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -155,6 +157,7 @@ class Catalog:
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
             forbidden=_index(directory / "forbidden.json", ForbiddenZone),
             cuisine=_index(directory / "cuisine.json", CuisineDish),
+            team_trials=_index(directory / "team_trials.json", TeamTrial),
         )
         catalog.validate()
         return catalog
@@ -253,6 +256,7 @@ class Catalog:
         self._validate_tower(realm_ids)
         self._validate_forbidden(realm_ids)
         self._validate_cuisine()
+        self._validate_team_trials(realm_ids)
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -484,6 +488,18 @@ class Catalog:
         levels = {dish.level for dish in self.cuisine.values()}
         if levels != set(range(1, max(levels) + 1)):
             raise ValueError("cuisine levels must be contiguous from 1")
+
+    def _validate_team_trials(self, realm_ids):
+        if not self.team_trials:
+            raise ValueError("team trials must not be empty")
+        for trial in self.team_trials.values():
+            self._require([trial.min_realm], realm_ids, "team trial realm")
+            self._require(trial.enemies, self.enemies, "team trial enemies")
+            self._require(trial.reward.items, self.items, "team trial reward items")
+            if trial.energy > 100:
+                raise ValueError("team trial energy exceeds capacity")
+            if trial.reward.stones.maximum <= 0 and not trial.reward.items:
+                raise ValueError(f"team trial {trial.id} needs a reward")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

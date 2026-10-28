@@ -24,6 +24,7 @@ from ..gameplay import ascension
 from ..gameplay import daily_shop
 from ..gameplay import defense
 from ..gameplay import forbidden
+from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import skill_presets
 from ..gameplay import daily_assignment
@@ -171,6 +172,7 @@ ACTIONS = {
     "forbidden_challenge": Command(forbidden.challenge, True),
     "cuisine": Command(cuisine.entry, True, registered=False),
     "cuisine_cook": Command(cuisine.cook, True),
+    "team_trial": Command(team_trial.dispatch, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
@@ -292,6 +294,7 @@ COMMANDS = {
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
+    "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",
     "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
