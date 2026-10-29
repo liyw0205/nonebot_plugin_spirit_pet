@@ -109,7 +109,10 @@ def test_teaching_copies_the_skill_and_charges_the_cost(game, play):
     teacher_id, student = setup_teacher(game, play)
     stones, essence = cost_of(game, "wind_slash")
     held = items(game[1])["bloodline_essence"]
+    sql(game[1], "UPDATE learned_skills SET level=4, proficiency=37 WHERE pet_id=? AND skill_id='wind_slash'", (teacher_id,))
+    teacher_row = sql(game[1], "SELECT level, proficiency, equipped FROM learned_skills WHERE pet_id=? AND skill_id='wind_slash'", (teacher_id,))
     reply = play("transfer", "青鸾 小鸾 风刃术")
+    assert sql(game[1], "SELECT level, proficiency, equipped FROM learned_skills WHERE pet_id=? AND skill_id='wind_slash'", (teacher_id,)) == teacher_row
     assert reply.title == "传授灵术"
     assert "已自动携带" in reply.text()
     row = sql(game[1], "SELECT level, proficiency, equipped FROM learned_skills WHERE pet_id=? AND skill_id='wind_slash'", (student,))[0]
