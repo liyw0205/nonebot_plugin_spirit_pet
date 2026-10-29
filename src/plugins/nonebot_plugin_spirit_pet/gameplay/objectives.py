@@ -17,6 +17,7 @@ from . import corridor
 from . import sects
 from . import codex_trials
 from . import tempering
+from . import survival
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -457,6 +458,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (sects.objective_line(ctx, player.user_id), "灵宠师门"),
         (codex_trials.objective_line(ctx, player.user_id), "灵宠图鉴试炼"),
         (tempering.objective_line(ctx, player.user_id), "灵宠淬魂"),
+        (survival.objective_line(ctx, player.user_id), "灵宠守关"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

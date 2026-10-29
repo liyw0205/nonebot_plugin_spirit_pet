@@ -299,6 +299,29 @@
 
 每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
 
+## 守关定义
+
+`survival.json` 是守关配置数组（当前一条 `survival`），由 `domain/survival_content.py` 校验。配置定义 `id`、`name`、`description`、`enemy`（已有敌人）、四项 `*_multiplier`（0.1-100，防御允许 0）、`energy` 与 `milestones`（回合数唯一递增、每档带完整 `reward`）。
+
+```json
+{
+  "id": "survival",
+  "name": "灵宠守关",
+  "description": "深渊魔将守关不退，气血如渊；此战不求取胜，只问你能否撑到最后。",
+  "enemy": "abyss_guard",
+  "hp_multiplier": 40.0,
+  "attack_multiplier": 0.6,
+  "defense_multiplier": 1.0,
+  "speed_multiplier": 1.0,
+  "energy": 12,
+  "milestones": [
+    {"rounds": 5, "reward": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 300, "maximum": 300}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}}
+  ]
+}
+```
+
+守卫属性 = 敌人基础属性 × 对应倍率（取整，气血/攻击/速度至少 1）；气血倍率决定「打不死」，攻击倍率决定存活压力。最高档回合数即页面显示的目标。战绩存 `quest_progress` 的 `survival_best`，里程碑凭证为 `survival_milestone_<回合>`，战报键为 `survival`，不写 `pve_stage_progress`。
+
 ## 图鉴试炼定义
 
 `codex_trials.json` 是试炼配置数组（当前只有一条 `codex`），由 `domain/codex_trial_content.py` 校验。配置定义 `id`、`name`、`boost`（1.0-5.0）、`energy`（1-100）、`reward`（修为/灵石区间加物品）与 `milestones`（通关数量唯一递增、物品存在）。种族列表来自 `pets.json`，不在此文件重复。

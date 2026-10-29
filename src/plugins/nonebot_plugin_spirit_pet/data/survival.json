@@ -1,0 +1,19 @@
+[
+  {
+    "id": "survival",
+    "name": "灵宠守关",
+    "description": "深渊魔将守关不退，气血如渊；此战不求取胜，只问你能否撑到最后。",
+    "enemy": "abyss_guard",
+    "hp_multiplier": 40.0,
+    "attack_multiplier": 0.6,
+    "defense_multiplier": 1.0,
+    "speed_multiplier": 1.0,
+    "energy": 12,
+    "milestones": [
+      {"rounds": 5, "reward": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 300, "maximum": 300}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}},
+      {"rounds": 10, "reward": {"exp": {"minimum": 220, "maximum": 220}, "stones": {"minimum": 600, "maximum": 600}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}},
+      {"rounds": 15, "reward": {"exp": {"minimum": 360, "maximum": 360}, "stones": {"minimum": 1000, "maximum": 1000}, "items": {"exp_pill": {"minimum": 3, "maximum": 3}}}},
+      {"rounds": 20, "reward": {"exp": {"minimum": 520, "maximum": 520}, "stones": {"minimum": 1600, "maximum": 1600}, "items": {"forge_ore": {"minimum": 5, "maximum": 5}}}}
+    ]
+  }
+]

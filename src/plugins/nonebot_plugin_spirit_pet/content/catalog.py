@@ -22,6 +22,7 @@ from ..domain.cave_content import CaveFacility
 from ..domain.corridor_content import Corridor
 from ..domain.sect_content import Sect
 from ..domain.codex_trial_content import CodexTrial
+from ..domain.survival_content import SurvivalTrial
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -118,6 +119,7 @@ class Catalog:
     corridor: dict[str, Corridor]
     sects: dict[str, Sect]
     codex_trials: dict[str, CodexTrial]
+    survival: dict[str, SurvivalTrial]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -170,6 +172,7 @@ class Catalog:
             corridor=_index(directory / "corridor.json", Corridor),
             sects=_index(directory / "sects.json", Sect),
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
+            survival=_index(directory / "survival.json", SurvivalTrial),
         )
         catalog.validate()
         return catalog
@@ -273,6 +276,7 @@ class Catalog:
         self._validate_corridor()
         self._validate_sects()
         self._validate_codex_trials()
+        self._validate_survival()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -557,6 +561,16 @@ class Catalog:
                 self._require(milestone.items, self.items, "codex trial milestone items")
                 if milestone.count > len(self.species):
                     raise ValueError(f"codex trial {trial.id} milestone exceeds the codex size")
+
+    def _validate_survival(self):
+        if not self.survival:
+            raise ValueError("survival trials must not be empty")
+        for trial in self.survival.values():
+            self._require([trial.enemy], self.enemies, "survival enemy")
+            if trial.energy > 100:
+                raise ValueError(f"survival trial {trial.id} energy exceeds a pet's pool")
+            for milestone in trial.milestones:
+                self._require(milestone.reward.items, self.items, "survival milestone items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
