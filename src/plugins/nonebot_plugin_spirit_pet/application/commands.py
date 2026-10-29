@@ -33,6 +33,7 @@ from ..gameplay import survival
 from ..gameplay import arcs
 from ..gameplay import support
 from ..gameplay import tribulations
+from ..gameplay import combos
 from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import skill_presets
@@ -190,6 +191,7 @@ ACTIONS = {
     "arcs": Command(arcs.dispatch, True, registered=False),
     "support": Command(support.dispatch, True, registered=False),
     "tribulations": Command(tribulations.dispatch, True, registered=False),
+    "combos": Command(combos.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
@@ -321,6 +323,7 @@ COMMANDS = {
     "灵宠奇缘": "arcs",
     "灵宠助战": "support",
     "灵宠劫境": "tribulations",
+    "灵宠连携": "combos",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",

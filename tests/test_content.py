@@ -190,3 +190,15 @@ def test_weighted_selection_boundary_and_invalid_weights():
         weighted_choice(Random(), ["a"], [0])
     with pytest.raises(ValueError):
         weighted_choice(Random(), ["a"], [-1])
+
+
+def test_combos_reject_unknown_skills(content_dir):
+    edit(content_dir, "combos.json", lambda rows: rows[0].update({"skills": ["fireball", "unknown"]}))
+    with pytest.raises(ValueError, match="unknown skill"):
+        Catalog.load(content_dir)
+
+
+def test_combos_reject_a_repeated_skill_pair(content_dir):
+    edit(content_dir, "combos.json", lambda rows: rows[0].update({"skills": list(rows[1]["skills"])}))
+    with pytest.raises(ValueError, match="repeats an existing skill pair"):
+        Catalog.load(content_dir)

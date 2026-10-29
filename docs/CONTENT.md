@@ -266,6 +266,24 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 连携定义
+
+`combos.json` 是连携数组，由 `domain/combo_content.py` 校验：每项声明 `id`、`name`、`description`、`skills`（恰好两门、互不相同、必须存在于 `skills.json`）与 `bonuses`（`hp` / `attack` / `defense` / `speed` 的加成比率）。
+
+```json
+{
+  "id": "windfire_pair",
+  "name": "风火相生",
+  "description": "风助火势，出手更快也更狠。",
+  "skills": ["wind_slash", "fireball"],
+  "bonuses": {"attack": 0.05, "speed": 0.03}
+}
+```
+
+规则：每项加成 0-10%，四项合计不得超过 15%，且不能全为 0；`skills` 长度必须为 2 且两个 id 不同。`Catalog._validate_combos` 进一步要求技能存在，并禁止两组连携使用同一对技能（顺序无关）。
+
+连携没有独立存档：`gameplay/combos.py` 每次按 `learned_skills` 中 `equipped=1` 的技能集合重新判定，因此换装、遗忘、切换出战伙伴都会立刻反映到页面与战斗属性，不需要迁移或回滚。技能的元素/类别/境界条件仍由 `combatant` 的 `check_requirements` 把关——例如风火相生只能由同时具备风与火元素的伙伴携带，木灵相济只能由具备木元素的伙伴携带。
+
 ## 助战规则
 
 助战没有独立内容文件，数值放在 `rules.json` 的 `support`：

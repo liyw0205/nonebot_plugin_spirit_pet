@@ -1,0 +1,44 @@
+[
+  {
+    "id": "windfire_pair",
+    "name": "风火相生",
+    "description": "风助火势，出手更快也更狠。",
+    "skills": ["wind_slash", "fireball"],
+    "bonuses": {"attack": 0.05, "speed": 0.03}
+  },
+  {
+    "id": "thunder_pair",
+    "name": "雷霆共鸣",
+    "description": "两声雷落在同一片云里，力道叠加。",
+    "skills": ["thunder_roar", "thunder_bolt"],
+    "bonuses": {"attack": 0.06}
+  },
+  {
+    "id": "frost_pair",
+    "name": "霜华守望",
+    "description": "攻守同源，寒气既伤人也能护身。",
+    "skills": ["ice_lance", "frost_cocoon"],
+    "bonuses": {"defense": 0.06, "hp": 0.04}
+  },
+  {
+    "id": "wood_pair",
+    "name": "木灵相济",
+    "description": "藤蔓与回春同出一脉，久战不倒。",
+    "skills": ["wood_heal", "vine_lash"],
+    "bonuses": {"hp": 0.05, "defense": 0.04}
+  },
+  {
+    "id": "metal_pair",
+    "name": "金锋破障",
+    "description": "先破其障，再以锋刃追身。",
+    "skills": ["metal_edge", "spirit_dispel"],
+    "bonuses": {"attack": 0.04, "speed": 0.04}
+  },
+  {
+    "id": "earth_pair",
+    "name": "岩阵同心",
+    "description": "镇岳之势与碎岩之力彼此支撑。",
+    "skills": ["earth_crush", "mountain_taunt"],
+    "bonuses": {"defense": 0.05, "hp": 0.05}
+  }
+]

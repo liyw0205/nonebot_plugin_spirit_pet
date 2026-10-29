@@ -25,6 +25,7 @@ from ..domain.codex_trial_content import CodexTrial
 from ..domain.survival_content import SurvivalTrial
 from ..domain.arc_content import Arc
 from ..domain.tribulation_content import Tribulation
+from ..domain.combo_content import Combo
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -124,6 +125,7 @@ class Catalog:
     survival: dict[str, SurvivalTrial]
     arcs: dict[str, Arc]
     tribulations: dict[str, Tribulation]
+    combos: dict[str, Combo]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -179,6 +181,7 @@ class Catalog:
             survival=_index(directory / "survival.json", SurvivalTrial),
             arcs=_index(directory / "arcs.json", Arc),
             tribulations=_index(directory / "tribulations.json", Tribulation),
+            combos=_index(directory / "combos.json", Combo),
         )
         catalog.validate()
         return catalog
@@ -285,6 +288,7 @@ class Catalog:
         self._validate_survival()
         self._validate_arcs(realm_ids)
         self._validate_tribulations()
+        self._validate_combos()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -601,6 +605,19 @@ class Catalog:
             self._require(entry.bonus.items, self.items, "tribulation bonus items")
             for modifier in entry.modifiers:
                 self._require(modifier.reward.items, self.items, "tribulation modifier items")
+
+    def _validate_combos(self):
+        if not self.combos:
+            raise ValueError("combos must not be empty")
+        pairs = set()
+        for combo in self.combos.values():
+            for skill_id in combo.skills:
+                if skill_id not in self.skills:
+                    raise ValueError(f"combo {combo.id} references unknown skill {skill_id}")
+            pair = frozenset(combo.skills)
+            if pair in pairs:
+                raise ValueError(f"combo {combo.id} repeats an existing skill pair")
+            pairs.add(pair)
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

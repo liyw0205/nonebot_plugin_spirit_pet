@@ -75,6 +75,8 @@ def combatant(
             check_requirements(ctx, pet, skill.requirements)
             selected.append(skill)
             skill_multipliers[skill_id] = ctx.content.skill_levels[progression[skill_id][0]].power_multiplier
+    from .combos import apply as apply_combos
+    apply_combos(ctx, stats, [skill.id for skill in selected])
     name = f"{ctx.player(user_id).uid_label}的{pet.name}"
     return Fighter.create(
         name, Stats(**stats), tuple(species.elements), tuple(selected),
