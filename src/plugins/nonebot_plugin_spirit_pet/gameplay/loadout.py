@@ -44,6 +44,10 @@ def combatant(
     if layers:
         factor = 1 + layers * temper_rate(ctx)
         stats = {key: int(value * factor + 0.5) for key, value in stats.items()}
+    from .support import bonus as support_bonus
+    if pet.pet_id == ctx.player(user_id or ctx.user_id).active_pet_id:
+        for key, value in support_bonus(ctx, user_id or ctx.user_id).items():
+            stats[key] += value
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():
         item = ctx.content.items[item_id]
         gear = ctx.content.equipment[item.equipment_id]

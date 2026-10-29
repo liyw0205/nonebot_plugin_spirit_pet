@@ -260,6 +260,11 @@ class CuisineRule(Definition):
     max_level: Annotated[int, Field(ge=1, le=10)] = 5
 
 
+class SupportRule(Definition):
+    slots: Annotated[int, Field(ge=1, le=3)]
+    rate: Annotated[float, Field(gt=0, le=0.5)]
+
+
 class TemperRule(Definition):
     max_layers: Annotated[int, Field(ge=1, le=20)]
     rate: Annotated[float, Field(gt=0, le=0.05)]
@@ -295,3 +300,4 @@ class Rules(Definition):
     cuisine: CuisineRule
     sect: SectRule
     temper: TemperRule
+    support: SupportRule
