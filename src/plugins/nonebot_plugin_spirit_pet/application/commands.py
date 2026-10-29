@@ -33,7 +33,7 @@ from ..gameplay import survival
 from ..gameplay import arcs
 from ..gameplay import support
 from ..gameplay import tribulations
-from ..gameplay import combos
+from ..gameplay import achievement_shop, combos
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -198,6 +198,7 @@ ACTIONS = {
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
     "achievement_claim": Command(achievements.claim, True),
+    "achievement_shop": Command(achievement_shop.dispatch, True, registered=False),
     "collection": Command(achievements.collection, True, registered=False),
     "collection_rank": Command(collection_rank.collection_rank, True, registered=False),
     "dungeon_stats": Command(dungeon_stats.catalog, True, registered=False),
@@ -330,7 +331,7 @@ COMMANDS = {
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",
-    "灵宠成就领奖": "achievement_claim", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
+    "灵宠成就领奖": "achievement_claim", "灵宠成就商店": "achievement_shop", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
     "灵宠图鉴奖励": "codex", "灵宠图鉴领奖": "codex_claim",
     "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",

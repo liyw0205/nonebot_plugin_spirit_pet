@@ -266,6 +266,19 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 成就点商店定义
+
+`achievement_shop.json` 是兑换项数组，由 `domain/achievement_shop_content.py` 校验：每项声明 `id`、`name`、`description`、`cost`（1-100000 点）与 `reward`（`stones` ≥0 加 `items`），`reward` 不能同时为空。`Catalog._validate_achievement_shop` 要求至少一项、且每个奖励物品 id 都存在于 `items.json`。
+
+```json
+{
+  "id": "food_bundle", "name": "灵粮包", "description": "五份灵粮。",
+  "cost": 40, "reward": {"stones": 0, "items": {"spirit_food": 5}}
+}
+```
+
+点数来源写在 `rules.json` 的 `achievement_points`（`per_claim` 1-100，当前 10）：`累计 = per_claim × achievement_claims 行数`，因此成就领取历史无需回填，也不新增列。消耗写在 `quest_progress` 的 `ach_points_spent`（`progress` 为已用点数），可用余额为两者之差；没有独立货币表。兑换是原子操作：校验余额与物品定义后一次性更新 `ach_points_spent` 并发放灵石与物品，失败路径不写入。
+
 ## 传功规则
 
 传功没有独立内容文件，数值放在 `rules.json` 的 `transfer`：

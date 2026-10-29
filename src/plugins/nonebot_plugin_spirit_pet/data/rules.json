@@ -117,5 +117,8 @@
     "price_rate": 0.8,
     "min_stones": 80,
     "bloodline_essence": 1
+  },
+  "achievement_points": {
+    "per_claim": 10
   }
 }

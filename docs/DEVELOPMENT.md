@@ -722,6 +722,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_transfer.py` 16 项（费用规则、未结契只读、无技能文案、页面候选与费用、正常传授与扣费、携带位满不自动携带、师父未学、徒弟已学、同一只、未知与同名伙伴、徒弟条件不符、灵石与精华不足且零写入、派遣拒绝、重放幂等、格式/解析/帮助、QQ 按钮与蓝字分离）。聚焦 10 个文件 `228 passed`，另跑配装/淬魂/助战/师门/劫境/成就/战报/图鉴试炼/道具/共鸣批次 `165 passed`；`compileall` 与 `git diff --check` 通过。提交 `7ef03f1` 已推送 develop，develop CI `40852834637` 全绿（2679 项），fast-forward 合入 main 后 main CI `40853370702` 全绿。排除项：未部署、未发送真实 QQ、未跑本地全量、未改 schema 与玩家存档。
 
+### 灵宠成就商店（2026-10-29，已完成）
+
+传功交付后审计确认：77 个成就各自只发一份固定奖励，领完即成死内容，全服没有任何由玩家**自主支配**的货币。本切片新增「灵宠成就商店」：每领取一个成就奖励累积 10 点成就点，点数可在商店换取自选材料。
+
+点数是派生值：`累计 = per_claim × achievement_claims 行数`（`rules.json` 的 `achievement_points.per_claim` 1-100，当前 10），已用写在 `quest_progress` 的 `ach_points_spent`，因此历史领取自动计入、无需迁移，也不新增货币表或列。内容只有 `data/achievement_shop.json` 六项（灵粮包 40、灵石袋 50、蕴灵丹 60、锻灵矿对 70、血脉精华 90、厚藏 220），`domain/achievement_shop_content.py` 校验 `cost` 1-100000 与奖励非空，`Catalog._validate_achievement_shop` 校验物品存在。
+
+`gameplay/achievement_shop.py` 的 `page` 显示 `可用/累计/已用` 与逐项状态，只给余额足够的行挂「兑换」蓝字；`redeem` 支持序号或名称，先校验余额、物品定义与序号范围，再一次性更新 `ach_points_spent` 并发放灵石与物品。奖励直接入账而不经过 `grant`，所以有灵宠离线派遣时也能兑换；可重复兑换、无库存与冷却；未结契只读不建档。`achievements.claimed_count` 作为共享计数被商店复用，`灵宠目标` 新增成就点行，帮助「身份与收集」新增两条，`test_contract_audit.py` 把 `achievement_shop` 纳入只读页面并登记 6 项内容，`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。
+
+新增 `tests/test_achievement_shop.py` 17 项（规则与六项内容、内容校验负例、未结契只读、零领取零点、领取即加点、页面全项与只给可兑换行挂入口、物品兑换扣点入账、灵石袋只发灵石、重复兑换叠加、点数不足零写入、非法序号/名称/参数、物品定义缺失拒绝且不扣点、同操作重放、重启后持久、后续领取继续增长、目标/帮助/解析、QQ 按钮与蓝字分离）。聚焦 10 个文件 `252 passed`，另跑传功/连携/淬魂/助战/劫境/战令/称号/收集榜/周常课题/世界首领批次 `139 passed`；`compileall` 与 `git diff --check` 通过。排除项：未部署、未发送真实 QQ、未跑本地全量、未改 schema 与玩家存档。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

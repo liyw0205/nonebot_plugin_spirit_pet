@@ -63,6 +63,14 @@ def collection(ctx: Context, arg: str) -> Reply:
     ), tuple(commands), tuple(links))
 
 
+def claimed_count(ctx: Context, user_id: str) -> int:
+    """How many achievement rewards this player has claimed (the 成就点 source)."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS amount FROM achievement_claims WHERE user_id=?", (user_id,),
+    ).fetchone()
+    return int(row["amount"])
+
+
 def _metric(ctx: Context, user_id: str, metric: str) -> int:
     conn = ctx.repo.conn
     if metric == "species_collected":

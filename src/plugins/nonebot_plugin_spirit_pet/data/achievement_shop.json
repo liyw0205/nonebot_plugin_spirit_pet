@@ -1,0 +1,44 @@
+[
+  {
+    "id": "food_bundle",
+    "name": "灵粮包",
+    "description": "五份灵粮，够伙伴吃上一阵。",
+    "cost": 40,
+    "reward": {"stones": 0, "items": {"spirit_food": 5}}
+  },
+  {
+    "id": "sunstone_pouch",
+    "name": "灵石袋",
+    "description": "一笔现成的灵石。",
+    "cost": 50,
+    "reward": {"stones": 500, "items": {}}
+  },
+  {
+    "id": "pill_single",
+    "name": "蕴灵丹",
+    "description": "一枚蕴灵丹，用于装备与词条的重铸。",
+    "cost": 60,
+    "reward": {"stones": 0, "items": {"exp_pill": 1}}
+  },
+  {
+    "id": "ore_pair",
+    "name": "锻灵矿对",
+    "description": "两块锻灵矿，强化与打造都用得上。",
+    "cost": 70,
+    "reward": {"stones": 0, "items": {"forge_ore": 2}}
+  },
+  {
+    "id": "essence_single",
+    "name": "血脉精华",
+    "description": "一份血脉精华，淬魂与传功的必需品。",
+    "cost": 90,
+    "reward": {"stones": 0, "items": {"bloodline_essence": 1}}
+  },
+  {
+    "id": "grand_cache",
+    "name": "厚藏",
+    "description": "三枚蕴灵丹与一份血脉精华，一次补齐。",
+    "cost": 220,
+    "reward": {"stones": 0, "items": {"exp_pill": 3, "bloodline_essence": 1}}
+  }
+]

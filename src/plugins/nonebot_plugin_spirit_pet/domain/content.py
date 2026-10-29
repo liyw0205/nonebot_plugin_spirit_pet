@@ -265,6 +265,10 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class AchievementPointsRule(Definition):
+    per_claim: Annotated[int, Field(ge=1, le=100)]
+
+
 class TransferRule(Definition):
     price_rate: Annotated[float, Field(gt=0, le=1)]
     min_stones: NonNegative
@@ -308,3 +312,4 @@ class Rules(Definition):
     temper: TemperRule
     support: SupportRule
     transfer: TransferRule
+    achievement_points: AchievementPointsRule

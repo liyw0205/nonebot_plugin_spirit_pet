@@ -26,6 +26,7 @@ from ..domain.survival_content import SurvivalTrial
 from ..domain.arc_content import Arc
 from ..domain.tribulation_content import Tribulation
 from ..domain.combo_content import Combo
+from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -126,6 +127,7 @@ class Catalog:
     arcs: dict[str, Arc]
     tribulations: dict[str, Tribulation]
     combos: dict[str, Combo]
+    achievement_shop: dict[str, AchievementOffer]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -182,6 +184,7 @@ class Catalog:
             arcs=_index(directory / "arcs.json", Arc),
             tribulations=_index(directory / "tribulations.json", Tribulation),
             combos=_index(directory / "combos.json", Combo),
+            achievement_shop=_index(directory / "achievement_shop.json", AchievementOffer),
         )
         catalog.validate()
         return catalog
@@ -289,6 +292,7 @@ class Catalog:
         self._validate_arcs(realm_ids)
         self._validate_tribulations()
         self._validate_combos()
+        self._validate_achievement_shop()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -618,6 +622,12 @@ class Catalog:
             if pair in pairs:
                 raise ValueError(f"combo {combo.id} repeats an existing skill pair")
             pairs.add(pair)
+
+    def _validate_achievement_shop(self):
+        if not self.achievement_shop:
+            raise ValueError("achievement shop must not be empty")
+        for offer in self.achievement_shop.values():
+            self._require(offer.reward.items, self.items, "achievement offer items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

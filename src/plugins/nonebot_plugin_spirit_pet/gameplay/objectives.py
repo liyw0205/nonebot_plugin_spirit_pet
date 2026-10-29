@@ -22,6 +22,7 @@ from . import arcs
 from . import support
 from . import tribulations
 from . import combos
+from . import achievement_shop
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -467,6 +468,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (support.objective_line(ctx, player.user_id), "灵宠助战"),
         (tribulations.objective_line(ctx, player.user_id), "灵宠劫境"),
         (combos.objective_line(ctx, player.user_id), "灵宠连携"),
+        (achievement_shop.objective_line(ctx, player.user_id), "灵宠成就商店"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
