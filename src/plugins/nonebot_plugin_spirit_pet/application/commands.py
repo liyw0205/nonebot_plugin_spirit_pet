@@ -30,6 +30,7 @@ from ..gameplay import sects
 from ..gameplay import codex_trials
 from ..gameplay import tempering
 from ..gameplay import survival
+from ..gameplay import arcs
 from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import skill_presets
@@ -184,6 +185,7 @@ ACTIONS = {
     "codex_trials": Command(codex_trials.dispatch, True, registered=False),
     "temper": Command(tempering.dispatch, True, registered=False),
     "survival": Command(survival.dispatch, True, registered=False),
+    "arcs": Command(arcs.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
     "achievements": Command(achievements.achievements, True, registered=False),
     "achievement_detail": Command(achievements.detail, True, registered=False),
@@ -312,6 +314,7 @@ COMMANDS = {
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",
+    "灵宠奇缘": "arcs",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",

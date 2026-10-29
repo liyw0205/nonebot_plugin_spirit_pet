@@ -23,6 +23,7 @@ from ..domain.corridor_content import Corridor
 from ..domain.sect_content import Sect
 from ..domain.codex_trial_content import CodexTrial
 from ..domain.survival_content import SurvivalTrial
+from ..domain.arc_content import Arc
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -120,6 +121,7 @@ class Catalog:
     sects: dict[str, Sect]
     codex_trials: dict[str, CodexTrial]
     survival: dict[str, SurvivalTrial]
+    arcs: dict[str, Arc]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -173,6 +175,7 @@ class Catalog:
             sects=_index(directory / "sects.json", Sect),
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
             survival=_index(directory / "survival.json", SurvivalTrial),
+            arcs=_index(directory / "arcs.json", Arc),
         )
         catalog.validate()
         return catalog
@@ -277,6 +280,7 @@ class Catalog:
         self._validate_sects()
         self._validate_codex_trials()
         self._validate_survival()
+        self._validate_arcs(realm_ids)
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -571,6 +575,18 @@ class Catalog:
                 raise ValueError(f"survival trial {trial.id} energy exceeds a pet's pool")
             for milestone in trial.milestones:
                 self._require(milestone.reward.items, self.items, "survival milestone items")
+
+    def _validate_arcs(self, realm_ids):
+        if not self.arcs:
+            raise ValueError("arcs must not be empty")
+        for arc in self.arcs.values():
+            self._require([arc.min_realm], realm_ids, "arc realm")
+            if arc.requires is not None:
+                self._require([arc.requires], self.arcs, "arc prerequisite")
+            for chapter in arc.chapters:
+                for option in chapter.options:
+                    self._require(option.reward.items, self.items, "arc option items")
+            self._require(arc.finale.reward.items, self.items, "arc finale items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

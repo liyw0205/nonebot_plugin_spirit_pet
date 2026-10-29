@@ -1,0 +1,490 @@
+[
+  {
+    "id": "wind_road",
+    "name": "风起青萍",
+    "order": 1,
+    "description": "山门初雪，一件小事牵出你与一只灵宠的第一次同行。",
+    "requires": null,
+    "min_realm": "qiling",
+    "chapters": [
+      {
+        "order": 1,
+        "title": "山门初雪",
+        "text": "雪落山门，一名杂役抱着柴薪滑倒在石阶上，怀里的灵宠跟着摔进雪里。",
+        "options": [
+          {
+            "id": "help",
+            "label": "相助",
+            "text": "你扶起杂役，也把那只见人的小家伙拢进袖中暖着。",
+            "reward": {
+              "exp": {
+                "minimum": 40,
+                "maximum": 40
+              },
+              "stones": {
+                "minimum": 80,
+                "maximum": 80
+              },
+              "items": {
+                "spirit_food": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          {
+            "id": "watch",
+            "label": "旁观",
+            "text": "你站在廊下看他们把柴薪一根根拾回，记住了这份沉默。",
+            "reward": {
+              "exp": {
+                "minimum": 60,
+                "maximum": 60
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {}
+            }
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "title": "雪夜归途",
+        "text": "夜色压下来，山路只剩一盏摇晃的灯。你与那盏灯之间隔着一片没有脚印的雪。",
+        "options": [
+          {
+            "id": "borrow_light",
+            "label": "借灯",
+            "text": "你上前借火，灯下的老人把光分了你一半。",
+            "reward": {
+              "exp": {
+                "minimum": 80,
+                "maximum": 80
+              },
+              "stones": {
+                "minimum": 100,
+                "maximum": 100
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "walk_alone",
+            "label": "独行",
+            "text": "你踩着雪自己走完了这段路，鞋底冻得发硬。",
+            "reward": {
+              "exp": {
+                "minimum": 60,
+                "maximum": 60
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "forge_ore": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "title": "灯下问心",
+        "text": "老人问你：那晚若无人借灯，你还会走这一趟吗？火苗在灯芯上轻轻一颤。",
+        "options": [
+          {
+            "id": "speak",
+            "label": "直言",
+            "text": "你说会，但会更慢些。老人笑了。",
+            "reward": {
+              "exp": {
+                "minimum": 100,
+                "maximum": 100
+              },
+              "stones": {
+                "minimum": 120,
+                "maximum": 120
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          {
+            "id": "silence",
+            "label": "沉默",
+            "text": "你没有回答，只把灯芯挑亮了一寸。",
+            "reward": {
+              "exp": {
+                "minimum": 140,
+                "maximum": 140
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {}
+            }
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "text": "雪停时，你把那盏灯留在了山门。此后的路，你不再只为自己走。",
+      "reward": {
+        "exp": {
+          "minimum": 150,
+          "maximum": 150
+        },
+        "stones": {
+          "minimum": 200,
+          "maximum": 200
+        },
+        "items": {}
+      }
+    }
+  },
+  {
+    "id": "snow_lantern",
+    "name": "雪夜灯影",
+    "order": 2,
+    "description": "旧灯再燃，灯市人影里藏着一段未说完的旧事。",
+    "requires": "wind_road",
+    "min_realm": "zhuji",
+    "chapters": [
+      {
+        "order": 1,
+        "title": "旧灯重燃",
+        "text": "那盏留在山门的灯又亮了。灯座里积着雪水，火却不肯灭。",
+        "options": [
+          {
+            "id": "refill",
+            "label": "添油",
+            "text": "你为它添了灯油，火苗稳稳立住。",
+            "reward": {
+              "exp": {
+                "minimum": 90,
+                "maximum": 90
+              },
+              "stones": {
+                "minimum": 120,
+                "maximum": 120
+              },
+              "items": {
+                "spirit_food": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          },
+          {
+            "id": "replace",
+            "label": "换灯",
+            "text": "你换了一盏新灯，旧灯收进包袱里。",
+            "reward": {
+              "exp": {
+                "minimum": 100,
+                "maximum": 100
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "forge_ore": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "title": "灯市遇故",
+        "text": "灯市喧闹，你看见当年那名杂役，正把一盏灯挂到最高的地方。",
+        "options": [
+          {
+            "id": "greet",
+            "label": "相认",
+            "text": "你喊住他，他愣了很久才认出你。",
+            "reward": {
+              "exp": {
+                "minimum": 120,
+                "maximum": 120
+              },
+              "stones": {
+                "minimum": 150,
+                "maximum": 150
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "avoid",
+            "label": "避让",
+            "text": "你退进人群，看他挂好灯、拍了拍手。",
+            "reward": {
+              "exp": {
+                "minimum": 100,
+                "maximum": 100
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "title": "灯灭之前",
+        "text": "子时风起，满市灯火将熄。他托你守住最后一盏。",
+        "options": [
+          {
+            "id": "guard",
+            "label": "守灯",
+            "text": "你守到天亮，灯灭时手心全是灯灰。",
+            "reward": {
+              "exp": {
+                "minimum": 150,
+                "maximum": 150
+              },
+              "stones": {
+                "minimum": 180,
+                "maximum": 180
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "pass_on",
+            "label": "传灯",
+            "text": "你把灯交给一个提着小灯笼的孩子。",
+            "reward": {
+              "exp": {
+                "minimum": 130,
+                "maximum": 130
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "exp_pill": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "text": "灯市散了，你终于明白那盏灯照的从来不是路，而是愿意停下来的人。",
+      "reward": {
+        "exp": {
+          "minimum": 200,
+          "maximum": 200
+        },
+        "stones": {
+          "minimum": 260,
+          "maximum": 260
+        },
+        "items": {
+          "bloodline_essence": {
+            "minimum": 1,
+            "maximum": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "star_ferry",
+    "name": "星槎渡",
+    "order": 3,
+    "description": "渡口无舟，你与伙伴要自己造一艘能渡星河的槎。",
+    "requires": "snow_lantern",
+    "min_realm": "jindan",
+    "chapters": [
+      {
+        "order": 1,
+        "title": "渡口无舟",
+        "text": "星河南岸只余一座空渡口，木桩上刻着许多名字，没有一个是新的。",
+        "options": [
+          {
+            "id": "build",
+            "label": "造船",
+            "text": "你与伙伴伐木为槎，把名字刻在最前面。",
+            "reward": {
+              "exp": {
+                "minimum": 140,
+                "maximum": 140
+              },
+              "stones": {
+                "minimum": 160,
+                "maximum": 160
+              },
+              "items": {
+                "forge_ore": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          },
+          {
+            "id": "wait_tide",
+            "label": "候潮",
+            "text": "你坐在木桩上等潮，把旧名字一个个读过去。",
+            "reward": {
+              "exp": {
+                "minimum": 140,
+                "maximum": 140
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "spirit_food": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "title": "星河夜航",
+        "text": "槎行至河心，星辉落在水面像碎开的鳞。伙伴在船头低低叫了一声。",
+        "options": [
+          {
+            "id": "steer",
+            "label": "掌舵",
+            "text": "你握紧木舵，顺着最亮的一道星痕走。",
+            "reward": {
+              "exp": {
+                "minimum": 160,
+                "maximum": 160
+              },
+              "stones": {
+                "minimum": 200,
+                "maximum": 200
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "stargaze",
+            "label": "观星",
+            "text": "你任槎漂流，把整条星河记进心里。",
+            "reward": {
+              "exp": {
+                "minimum": 150,
+                "maximum": 150
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "exp_pill": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "title": "彼岸灯火",
+        "text": "北岸到了，岸上灯火与南岸一模一样。伙伴回头看你，等你决定。",
+        "options": [
+          {
+            "id": "land",
+            "label": "靠岸",
+            "text": "你踏上岸，把槎系在一块陌生的石头上。",
+            "reward": {
+              "exp": {
+                "minimum": 180,
+                "maximum": 180
+              },
+              "stones": {
+                "minimum": 240,
+                "maximum": 240
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "sail_on",
+            "label": "续航",
+            "text": "你没有靠岸，把槎头又转向了更远的星。",
+            "reward": {
+              "exp": {
+                "minimum": 170,
+                "maximum": 170
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "text": "星槎停在你选择的那一岸。你回头望去，来路已成一条新的星河。",
+      "reward": {
+        "exp": {
+          "minimum": 240,
+          "maximum": 240
+        },
+        "stones": {
+          "minimum": 320,
+          "maximum": 320
+        },
+        "items": {
+          "exp_pill": {
+            "minimum": 2,
+            "maximum": 2
+          }
+        }
+      }
+    }
+  }
+]

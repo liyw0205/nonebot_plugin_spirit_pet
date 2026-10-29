@@ -299,6 +299,35 @@
 
 每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
 
+## 奇缘定义
+
+`arcs.json` 是奇缘对象数组，由 `domain/arc_content.py` 校验。每条奇缘定义 `id`、`name`、`order`、`description`、`requires`（前置奇缘 id 或 null）、`min_realm`、`chapters` 与 `finale`；每章含 `order`、`title`、`text` 与**恰好两个** `options`（`id`、`label`、`text`、`reward`），终章含 `text` 与 `reward`。
+
+```json
+{
+  "id": "wind_road",
+  "name": "风起青萍",
+  "order": 1,
+  "description": "山门初雪，一件小事牵出你与一只灵宠的第一次同行。",
+  "requires": null,
+  "min_realm": "qiling",
+  "chapters": [
+    {
+      "order": 1,
+      "title": "山门初雪",
+      "text": "雪落山门，一名杂役抱着柴薪滑倒在石阶上。",
+      "options": [
+        {"id": "help", "label": "相助", "text": "你扶起他。", "reward": {"exp": {"minimum": 40, "maximum": 40}, "stones": {"minimum": 80, "maximum": 80}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+        {"id": "watch", "label": "旁观", "text": "你站在廊下看着。", "reward": {"exp": {"minimum": 60, "maximum": 60}, "stones": {"minimum": 0, "maximum": 0}, "items": {}}}
+      ]
+    }
+  ],
+  "finale": {"text": "雪停时，你把那盏灯留在山门。", "reward": {"exp": {"minimum": 150, "maximum": 150}, "stones": {"minimum": 200, "maximum": 200}, "items": {}}}
+}
+```
+
+校验规则：章序号从 1 连续、每章两个选项且选项 id 不重复、`requires` 必须指向另一条真实奇缘且不能指向自己、境界与全部奖励物品必须存在。进度存 `quest_progress` 的 `arc_<id>_step`、`arc_<id>_pick_<章>`、`arc_<id>_done`，不新增表列；选项记录为 1-based 序号而不是 id，因为 `progress` 只接受整数。
+
 ## 守关定义
 
 `survival.json` 是守关配置数组（当前一条 `survival`），由 `domain/survival_content.py` 校验。配置定义 `id`、`name`、`description`、`enemy`（已有敌人）、四项 `*_multiplier`（0.1-100，防御允许 0）、`energy` 与 `milestones`（回合数唯一递增、每档带完整 `reward`）。
