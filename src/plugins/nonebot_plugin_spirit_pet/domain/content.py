@@ -265,6 +265,12 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class TransferRule(Definition):
+    price_rate: Annotated[float, Field(gt=0, le=1)]
+    min_stones: NonNegative
+    bloodline_essence: Annotated[int, Field(ge=0, le=5)]
+
+
 class TemperRule(Definition):
     max_layers: Annotated[int, Field(ge=1, le=20)]
     rate: Annotated[float, Field(gt=0, le=0.05)]
@@ -301,3 +307,4 @@ class Rules(Definition):
     sect: SectRule
     temper: TemperRule
     support: SupportRule
+    transfer: TransferRule

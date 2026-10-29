@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 传功规则
+
+传功没有独立内容文件，数值放在 `rules.json` 的 `transfer`：
+
+```json
+{"price_rate": 0.8, "min_stones": 80, "bloodline_essence": 1}
+```
+
+`price_rate` 限定 0-1，`min_stones` 非负，`bloodline_essence` 0-5。费用按目标灵术秘笈价格乘以 `price_rate` 向上取整，再与 `min_stones` 取较大值；秘笈没有标价时按 `min_stones` 计。因此传功始终比重新买一本秘笈便宜，但不会低于保底价，也不会免费。
+
+传功不新增状态：成功后只在 `learned_skills` 插入 `(徒弟编号, 灵术id, equipped, 1, 0)`，`equipped` 取决于徒弟当前携带数是否小于 `skill_slots`。师父一侧完全不变，所以同一门灵术可以被反复传授给不同伙伴；由于每次都要付灵石与血脉精华，这不会绕过秘笈的价格，只是省去等待灵坊轮换与库存。失败路径（师父未学、徒弟已学、徒弟条件不符、任一方在派遣、灵石或精华不足、同名伙伴歧义、师父徒弟相同）都在写入前拒绝。
+
 ## 连携定义
 
 `combos.json` 是连携数组，由 `domain/combo_content.py` 校验：每项声明 `id`、`name`、`description`、`skills`（恰好两门、互不相同、必须存在于 `skills.json`）与 `bonuses`（`hp` / `attack` / `defense` / `speed` 的加成比率）。
