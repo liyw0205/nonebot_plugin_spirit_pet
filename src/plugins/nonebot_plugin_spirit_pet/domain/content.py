@@ -260,6 +260,12 @@ class CuisineRule(Definition):
     max_level: Annotated[int, Field(ge=1, le=10)] = 5
 
 
+class TemperRule(Definition):
+    max_layers: Annotated[int, Field(ge=1, le=20)]
+    rate: Annotated[float, Field(gt=0, le=0.05)]
+    stones_per_layer: NonNegative
+
+
 class SectRule(Definition):
     daily_contribution: Positive
     practice_energy: Positive
@@ -288,3 +294,4 @@ class Rules(Definition):
     farm_water: FarmWaterRule
     cuisine: CuisineRule
     sect: SectRule
+    temper: TemperRule

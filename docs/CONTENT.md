@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 淬魂规则
+
+淬魂没有独立内容文件，数值统一放在 `rules.json` 的 `temper`：
+
+```json
+{"max_layers": 10, "rate": 0.01, "stones_per_layer": 50}
+```
+
+`max_layers` 限定 1-20，`rate` 限定 0-5%（每层乘到四维的比例），`stones_per_layer` 为每层灵石。灵卵按 `egg_<种族id>` 约定取用（与培育产物同一物品），因此不需要额外的种族到灵卵映射表，也不新增物品。
+
+层数按伙伴记在 `quest_progress` 的 `temper_<宠物编号>`，值为已淬层数；加成由 `loadout.combatant` 在师门被动之后、装备之前实时计算，不写入宠物表。页面、帮助与目标行都从同一份 `rules.json` 读取层数与花费，改数值只需改这一处。
+
 ## 师门定义
 
 `sects.json` 是门派对象数组，由 `domain/sect_content.py` 校验。每个门派定义 `id`、`name`、`description`、`stat`（`hp` / `attack` / `defense` / `speed`）与 `ranks`（2-5 阶，必须从 1 连续）。每阶含 `rank`、`contribution`、`rate`、`stones` 与固定数量的 `items`。

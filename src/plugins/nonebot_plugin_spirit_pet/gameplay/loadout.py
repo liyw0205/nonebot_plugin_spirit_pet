@@ -39,6 +39,11 @@ def combatant(
     if sect_bonus is not None:
         stat, rate = sect_bonus
         stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
+    from .tempering import layers_of, rate as temper_rate
+    layers = layers_of(ctx, pet.pet_id, user_id or ctx.user_id)
+    if layers:
+        factor = 1 + layers * temper_rate(ctx)
+        stats = {key: int(value * factor + 0.5) for key, value in stats.items()}
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():
         item = ctx.content.items[item_id]
         gear = ctx.content.equipment[item.equipment_id]
