@@ -1,0 +1,112 @@
+[
+  {
+    "id": "tribulation",
+    "name": "灵宠劫境",
+    "description": "三份契约同时压在秘境之上；词缀不改规则，只让敌人更凶或时间更紧。",
+    "energy": 15,
+    "slots": 3,
+    "bonus": {
+      "exp": {"minimum": 300, "maximum": 300},
+      "stones": {"minimum": 500, "maximum": 500},
+      "items": {"forge_ore": {"minimum": 3, "maximum": 3}}
+    },
+    "modifiers": [
+      {
+        "id": "blood_tide",
+        "name": "血潮",
+        "description": "敌方气血 +50%",
+        "hp": 1.5,
+        "attack": 1.0,
+        "defense": 1.0,
+        "speed": 1.0,
+        "round_limit": 0,
+        "energy_multiplier": 1.0,
+        "reward": {
+          "exp": {"minimum": 200, "maximum": 200},
+          "stones": {"minimum": 320, "maximum": 320},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "blade_wind",
+        "name": "刃风",
+        "description": "敌方攻击 +30%",
+        "hp": 1.0,
+        "attack": 1.3,
+        "defense": 1.0,
+        "speed": 1.0,
+        "round_limit": 0,
+        "energy_multiplier": 1.0,
+        "reward": {
+          "exp": {"minimum": 190, "maximum": 190},
+          "stones": {"minimum": 300, "maximum": 300},
+          "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "iron_wall",
+        "name": "铁壁",
+        "description": "敌方防御 +50%",
+        "hp": 1.0,
+        "attack": 1.0,
+        "defense": 1.5,
+        "speed": 1.0,
+        "round_limit": 0,
+        "energy_multiplier": 1.0,
+        "reward": {
+          "exp": {"minimum": 180, "maximum": 180},
+          "stones": {"minimum": 280, "maximum": 280},
+          "items": {"exp_pill": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "swift_shadow",
+        "name": "疾影",
+        "description": "敌方速度 +25%",
+        "hp": 1.0,
+        "attack": 1.0,
+        "defense": 1.0,
+        "speed": 1.25,
+        "round_limit": 0,
+        "energy_multiplier": 1.0,
+        "reward": {
+          "exp": {"minimum": 200, "maximum": 200},
+          "stones": {"minimum": 300, "maximum": 300},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "hourglass",
+        "name": "漏刻",
+        "description": "12 回合内未破敌即算超时",
+        "hp": 1.0,
+        "attack": 1.0,
+        "defense": 1.0,
+        "speed": 1.0,
+        "round_limit": 12,
+        "energy_multiplier": 1.0,
+        "reward": {
+          "exp": {"minimum": 220, "maximum": 220},
+          "stones": {"minimum": 340, "maximum": 340},
+          "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "thin_air",
+        "name": "稀薄",
+        "description": "每只灵宠精力消耗 ×1.5",
+        "hp": 1.0,
+        "attack": 1.0,
+        "defense": 1.0,
+        "speed": 1.0,
+        "round_limit": 0,
+        "energy_multiplier": 1.5,
+        "reward": {
+          "exp": {"minimum": 170, "maximum": 170},
+          "stones": {"minimum": 260, "maximum": 260},
+          "items": {"spirit_food": {"minimum": 2, "maximum": 2}}
+        }
+      }
+    ]
+  }
+]

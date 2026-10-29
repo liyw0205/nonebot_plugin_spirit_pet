@@ -20,6 +20,7 @@ from . import tempering
 from . import survival
 from . import arcs
 from . import support
+from . import tribulations
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -463,6 +464,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (survival.objective_line(ctx, player.user_id), "灵宠守关"),
         (arcs.objective_line(ctx, player.user_id), "灵宠奇缘"),
         (support.objective_line(ctx, player.user_id), "灵宠助战"),
+        (tribulations.objective_line(ctx, player.user_id), "灵宠劫境"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

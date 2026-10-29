@@ -311,6 +311,31 @@
 
 每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
 
+## 劫境定义
+
+`tribulations.json` 是劫境配置数组（当前一条 `tribulation`），由 `domain/tribulation_content.py` 校验。配置定义 `id`、`name`、`description`、`energy`（1-100）、`slots`（1-5）、`bonus`（三份全清奖励）与 `modifiers`（至少 3 个，id 唯一）。
+
+```json
+{
+  "id": "tribulation",
+  "name": "灵宠劫境",
+  "description": "三份契约同时压在秘境之上。",
+  "energy": 15,
+  "slots": 3,
+  "bonus": {"exp": {"minimum": 300, "maximum": 300}, "stones": {"minimum": 500, "maximum": 500}, "items": {"forge_ore": {"minimum": 3, "maximum": 3}}},
+  "modifiers": [
+    {"id": "hourglass", "name": "漏刻", "description": "12 回合内未破敌即算超时",
+     "hp": 1.0, "attack": 1.0, "defense": 1.0, "speed": 1.0,
+     "round_limit": 12, "energy_multiplier": 1.0,
+     "reward": {"exp": {"minimum": 220, "maximum": 220}, "stones": {"minimum": 340, "maximum": 340}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+  ]
+}
+```
+
+词缀的四项倍率限定 0.1-100，`round_limit` 只能是 0（不限）或 3-30，`energy_multiplier` 0.5-3（消耗按向上取整），奖励物品与全清奖励物品都必须存在。
+
+每周契约由周序号确定性抽取：第 `s` 份（从 0 计）秘境取 `dungeons[(周序号 + 7s) % 秘境数]`，词缀取 `modifiers[(周序号 + 2s) % 词缀数]`，因此同周稳定、跨周轮换，且不需要随机数或存档。凭证为 `quest_progress` 的 `trib_<周起点>_<序号>` 与 `trib_<周起点>_all`，战报键与前者相同，不写 `pve_stage_progress`。
+
 ## 奇缘定义
 
 `arcs.json` 是奇缘对象数组，由 `domain/arc_content.py` 校验。每条奇缘定义 `id`、`name`、`order`、`description`、`requires`（前置奇缘 id 或 null）、`min_realm`、`chapters` 与 `finale`；每章含 `order`、`title`、`text` 与**恰好两个** `options`（`id`、`label`、`text`、`reward`），终章含 `text` 与 `reward`。

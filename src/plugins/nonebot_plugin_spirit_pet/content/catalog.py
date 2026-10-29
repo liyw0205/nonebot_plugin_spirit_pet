@@ -24,6 +24,7 @@ from ..domain.sect_content import Sect
 from ..domain.codex_trial_content import CodexTrial
 from ..domain.survival_content import SurvivalTrial
 from ..domain.arc_content import Arc
+from ..domain.tribulation_content import Tribulation
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -122,6 +123,7 @@ class Catalog:
     codex_trials: dict[str, CodexTrial]
     survival: dict[str, SurvivalTrial]
     arcs: dict[str, Arc]
+    tribulations: dict[str, Tribulation]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -176,6 +178,7 @@ class Catalog:
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
             survival=_index(directory / "survival.json", SurvivalTrial),
             arcs=_index(directory / "arcs.json", Arc),
+            tribulations=_index(directory / "tribulations.json", Tribulation),
         )
         catalog.validate()
         return catalog
@@ -281,6 +284,7 @@ class Catalog:
         self._validate_codex_trials()
         self._validate_survival()
         self._validate_arcs(realm_ids)
+        self._validate_tribulations()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -587,6 +591,16 @@ class Catalog:
                 for option in chapter.options:
                     self._require(option.reward.items, self.items, "arc option items")
             self._require(arc.finale.reward.items, self.items, "arc finale items")
+
+    def _validate_tribulations(self):
+        if not self.tribulations:
+            raise ValueError("tribulations must not be empty")
+        for entry in self.tribulations.values():
+            if entry.energy > 100:
+                raise ValueError(f"tribulation {entry.id} energy exceeds a pet's pool")
+            self._require(entry.bonus.items, self.items, "tribulation bonus items")
+            for modifier in entry.modifiers:
+                self._require(modifier.reward.items, self.items, "tribulation modifier items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
