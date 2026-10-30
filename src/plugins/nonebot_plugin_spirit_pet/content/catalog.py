@@ -28,6 +28,7 @@ from ..domain.tribulation_content import Tribulation
 from ..domain.combo_content import Combo
 from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.specialization_content import Specialization, skill_archetype
+from ..domain.mood_content import MoodLevel
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -130,6 +131,7 @@ class Catalog:
     combos: dict[str, Combo]
     achievement_shop: dict[str, AchievementOffer]
     specializations: dict[str, Specialization]
+    moods: dict[str, MoodLevel]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -188,6 +190,7 @@ class Catalog:
             combos=_index(directory / "combos.json", Combo),
             achievement_shop=_index(directory / "achievement_shop.json", AchievementOffer),
             specializations=_index(directory / "specializations.json", Specialization),
+            moods=_index(directory / "moods.json", MoodLevel, "id"),
         )
         catalog.validate()
         return catalog
@@ -297,6 +300,7 @@ class Catalog:
         self._validate_combos()
         self._validate_achievement_shop()
         self._validate_specializations()
+        self._validate_moods()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -640,6 +644,21 @@ class Catalog:
             archetype = skill_archetype(skill)
             if archetype not in self.specializations:
                 raise ValueError(f"skill {skill.id} has no specialization for {archetype}")
+
+    def _validate_moods(self):
+        if not self.moods:
+            raise ValueError("moods must not be empty")
+        rule = self.rules.mood
+        ordered = sorted(self.moods.values(), key=lambda level: level.threshold)
+        if ordered[0].threshold != 0:
+            raise ValueError("one mood level must have threshold 0")
+        if ordered[-1].threshold != rule.max:
+            raise ValueError("the best mood level must sit at rules.mood.max")
+        for level in ordered:
+            if rule.rates.get(level.id) is None:
+                raise ValueError(f"mood {level.id} has no rate in rules.mood.rates")
+            if abs(rule.rates[level.id] - level.rate) > 1e-9:
+                raise ValueError(f"mood {level.id} rate disagrees with rules.mood.rates")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

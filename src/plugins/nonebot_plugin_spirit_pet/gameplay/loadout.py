@@ -23,6 +23,12 @@ def combatant(
         pet = ctx.repo.pet(active_pet_id)
     species = ctx.content.species[pet.species_id]
     stats = pet_stats(pet, ctx.content).model_dump()
+    from .mood import rate as mood_rate
+    mood_factor = 1 + mood_rate(ctx, pet, user_id or ctx.user_id)
+    if mood_factor != 1:
+        # Mood scales the pet's own base stats only, so every flat bonus from gear,
+        # words, bonds and sets keeps its exact documented value.
+        stats = {key: int(value * mood_factor + 0.5) for key, value in stats.items()}
     from .talent_reforge import current_talent
     talent_id = current_talent(ctx, pet)
     resonance_name = None

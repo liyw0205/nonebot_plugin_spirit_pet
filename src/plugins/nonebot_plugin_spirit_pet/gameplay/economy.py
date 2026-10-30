@@ -245,4 +245,7 @@ def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
 
 def feed(ctx: Context, arg: str) -> Reply:
     pet = selected_pet(ctx, arg, "喂养")
-    return _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet)
+    reply = _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet)
+    from .mood import care
+    care(ctx, pet)
+    return reply

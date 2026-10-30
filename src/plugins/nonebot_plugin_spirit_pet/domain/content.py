@@ -265,6 +265,19 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class MoodRule(Definition):
+    max: Annotated[int, Field(ge=1, le=5)]
+    decay_days: Annotated[int, Field(ge=1, le=30)]
+    soothe_items: Annotated[int, Field(ge=0, le=10)]
+    rates: dict[str, Annotated[float, Field(ge=-0.3, le=0.3)]]
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.rates.get("normal") != 0:
+            raise ValueError("the normal mood rate must be 0")
+        return self
+
+
 class SpecializationRule(Definition):
     min_level: Annotated[int, Field(ge=1, le=5)]
     switch_stones: NonNegative
@@ -319,3 +332,4 @@ class Rules(Definition):
     transfer: TransferRule
     achievement_points: AchievementPointsRule
     specialization: SpecializationRule
+    mood: MoodRule

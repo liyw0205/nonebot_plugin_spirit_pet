@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 心境定义
+
+`moods.json` 是心境等级数组，由 `domain/mood_content.py` 校验：每项声明 `id`、`name`、`description`、`threshold`（达到该值即为本等级）与 `rate`（四维倍率，−30% 到 +30%；阈值 0 的等级不得为正加成）。
+
+```json
+{"id": "high", "name": "心情大好", "description": "刚被好好照顾过。", "threshold": 3, "rate": 0.05}
+```
+
+数值在 `rules.json` 的 `mood`：`max` 1-5、`decay_days` 1-30、`soothe_items` 0-10 与 `rates`（每个等级 id 对应一条倍率，`normal` 必须为 0）。`Catalog._validate_moods` 强制三件事：必须有一档阈值 0、最高档阈值必须等于 `rules.mood.max`、每档倍率必须与 `rules.mood.rates` 同 id 完全一致——因此等级表与规则表不可能被分开改动而不报错。
+
+状态只有 `quest_progress` 的 `last_care_<宠物编号>` 一行，`progress` 记录最近一次照料的北京时间**日序数**（整数，因此天然适配该列）。当前心境 = `max − 间隔天数 // decay_days`，下限 0；从无该行的伙伴视为刚被照料（满值），因此新领养或旧存档的存量伙伴不会一上线就心情低落。照料的唯一副作用就是把这行刷新为今天，喂食、每日互动与安抚都调用同一个 `care()`。
+
 ## 专精定义
 
 `specializations.json` 是流派数组，由 `domain/specialization_content.py` 校验：每项声明 `id`、`name`、`description` 与 `rate`（5%-30%）。

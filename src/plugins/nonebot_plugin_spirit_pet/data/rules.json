@@ -124,5 +124,16 @@
   "specialization": {
     "min_level": 3,
     "switch_stones": 300
+  },
+  "mood": {
+    "max": 3,
+    "decay_days": 2,
+    "soothe_items": 1,
+    "rates": {
+      "high": 0.05,
+      "normal": 0.0,
+      "low": -0.05,
+      "sad": -0.1
+    }
   }
 }

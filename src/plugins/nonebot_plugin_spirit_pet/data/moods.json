@@ -1,0 +1,30 @@
+[
+  {
+    "id": "high",
+    "name": "心情大好",
+    "description": "刚被好好照顾过，出手格外顺。",
+    "threshold": 3,
+    "rate": 0.05
+  },
+  {
+    "id": "normal",
+    "name": "心境平稳",
+    "description": "状态如常，没有额外起伏。",
+    "threshold": 2,
+    "rate": 0.0
+  },
+  {
+    "id": "low",
+    "name": "心情低落",
+    "description": "被冷落了一阵，出手稍软。",
+    "threshold": 1,
+    "rate": -0.05
+  },
+  {
+    "id": "sad",
+    "name": "心灰意冷",
+    "description": "久未陪伴，连站姿都松了。",
+    "threshold": 0,
+    "rate": -0.1
+  }
+]
