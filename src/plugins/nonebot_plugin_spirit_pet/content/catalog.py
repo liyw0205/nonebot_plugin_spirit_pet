@@ -654,6 +654,11 @@ class Catalog:
             raise ValueError("one mood level must have threshold 0")
         if ordered[-1].threshold != rule.max:
             raise ValueError("the best mood level must sit at rules.mood.max")
+        if ordered[-1].rate != 0:
+            raise ValueError("the best mood level must be the neutral baseline")
+        rates = [level.rate for level in ordered]
+        if rates != sorted(rates):
+            raise ValueError("mood rates must fall as the mood value drops")
         for level in ordered:
             if rule.rates.get(level.id) is None:
                 raise ValueError(f"mood {level.id} has no rate in rules.mood.rates")

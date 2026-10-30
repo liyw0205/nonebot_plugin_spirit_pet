@@ -273,8 +273,8 @@ class MoodRule(Definition):
 
     @model_validator(mode="after")
     def _sane(self):
-        if self.rates.get("normal") != 0:
-            raise ValueError("the normal mood rate must be 0")
+        if any(rate > 0 for rate in self.rates.values()):
+            raise ValueError("care must be the baseline: no mood may grant a bonus")
         return self
 
 

@@ -76,7 +76,8 @@ def test_mood_content_and_rules_agree(game):
     assert [entry.name for entry in levels.values()] == ["心情大好", "心境平稳", "心情低落", "心灰意冷"]
     for entry in levels.values():
         assert rule.rates[entry.id] == entry.rate
-    assert {entry.threshold: entry.rate for entry in levels.values()} == {3: 0.05, 2: 0.0, 1: -0.05, 0: -0.1}
+    assert {entry.threshold: entry.rate for entry in levels.values()} == {3: 0.0, 2: -0.05, 1: -0.1, 0: -0.15}
+    assert max(entry.rate for entry in levels.values()) == 0
 
 
 def test_mood_of_picks_the_highest_matching_threshold(game):
@@ -100,7 +101,7 @@ def test_mood_level_validation():
 def test_a_new_pet_starts_at_full_mood(game, play):
     play("adopt", "青鸾")
     page = play("mood")
-    assert "心情大好 3/3" in page.text()
+    assert "心情大好 3/3 · 四维 ±0%" in page.text()
     assert "所有伙伴心境都已回满。" in page.text()
     assert page.inline_commands == ()
     assert care_rows(game, pet(game[1])["pet_id"]) == []
@@ -115,11 +116,11 @@ def test_mood_decays_one_point_per_interval(game, play):
     same_day = play("mood", now=NOW + 3600)
     assert "心情大好 3/3" in same_day.text()
     one_interval = play("mood", now=NOW + 2 * DAY)
-    assert "心境平稳 2/3" in one_interval.text()
+    assert "心境平稳 2/3 · 四维 -5%" in one_interval.text()
     two = play("mood", now=NOW + 4 * DAY)
-    assert "心情低落 1/3" in two.text()
+    assert "心情低落 1/3 · 四维 -10%" in two.text()
     three = play("mood", now=NOW + 6 * DAY)
-    assert "心灰意冷 0/3" in three.text()
+    assert "心灰意冷 0/3 · 四维 -15%" in three.text()
     floor = play("mood", now=NOW + 40 * DAY)
     assert "心灰意冷 0/3" in floor.text()
 
@@ -136,24 +137,35 @@ def test_a_neglected_pet_loses_stats_and_a_cared_pet_keeps_them(game, play):
     play("adopt", "青鸾")
     give(game, 5)
     pet_id = pet(game[1])["pet_id"]
-    set_care(game, pet_id, days_ago=2)          # 心境平稳: no modifier at all
+    set_care(game, pet_id, days_ago=0)          # 心情大好: the neutral baseline
     neutral = stats(game)
-    set_care(game, pet_id, days_ago=0)          # 心情大好: +5%
-    happy = stats(game)
-    set_care(game, pet_id, days_ago=20)         # 心灰意冷: -10%
+    set_care(game, pet_id, days_ago=2)          # 心境平稳: -5%
+    slight = stats(game)
+    set_care(game, pet_id, days_ago=20)         # 心灰意冷: -15%
     sad = stats(game)
-    assert (happy.hp, happy.attack) == (int(neutral.hp * 1.05 + 0.5), int(neutral.attack * 1.05 + 0.5))
-    assert (sad.hp, sad.attack, sad.defense, sad.speed) == (
-        int(neutral.hp * 0.9 + 0.5), int(neutral.attack * 0.9 + 0.5),
-        int(neutral.defense * 0.9 + 0.5), int(neutral.speed * 0.9 + 0.5),
+    assert (slight.hp, slight.attack) == (
+        int(neutral.hp * 0.95 + 0.5), int(neutral.attack * 0.95 + 0.5),
     )
+    assert (sad.hp, sad.attack, sad.defense, sad.speed) == (
+        int(neutral.hp * 0.85 + 0.5), int(neutral.attack * 0.85 + 0.5),
+        int(neutral.defense * 0.85 + 0.5), int(neutral.speed * 0.85 + 0.5),
+    )
+    assert neutral.attack == int(sad.attack / 0.85) or neutral.attack > sad.attack
+
+
+def base_attack_without_mood(game):
+    """Attack of the same pet with mood forced to its neutral (best) level."""
+    return stats(game).attack
 
 
 def test_full_mood_leaves_stats_untouched(game, play):
     play("adopt", "青鸾")
+    sql(game[1], "UPDATE pets SET realm=5, layer=10")
     before = stats(game)
     play("mood")
     assert stats(game) == before
+    # a fully-cared pet must equal the pre-mood baseline, i.e. mood adds no power
+    assert before.attack == base_attack_without_mood(game)
     assert care_rows(game, pet(game[1])["pet_id"]) == []
 
 
@@ -179,7 +191,7 @@ def test_soothing_refills_and_charges_one_food(game, play):
     assert reply.title == "安抚灵宠"
     assert "心境 0 → 3" in reply.text()
     assert items(game[1])["spirit_food"] == before - 1
-    assert "心情大好 3/3" in play("mood").text()
+    assert "心情大好 3/3 · 四维 ±0%" in play("mood").text()
 
 
 def test_soothing_refusals_write_nothing(game, play):
@@ -217,8 +229,8 @@ def test_page_lists_every_pet_and_only_sootheable_links(game, play):
     give(game, 1)
     set_care(game, pet(game[1])["pet_id"], days_ago=20)
     page = play("mood")
-    assert "青鸾（编号 1）· 心灰意冷 0/3 · 四维 -10%" in page.text()
-    assert "小鸾（编号 2）· 心情大好 3/3 · 四维 +5%" in page.text()
+    assert "青鸾（编号 1）· 心灰意冷 0/3 · 四维 -15%" in page.text()
+    assert "小鸾（编号 2）· 心情大好 3/3 · 四维 ±0%" in page.text()
     assert "共 1 只伙伴需要安抚。" in page.text()
     assert [link.command for link in page.inline_commands] == [
         f"灵宠心境 安抚 {pet(game[1])['pet_id']}"

@@ -55,6 +55,10 @@ def level(ctx: Context, pet, user_id: str | None = None):
     return mood_of(ctx.content.moods.values(), value(ctx, pet, user_id))
 
 
+def _rate_text(rate: float) -> str:
+    return "±0%" if rate == 0 else f"{rate:+.0%}"
+
+
 def rate(ctx: Context, pet, user_id: str | None = None) -> float:
     return level(ctx, pet, user_id).rate
 
@@ -125,7 +129,7 @@ def page(ctx: Context, arg: str) -> Reply:
             waiting += 1
         lines.append(
             f"{pet.name}（编号 {pet.pet_id}）· {entry.name} {current}/{cap}"
-            f" · 四维 {entry.rate:+.0%} · {state}"
+            f" · 四维 {_rate_text(entry.rate)} · {state}"
         )
         if current < cap and held >= rule_cost and ctx.repo.active_expedition(pet.pet_id) is None:
             links.append(InlineCommand(len(lines) - 1, "安抚", f"灵宠心境 安抚 {pet.pet_id}"))
@@ -159,7 +163,7 @@ def soothe(ctx: Context, arg: str) -> Reply:
     ctx.repo.invalidate_ready(ctx.user_id)
     entry = level(ctx, pet)
     return Reply("安抚灵宠", (
-        f"{pet.name}被好好安抚了一番，心境 {before} → {cap}（{entry.name}），四维 {entry.rate:+.0%}。",
+        f"{pet.name}被好好安抚了一番，心境 {before} → {cap}（{entry.name}），四维 {_rate_text(entry.rate)}。",
         f"消耗 {item.name} {rule_cost} 份（剩余 {held - rule_cost} 份）。",
         "喂食与每日互动同样会刷新心境，不必每天都用安抚。",
     ), ("灵宠心境", "灵宠背包", "我的灵宠"))
