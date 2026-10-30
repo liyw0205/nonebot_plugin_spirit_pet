@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 研习定义
+
+研习没有独立内容文件，数值放在 `rules.json` 的 `research`：
+
+```json
+{"energy": 12, "food": 1, "gain": 8, "daily_limit": 4, "pet_daily_limit": 2}
+```
+
+`energy` 1-100、`food` 0-5、`gain` 1-100、`daily_limit` 1-20、`pet_daily_limit` 1-10 且不得超过 `daily_limit`（`ResearchRule` 校验）。成功一次按 `gain` 增加熟练度并消耗相应精力与灵粮；升阶算术与战斗共用 `mastery.study`，所以研习与实战的进位完全一致，且不会直接跳级——只在熟练度超过阈值时进位。
+
+状态只有 `quest_progress` 的两行计数：`research_day_<北京日期>`（当日已研习次数，账号级）与 `research_<北京日期>_<宠物编号>`（该伙伴当日已研习次数）。日期写在键里，因此两个上限都随北京时间换日自然重置，无需清理任务或额外列；研习不改 `players`、不写战报、不写 `pve_stage_progress`，也不消耗灵石或秘笈。
+
 ## 竞速定义
 
 `races.json` 是赛道数组，由 `domain/race_content.py` 校验：每项声明 `id`、`name`、`description`、`length`（100-10000 米）与 `terrain`（`stat` 为 `hp`/`attack`/`defense`/`speed` 之一，`multiplier` 0.1-3）。

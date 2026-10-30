@@ -265,6 +265,20 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class ResearchRule(Definition):
+    energy: Positive
+    food: Annotated[int, Field(ge=0, le=5)]
+    gain: Annotated[int, Field(ge=1, le=100)]
+    daily_limit: Annotated[int, Field(ge=1, le=20)]
+    pet_daily_limit: Annotated[int, Field(ge=1, le=10)]
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.pet_daily_limit > self.daily_limit:
+            raise ValueError("the per-pet study limit cannot exceed the daily limit")
+        return self
+
+
 class RaceRule(Definition):
     energy: Positive
     daily_limit: Annotated[int, Field(ge=1, le=20)]
@@ -349,3 +363,4 @@ class Rules(Definition):
     specialization: SpecializationRule
     mood: MoodRule
     race: RaceRule
+    research: ResearchRule

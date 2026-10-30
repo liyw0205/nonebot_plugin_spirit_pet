@@ -17,6 +17,38 @@ def progress_text(ctx: Context, level: int, proficiency: int) -> str:
     return f"{level}级 · {detail}"
 
 
+def study(ctx: Context, pet_id: int, skill_id: str, gain: int) -> tuple[int, int, bool]:
+    """Add proficiency to one learned skill and carry the overflow into levels.
+
+    Shares its arithmetic with combat mastery, so a studied skill levels up exactly like a
+    fought one. Returns ``(level, proficiency, upgraded)``.
+    """
+    row = ctx.repo.conn.execute(
+        "SELECT level, proficiency FROM learned_skills WHERE pet_id=? AND skill_id=?",
+        (pet_id, skill_id),
+    ).fetchone()
+    if row is None:
+        raise ValueError("cannot study a skill the pet has not learned")
+    level, proficiency = row["level"], row["proficiency"]
+    if ctx.content.skill_levels[level].required_proficiency is None:
+        return level, proficiency, False
+    proficiency += gain
+    upgraded = False
+    while (required := ctx.content.skill_levels[level].required_proficiency) is not None:
+        if proficiency < required:
+            break
+        proficiency -= required
+        level += 1
+        upgraded = True
+    if ctx.content.skill_levels[level].required_proficiency is None:
+        proficiency = 0
+    ctx.repo.conn.execute(
+        "UPDATE learned_skills SET level=?, proficiency=? WHERE pet_id=? AND skill_id=?",
+        (level, proficiency, pet_id, skill_id),
+    )
+    return level, proficiency, upgraded
+
+
 def award_mastery(
     ctx: Context, user_id: str, uses: dict[str, int], *, pet_id: int,
 ) -> tuple[str, ...]:

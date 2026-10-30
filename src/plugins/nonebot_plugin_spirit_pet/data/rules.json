@@ -145,5 +145,12 @@
       "attack": 0.2,
       "defense": 0.1
     }
+  },
+  "research": {
+    "energy": 12,
+    "food": 1,
+    "gain": 8,
+    "daily_limit": 4,
+    "pet_daily_limit": 2
   }
 }
