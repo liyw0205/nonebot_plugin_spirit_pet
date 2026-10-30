@@ -27,6 +27,7 @@ from ..domain.arc_content import Arc
 from ..domain.tribulation_content import Tribulation
 from ..domain.combo_content import Combo
 from ..domain.achievement_shop_content import AchievementOffer
+from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -128,6 +129,7 @@ class Catalog:
     tribulations: dict[str, Tribulation]
     combos: dict[str, Combo]
     achievement_shop: dict[str, AchievementOffer]
+    specializations: dict[str, Specialization]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -185,6 +187,7 @@ class Catalog:
             tribulations=_index(directory / "tribulations.json", Tribulation),
             combos=_index(directory / "combos.json", Combo),
             achievement_shop=_index(directory / "achievement_shop.json", AchievementOffer),
+            specializations=_index(directory / "specializations.json", Specialization),
         )
         catalog.validate()
         return catalog
@@ -293,6 +296,7 @@ class Catalog:
         self._validate_tribulations()
         self._validate_combos()
         self._validate_achievement_shop()
+        self._validate_specializations()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -628,6 +632,14 @@ class Catalog:
             raise ValueError("achievement shop must not be empty")
         for offer in self.achievement_shop.values():
             self._require(offer.reward.items, self.items, "achievement offer items")
+
+    def _validate_specializations(self):
+        if not self.specializations:
+            raise ValueError("specializations must not be empty")
+        for skill in self.skills.values():
+            archetype = skill_archetype(skill)
+            if archetype not in self.specializations:
+                raise ValueError(f"skill {skill.id} has no specialization for {archetype}")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

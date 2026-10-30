@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 专精定义
+
+`specializations.json` 是流派数组，由 `domain/specialization_content.py` 校验：每项声明 `id`、`name`、`description` 与 `rate`（5%-30%）。
+
+```json
+{"id": "single", "name": "单体精研", "description": "把一门单体灵术练到极致。", "rate": 0.15}
+```
+
+流派不属于技能数据，而是从技能自身形状派生（`skill_archetype`）：带敌对效果（震慑/削弱/破障/嘲讽）→ `control`；治疗类或带增益护持效果 → `support`；群体目标 → `multi`；其余 → `single`。因此新增灵术无需补流派配置。`Catalog._validate_specializations` 要求流派表非空，且 `skills.json` 里每门灵术都能落到已声明的流派上——否则启动即报错，避免出现「无法专精的技能」。
+
+数值只有 `rules.json` 的 `specialization`（`min_level` 1-5、`switch_stones` ≥0，当前 3 级与 300 灵石）。状态是 `quest_progress` 的 `spec_<宠物编号>_<灵术id>` 单行：灵术 id 放在键里，因为 `progress` 是整数列；读取时按 `spec_<宠物编号>_%` 前缀查询，因此换技能、遗忘其他灵术都不影响既有专精，取消即删除该行。
+
 ## 成就点商店定义
 
 `achievement_shop.json` 是兑换项数组，由 `domain/achievement_shop_content.py` 校验：每项声明 `id`、`name`、`description`、`cost`（1-100000 点）与 `reward`（`stones` ≥0 加 `items`），`reward` 不能同时为空。`Catalog._validate_achievement_shop` 要求至少一项、且每个奖励物品 id 都存在于 `items.json`。

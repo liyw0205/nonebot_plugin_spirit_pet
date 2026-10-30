@@ -120,5 +120,9 @@
   },
   "achievement_points": {
     "per_claim": 10
+  },
+  "specialization": {
+    "min_level": 3,
+    "switch_stones": 300
   }
 }

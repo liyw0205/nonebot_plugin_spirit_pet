@@ -265,6 +265,11 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class SpecializationRule(Definition):
+    min_level: Annotated[int, Field(ge=1, le=5)]
+    switch_stones: NonNegative
+
+
 class AchievementPointsRule(Definition):
     per_claim: Annotated[int, Field(ge=1, le=100)]
 
@@ -313,3 +318,4 @@ class Rules(Definition):
     support: SupportRule
     transfer: TransferRule
     achievement_points: AchievementPointsRule
+    specialization: SpecializationRule

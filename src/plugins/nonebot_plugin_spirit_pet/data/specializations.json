@@ -1,0 +1,26 @@
+[
+  {
+    "id": "single",
+    "name": "单体精研",
+    "description": "把一门单体灵术练到极致，威力显著提升。",
+    "rate": 0.15
+  },
+  {
+    "id": "multi",
+    "name": "群攻精研",
+    "description": "专精一门群体灵术，虽然单点稍弱，但更稳定。",
+    "rate": 0.12
+  },
+  {
+    "id": "control",
+    "name": "控场精研",
+    "description": "专精震慑、削弱与破障类灵术，压制更狠。",
+    "rate": 0.18
+  },
+  {
+    "id": "support",
+    "name": "护持精研",
+    "description": "专精治疗与护持类灵术，承伤与回复更足。",
+    "rate": 0.2
+  }
+]

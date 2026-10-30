@@ -44,7 +44,7 @@ READ_ONLY_PAGES = (
     "rank", "rank_rewards", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
     "skill_catalog", "skill_mastery_rewards", "skill_overview", "skills",
-    "sect", "stage_catalog", "stage_stars", "stage_stats", "status", "support", "survival", "talent_history", "temper",
+    "sect", "specialization", "stage_catalog", "stage_stars", "stage_stats", "status", "support", "survival", "talent_history", "temper",
     "team_trial", "combos", "titles", "tower_catalog", "tribulations", "weekly_quests", "world_boss",
     "affinity_milestone_rewards",
 )
@@ -61,7 +61,7 @@ DOCUMENTED_COUNTS = {
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
     "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
-    "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 3, "combos": 6, "achievement_shop": 6, "tribulations": 1,
+    "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 3, "combos": 6, "specializations": 4, "achievement_shop": 6, "tribulations": 1,
 }
 
 
