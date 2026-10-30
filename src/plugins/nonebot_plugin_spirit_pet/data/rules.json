@@ -135,5 +135,15 @@
       "low": -0.1,
       "sad": -0.15
     }
+  },
+  "race": {
+    "energy": 20,
+    "daily_limit": 3,
+    "weights": {
+      "speed": 0.5,
+      "hp": 0.2,
+      "attack": 0.2,
+      "defense": 0.1
+    }
   }
 }

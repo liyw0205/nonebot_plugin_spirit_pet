@@ -266,6 +266,21 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 竞速定义
+
+`races.json` 是赛道数组，由 `domain/race_content.py` 校验：每项声明 `id`、`name`、`description`、`length`（100-10000 米）与 `terrain`（`stat` 为 `hp`/`attack`/`defense`/`speed` 之一，`multiplier` 0.1-3）。
+
+```json
+{"id": "sprint", "name": "直道竞速", "description": "平直长道。", "length": 800,
+ "terrain": {"stat": "speed", "multiplier": 1.25}}
+```
+
+数值在 `rules.json` 的 `race`：`energy`（每次报名精力）、`daily_limit`（1-20）与 `weights`（四维权重，必须覆盖四项且合计为 1）。`Catalog._validate_races` 校验赛道非空、id 唯一，且每条赛道的地形属性都必须是权重表里的属性——因此不会出现「地形加成算不进去」的赛道。
+
+用时是派生值，不模拟战斗：把四维按权重求和，地形属性乘上该赛道的倍率，再以 `round(长度 × 100 / 加权总和)` 取整（最少 1，即 0.1 秒）。因为属性来自 `loadout.combatant`，所有既有成长系统都自动计入竞速成绩。
+
+只有两行状态，都在 `quest_progress`：`race_best_<北京周起点>` 存本周最好用时（十分之一秒），`race_day_<北京日期>` 存当日已报名次数（`progress` 为整数，恰好适配）。换日换 key 自动重置次数，换周换 key 自动重置最好成绩，旧行保留在库中但不再参与排名；不写 `players.last_*` 冷却列，也不写战报或 `pve_stage_progress`。
+
 ## 心境定义
 
 `moods.json` 是心境等级数组，由 `domain/mood_content.py` 校验：每项声明 `id`、`name`、`description`、`threshold`（达到该值即为本等级）与 `rate`（四维倍率，−30% 到 +30%；阈值 0 的等级不得为正加成）。

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "sprint",
+    "name": "直道竞速",
+    "description": "平直长道，速度就是一切。",
+    "length": 800,
+    "terrain": {"stat": "speed", "multiplier": 1.25}
+  },
+  {
+    "id": "climb",
+    "name": "长坡耐力",
+    "description": "一路向上，气血厚的伙伴更占便宜。",
+    "length": 1200,
+    "terrain": {"stat": "hp", "multiplier": 1.3}
+  },
+  {
+    "id": "ridge",
+    "name": "险道越障",
+    "description": "碎石与断崖不断挑衅，甲厚者少受伤。",
+    "length": 1000,
+    "terrain": {"stat": "defense", "multiplier": 1.4}
+  }
+]

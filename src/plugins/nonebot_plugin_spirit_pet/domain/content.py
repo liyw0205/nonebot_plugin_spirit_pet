@@ -265,6 +265,21 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class RaceRule(Definition):
+    energy: Positive
+    daily_limit: Annotated[int, Field(ge=1, le=20)]
+    weights: dict[Literal["hp", "attack", "defense", "speed"], Annotated[float, Field(ge=0, le=1)]]
+
+    @model_validator(mode="after")
+    def _weights(self):
+        required = {"hp", "attack", "defense", "speed"}
+        if set(self.weights) != required:
+            raise ValueError("race weights must cover hp, attack, defense and speed")
+        if abs(sum(self.weights.values()) - 1) > 1e-9:
+            raise ValueError("race weights must sum to 1")
+        return self
+
+
 class MoodRule(Definition):
     max: Annotated[int, Field(ge=1, le=5)]
     decay_days: Annotated[int, Field(ge=1, le=30)]
@@ -333,3 +348,4 @@ class Rules(Definition):
     achievement_points: AchievementPointsRule
     specialization: SpecializationRule
     mood: MoodRule
+    race: RaceRule

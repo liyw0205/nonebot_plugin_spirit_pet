@@ -29,6 +29,7 @@ from ..domain.combo_content import Combo
 from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
+from ..domain.race_content import RaceTrack
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -132,6 +133,7 @@ class Catalog:
     achievement_shop: dict[str, AchievementOffer]
     specializations: dict[str, Specialization]
     moods: dict[str, MoodLevel]
+    races: dict[str, RaceTrack]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -191,6 +193,7 @@ class Catalog:
             achievement_shop=_index(directory / "achievement_shop.json", AchievementOffer),
             specializations=_index(directory / "specializations.json", Specialization),
             moods=_index(directory / "moods.json", MoodLevel, "id"),
+            races=_index(directory / "races.json", RaceTrack),
         )
         catalog.validate()
         return catalog
@@ -301,6 +304,7 @@ class Catalog:
         self._validate_achievement_shop()
         self._validate_specializations()
         self._validate_moods()
+        self._validate_races()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -664,6 +668,14 @@ class Catalog:
                 raise ValueError(f"mood {level.id} has no rate in rules.mood.rates")
             if abs(rule.rates[level.id] - level.rate) > 1e-9:
                 raise ValueError(f"mood {level.id} rate disagrees with rules.mood.rates")
+
+    def _validate_races(self):
+        if not self.races:
+            raise ValueError("races must not be empty")
+        for track in self.races.values():
+            weighted = set(self.rules.race.weights)
+            if track.terrain.stat not in weighted:
+                raise ValueError(f"race {track.id} terrain stat is not a weighted stat")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
