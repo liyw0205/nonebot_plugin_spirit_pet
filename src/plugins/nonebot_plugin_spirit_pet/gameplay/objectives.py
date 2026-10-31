@@ -27,6 +27,7 @@ from . import specialization
 from . import mood
 from . import race
 from . import research
+from . import gauntlet
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -477,6 +478,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (mood.objective_line(ctx, player.user_id), "灵宠心境"),
         (race.objective_line(ctx, player.user_id), "灵宠竞速"),
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
+        (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

@@ -38,7 +38,7 @@ READ_ONLY_PAGES = (
     "codex", "codex_trials", "collection", "collection_rank", "corridor", "cuisine", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "equipment_sets", "expedition_catalog", "expedition_history", "expedition_status",
-    "farm", "first_clear", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
+    "farm", "first_clear", "gauntlet", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",
     "race", "race_board", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
@@ -61,7 +61,7 @@ DOCUMENTED_COUNTS = {
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 8,
     "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
-    "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 3, "combos": 6, "races": 3, "moods": 4, "specializations": 4, "achievement_shop": 6, "tribulations": 1,
+    "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 3, "combos": 6, "gauntlets": 1, "races": 3, "moods": 4, "specializations": 4, "achievement_shop": 6, "tribulations": 1,
 }
 
 

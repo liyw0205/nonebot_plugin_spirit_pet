@@ -266,6 +266,20 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 擂台定义
+
+`gauntlets.json` 是擂台数组（当前一条 `gauntlet`），由 `domain/gauntlet_content.py` 校验：`energy` 1-100、`bonus` 全清奖励、`rounds` 1-10 关，每关声明 `enemy`、四项 `*_scale`（0.1-10）与 `reward`。`Catalog._validate_gauntlets` 进一步要求敌手存在于 `enemies.json`、全清与逐关奖励物品都存在。
+
+```json
+{"id": "gauntlet", "name": "灵宠擂台", "energy": 15, "bonus": {...},
+ "rounds": [{"enemy": "wood_guard", "hp_scale": 1.0, "attack_scale": 1.0,
+             "defense_scale": 1.0, "speed_scale": 1.0, "reward": {...}}]}
+```
+
+敌手按 `model_copy(update={"stats": Stats(...)})` 缩放，`Enemy` 本身不变。连战的关键在于玩家一侧的 `Fighter` **只构建一次**并重复传给 `fight()`：`fight()` 直接修改传入单位的 `hp`，所以第 n 关结束时的血量自然成为第 n+1 关的起始血量，战斗引擎无需任何改动。
+
+状态是 `quest_progress` 的两类凭证：`gauntlet_<周起点>_<序号>`（该关本周已通关）与 `gauntlet_<周起点>_all`（本周全清）。战报按操作去重，因此一次命令只落一条 `pve_stage` 记录，键为决定胜负那一关的 `gauntlet_<周>_<序号>`，不写 `pve_stage_progress`。
+
 ## 研习定义
 
 研习没有独立内容文件，数值放在 `rules.json` 的 `research`：

@@ -30,6 +30,7 @@ from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
+from ..domain.gauntlet_content import Gauntlet
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -134,6 +135,7 @@ class Catalog:
     specializations: dict[str, Specialization]
     moods: dict[str, MoodLevel]
     races: dict[str, RaceTrack]
+    gauntlets: dict[str, Gauntlet]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -194,6 +196,7 @@ class Catalog:
             specializations=_index(directory / "specializations.json", Specialization),
             moods=_index(directory / "moods.json", MoodLevel, "id"),
             races=_index(directory / "races.json", RaceTrack),
+            gauntlets=_index(directory / "gauntlets.json", Gauntlet),
         )
         catalog.validate()
         return catalog
@@ -305,6 +308,7 @@ class Catalog:
         self._validate_specializations()
         self._validate_moods()
         self._validate_races()
+        self._validate_gauntlets()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -676,6 +680,16 @@ class Catalog:
             weighted = set(self.rules.race.weights)
             if track.terrain.stat not in weighted:
                 raise ValueError(f"race {track.id} terrain stat is not a weighted stat")
+
+    def _validate_gauntlets(self):
+        if not self.gauntlets:
+            raise ValueError("gauntlets must not be empty")
+        for entry in self.gauntlets.values():
+            self._require(entry.bonus.items, self.items, "gauntlet bonus items")
+            for index, round_ in enumerate(entry.rounds, 1):
+                if round_.enemy not in self.enemies:
+                    raise ValueError(f"gauntlet {entry.id} round {index} has an unknown enemy")
+                self._require(round_.reward.items, self.items, "gauntlet round items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

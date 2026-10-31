@@ -202,3 +202,9 @@ def test_combos_reject_a_repeated_skill_pair(content_dir):
     edit(content_dir, "combos.json", lambda rows: rows[0].update({"skills": list(rows[1]["skills"])}))
     with pytest.raises(ValueError, match="repeats an existing skill pair"):
         Catalog.load(content_dir)
+
+
+def test_gauntlets_reject_an_unknown_round_enemy(content_dir):
+    edit(content_dir, "gauntlets.json", lambda rows: rows[0]["rounds"][0].update({"enemy": "unknown"}))
+    with pytest.raises(ValueError, match="unknown enemy"):
+        Catalog.load(content_dir)
