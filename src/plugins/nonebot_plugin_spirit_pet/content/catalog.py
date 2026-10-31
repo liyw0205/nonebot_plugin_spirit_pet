@@ -31,6 +31,7 @@ from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
 from ..domain.gauntlet_content import Gauntlet
+from ..domain.sigil_content import Sigil
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -136,6 +137,7 @@ class Catalog:
     moods: dict[str, MoodLevel]
     races: dict[str, RaceTrack]
     gauntlets: dict[str, Gauntlet]
+    sigils: dict[str, Sigil]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -197,6 +199,7 @@ class Catalog:
             moods=_index(directory / "moods.json", MoodLevel, "id"),
             races=_index(directory / "races.json", RaceTrack),
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
+            sigils=_index(directory / "sigils.json", Sigil),
         )
         catalog.validate()
         return catalog
@@ -309,6 +312,7 @@ class Catalog:
         self._validate_moods()
         self._validate_races()
         self._validate_gauntlets()
+        self._validate_sigils()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -690,6 +694,10 @@ class Catalog:
                 if round_.enemy not in self.enemies:
                     raise ValueError(f"gauntlet {entry.id} round {index} has an unknown enemy")
                 self._require(round_.reward.items, self.items, "gauntlet round items")
+
+    def _validate_sigils(self):
+        if not self.sigils:
+            raise ValueError("sigils must not be empty")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

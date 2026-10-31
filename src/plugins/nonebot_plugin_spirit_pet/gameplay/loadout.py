@@ -65,6 +65,9 @@ def combatant(
         for word_id, value in gear_word_rows(ctx, item_id, enhancement):
             word = ctx.content.gear_words[word_id]
             stats[word.stat] += max(1, int(stats[word.stat] * value / 100))
+    from .sigils import total_bonus as sigil_bonus
+    for key, value in sigil_bonus(ctx, pet.pet_id, user_id or ctx.user_id).items():
+        stats[key] += value
     from .bond_levels import current_level, apply_bonus
     apply_bonus(current_level(ctx, pet.pet_id), stats)
     equipment_set_names = []

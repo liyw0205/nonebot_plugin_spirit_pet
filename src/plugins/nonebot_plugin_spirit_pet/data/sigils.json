@@ -1,0 +1,58 @@
+[
+  {
+    "id": "first_light",
+    "name": "初光符",
+    "description": "第一次结契时点亮的印记，气血稍厚。",
+    "bonuses": {"hp": 40},
+    "requires": {"kind": "achievements", "value": 1}
+  },
+  {
+    "id": "swift_mark",
+    "name": "疾行符",
+    "description": "走过许多路之后，脚步自然轻快。",
+    "bonuses": {"speed": 18},
+    "requires": {"kind": "achievements", "value": 5}
+  },
+  {
+    "id": "iron_oath",
+    "name": "铁誓符",
+    "description": "见过的种族越多，越懂得如何护住要害。",
+    "bonuses": {"defense": 22},
+    "requires": {"kind": "collection", "value": 5}
+  },
+  {
+    "id": "beast_bond",
+    "name": "兽契符",
+    "description": "广结灵缘者的爪牙更利。",
+    "bonuses": {"attack": 20},
+    "requires": {"kind": "collection", "value": 12}
+  },
+  {
+    "id": "deep_tie",
+    "name": "深缘符",
+    "description": "与一只伙伴心意相通后，彼此都更耐打。",
+    "bonuses": {"hp": 55},
+    "requires": {"kind": "bond", "value": 3}
+  },
+  {
+    "id": "keen_edge",
+    "name": "锐锋符",
+    "description": "羁绊极深时，出手不再留手。",
+    "bonuses": {"attack": 28},
+    "requires": {"kind": "bond", "value": 5}
+  },
+  {
+    "id": "high_breath",
+    "name": "高息符",
+    "description": "境界已高，吐纳之间自有风雷。",
+    "bonuses": {"speed": 26},
+    "requires": {"kind": "realm", "value": 3}
+  },
+  {
+    "id": "apex_seal",
+    "name": "极印符",
+    "description": "登临绝顶者才配得上的印记。",
+    "bonuses": {"attack": 30, "defense": 18},
+    "requires": {"kind": "realm", "value": 5}
+  }
+]

@@ -39,6 +39,7 @@ from ..gameplay import mood
 from ..gameplay import race
 from ..gameplay import research
 from ..gameplay import gauntlet
+from ..gameplay import sigils
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -203,6 +204,7 @@ ACTIONS = {
     "race": Command(race.dispatch, True, registered=False),
     "research": Command(research.dispatch, True, registered=False),
     "gauntlet": Command(gauntlet.dispatch, True, registered=False),
+    "sigils": Command(sigils.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -340,7 +342,7 @@ COMMANDS = {
     "灵宠连携": "combos",
     "灵宠专精": "specialization",
     "灵宠心境": "mood", "灵宠竞速": "race", "灵宠竞速榜": "race_board",
-    "灵宠研习": "research", "灵宠擂台": "gauntlet",
+    "灵宠研习": "research", "灵宠擂台": "gauntlet", "灵宠符印": "sigils",
     "灵宠传功": "transfer",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",

@@ -266,6 +266,19 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 符印定义
+
+`sigils.json` 是符印数组，由 `domain/sigil_content.py` 校验：每项声明 `id`、`name`、`description`、`bonuses`（`hp`/`attack`/`defense`/`speed` 各 0-60，不可全为 0）与 `requires`（`kind` ∈ `achievements`/`collection`/`bond`/`realm`，`value` ≥ 1）。`Catalog._validate_sigils` 要求符印表非空。
+
+```json
+{"id": "first_light", "name": "初光符", "description": "第一次结契时点亮的印记。",
+ "bonuses": {"hp": 40}, "requires": {"kind": "achievements", "value": 1}}
+```
+
+解锁进度全部派生自既有数据，不新增计数：`achievements` 读 `achievement_claims` 行数，`collection` 读已收得的不同种族数，`bond` 读该伙伴的羁绊等级，`realm` 读该伙伴的境界序号。因此内容调整不会与存档脱节，也不需要回填。
+
+槽位状态是 `quest_progress` 的 `sigil_<伙伴编号>_<槽位>_<符印id>` 单行（符印 id 放键里，`progress` 是整数列），按 `sigil_<伙伴编号>_%` 前缀读取；两个槽位彼此独立，卸下即删除对应行，解锁状态不受影响。加成是**固定值**，在 `loadout.combatant` 中与装备、词条同层累加，不参与任何倍率。
+
 ## 擂台定义
 
 `gauntlets.json` 是擂台数组（当前一条 `gauntlet`），由 `domain/gauntlet_content.py` 校验：`energy` 1-100、`bonus` 全清奖励、`rounds` 1-10 关，每关声明 `enemy`、四项 `*_scale`（0.1-10）与 `reward`。`Catalog._validate_gauntlets` 进一步要求敌手存在于 `enemies.json`、全清与逐关奖励物品都存在。
