@@ -155,5 +155,17 @@
   },
   "attunement": {
     "weekly_limit": 1
+  },
+  "pair_bond": {
+    "stones": 300,
+    "items": {
+      "bloodline_essence": 1
+    },
+    "min_affinity": 60,
+    "rates": {
+      "attack": 0.08,
+      "defense": 0.06,
+      "speed": 0.04
+    }
   }
 }

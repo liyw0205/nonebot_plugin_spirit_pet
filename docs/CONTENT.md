@@ -266,6 +266,19 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 同心规则
+
+同心没有独立内容文件，数值写在 `rules.json` 的 `pair_bond`，由 `domain/content.py` 的 `PairBondRule` 校验：`stones` ≥ 0、`items` 物品存在、`min_affinity` ≥ 0、`rates` 只允许四维键且每项 `0 < rate ≤ 0.5`；同时要求至少一条加成、并且（灵石或材料）至少要付出一样，避免出现零成本或零收益的同心。
+
+```json
+{"stones": 300, "items": {"bloodline_essence": 1}, "min_affinity": 60,
+ "rates": {"attack": 0.08, "defense": 0.06, "speed": 0.04}}
+```
+
+状态是一行对称凭证 `quest_progress.bonded_<小编号>_<大编号>`（`progress`=1）。对称键让「每位伙伴只能有一位同心」成为键本身的约束，不需要第二张表，也不需要额外校验；解契即删除该行。读取时按前缀取行并解析两侧编号，`partner_of()` 对任一方向都返回对方。
+
+加成在 `loadout.combatant` 中紧随心境与阵位之后、所有固定加成之前，对基础四维乘 `1 + rate`；`rate_of()` 只在 `partner_of()` 存在且双方都在当前出战阵容时返回值，因此换阵容会立刻改变数值，且装备/词条/套装/符印/羁绊的固定数值不受影响。
+
 ## 阵位定义
 
 `formations.json` 是阵位数组，由 `domain/formation_content.py` 校验：每项声明 `id`、`name`、`description` 与 `rates`。`Formation` 要求四维齐全、每项 0.5-1.8，并且**至少一项 > 1、至少一项 < 1**——一个只加不减或只减不加的位置会被拒绝，这是「阵位必须是取舍」的内容级约束。`Catalog._validate_formations` 要求恰好三个位置 `vanguard`/`center`/`rear`，与页面语义绑定。

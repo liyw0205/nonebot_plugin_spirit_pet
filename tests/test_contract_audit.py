@@ -37,7 +37,7 @@ READ_ONLY_PAGES = (
     "bond_rewards", "breeding", "catalog", "cave", "checkin_calendar", "checkin_rewards",
     "codex", "codex_trials", "collection", "collection_rank", "corridor", "cuisine", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
-    "attunement", "equipment_sets", "formation", "escort", "expedition_catalog", "expedition_history", "expedition_status",
+    "attunement", "equipment_sets", "formation", "pair_bond", "escort", "expedition_catalog", "expedition_history", "expedition_status",
     "farm", "first_clear", "gauntlet", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",

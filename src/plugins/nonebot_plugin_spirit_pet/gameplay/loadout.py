@@ -29,6 +29,11 @@ def combatant(
         # Mood scales the pet's own base stats only, so every flat bonus from gear,
         # words, bonds and sets keeps its exact documented value.
         stats = {key: int(value * mood_factor + 0.5) for key, value in stats.items()}
+    from .pair_bond import rate_of as pair_rates
+    for stat, rate in pair_rates(ctx, pet.pet_id, user_id).items():
+        # A pair bond only helps while both partners stand in the same lineup, and like mood and
+        # formation it scales the base value so fixed bonuses keep their documented integers.
+        stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
     from .formation import rates_of as formation_rates
     for stat, rate in formation_rates(ctx, pet.pet_id).items():
         # A formation slot trades stats against each other, so it scales the base value for the

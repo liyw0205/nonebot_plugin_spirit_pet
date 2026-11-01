@@ -43,6 +43,7 @@ from ..gameplay import sigils
 from ..gameplay import escort
 from ..gameplay import attunement
 from ..gameplay import formation
+from ..gameplay import pair_bond
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -211,6 +212,7 @@ ACTIONS = {
     "escort": Command(escort.dispatch, True, registered=False),
     "attunement": Command(attunement.dispatch, True, registered=False),
     "formation": Command(formation.dispatch, True, registered=False),
+    "pair_bond": Command(pair_bond.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -352,6 +354,7 @@ COMMANDS = {
     "灵宠护送": "escort",
     "灵宠易脉": "attunement",
     "灵宠阵位": "formation",
+    "灵宠同心": "pair_bond",
     "灵宠传功": "transfer",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",

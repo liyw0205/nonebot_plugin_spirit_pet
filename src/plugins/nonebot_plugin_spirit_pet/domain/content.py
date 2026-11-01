@@ -265,6 +265,21 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class PairBondRule(Definition):
+    stones: Annotated[int, Field(ge=0, le=100_000)]
+    items: dict[Identifier, Positive] = Field(default_factory=dict)
+    min_affinity: Annotated[int, Field(ge=0, le=1_000)]
+    rates: dict[Annotated[str, Field(pattern="^(hp|attack|defense|speed)$")], Annotated[float, Field(gt=0, le=0.5)]]
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if not self.rates:
+            raise ValueError("pair bond must grant at least one rate")
+        if self.stones == 0 and not self.items:
+            raise ValueError("pair bond must cost something")
+        return self
+
+
 class AttunementRule(Definition):
     weekly_limit: Annotated[int, Field(ge=1, le=7)]
 
@@ -369,3 +384,4 @@ class Rules(Definition):
     race: RaceRule
     research: ResearchRule
     attunement: AttunementRule
+    pair_bond: PairBondRule
