@@ -239,7 +239,10 @@ def challenge(ctx: Context, arg: str) -> Reply:
     return run_dungeon(ctx, dungeon, [ctx.user_id])
 
 
-def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | None = None) -> Reply:
+def run_dungeon(
+    ctx: Context, dungeon, user_ids: list[str], leader_id: str | None = None,
+    *, return_state: bool = False,
+):
     selected = team_pets(ctx, user_ids, leader_id) if len(user_ids) > 1 else [
         (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])
     ]
@@ -287,4 +290,7 @@ def run_dungeon(ctx: Context, dungeon, user_ids: list[str], leader_id: str | Non
     reply = Reply(title, tuple(lines), ("灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养"))
     record_battle(ctx, kind="pve", battle_key=dungeon.id, battle_name=dungeon.name, battle=battle,
                   capture=capture, reply=reply)
+    if return_state:
+        # Callers that need the decided fight (e.g. optional contracts) get the battle and their side.
+        return reply, battle, allies
     return reply

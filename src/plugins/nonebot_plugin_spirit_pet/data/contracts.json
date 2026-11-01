@@ -1,0 +1,24 @@
+[
+  {
+    "id": "solo",
+    "name": "独行",
+    "description": "只带一位伙伴闯过秘境。",
+    "kind": "solo",
+    "bonus": {"stones_percent": 50, "exp_percent": 50, "items": {"forge_ore": 1}}
+  },
+  {
+    "id": "speed",
+    "name": "速战",
+    "description": "在限定回合内结束战斗。",
+    "kind": "speed",
+    "rounds": 8,
+    "bonus": {"stones_percent": 30, "exp_percent": 30, "items": {"bloodline_essence": 1}}
+  },
+  {
+    "id": "unhurt",
+    "name": "无伤",
+    "description": "出战伙伴全部存活到最后。",
+    "kind": "unhurt",
+    "bonus": {"stones_percent": 40, "exp_percent": 40, "items": {"spirit_food": 2}}
+  }
+]

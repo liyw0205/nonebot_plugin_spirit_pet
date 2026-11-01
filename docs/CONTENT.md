@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 契约定义
+
+`contracts.json` 是契约数组，由 `domain/contract_content.py` 校验：每项声明 `id`、`name`、`description`、`kind`（`solo`/`speed`/`unhurt`）与 `bonus`。`Contract` 要求 `speed` 必须给 `rounds`（1-40）、其它两种不得给；`ContractBonus` 的百分比 0-200，且（百分比或物品）至少给出一项。`Catalog._validate_contracts` 要求表非空并校验奖励物品存在。
+
+```json
+{"id": "speed", "name": "速战", "description": "在限定回合内结束战斗。", "kind": "speed", "rounds": 8,
+ "bonus": {"stones_percent": 30, "exp_percent": 30, "items": {"bloodline_essence": 1}}}
+```
+
+契约不新增秘境、不缩放敌手、不改基础奖励：挑战走 `adventure.run_dungeon`，仅在 `return_state=True` 时额外返回战斗与玩家侧 `Fighter` 供条件判定（`satisfied` 读 `battle.winner`、`battle.rounds` 与各 `hp`）。达成后额外发放的奖励按该秘境 `reward` 的百分比取整计算，再叠加固定物品，因此基础与契约两部分互不影响、可以分别核对。
+
 ## 轮作规则
 
 轮作数值写在 `rules.json` 的 `farm_rotation`，由 `domain/content.py` 的 `FarmRotationRule` 校验：`rate_percent` 必须在 1-100 之间（低于 1 没有意义，高于 100 会让加成翻倍失控）。

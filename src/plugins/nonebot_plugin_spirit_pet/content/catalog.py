@@ -35,6 +35,7 @@ from ..domain.sigil_content import Sigil
 from ..domain.escort_content import EscortMission
 from ..domain.attunement_content import AttunementOption, Attunements
 from ..domain.formation_content import Formation, Formations
+from ..domain.contract_content import Contract
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -144,6 +145,7 @@ class Catalog:
     escorts: dict[str, EscortMission]
     attunements: Attunements
     formations: Formations
+    contracts: dict[str, Contract]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -209,6 +211,7 @@ class Catalog:
             escorts=_index(directory / "escorts.json", EscortMission),
             attunements=Attunements(options=list(_index(directory / "attunements.json", AttunementOption, "element").values())),
             formations=Formations(positions=list(_index(directory / "formations.json", Formation).values())),
+            contracts=_index(directory / "contracts.json", Contract),
         )
         catalog.validate()
         return catalog
@@ -325,6 +328,7 @@ class Catalog:
         self._validate_escorts()
         self._validate_attunements()
         self._validate_formations()
+        self._validate_contracts()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -747,6 +751,12 @@ class Catalog:
         slots = set(self.formations.by_id)
         if slots != {"vanguard", "center", "rear"}:
             raise ValueError("formations must define exactly vanguard, center and rear")
+
+    def _validate_contracts(self):
+        if not self.contracts:
+            raise ValueError("contracts must not be empty")
+        for contract in self.contracts.values():
+            self._require(contract.bonus.items, self.items, f"contract {contract.id} bonus items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

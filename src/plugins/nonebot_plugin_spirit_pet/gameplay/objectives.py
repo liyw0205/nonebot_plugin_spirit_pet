@@ -35,6 +35,7 @@ from . import formation
 from . import pair_bond
 from . import lineup_presets
 from . import release
+from . import contracts
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -493,6 +494,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (pair_bond.objective_line(ctx, player.user_id), "灵宠同心"),
         (lineup_presets.objective_line(ctx, player.user_id), "灵宠出战预设"),
         (release.objective_line(ctx, player.user_id), "灵宠归灵"),
+        (contracts.objective_line(ctx, player.user_id), "灵宠契约"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
