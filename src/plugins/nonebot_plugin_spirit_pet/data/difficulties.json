@@ -1,0 +1,23 @@
+[
+  {
+    "id": "normal",
+    "name": "寻常",
+    "description": "按秘境原样挑战，没有额外加成。",
+    "enemy_scale": 1.0,
+    "reward_percent": 0
+  },
+  {
+    "id": "challenge",
+    "name": "挑战",
+    "description": "敌手气血与攻防提高，奖励随之增加。",
+    "enemy_scale": 1.25,
+    "reward_percent": 50
+  },
+  {
+    "id": "desperate",
+    "name": "绝境",
+    "description": "敌手全面强化，只有过硬阵容才敢尝试。",
+    "enemy_scale": 1.6,
+    "reward_percent": 120
+  }
+]

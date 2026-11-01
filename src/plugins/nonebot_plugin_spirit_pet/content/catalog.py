@@ -38,6 +38,7 @@ from ..domain.formation_content import Formation, Formations
 from ..domain.contract_content import Contract
 from ..domain.hybrid_content import Hybrid
 from ..domain.alchemy_content import AlchemyRecipe
+from ..domain.difficulty_content import Difficulty
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -150,6 +151,7 @@ class Catalog:
     contracts: dict[str, Contract]
     hybrids: dict[str, Hybrid]
     alchemy: dict[str, AlchemyRecipe]
+    difficulties: dict[str, Difficulty]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -218,6 +220,7 @@ class Catalog:
             contracts=_index(directory / "contracts.json", Contract),
             hybrids=_index(directory / "hybrids.json", Hybrid),
             alchemy=_index(directory / "alchemy.json", AlchemyRecipe),
+            difficulties=_index(directory / "difficulties.json", Difficulty),
         )
         catalog.validate()
         return catalog
@@ -337,6 +340,7 @@ class Catalog:
         self._validate_contracts()
         self._validate_hybrids()
         self._validate_alchemy()
+        self._validate_difficulties()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -788,6 +792,12 @@ class Catalog:
             self._require(entry.materials, self.items, f"alchemy {entry.id} materials")
             if self.items[entry.item_id].kind not in {"consumable", "breakthrough"}:
                 raise ValueError(f"alchemy {entry.id} must produce a consumable")
+
+    def _validate_difficulties(self):
+        if not self.difficulties:
+            raise ValueError("difficulties must not be empty")
+        if not any(entry.enemy_scale == 1.0 for entry in self.difficulties.values()):
+            raise ValueError("difficulties must include a baseline tier")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

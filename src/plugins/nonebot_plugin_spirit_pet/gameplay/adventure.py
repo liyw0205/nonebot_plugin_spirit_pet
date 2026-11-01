@@ -241,7 +241,7 @@ def challenge(ctx: Context, arg: str) -> Reply:
 
 def run_dungeon(
     ctx: Context, dungeon, user_ids: list[str], leader_id: str | None = None,
-    *, return_state: bool = False,
+    *, return_state: bool = False, enemy_scale: float = 1.0, reward=None,
 ):
     selected = team_pets(ctx, user_ids, leader_id) if len(user_ids) > 1 else [
         (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])
@@ -260,7 +260,17 @@ def run_dungeon(
             if pet.energy < dungeon.energy:
                 raise GameError(f"{pet.name}精力不足，需要 {dungeon.energy} 点。")
     allies = [combatant(ctx, user_id, recover_energy=False, pet_id=pet.pet_id) for user_id, pet in selected]
-    enemies = [enemy_fighter(ctx.content.enemies[key], ctx.content.skills) for key in dungeon.enemies]
+    def _scaled(key):
+        definition = ctx.content.enemies[key]
+        if enemy_scale == 1.0:
+            return definition
+        scaled = {
+            stat: max(1, int(value * enemy_scale + 0.5))
+            for stat, value in definition.stats.model_dump().items()
+        }
+        return definition.model_copy(update={"stats": definition.stats.__class__(**scaled)})
+
+    enemies = [enemy_fighter(_scaled(key), ctx.content.skills) for key in dungeon.enemies]
     capture = capture_snapshot(ctx, (allies, enemies), ([user_id for user_id, _ in selected], []))
     battle = fight(allies, enemies, ctx.rng, ctx.content.elements)
     lines = [f"{dungeon.name} · {battle.rounds} 回合", *battle.lines]
@@ -279,7 +289,7 @@ def run_dungeon(
             advance(ctx, "pve", user_id)
             battle_pass.add_experience(ctx, "pve_win", user_id)
             names = "、".join(pet.name for owner, pet in selected if owner == user_id)
-            lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, dungeon.reward, user_id)))
+            lines.append(f"{by_user[user_id].uid_label}的{names}：" + "，".join(grant(ctx, reward or dungeon.reward, user_id)))
             if seed_id:
                 ctx.repo.add_item(user_id, seed_id, 1)
                 lines.append(f"{ctx.content.items[seed_id].name} +1")

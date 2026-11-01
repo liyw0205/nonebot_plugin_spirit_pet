@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 难度定义
+
+`difficulties.json` 是难度数组，由 `domain/difficulty_content.py` 校验：每项声明 `id`、`name`、`description`、`enemy_scale`（1.0-3.0）与 `reward_percent`（0-200）。`Difficulty` 拒绝「只加奖励不加数值」与「只加数值不加奖励」，让档位始终是取舍；`Catalog._validate_difficulties` 要求表非空且**必须包含一档 `enemy_scale == 1.0` 的基准档**，否则玩家没有「原样挑战」的参照。
+
+```json
+{"id": "challenge", "name": "挑战", "description": "敌手更强，奖励更高。",
+ "enemy_scale": 1.25, "reward_percent": 50}
+```
+
+缩放发生在 `adventure.run_dungeon` 的两个可选参数上：`enemy_scale` 用 `model_copy` 生成缩放后的 `Enemy`（不修改内容目录本身），`reward` 传入按档位放大的 `Reward`；默认值（1.0 / None）让既有调用方行为完全不变。奖励放大对修为、灵石与每种材料逐项取整，且不低于原始值，因此低数值条目不会被取整抹平。
+
 ## 炼丹定义
 
 `alchemy.json` 是丹方数组，由 `domain/alchemy_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`stones`（≥1）、`materials`（≥1 项）与 `yield`（1-10）。`AlchemyRecipe` 拒绝「消耗自己的产物」，`Catalog._validate_alchemy` 进一步要求产物与材料都存在于 `items.json`、且产物是 `consumable` 或 `breakthrough`——丹药方产出装备或材料会在启动时被拒。
