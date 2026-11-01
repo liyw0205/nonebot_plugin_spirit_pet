@@ -33,6 +33,7 @@ from . import escort
 from . import attunement
 from . import formation
 from . import pair_bond
+from . import lineup_presets
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -489,6 +490,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (attunement.objective_line(ctx, player.user_id), "灵宠易脉"),
         (formation.objective_line(ctx, player.user_id), "灵宠阵位"),
         (pair_bond.objective_line(ctx, player.user_id), "灵宠同心"),
+        (lineup_presets.objective_line(ctx, player.user_id), "灵宠出战预设"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
