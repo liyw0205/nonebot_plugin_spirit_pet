@@ -167,5 +167,12 @@
       "defense": 0.06,
       "speed": 0.04
     }
+  },
+  "pet_release": {
+    "stones_base": 200,
+    "stones_per_realm": 120,
+    "items": {
+      "bloodline_essence": 1
+    }
   }
 }

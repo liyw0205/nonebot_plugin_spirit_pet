@@ -265,6 +265,18 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class PetReleaseRule(Definition):
+    stones_base: Annotated[int, Field(ge=0, le=100_000)]
+    stones_per_realm: Annotated[int, Field(ge=0, le=100_000)]
+    items: dict[Identifier, Positive] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.stones_base + self.stones_per_realm == 0 and not self.items:
+            raise ValueError("pet release must grant something")
+        return self
+
+
 class PairBondRule(Definition):
     stones: Annotated[int, Field(ge=0, le=100_000)]
     items: dict[Identifier, Positive] = Field(default_factory=dict)
@@ -385,3 +397,4 @@ class Rules(Definition):
     research: ResearchRule
     attunement: AttunementRule
     pair_bond: PairBondRule
+    pet_release: PetReleaseRule

@@ -105,6 +105,19 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     return Reply(f"灵宠名册 {page}/{pages}", tuple(lines), tuple(commands), tuple(inline_commands))
 
 
+def _dedicated_ids(ctx: Context) -> set[int]:
+    from .release import released
+
+    return {
+        int(row["quest_id"].rsplit("_", 1)[-1])
+        for row in ctx.repo.conn.execute(
+            "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id LIKE 'released_%'",
+            (ctx.user_id,),
+        )
+        if row["quest_id"].rsplit("_", 1)[-1].isdecimal()
+    }
+
+
 def archive_list(ctx: Context, arg: str) -> Reply:
     ctx.player()
     count = ctx.repo.archived_pet_count(ctx.user_id)
@@ -112,7 +125,11 @@ def archive_list(ctx: Context, arg: str) -> Reply:
     page = quantity(arg or "1", 999)
     if page > pages:
         raise GameError(f"封存库共 {pages} 页。")
-    selected = ctx.repo.archived_pets(ctx.user_id, limit=5, offset=(page - 1) * 5)
+    dedicated = _dedicated_ids(ctx)
+    selected = [
+        pet for pet in ctx.repo.archived_pets(ctx.user_id, limit=5, offset=(page - 1) * 5)
+        if pet.pet_id not in dedicated
+    ]
     if not selected:
         return Reply("灵宠封存库", ("尚无封存的灵宠。",), ("灵宠列表", "灵宠召唤"),
                      (InlineCommand(0, "查看灵宠名册", "灵宠列表"),))
@@ -168,6 +185,8 @@ def archive(ctx: Context, arg: str) -> Reply:
 def restore(ctx: Context, arg: str) -> Reply:
     ctx.player()
     pet = _owned_pet_by_id(ctx, arg)
+    if pet.archived and pet.pet_id in _dedicated_ids(ctx):
+        raise GameError(f"{pet.name}已归灵，无法复原。")
     if not pet.archived:
         raise GameError(f"{pet.name}不在封存库中。")
     active_count = len(ctx.repo.owned_pets(ctx.user_id))

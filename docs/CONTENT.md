@@ -266,6 +266,12 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 归灵规则
+
+归灵数值写在 `rules.json` 的 `pet_release`，由 `domain/content.py` 的 `PetReleaseRule` 校验：`stones_base`、`stones_per_realm` 非负，`items` 物品存在，且（灵石或材料）至少给出一项，避免出现空收益配置。收益按伙伴境界线性增长：`灵石 = stones_base + stones_per_realm × 境界`，另加 `items` 中的材料与该族灵卵 `egg_<种族id>`（若该物品存在）。归灵不发修为——修为只会落在当前出战伙伴身上，与「退役这只」无关。
+
+归灵**不删除**任何行。`pets` 被 `active_pet_slots`、`equipment`、`learned_skills`、`expeditions`、`teams`、`pvp_results`、`players.active_pet_id` 等引用，直接删除会破坏战报与对外引用，所以实现是软退役：`pets.archived = 1` 加一条永久标记 `quest_progress.released_<伙伴编号>`。名册名额按 `archived=0` 计数，因此归灵自动释放一个名额；`released_` 标记让封存库、`灵宠复原` 与归灵页把这类伙伴当作已消失。
+
 ## 出战预设状态
 
 出战预设没有内容文件：三套槽位是固定的（1-3），成员来自玩家自己的名册。状态写在 `quest_progress`：

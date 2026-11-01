@@ -45,6 +45,7 @@ from ..gameplay import attunement
 from ..gameplay import formation
 from ..gameplay import pair_bond
 from ..gameplay import lineup_presets
+from ..gameplay import release
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -215,6 +216,7 @@ ACTIONS = {
     "formation": Command(formation.dispatch, True, registered=False),
     "pair_bond": Command(pair_bond.dispatch, True, registered=False),
     "lineup_presets": Command(lineup_presets.dispatch, True, registered=False),
+    "pet_release": Command(release.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -358,6 +360,7 @@ COMMANDS = {
     "灵宠阵位": "formation",
     "灵宠同心": "pair_bond",
     "灵宠出战预设": "lineup_presets",
+    "灵宠归灵": "pet_release",
     "灵宠传功": "transfer",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",
