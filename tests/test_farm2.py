@@ -103,8 +103,11 @@ def test_high_tier_crops_plant_and_harvest(game, play):
     play("farm_plant", "1 虚灵仙葩种", now=NOW + 2 + 10800, op="hi-plant2")
     # void_lotus base 14400 at tier0
     result2 = play("farm_harvest", "1", now=NOW + 2 + 25200, op="hi-harvest2")
-    assert "修为 +120" in result2.text()
-    assert "灵石 +150" in result2.text()
+    # the previous season grew a different crop, so this harvest carries the rotation bonus
+    rate = game[0].content.rules.farm_rotation.rate_percent
+    assert "轮作加成" in result2.text()
+    assert f"修为 +{120 + 120 * rate // 100}" in result2.text()
+    assert f"灵石 +{150 + 150 * rate // 100}" in result2.text()
     assert "血脉精华 +2" in result2.text()
 
 

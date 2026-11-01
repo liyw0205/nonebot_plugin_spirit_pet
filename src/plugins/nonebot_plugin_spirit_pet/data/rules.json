@@ -174,5 +174,8 @@
     "items": {
       "bloodline_essence": 1
     }
+  },
+  "farm_rotation": {
+    "rate_percent": 20
   }
 }

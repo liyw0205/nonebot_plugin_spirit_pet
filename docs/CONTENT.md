@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 轮作规则
+
+轮作数值写在 `rules.json` 的 `farm_rotation`，由 `domain/content.py` 的 `FarmRotationRule` 校验：`rate_percent` 必须在 1-100 之间（低于 1 没有意义，高于 100 会让加成翻倍失控）。
+
+```json
+{"rate_percent": 20}
+```
+
+状态复用 `quest_progress`：`farm_last_<田位>_<作物id>` 记录该田位最近收获的作物（作物 id 放键里），`farm_rotation_<田位>` 标记本季是换种。播种时读取上一季作物——存在且与本次不同才写轮作标记；收获（含枯萎、含原地补种）时把当季作物写成新的上一季并清除标记，因此加成窗口恰好覆盖一季。
+
+倍率在 `farming._grant_reward` 内对修为、灵石与每种材料逐个取整应用（`int(base × (1 + rate))`），枯季只返还种子、不参与倍率。
+
 ## 归灵规则
 
 归灵数值写在 `rules.json` 的 `pet_release`，由 `domain/content.py` 的 `PetReleaseRule` 校验：`stones_base`、`stones_per_realm` 非负，`items` 物品存在，且（灵石或材料）至少给出一项，避免出现空收益配置。收益按伙伴境界线性增长：`灵石 = stones_base + stones_per_realm × 境界`，另加 `items` 中的材料与该族灵卵 `egg_<种族id>`（若该物品存在）。归灵不发修为——修为只会落在当前出战伙伴身上，与「退役这只」无关。

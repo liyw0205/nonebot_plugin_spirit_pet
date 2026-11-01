@@ -19,6 +19,8 @@ TIER_PREFIX = "farm_tier_"
 WATER_CUT_PREFIX = "farm_water_cut_"
 WATER_DAY_PREFIX = "farm_water_day_"
 WATER_DAILY_PREFIX = "farm_water_daily_"
+LAST_CROP_PREFIX = "farm_last_"
+ROTATION_PREFIX = "farm_rotation_"
 
 # Seed drop tiers by realm index: qiling→灵稻, ningqi→矿苗, zhuji/jindan→灵血草,
 # yuanying and above→蕴灵穗. Crops are content, so the mapping stays data-driven.
@@ -151,6 +153,48 @@ def _plot_state(ctx: Context, plot: int, user_id: str | None = None):
     )
 
 
+def last_crop(ctx: Context, plot: int, user_id: str | None = None) -> str | None:
+    """The crop this plot harvested last, if any."""
+    row = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id LIKE ? ORDER BY quest_id LIMIT 1",
+        (_owner(ctx, user_id), f"{LAST_CROP_PREFIX}{plot}_%"),
+    ).fetchone()
+    return row["quest_id"][len(f"{LAST_CROP_PREFIX}{plot}_"):] if row else None
+
+
+def rotated(ctx: Context, plot: int, user_id: str | None = None) -> bool:
+    """Whether the crop currently growing is a change from the previous one."""
+    row = ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (_owner(ctx, user_id), f"{ROTATION_PREFIX}{plot}"),
+    ).fetchone()
+    return row is not None
+
+
+def rotation_rate(ctx: Context) -> float:
+    return ctx.content.rules.farm_rotation.rate_percent / 100
+
+
+def reward_multiplier(ctx: Context, plot: int, user_id: str | None = None) -> float:
+    return 1 + rotation_rate(ctx) if rotated(ctx, plot, user_id) else 1.0
+
+
+def _remember_crop(ctx: Context, plot: int, crop) -> None:
+    """Record this season as the plot's last crop and end the rotation window."""
+    ctx.repo.conn.execute(
+        "DELETE FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (ctx.user_id, f"{LAST_CROP_PREFIX}{plot}_%"),
+    )
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)",
+        (ctx.user_id, f"{LAST_CROP_PREFIX}{plot}_{crop.id}"),
+    )
+    ctx.repo.conn.execute(
+        "DELETE FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (ctx.user_id, f"{ROTATION_PREFIX}{plot}"),
+    )
+
+
 def _crop(ctx: Context, crop_row):
     crop_id = crop_row["quest_id"][len(f"{CROP_PREFIX}"):].split("_", 1)[-1]
     return ctx.content.crops[crop_id]
@@ -165,18 +209,22 @@ def _hasten_cost(ctx: Context, crop_row) -> int:
     return max(1, remaining * RENEW_FRACTION // 100)
 
 
-def _grant_reward(ctx: Context, crop) -> tuple[str, ...]:
+def _grant_reward(ctx: Context, crop, multiplier: float = 1.0) -> tuple[str, ...]:
     lines = []
     if crop.reward_exp:
+        exp = int(crop.reward_exp * multiplier)
         pet = ctx.pet()
-        pet.exp += crop.reward_exp
-        lines.append(f"修为 +{crop.reward_exp}")
+        pet.exp += exp
+        lines.append(f"修为 +{exp}")
     if crop.reward_stones:
+        stones = int(crop.reward_stones * multiplier)
         player = ctx.player()
-        player.stones += crop.reward_stones
-        lines.append(f"灵石 +{crop.reward_stones}")
+        player.stones += stones
+        lines.append(f"灵石 +{stones}")
     for item_id, bounds in crop.reward_items.items():
         amount = ctx.rng.randint(bounds.minimum, bounds.maximum)
+        if multiplier > 1:
+            amount = int(amount * multiplier)
         ctx.repo.add_item(ctx.user_id, item_id, amount)
         if amount:
             lines.append(f"{ctx.content.items[item_id].name} +{amount}")
@@ -212,8 +260,14 @@ def catalog(ctx: Context, arg: str) -> Reply:
             lines.append(f"田位 {plot} · 待开垦（{cost} 灵石）")
             links.append(InlineCommand(len(lines) - 1, "开垦灵田", f"灵宠开垦 {plot}"))
         elif crop_row is None:
+            previous = last_crop(ctx, plot)
             lines.append(f"田位 {plot} · 待播种")
-            links.append(InlineCommand(len(lines) - 1, "查看种子", "灵宠商店"))
+            if previous in ctx.content.crops:
+                lines.append(
+                    f"  上一季 {ctx.content.crops[previous].name}：换种可获轮作加成"
+                    f" +{ctx.content.rules.farm_rotation.rate_percent}%"
+                )
+            lines.append("  可在灵宠商店购买种子，再用 灵宠播种 下种。")
         else:
             crop = _crop(ctx, crop_row)
             planted = crop_row["progress"]
@@ -223,13 +277,20 @@ def catalog(ctx: Context, arg: str) -> Reply:
                 links.append(InlineCommand(len(lines) - 1, "清理枯萎", f"灵宠收获 {plot}"))
             elif ctx.now - planted >= duration:
                 lines.append(f"田位 {plot} · {crop.name}已成熟，可收获")
+                if rotated(ctx, plot):
+                    lines.append(
+                        f"  轮作加成：收获时 +{ctx.content.rules.farm_rotation.rate_percent}%"
+                    )
                 links.append(InlineCommand(len(lines) - 1, "收获作物", f"灵宠收获 {plot}"))
             else:
                 renew = "（已翻新）" if crop_row["claimed"] else ""
                 lines.append(
                     f"田位 {plot} · {crop.name}生长中，剩余 {duration - (ctx.now - planted)} 秒{renew}"
                 )
-                links.append(InlineCommand(len(lines) - 1, "查看种子", "灵宠商店"))
+                if rotated(ctx, plot):
+                    lines.append(
+                        f"  轮作加成：收获时 +{ctx.content.rules.farm_rotation.rate_percent}%"
+                    )
         if opened and _tier(ctx, plot) < len(TIER_COST):
             lines.append(f"  可升级：{TIER_COST[_tier(ctx, plot)]} 灵石缩短该田 15% 生长时长")
             links.append(InlineCommand(len(lines) - 1, "升级灵田", f"灵宠升级 {plot}"))
@@ -291,6 +352,15 @@ def _sow(ctx: Context, plot: int, crop) -> None:
         "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=0",
         (ctx.user_id, f"{CROP_PREFIX}{plot}_{crop.id}", ctx.now),
     )
+    previous = last_crop(ctx, plot)
+    ctx.repo.conn.execute(
+        "DELETE FROM quest_progress WHERE user_id=? AND quest_id=?", (ctx.user_id, f"{ROTATION_PREFIX}{plot}"),
+    )
+    if previous is not None and previous != crop.id:
+        ctx.repo.conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)",
+            (ctx.user_id, f"{ROTATION_PREFIX}{plot}"),
+        )
 
 
 def harvest(ctx: Context, arg: str) -> Reply:
@@ -326,24 +396,30 @@ def harvest(ctx: Context, arg: str) -> Reply:
     if elapsed >= duration + WILT_AFTER:
         if replant is not None:
             raise GameError(f"{crop.name}已枯萎，不能补种。")
-        # Wilted: no yield, only the seed back.
+        # Wilted: no yield, only the seed back; the season still counts as this plot's last crop.
+        _remember_crop(ctx, plot, crop)
         ctx.repo.add_item(ctx.user_id, crop.seed_item, 1)
         return Reply("灵田清理", (
             f"田位 {plot} 的{crop.name}已枯萎，只返还了种子。",
             "下次记得及时收获。",
         ), ("灵宠灵田", "灵宠背包"))
-    gained = _grant_reward(ctx, crop)
+    multiplier = reward_multiplier(ctx, plot)
+    gained = _grant_reward(ctx, crop, multiplier)
+    bonus = f"轮作加成 +{ctx.content.rules.farm_rotation.rate_percent}%" if multiplier > 1 else ""
+    _remember_crop(ctx, plot, crop)
     battle_pass.add_experience(ctx, "farm_harvest")
     if replant is not None:
         _sow(ctx, plot, replant)
         return Reply("灵田补种", (
             f"田位 {plot} 的{crop.name}成熟收获并已补种。",
+            *([bonus] if bonus else []),
             *gained,
             f"已消耗 1 个{ctx.content.items[replant.seed_item].name}，"
             f"{_effective_duration(ctx, plot, replant.duration)} 秒后成熟。",
         ), ("灵宠灵田", "灵宠背包"))
     return Reply("灵田收获", (
         f"田位 {plot} 的{crop.name}成熟收获。",
+        *([bonus] if bonus else []),
         *gained,
     ), ("灵宠灵田", "灵宠背包"))
 

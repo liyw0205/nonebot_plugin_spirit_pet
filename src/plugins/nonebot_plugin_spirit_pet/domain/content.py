@@ -265,6 +265,12 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class FarmRotationRule(Definition):
+    """Bonus yield for changing the crop on a plot instead of repeating it."""
+
+    rate_percent: Annotated[int, Field(ge=1, le=100)]
+
+
 class PetReleaseRule(Definition):
     stones_base: Annotated[int, Field(ge=0, le=100_000)]
     stones_per_realm: Annotated[int, Field(ge=0, le=100_000)]
@@ -398,3 +404,4 @@ class Rules(Definition):
     attunement: AttunementRule
     pair_bond: PairBondRule
     pet_release: PetReleaseRule
+    farm_rotation: FarmRotationRule
