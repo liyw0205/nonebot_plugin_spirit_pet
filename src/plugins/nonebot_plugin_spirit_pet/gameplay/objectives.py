@@ -29,6 +29,7 @@ from . import race
 from . import research
 from . import gauntlet
 from . import sigils
+from . import escort
 from . import team_trial
 from . import cuisine
 from . import rank_rewards
@@ -481,6 +482,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
         (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (sigils.objective_line(ctx, player.user_id), "灵宠符印"),
+        (escort.objective_line(ctx, player.user_id), "灵宠护送"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

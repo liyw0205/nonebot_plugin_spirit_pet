@@ -32,6 +32,7 @@ from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
 from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
+from ..domain.escort_content import EscortMission
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -138,6 +139,7 @@ class Catalog:
     races: dict[str, RaceTrack]
     gauntlets: dict[str, Gauntlet]
     sigils: dict[str, Sigil]
+    escorts: dict[str, EscortMission]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -200,6 +202,7 @@ class Catalog:
             races=_index(directory / "races.json", RaceTrack),
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
             sigils=_index(directory / "sigils.json", Sigil),
+            escorts=_index(directory / "escorts.json", EscortMission),
         )
         catalog.validate()
         return catalog
@@ -313,6 +316,7 @@ class Catalog:
         self._validate_races()
         self._validate_gauntlets()
         self._validate_sigils()
+        self._validate_escorts()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -698,6 +702,17 @@ class Catalog:
     def _validate_sigils(self):
         if not self.sigils:
             raise ValueError("sigils must not be empty")
+
+    def _validate_escorts(self):
+        if not self.escorts:
+            raise ValueError("escorts must not be empty")
+        for mission in self.escorts.values():
+            for wave in mission.waves:
+                for enemy_id in wave:
+                    if enemy_id not in self.enemies:
+                        raise ValueError(f"escort {mission.id} references unknown enemy {enemy_id}")
+            for payout in (mission.rewards.full, mission.rewards.partial):
+                self._require(payout.items, self.items, "escort reward items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

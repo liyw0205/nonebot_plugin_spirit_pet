@@ -266,6 +266,21 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 护送定义
+
+`escorts.json` 是护送任务数组，由 `domain/escort_content.py` 校验：每项声明 `id`、`name`、`description`、`energy`（1-100）、`npc`（`name` 与四维，气血/速度 ≥ 1）、`waves`（1-5 波，每波 1-3 个敌手 id）与 `rewards`（`full` 与 `partial` 两档 `Reward`）。`EscortRewards` 强制满评奖励不低于部分奖励（灵石与修为两档），`Catalog._validate_escorts` 校验敌手与奖励物品都存在。
+
+```json
+{"id": "medicine_run", "name": "药囊运送", "energy": 15,
+ "npc": {"name": "药囊", "hp": 260, "attack": 12, "defense": 8, "speed": 10},
+ "waves": [["wood_guard"], ["wood_guard", "ancient_guard"]],
+ "rewards": {"full": {...}, "partial": {...}}}
+```
+
+护送目标就是一个普通 `Fighter`（`Fighter.create` 用 `npc` 四维构造），被追加到玩家一侧，因此 `fight()` 无需任何改动；它同样受 `hp` 就地修改影响，跨波延续自然成立。胜负判定是 `battle.winner == 0` **且** 目标 `hp > 0`，这是现有模式没有的条件。
+
+状态是 `quest_progress` 的 `escort_<周起点>_<任务id>`，`progress` 存本周最佳评级（1 部分、2 满评）：首次部分评价发部分奖励，之后满评只补差额（逐字段取 `full - partial`），因此不存在重复领取；换周换 key，旧行保留。战报按操作去重，只落决定胜负那一场。
+
 ## 符印定义
 
 `sigils.json` 是符印数组，由 `domain/sigil_content.py` 校验：每项声明 `id`、`name`、`description`、`bonuses`（`hp`/`attack`/`defense`/`speed` 各 0-60，不可全为 0）与 `requires`（`kind` ∈ `achievements`/`collection`/`bond`/`realm`，`value` ≥ 1）。`Catalog._validate_sigils` 要求符印表非空。

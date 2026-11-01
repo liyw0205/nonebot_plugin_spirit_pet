@@ -1,0 +1,38 @@
+[
+  {
+    "id": "medicine_run",
+    "name": "药囊运送",
+    "description": "把药囊送到山脚药庐，路上有傀儡与守灵拦路。",
+    "energy": 15,
+    "npc": {"name": "药囊", "hp": 260, "attack": 12, "defense": 8, "speed": 10},
+    "waves": [["wood_guard"], ["wood_guard", "ancient_guard"]],
+    "rewards": {
+      "full": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 180, "maximum": 180}, "items": {"spirit_food": {"minimum": 2, "maximum": 2}}},
+      "partial": {"exp": {"minimum": 60, "maximum": 60}, "stones": {"minimum": 90, "maximum": 90}, "items": {}}
+    }
+  },
+  {
+    "id": "frost_escort",
+    "name": "寒晶引路",
+    "description": "护送寒晶守灵穿过霜道，它的血越厚，报酬越高。",
+    "energy": 18,
+    "npc": {"name": "寒晶引路者", "hp": 420, "attack": 18, "defense": 14, "speed": 14},
+    "waves": [["ice_guard"], ["ice_guard", "moon_wolf"]],
+    "rewards": {
+      "full": {"exp": {"minimum": 170, "maximum": 170}, "stones": {"minimum": 260, "maximum": 260}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}},
+      "partial": {"exp": {"minimum": 85, "maximum": 85}, "stones": {"minimum": 130, "maximum": 130}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}
+    }
+  },
+  {
+    "id": "dragon_road",
+    "name": "蛟道护行",
+    "description": "沿蛟道护送信物，最后一波是雷泽蛟灵。",
+    "energy": 22,
+    "npc": {"name": "蛟道信物", "hp": 620, "attack": 26, "defense": 20, "speed": 18},
+    "waves": [["moon_wolf"], ["ice_guard", "ancient_guard"], ["thunder_dragon"]],
+    "rewards": {
+      "full": {"exp": {"minimum": 240, "maximum": 240}, "stones": {"minimum": 380, "maximum": 380}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}},
+      "partial": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 190, "maximum": 190}, "items": {}}
+    }
+  }
+]
