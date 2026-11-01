@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 杂交定义
+
+`hybrids.json` 是配方数组，由 `domain/hybrid_content.py` 校验：每项声明 `id`、`name`、`description`、`seeds`（恰好 2 个）、`stones`（1-100000）与 `output`。`Hybrid` 要求两个种子不同、产物不能是输入之一；`Catalog._validate_hybrids` 进一步要求输入与产物都在 `items.json`、产物是 `material`、且 `crops.json` 里存在以该产物为 `seed_item` 的作物。
+
+```json
+{"id": "frost_wheat", "name": "霜纹麦", "description": "把灵稻与矿苗的生机调在一起。",
+ "seeds": ["seed_spirit_rice", "seed_ore_sprout"], "stones": 120, "output": "seed_frost_wheat"}
+```
+
+杂交产物在 `items.json` 里不写 `price`，因此灵坊无法购买、回收页也不会把它当作可买物品；它只能由 `灵宠杂交` 产出，再由 `灵宠播种` 进入正常生长流程。杂交本身不写任何进度状态：消耗与产出都在同一事务里完成，重复提交由操作缓存去重。
+
 ## 契约定义
 
 `contracts.json` 是契约数组，由 `domain/contract_content.py` 校验：每项声明 `id`、`name`、`description`、`kind`（`solo`/`speed`/`unhurt`）与 `bonus`。`Contract` 要求 `speed` 必须给 `rounds`（1-40）、其它两种不得给；`ContractBonus` 的百分比 0-200，且（百分比或物品）至少给出一项。`Catalog._validate_contracts` 要求表非空并校验奖励物品存在。

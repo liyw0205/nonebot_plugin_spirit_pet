@@ -5,7 +5,12 @@
     "seed_item": "seed_spirit_rice",
     "duration": 1800,
     "reward_stones": 0,
-    "reward_items": {"spirit_food": {"minimum": 3, "maximum": 5}}
+    "reward_items": {
+      "spirit_food": {
+        "minimum": 3,
+        "maximum": 5
+      }
+    }
   },
   {
     "id": "ore_sprout",
@@ -13,7 +18,12 @@
     "seed_item": "seed_ore_sprout",
     "duration": 3600,
     "reward_stones": 0,
-    "reward_items": {"forge_ore": {"minimum": 1, "maximum": 2}}
+    "reward_items": {
+      "forge_ore": {
+        "minimum": 1,
+        "maximum": 2
+      }
+    }
   },
   {
     "id": "blood_herb",
@@ -21,7 +31,12 @@
     "seed_item": "seed_blood_herb",
     "duration": 5400,
     "reward_stones": 0,
-    "reward_items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+    "reward_items": {
+      "bloodline_essence": {
+        "minimum": 1,
+        "maximum": 1
+      }
+    }
   },
   {
     "id": "aura_ear",
@@ -30,7 +45,12 @@
     "duration": 7200,
     "reward_exp": 30,
     "reward_stones": 0,
-    "reward_items": {"spirit_food": {"minimum": 1, "maximum": 2}}
+    "reward_items": {
+      "spirit_food": {
+        "minimum": 1,
+        "maximum": 2
+      }
+    }
   },
   {
     "id": "twin_grain",
@@ -39,8 +59,14 @@
     "duration": 10800,
     "reward_stones": 0,
     "reward_items": {
-      "spirit_food": {"minimum": 2, "maximum": 3},
-      "forge_ore": {"minimum": 2, "maximum": 3}
+      "spirit_food": {
+        "minimum": 2,
+        "maximum": 3
+      },
+      "forge_ore": {
+        "minimum": 2,
+        "maximum": 3
+      }
     }
   },
   {
@@ -50,7 +76,12 @@
     "duration": 10800,
     "reward_exp": 60,
     "reward_stones": 0,
-    "reward_items": {"bloodline_essence": {"minimum": 1, "maximum": 2}}
+    "reward_items": {
+      "bloodline_essence": {
+        "minimum": 1,
+        "maximum": 2
+      }
+    }
   },
   {
     "id": "ancient_root",
@@ -58,7 +89,12 @@
     "seed_item": "seed_ancient_root",
     "duration": 14400,
     "reward_stones": 200,
-    "reward_items": {"forge_ore": {"minimum": 4, "maximum": 6}}
+    "reward_items": {
+      "forge_ore": {
+        "minimum": 4,
+        "maximum": 6
+      }
+    }
   },
   {
     "id": "void_lotus",
@@ -67,6 +103,43 @@
     "duration": 14400,
     "reward_exp": 120,
     "reward_stones": 150,
-    "reward_items": {"bloodline_essence": {"minimum": 2, "maximum": 3}}
+    "reward_items": {
+      "bloodline_essence": {
+        "minimum": 2,
+        "maximum": 3
+      }
+    }
+  },
+  {
+    "id": "frost_wheat",
+    "name": "霜纹麦",
+    "seed_item": "seed_frost_wheat",
+    "duration": 14400,
+    "reward_exp": 40,
+    "reward_stones": 0,
+    "reward_items": {
+      "spirit_food": {
+        "minimum": 3,
+        "maximum": 4
+      },
+      "forge_ore": {
+        "minimum": 3,
+        "maximum": 4
+      }
+    }
+  },
+  {
+    "id": "crimson_lotus",
+    "name": "赤霄莲",
+    "seed_item": "seed_crimson_lotus",
+    "duration": 18000,
+    "reward_exp": 90,
+    "reward_stones": 120,
+    "reward_items": {
+      "bloodline_essence": {
+        "minimum": 2,
+        "maximum": 3
+      }
+    }
   }
 ]

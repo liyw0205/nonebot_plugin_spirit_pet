@@ -36,6 +36,7 @@ from ..domain.escort_content import EscortMission
 from ..domain.attunement_content import AttunementOption, Attunements
 from ..domain.formation_content import Formation, Formations
 from ..domain.contract_content import Contract
+from ..domain.hybrid_content import Hybrid
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -146,6 +147,7 @@ class Catalog:
     attunements: Attunements
     formations: Formations
     contracts: dict[str, Contract]
+    hybrids: dict[str, Hybrid]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -212,6 +214,7 @@ class Catalog:
             attunements=Attunements(options=list(_index(directory / "attunements.json", AttunementOption, "element").values())),
             formations=Formations(positions=list(_index(directory / "formations.json", Formation).values())),
             contracts=_index(directory / "contracts.json", Contract),
+            hybrids=_index(directory / "hybrids.json", Hybrid),
         )
         catalog.validate()
         return catalog
@@ -329,6 +332,7 @@ class Catalog:
         self._validate_attunements()
         self._validate_formations()
         self._validate_contracts()
+        self._validate_hybrids()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -757,6 +761,20 @@ class Catalog:
             raise ValueError("contracts must not be empty")
         for contract in self.contracts.values():
             self._require(contract.bonus.items, self.items, f"contract {contract.id} bonus items")
+
+    def _validate_hybrids(self):
+        if not self.hybrids:
+            raise ValueError("hybrids must not be empty")
+        for hybrid in self.hybrids.values():
+            self._require(hybrid.seeds, self.items, f"hybrid {hybrid.id} seeds")
+            self._require([hybrid.output], self.items, f"hybrid {hybrid.id} output")
+            if self.items[hybrid.output].kind != "material":
+                raise ValueError(f"hybrid {hybrid.id} must output a seed material")
+            crop = next(
+                (entry for entry in self.crops.values() if entry.seed_item == hybrid.output), None,
+            )
+            if crop is None:
+                raise ValueError(f"hybrid {hybrid.id} output has no crop")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

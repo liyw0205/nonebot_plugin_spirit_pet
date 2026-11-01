@@ -1,0 +1,18 @@
+[
+  {
+    "id": "frost_wheat",
+    "name": "霜纹麦",
+    "description": "把灵稻与矿苗的生机调在一起，长出耐寒的双料麦穗。",
+    "seeds": ["seed_spirit_rice", "seed_ore_sprout"],
+    "stones": 120,
+    "output": "seed_frost_wheat"
+  },
+  {
+    "id": "crimson_lotus",
+    "name": "赤霄莲",
+    "description": "以灵血草引动蕴灵穗的灵气，凝成赤色莲种。",
+    "seeds": ["seed_blood_herb", "seed_aura_ear"],
+    "stones": 260,
+    "output": "seed_crimson_lotus"
+  }
+]

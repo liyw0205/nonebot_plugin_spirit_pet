@@ -172,263 +172,507 @@
     "skill_id": "windfire"
   },
   {
-    "id": "forge_ore", "name": "锻灵矿", "description": "装备强化材料，可从秘境和每日任务获得。",
-    "kind": "material", "price": 80
+    "id": "forge_ore",
+    "name": "锻灵矿",
+    "description": "装备强化材料，可从秘境和每日任务获得。",
+    "kind": "material",
+    "price": 80
   },
   {
-    "id": "book_ice_lance", "name": "霜枪术诀", "description": "学习霜枪术所需，要求冰灵根。",
-    "kind": "skill_book", "price": 150, "skill_id": "ice_lance"
+    "id": "book_ice_lance",
+    "name": "霜枪术诀",
+    "description": "学习霜枪术所需，要求冰灵根。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "ice_lance"
   },
   {
-    "id": "book_poison_cloud", "name": "蚀毒术诀", "description": "学习蚀毒术所需，要求毒灵根。",
-    "kind": "skill_book", "price": 150, "skill_id": "poison_cloud"
+    "id": "book_poison_cloud",
+    "name": "蚀毒术诀",
+    "description": "学习蚀毒术所需，要求毒灵根。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "poison_cloud"
   },
   {
-    "id": "book_thunder_bolt", "name": "惊雷术诀", "description": "学习惊雷术所需，雷灵根不限族类。",
-    "kind": "skill_book", "price": 150, "skill_id": "thunder_bolt"
+    "id": "book_thunder_bolt",
+    "name": "惊雷术诀",
+    "description": "学习惊雷术所需，雷灵根不限族类。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "thunder_bolt"
   },
   {
-    "id": "book_vine_lash", "name": "青藤鞭诀", "description": "学习青藤鞭所需，要求木灵根。",
-    "kind": "skill_book", "price": 150, "skill_id": "vine_lash"
+    "id": "book_vine_lash",
+    "name": "青藤鞭诀",
+    "description": "学习青藤鞭所需，要求木灵根。",
+    "kind": "skill_book",
+    "price": 150,
+    "skill_id": "vine_lash"
   },
   {
-    "id": "book_frost_cocoon", "name": "霜茧回生诀", "description": "学习霜茧回生所需，限冰系虫族。",
-    "kind": "skill_book", "price": 180, "skill_id": "frost_cocoon"
+    "id": "book_frost_cocoon",
+    "name": "霜茧回生诀",
+    "description": "学习霜茧回生所需，限冰系虫族。",
+    "kind": "skill_book",
+    "price": 180,
+    "skill_id": "frost_cocoon"
   },
   {
-    "id": "book_serpent_bite", "name": "幽鳞毒牙诀", "description": "学习幽鳞毒牙所需，限毒系蛇族。",
-    "kind": "skill_book", "price": 180, "skill_id": "serpent_bite"
+    "id": "book_serpent_bite",
+    "name": "幽鳞毒牙诀",
+    "description": "学习幽鳞毒牙所需，限毒系蛇族。",
+    "kind": "skill_book",
+    "price": 180,
+    "skill_id": "serpent_bite"
   },
   {
-    "id": "book_storm_dive", "name": "风雷贯空诀", "description": "学习风雷贯空所需，限凝气境风雷双系羽族。",
-    "kind": "skill_book", "price": 280, "skill_id": "storm_dive"
+    "id": "book_storm_dive",
+    "name": "风雷贯空诀",
+    "description": "学习风雷贯空所需，限凝气境风雷双系羽族。",
+    "kind": "skill_book",
+    "price": 280,
+    "skill_id": "storm_dive"
   },
   {
-    "id": "frost_beak", "name": "寒晶喙", "description": "冰系羽族武器，提升攻击与速度。",
-    "kind": "equipment", "price": 180, "equipment_id": "frost_beak"
+    "id": "frost_beak",
+    "name": "寒晶喙",
+    "description": "冰系羽族武器，提升攻击与速度。",
+    "kind": "equipment",
+    "price": 180,
+    "equipment_id": "frost_beak"
   },
   {
-    "id": "silk_cocoon", "name": "灵丝甲", "description": "虫族护甲，提升气血与防御。",
-    "kind": "equipment", "price": 180, "equipment_id": "silk_cocoon"
+    "id": "silk_cocoon",
+    "name": "灵丝甲",
+    "description": "虫族护甲，提升气血与防御。",
+    "kind": "equipment",
+    "price": 180,
+    "equipment_id": "silk_cocoon"
   },
   {
-    "id": "poison_scale", "name": "幽鳞衣", "description": "毒系蛇族护甲，提升气血与防御。",
-    "kind": "equipment", "price": 180, "equipment_id": "poison_scale"
+    "id": "poison_scale",
+    "name": "幽鳞衣",
+    "description": "毒系蛇族护甲，提升气血与防御。",
+    "kind": "equipment",
+    "price": 180,
+    "equipment_id": "poison_scale"
   },
   {
-    "id": "living_root", "name": "长生根", "description": "木系植族饰品，提升气血与攻击。",
-    "kind": "equipment", "price": 200, "equipment_id": "living_root"
+    "id": "living_root",
+    "name": "长生根",
+    "description": "木系植族饰品，提升气血与攻击。",
+    "kind": "equipment",
+    "price": 200,
+    "equipment_id": "living_root"
   },
   {
-    "id": "thunder_horn", "name": "震雷角", "description": "雷系兽族武器，提升攻击与气血。",
-    "kind": "equipment", "price": 200, "equipment_id": "thunder_horn"
+    "id": "thunder_horn",
+    "name": "震雷角",
+    "description": "雷系兽族武器，提升攻击与气血。",
+    "kind": "equipment",
+    "price": 200,
+    "equipment_id": "thunder_horn"
   },
   {
-    "id": "metal_scythe", "name": "金魄镰", "description": "金系虫族武器，专注提升攻击。",
-    "kind": "equipment", "price": 200, "equipment_id": "metal_scythe"
+    "id": "metal_scythe",
+    "name": "金魄镰",
+    "description": "金系虫族武器，专注提升攻击。",
+    "kind": "equipment",
+    "price": 200,
+    "equipment_id": "metal_scythe"
   },
   {
-    "id": "stone_core", "name": "山心石", "description": "土系灵族饰品，提升气血与防御。",
-    "kind": "equipment", "price": 200, "equipment_id": "stone_core"
+    "id": "stone_core",
+    "name": "山心石",
+    "description": "土系灵族饰品，提升气血与防御。",
+    "kind": "equipment",
+    "price": 200,
+    "equipment_id": "stone_core"
   },
   {
-    "id": "water_prism", "name": "澄水珠", "description": "水系通用饰品，冰系灵宠也可使用。",
-    "kind": "equipment", "price": 160, "equipment_id": "water_prism"
+    "id": "water_prism",
+    "name": "澄水珠",
+    "description": "水系通用饰品，冰系灵宠也可使用。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "water_prism"
   },
   {
-    "id": "poison_thorn", "name": "蚀灵刺", "description": "毒系通用武器，提升攻击与速度。",
-    "kind": "equipment", "price": 160, "equipment_id": "poison_thorn"
+    "id": "poison_thorn",
+    "name": "蚀灵刺",
+    "description": "毒系通用武器，提升攻击与速度。",
+    "kind": "equipment",
+    "price": 160,
+    "equipment_id": "poison_thorn"
   },
   {
-    "id": "egg_tengling", "name": "青藤灵卵", "description": "青岚林秘境掉落，使用后获得一只青藤灵。",
-    "kind": "pet_egg", "species_id": "tengling"
+    "id": "egg_tengling",
+    "name": "青藤灵卵",
+    "description": "青岚林秘境掉落，使用后获得一只青藤灵。",
+    "kind": "pet_egg",
+    "species_id": "tengling"
   },
   {
-    "id": "egg_bingcan", "name": "玄冰灵卵", "description": "寒晶洞秘境掉落，使用后获得一只玄冰蚕。",
-    "kind": "pet_egg", "species_id": "bingcan"
+    "id": "egg_bingcan",
+    "name": "玄冰灵卵",
+    "description": "寒晶洞秘境掉落，使用后获得一只玄冰蚕。",
+    "kind": "pet_egg",
+    "species_id": "bingcan"
   },
   {
-    "id": "egg_leitingdiao", "name": "霆光灵卵", "description": "雷泽秘境掉落，使用后获得一只霆光雕。",
-    "kind": "pet_egg", "species_id": "leitingdiao"
+    "id": "egg_leitingdiao",
+    "name": "霆光灵卵",
+    "description": "雷泽秘境掉落，使用后获得一只霆光雕。",
+    "kind": "pet_egg",
+    "species_id": "leitingdiao"
   },
   {
-    "id": "egg_shiou", "name": "岩心灵卵", "description": "上古灵殿组队秘境掉落，使用后获得一只岩心偶。",
-    "kind": "pet_egg", "species_id": "shiou"
+    "id": "egg_shiou",
+    "name": "岩心灵卵",
+    "description": "上古灵殿组队秘境掉落，使用后获得一只岩心偶。",
+    "kind": "pet_egg",
+    "species_id": "shiou"
   },
   {
-    "id": "egg_duman", "name": "幽毒灵卵", "description": "腐毒沼秘境掉落，使用后获得一只幽毒蟒。",
-    "kind": "pet_egg", "species_id": "duman"
+    "id": "egg_duman",
+    "name": "幽毒灵卵",
+    "description": "腐毒沼秘境掉落，使用后获得一只幽毒蟒。",
+    "kind": "pet_egg",
+    "species_id": "duman"
   },
   {
-    "id": "egg_molian", "name": "蚀心灵卵", "description": "幽冥深渊组队秘境掉落，使用后获得一只蚀心莲。",
-    "kind": "pet_egg", "species_id": "molian"
+    "id": "egg_molian",
+    "name": "蚀心灵卵",
+    "description": "幽冥深渊组队秘境掉落，使用后获得一只蚀心莲。",
+    "kind": "pet_egg",
+    "species_id": "molian"
   },
   {
-    "id": "egg_qingluan", "name": "青鸾灵卵", "description": "由同族培育所得，使用后获得一只青鸾。",
-    "kind": "pet_egg", "species_id": "qingluan"
+    "id": "egg_qingluan",
+    "name": "青鸾灵卵",
+    "description": "由同族培育所得，使用后获得一只青鸾。",
+    "kind": "pet_egg",
+    "species_id": "qingluan"
   },
   {
-    "id": "egg_xuanhu", "name": "玄狐灵卵", "description": "由同族培育所得，使用后获得一只玄狐。",
-    "kind": "pet_egg", "species_id": "xuanhu"
+    "id": "egg_xuanhu",
+    "name": "玄狐灵卵",
+    "description": "由同族培育所得，使用后获得一只玄狐。",
+    "kind": "pet_egg",
+    "species_id": "xuanhu"
   },
   {
-    "id": "egg_baize", "name": "白泽灵卵", "description": "由同族培育所得，使用后获得一只白泽。",
-    "kind": "pet_egg", "species_id": "baize"
+    "id": "egg_baize",
+    "name": "白泽灵卵",
+    "description": "由同族培育所得，使用后获得一只白泽。",
+    "kind": "pet_egg",
+    "species_id": "baize"
   },
   {
-    "id": "egg_jiaolong", "name": "蛟龙灵卵", "description": "由同族培育所得，使用后获得一只蛟龙。",
-    "kind": "pet_egg", "species_id": "jiaolong"
+    "id": "egg_jiaolong",
+    "name": "蛟龙灵卵",
+    "description": "由同族培育所得，使用后获得一只蛟龙。",
+    "kind": "pet_egg",
+    "species_id": "jiaolong"
   },
   {
-    "id": "egg_bifang", "name": "毕方灵卵", "description": "由同族培育所得，使用后获得一只毕方。",
-    "kind": "pet_egg", "species_id": "bifang"
+    "id": "egg_bifang",
+    "name": "毕方灵卵",
+    "description": "由同族培育所得，使用后获得一只毕方。",
+    "kind": "pet_egg",
+    "species_id": "bifang"
   },
   {
-    "id": "egg_xuanwu", "name": "玄武灵卵", "description": "由同族培育所得，使用后获得一只玄武。",
-    "kind": "pet_egg", "species_id": "xuanwu"
+    "id": "egg_xuanwu",
+    "name": "玄武灵卵",
+    "description": "由同族培育所得，使用后获得一只玄武。",
+    "kind": "pet_egg",
+    "species_id": "xuanwu"
   },
   {
-    "id": "egg_sanlinglu", "name": "三灵鹿灵卵", "description": "由同族培育所得，使用后获得一只三灵鹿。",
-    "kind": "pet_egg", "species_id": "sanlinglu"
+    "id": "egg_sanlinglu",
+    "name": "三灵鹿灵卵",
+    "description": "由同族培育所得，使用后获得一只三灵鹿。",
+    "kind": "pet_egg",
+    "species_id": "sanlinglu"
   },
   {
-    "id": "egg_chiyanhu", "name": "赤焰虎灵卵", "description": "由同族培育所得，使用后获得一只赤焰虎。",
-    "kind": "pet_egg", "species_id": "chiyanhu"
+    "id": "egg_chiyanhu",
+    "name": "赤焰虎灵卵",
+    "description": "由同族培育所得，使用后获得一只赤焰虎。",
+    "kind": "pet_egg",
+    "species_id": "chiyanhu"
   },
   {
-    "id": "egg_rongyanjia", "name": "熔岩甲灵卵", "description": "由同族培育所得，使用后获得一只熔岩甲。",
-    "kind": "pet_egg", "species_id": "rongyanjia"
+    "id": "egg_rongyanjia",
+    "name": "熔岩甲灵卵",
+    "description": "由同族培育所得，使用后获得一只熔岩甲。",
+    "kind": "pet_egg",
+    "species_id": "rongyanjia"
   },
   {
-    "id": "egg_lingxi", "name": "灵汐獭灵卵", "description": "由同族培育所得，使用后获得一只灵汐獭。",
-    "kind": "pet_egg", "species_id": "lingxi"
+    "id": "egg_lingxi",
+    "name": "灵汐獭灵卵",
+    "description": "由同族培育所得，使用后获得一只灵汐獭。",
+    "kind": "pet_egg",
+    "species_id": "lingxi"
   },
   {
-    "id": "egg_hanying", "name": "寒翎鹰灵卵", "description": "由同族培育所得，使用后获得一只寒翎鹰。",
-    "kind": "pet_egg", "species_id": "hanying"
+    "id": "egg_hanying",
+    "name": "寒翎鹰灵卵",
+    "description": "由同族培育所得，使用后获得一只寒翎鹰。",
+    "kind": "pet_egg",
+    "species_id": "hanying"
   },
   {
-    "id": "egg_xuehu", "name": "雪影狐灵卵", "description": "由同族培育所得，使用后获得一只雪影狐。",
-    "kind": "pet_egg", "species_id": "xuehu"
+    "id": "egg_xuehu",
+    "name": "雪影狐灵卵",
+    "description": "由同族培育所得，使用后获得一只雪影狐。",
+    "kind": "pet_egg",
+    "species_id": "xuehu"
   },
   {
-    "id": "egg_mohe", "name": "墨潮鹤灵卵", "description": "由同族培育所得，使用后获得一只墨潮鹤。",
-    "kind": "pet_egg", "species_id": "mohe"
+    "id": "egg_mohe",
+    "name": "墨潮鹤灵卵",
+    "description": "由同族培育所得，使用后获得一只墨潮鹤。",
+    "kind": "pet_egg",
+    "species_id": "mohe"
   },
   {
-    "id": "egg_bizhu", "name": "碧竹蛇灵卵", "description": "由同族培育所得，使用后获得一只碧竹蛇。",
-    "kind": "pet_egg", "species_id": "bizhu"
+    "id": "egg_bizhu",
+    "name": "碧竹蛇灵卵",
+    "description": "由同族培育所得，使用后获得一只碧竹蛇。",
+    "kind": "pet_egg",
+    "species_id": "bizhu"
   },
   {
-    "id": "egg_jinyu", "name": "金羽隼灵卵", "description": "由同族培育所得，使用后获得一只金羽隼。",
-    "kind": "pet_egg", "species_id": "jinyu"
+    "id": "egg_jinyu",
+    "name": "金羽隼灵卵",
+    "description": "由同族培育所得，使用后获得一只金羽隼。",
+    "kind": "pet_egg",
+    "species_id": "jinyu"
   },
   {
-    "id": "egg_daotang", "name": "刃甲螳灵卵", "description": "由同族培育所得，使用后获得一只刃甲螳。",
-    "kind": "pet_egg", "species_id": "daotang"
+    "id": "egg_daotang",
+    "name": "刃甲螳灵卵",
+    "description": "由同族培育所得，使用后获得一只刃甲螳。",
+    "kind": "pet_egg",
+    "species_id": "daotang"
   },
   {
-    "id": "egg_tielin", "name": "铁鳞穿山甲灵卵", "description": "由同族培育所得，使用后获得一只铁鳞穿山甲。",
-    "kind": "pet_egg", "species_id": "tielin"
+    "id": "egg_tielin",
+    "name": "铁鳞穿山甲灵卵",
+    "description": "由同族培育所得，使用后获得一只铁鳞穿山甲。",
+    "kind": "pet_egg",
+    "species_id": "tielin"
   },
   {
-    "id": "egg_shanshi", "name": "负山狮灵卵", "description": "由同族培育所得，使用后获得一只负山狮。",
-    "kind": "pet_egg", "species_id": "shanshi"
+    "id": "egg_shanshi",
+    "name": "负山狮灵卵",
+    "description": "由同族培育所得，使用后获得一只负山狮。",
+    "kind": "pet_egg",
+    "species_id": "shanshi"
   },
   {
-    "id": "egg_fenghu", "name": "逐风猞猁灵卵", "description": "由同族培育所得，使用后获得一只逐风猞猁。",
-    "kind": "pet_egg", "species_id": "fenghu"
+    "id": "egg_fenghu",
+    "name": "逐风猞猁灵卵",
+    "description": "由同族培育所得，使用后获得一只逐风猞猁。",
+    "kind": "pet_egg",
+    "species_id": "fenghu"
   },
   {
-    "id": "egg_leize", "name": "雷泽夔灵卵", "description": "由同族培育所得，使用后获得一只雷泽夔。",
-    "kind": "pet_egg", "species_id": "leize"
+    "id": "egg_leize",
+    "name": "雷泽夔灵卵",
+    "description": "由同族培育所得，使用后获得一只雷泽夔。",
+    "kind": "pet_egg",
+    "species_id": "leize"
   },
   {
-    "id": "egg_mingdie", "name": "冥粉蝶灵卵", "description": "由同族培育所得，使用后获得一只冥粉蝶。",
-    "kind": "pet_egg", "species_id": "mingdie"
+    "id": "egg_mingdie",
+    "name": "冥粉蝶灵卵",
+    "description": "由同族培育所得，使用后获得一只冥粉蝶。",
+    "kind": "pet_egg",
+    "species_id": "mingdie"
   },
   {
-    "id": "book_ice_seal", "name": "霜封术诀", "description": "学习霜封术所需，限凝气境冰系灵宠。",
-    "kind": "skill_book", "price": 220, "skill_id": "ice_seal"
+    "id": "book_ice_seal",
+    "name": "霜封术诀",
+    "description": "学习霜封术所需，限凝气境冰系灵宠。",
+    "kind": "skill_book",
+    "price": 220,
+    "skill_id": "ice_seal"
   },
   {
-    "id": "book_poison_sapping", "name": "蚀力毒咒诀", "description": "学习蚀力毒咒所需，要求毒灵根。",
-    "kind": "skill_book", "price": 200, "skill_id": "poison_sapping"
+    "id": "book_poison_sapping",
+    "name": "蚀力毒咒诀",
+    "description": "学习蚀力毒咒所需，要求毒灵根。",
+    "kind": "skill_book",
+    "price": 200,
+    "skill_id": "poison_sapping"
   },
   {
-    "id": "book_earthen_ward", "name": "岩灵护障诀", "description": "学习岩灵护障所需，要求土灵根。",
-    "kind": "skill_book", "price": 180, "skill_id": "earthen_ward"
+    "id": "book_earthen_ward",
+    "name": "岩灵护障诀",
+    "description": "学习岩灵护障所需，要求土灵根。",
+    "kind": "skill_book",
+    "price": 180,
+    "skill_id": "earthen_ward"
   },
   {
-    "id": "book_pure_breath", "name": "清心灵息诀", "description": "学习清心灵息所需，通用恢复与队友净化灵术。",
-    "kind": "skill_book", "price": 180, "skill_id": "pure_breath"
+    "id": "book_pure_breath",
+    "name": "清心灵息诀",
+    "description": "学习清心灵息所需，通用恢复与队友净化灵术。",
+    "kind": "skill_book",
+    "price": 180,
+    "skill_id": "pure_breath"
   },
   {
-    "id": "book_spirit_dispel", "name": "破障术诀", "description": "学习破障术所需，凝气境通用驱散灵术。",
-    "kind": "skill_book", "price": 220, "skill_id": "spirit_dispel"
+    "id": "book_spirit_dispel",
+    "name": "破障术诀",
+    "description": "学习破障术所需，凝气境通用驱散灵术。",
+    "kind": "skill_book",
+    "price": 220,
+    "skill_id": "spirit_dispel"
   },
   {
-    "id": "book_battle_chant", "name": "战意灵歌诀", "description": "学习战意灵歌所需，凝气境通用增益灵术。",
-    "kind": "skill_book", "price": 220, "skill_id": "battle_chant"
+    "id": "book_battle_chant",
+    "name": "战意灵歌诀",
+    "description": "学习战意灵歌所需，凝气境通用增益灵术。",
+    "kind": "skill_book",
+    "price": 220,
+    "skill_id": "battle_chant"
   },
   {
-    "id": "book_mountain_taunt", "name": "镇岳护阵诀", "description": "学习镇岳护阵所需，凝气境通用护阵灵术。",
-    "kind": "skill_book", "price": 220, "skill_id": "mountain_taunt"
+    "id": "book_mountain_taunt",
+    "name": "镇岳护阵诀",
+    "description": "学习镇岳护阵所需，凝气境通用护阵灵术。",
+    "kind": "skill_book",
+    "price": 220,
+    "skill_id": "mountain_taunt"
   },
   {
-    "id": "book_spirit_wave", "name": "灵潮荡阵诀", "description": "学习灵潮荡阵所需，凝气境通用群攻灵术。",
-    "kind": "skill_book", "price": 260, "skill_id": "spirit_wave"
+    "id": "book_spirit_wave",
+    "name": "灵潮荡阵诀",
+    "description": "学习灵潮荡阵所需，凝气境通用群攻灵术。",
+    "kind": "skill_book",
+    "price": 260,
+    "skill_id": "spirit_wave"
   },
   {
-    "id": "seed_spirit_rice", "name": "灵稻种", "description": "播种灵稻，1800 秒后收获灵粮。",
-    "kind": "material", "price": 40
+    "id": "seed_spirit_rice",
+    "name": "灵稻种",
+    "description": "播种灵稻，1800 秒后收获灵粮。",
+    "kind": "material",
+    "price": 40
   },
   {
-    "id": "seed_ore_sprout", "name": "矿苗种", "description": "播种矿苗，3600 秒后收获锻灵矿。",
-    "kind": "material", "price": 80
+    "id": "seed_ore_sprout",
+    "name": "矿苗种",
+    "description": "播种矿苗，3600 秒后收获锻灵矿。",
+    "kind": "material",
+    "price": 80
   },
   {
-    "id": "seed_blood_herb", "name": "灵血草种", "description": "播种灵血草，5400 秒后收获血脉精华。",
-    "kind": "material", "price": 120
+    "id": "seed_blood_herb",
+    "name": "灵血草种",
+    "description": "播种灵血草，5400 秒后收获血脉精华。",
+    "kind": "material",
+    "price": 120
   },
   {
-    "id": "seed_aura_ear", "name": "蕴灵穗种", "description": "播种蕴灵穗，7200 秒后收获修为与灵粮。",
-    "kind": "material", "price": 150
+    "id": "seed_aura_ear",
+    "name": "蕴灵穗种",
+    "description": "播种蕴灵穗，7200 秒后收获修为与灵粮。",
+    "kind": "material",
+    "price": 150
   },
   {
-    "id": "seed_twin_grain", "name": "双穗麦种", "description": "播种双穗麦，10800 秒后收获灵粮与锻灵矿。",
-    "kind": "material", "price": 180
+    "id": "seed_twin_grain",
+    "name": "双穗麦种",
+    "description": "播种双穗麦，10800 秒后收获灵粮与锻灵矿。",
+    "kind": "material",
+    "price": 180
   },
   {
-    "id": "seed_essence_lotus", "name": "元灵莲种", "description": "播种元灵莲，10800 秒后收获血脉精华。",
-    "kind": "material", "price": 200
+    "id": "seed_essence_lotus",
+    "name": "元灵莲种",
+    "description": "播种元灵莲，10800 秒后收获血脉精华。",
+    "kind": "material",
+    "price": 200
   },
   {
-    "id": "seed_ancient_root", "name": "古灵根种", "description": "播种古灵根，14400 秒后收获灵石与锻灵矿。",
-    "kind": "material", "price": 230
+    "id": "seed_ancient_root",
+    "name": "古灵根种",
+    "description": "播种古灵根，14400 秒后收获灵石与锻灵矿。",
+    "kind": "material",
+    "price": 230
   },
   {
-    "id": "seed_void_lotus", "name": "虚灵仙葩种", "description": "播种虚灵仙葩，14400 秒后收获修为、灵石与血脉精华。",
-    "kind": "material", "price": 260
+    "id": "seed_void_lotus",
+    "name": "虚灵仙葩种",
+    "description": "播种虚灵仙葩，14400 秒后收获修为、灵石与血脉精华。",
+    "kind": "material",
+    "price": 260
   },
   {
-    "id": "meal_rice", "name": "灵米粥", "description": "膳房以灵米慢煨的暖粥，精力 +45，修为 +20，亲密 +10。",
-    "kind": "consumable", "price": null,
-    "effects": {"energy": 45, "exp": 20, "affinity": 10}
+    "id": "meal_rice",
+    "name": "灵米粥",
+    "description": "膳房以灵米慢煨的暖粥，精力 +45，修为 +20，亲密 +10。",
+    "kind": "consumable",
+    "price": null,
+    "effects": {
+      "energy": 45,
+      "exp": 20,
+      "affinity": 10
+    }
   },
   {
-    "id": "meal_herb", "name": "百草羹", "description": "百草与矿泉同煨的浓羹，精力 +40，修为 +10，亲密 +15。",
-    "kind": "consumable", "price": null,
-    "effects": {"energy": 40, "exp": 10, "affinity": 15}
+    "id": "meal_herb",
+    "name": "百草羹",
+    "description": "百草与矿泉同煨的浓羹，精力 +40，修为 +10，亲密 +15。",
+    "kind": "consumable",
+    "price": null,
+    "effects": {
+      "energy": 40,
+      "exp": 10,
+      "affinity": 15
+    }
   },
   {
-    "id": "meal_lotus", "name": "元灵莲酥", "description": "元灵莲蓉烘成的酥点，精力 +20，修为 +70，亲密 +10。",
-    "kind": "consumable", "price": null,
-    "effects": {"energy": 20, "exp": 70, "affinity": 10}
+    "id": "meal_lotus",
+    "name": "元灵莲酥",
+    "description": "元灵莲蓉烘成的酥点，精力 +20，修为 +70，亲密 +10。",
+    "kind": "consumable",
+    "price": null,
+    "effects": {
+      "energy": 20,
+      "exp": 70,
+      "affinity": 10
+    }
   },
   {
-    "id": "meal_grain", "name": "双穗麦饼", "description": "双穗麦与锻灵矿粉烙的厚饼，精力 +60，修为 +40，亲密 +20。",
-    "kind": "consumable", "price": null,
-    "effects": {"energy": 60, "exp": 40, "affinity": 20}
+    "id": "meal_grain",
+    "name": "双穗麦饼",
+    "description": "双穗麦与锻灵矿粉烙的厚饼，精力 +60，修为 +40，亲密 +20。",
+    "kind": "consumable",
+    "price": null,
+    "effects": {
+      "energy": 60,
+      "exp": 40,
+      "affinity": 20
+    }
+  },
+  {
+    "id": "seed_frost_wheat",
+    "name": "霜纹麦种",
+    "description": "杂交所得的霜纹麦种，14400 秒后收获灵粮与锻灵矿。",
+    "kind": "material"
+  },
+  {
+    "id": "seed_crimson_lotus",
+    "name": "赤霄莲种",
+    "description": "杂交所得的赤霄莲种，18000 秒后收获血脉精华与修为。",
+    "kind": "material"
   }
 ]
