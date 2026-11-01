@@ -34,6 +34,7 @@ from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
 from ..domain.escort_content import EscortMission
 from ..domain.attunement_content import AttunementOption, Attunements
+from ..domain.formation_content import Formation, Formations
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -142,6 +143,7 @@ class Catalog:
     sigils: dict[str, Sigil]
     escorts: dict[str, EscortMission]
     attunements: Attunements
+    formations: Formations
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -206,6 +208,7 @@ class Catalog:
             sigils=_index(directory / "sigils.json", Sigil),
             escorts=_index(directory / "escorts.json", EscortMission),
             attunements=Attunements(options=list(_index(directory / "attunements.json", AttunementOption, "element").values())),
+            formations=Formations(positions=list(_index(directory / "formations.json", Formation).values())),
         )
         catalog.validate()
         return catalog
@@ -321,6 +324,7 @@ class Catalog:
         self._validate_sigils()
         self._validate_escorts()
         self._validate_attunements()
+        self._validate_formations()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -738,6 +742,11 @@ class Catalog:
                 raise ValueError(f"duplicate attunement target {option.element}")
             seen.add(option.element)
             self._require(option.items, self.items, "attunement items")
+
+    def _validate_formations(self):
+        slots = set(self.formations.by_id)
+        if slots != {"vanguard", "center", "rear"}:
+            raise ValueError("formations must define exactly vanguard, center and rear")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

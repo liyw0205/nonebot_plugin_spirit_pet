@@ -29,6 +29,12 @@ def combatant(
         # Mood scales the pet's own base stats only, so every flat bonus from gear,
         # words, bonds and sets keeps its exact documented value.
         stats = {key: int(value * mood_factor + 0.5) for key, value in stats.items()}
+    from .formation import rates_of as formation_rates
+    for stat, rate in formation_rates(ctx, pet.pet_id).items():
+        # A formation slot trades stats against each other, so it scales the base value for the
+        # same reason mood does: fixed bonuses must keep their documented integers.
+        if rate != 1:
+            stats[stat] = int(stats[stat] * rate + 0.5)
     from .talent_reforge import current_talent
     talent_id = current_talent(ctx, pet)
     resonance_name = None

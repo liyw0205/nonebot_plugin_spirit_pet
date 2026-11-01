@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 阵位定义
+
+`formations.json` 是阵位数组，由 `domain/formation_content.py` 校验：每项声明 `id`、`name`、`description` 与 `rates`。`Formation` 要求四维齐全、每项 0.5-1.8，并且**至少一项 > 1、至少一项 < 1**——一个只加不减或只减不加的位置会被拒绝，这是「阵位必须是取舍」的内容级约束。`Catalog._validate_formations` 要求恰好三个位置 `vanguard`/`center`/`rear`，与页面语义绑定。
+
+```json
+{"id": "vanguard", "name": "前锋", "description": "顶在最前面，扛得住也打得钝。",
+ "rates": {"hp": 1.18, "attack": 0.88, "defense": 1.22, "speed": 0.92}}
+```
+
+状态是 `quest_progress` 的 `formation_<伙伴编号>_<位置id>` 单行（位置 id 放键里），换位时先删旧行再写新行，因此一只伙伴只有一个阵位；没有该行即未布阵。生效点在 `loadout.combatant`：与心境同一位置、同样只缩放基础四维，之后才叠加装备、词条、套装、符印、羁绊等固定加成，所以固定加成的数值不随阵位变化。
+
 ## 易脉定义
 
 `attunements.json` 是易脉目标数组，由 `domain/attunement_content.py` 校验：每项声明 `element`、`stones` 与 `items`。`Catalog._validate_attunements` 要求元素存在、**必须是基础元素**（`parent` 为 null，因此冰不可作为目标）、同一目标不重复、材料物品存在；每周次数写在 `rules.json` 的 `attunement.weekly_limit`（1-7）。

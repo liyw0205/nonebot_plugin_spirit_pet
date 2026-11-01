@@ -1,0 +1,20 @@
+[
+  {
+    "id": "vanguard",
+    "name": "前锋",
+    "description": "顶在最前面，扛得住也打得钝。",
+    "rates": {"hp": 1.18, "attack": 0.88, "defense": 1.22, "speed": 0.92}
+  },
+  {
+    "id": "center",
+    "name": "中军",
+    "description": "让出一点气血，换来更稳的输出与护持。",
+    "rates": {"hp": 0.96, "attack": 1.1, "defense": 1.04, "speed": 1.0}
+  },
+  {
+    "id": "rear",
+    "name": "后援",
+    "description": "藏在后方全力出手，挨打时最脆。",
+    "rates": {"hp": 0.94, "attack": 1.16, "defense": 0.9, "speed": 1.1}
+  }
+]
