@@ -89,7 +89,7 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
     member["lineage_id"] = pet.lineage_id
     member["elements"] = [
         {"id": element_id, "name": ctx.content.elements[element_id].name}
-        for element_id in species.elements
+        for element_id in fighter.elements
     ]
     member["skills"] = _skill_snapshot(ctx, pet.pet_id, fighter)
     for slot, (item_id, enhancement) in loadout(ctx, pet.pet_id).items():

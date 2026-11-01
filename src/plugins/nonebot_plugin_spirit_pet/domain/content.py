@@ -265,6 +265,10 @@ class SupportRule(Definition):
     rate: Annotated[float, Field(gt=0, le=0.5)]
 
 
+class AttunementRule(Definition):
+    weekly_limit: Annotated[int, Field(ge=1, le=7)]
+
+
 class ResearchRule(Definition):
     energy: Positive
     food: Annotated[int, Field(ge=0, le=5)]
@@ -364,3 +368,4 @@ class Rules(Definition):
     mood: MoodRule
     race: RaceRule
     research: ResearchRule
+    attunement: AttunementRule

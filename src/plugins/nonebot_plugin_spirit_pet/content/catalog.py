@@ -33,6 +33,7 @@ from ..domain.race_content import RaceTrack
 from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
 from ..domain.escort_content import EscortMission
+from ..domain.attunement_content import AttunementOption, Attunements
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -140,6 +141,7 @@ class Catalog:
     gauntlets: dict[str, Gauntlet]
     sigils: dict[str, Sigil]
     escorts: dict[str, EscortMission]
+    attunements: Attunements
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -203,6 +205,7 @@ class Catalog:
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
             sigils=_index(directory / "sigils.json", Sigil),
             escorts=_index(directory / "escorts.json", EscortMission),
+            attunements=Attunements(options=list(_index(directory / "attunements.json", AttunementOption, "element").values())),
         )
         catalog.validate()
         return catalog
@@ -317,6 +320,7 @@ class Catalog:
         self._validate_gauntlets()
         self._validate_sigils()
         self._validate_escorts()
+        self._validate_attunements()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -713,6 +717,20 @@ class Catalog:
                         raise ValueError(f"escort {mission.id} references unknown enemy {enemy_id}")
             for payout in (mission.rewards.full, mission.rewards.partial):
                 self._require(payout.items, self.items, "escort reward items")
+
+    def _validate_attunements(self):
+        table = self.attunements
+        seen = set()
+        for option in table.options:
+            element = self.elements.get(option.element)
+            if element is None:
+                raise ValueError(f"attunement references unknown element {option.element}")
+            if element.parent is not None:
+                raise ValueError(f"attunement target {option.element} must be a base element")
+            if option.element in seen:
+                raise ValueError(f"duplicate attunement target {option.element}")
+            seen.add(option.element)
+            self._require(option.items, self.items, "attunement items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

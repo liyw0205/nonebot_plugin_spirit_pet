@@ -1,0 +1,58 @@
+[
+  {
+    "element": "metal",
+    "stones": 420,
+    "items": {
+      "bloodline_essence": 2
+    }
+  },
+  {
+    "element": "wood",
+    "stones": 360,
+    "items": {
+      "bloodline_essence": 2
+    }
+  },
+  {
+    "element": "water",
+    "stones": 400,
+    "items": {
+      "bloodline_essence": 2
+    }
+  },
+  {
+    "element": "fire",
+    "stones": 400,
+    "items": {
+      "bloodline_essence": 2
+    }
+  },
+  {
+    "element": "earth",
+    "stones": 360,
+    "items": {
+      "bloodline_essence": 2
+    }
+  },
+  {
+    "element": "wind",
+    "stones": 460,
+    "items": {
+      "bloodline_essence": 3
+    }
+  },
+  {
+    "element": "thunder",
+    "stones": 520,
+    "items": {
+      "bloodline_essence": 3
+    }
+  },
+  {
+    "element": "poison",
+    "stones": 520,
+    "items": {
+      "bloodline_essence": 3
+    }
+  }
+]

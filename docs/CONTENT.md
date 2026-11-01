@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 易脉定义
+
+`attunements.json` 是易脉目标数组，由 `domain/attunement_content.py` 校验：每项声明 `element`、`stones` 与 `items`。`Catalog._validate_attunements` 要求元素存在、**必须是基础元素**（`parent` 为 null，因此冰不可作为目标）、同一目标不重复、材料物品存在；每周次数写在 `rules.json` 的 `attunement.weekly_limit`（1-7）。
+
+```json
+{"element": "fire", "stones": 400, "items": {"bloodline_essence": 2}}
+```
+
+生效方式是覆盖而不是改写物种：`gameplay/attunement.elements_of()` 返回易脉结果（单元素）或物种默认元素，`loadout.combatant` 用它构造 `Fighter.elements`/`primary_element`，`compatibility.check_requirements` 用它判断灵术与装备兼容，战报快照也读 `fighter.elements`，因此战斗、克制、技能门槛与存档展示始终一致。因为目标都是基础元素，`expand_elements` 不会带出任何子元素，换属性等于彻底放弃原有元素门槛。
+
+状态是 `quest_progress` 的 `attune_<伙伴编号>_<元素>`（元素 id 放键里）与 `attune_week_<周起点>_<伙伴编号>`（`progress` 计数），不新增表列；改属时先删旧覆盖行再写新行，因此一只伙伴只有一个当前元素。
+
 ## 护送定义
 
 `escorts.json` 是护送任务数组，由 `domain/escort_content.py` 校验：每项声明 `id`、`name`、`description`、`energy`（1-100）、`npc`（`name` 与四维，气血/速度 ≥ 1）、`waves`（1-5 波，每波 1-3 个敌手 id）与 `rewards`（`full` 与 `partial` 两档 `Reward`）。`EscortRewards` 强制满评奖励不低于部分奖励（灵石与修为两档），`Catalog._validate_escorts` 校验敌手与奖励物品都存在。

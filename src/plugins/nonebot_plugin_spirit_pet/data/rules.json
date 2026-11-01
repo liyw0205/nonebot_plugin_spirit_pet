@@ -152,5 +152,8 @@
     "gain": 8,
     "daily_limit": 4,
     "pet_daily_limit": 2
+  },
+  "attunement": {
+    "weekly_limit": 1
   }
 }
