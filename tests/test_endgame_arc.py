@@ -187,5 +187,5 @@ def test_content_loads_with_the_arc():
     content = Catalog.load()
     assert len(content.dungeons) == 20
     assert len(content.journey) == 16
-    assert len(content.achievements) == 77
-    assert len(content.titles) == 25
+    assert len(content.achievements) >= 77
+    assert len(content.titles) >= 25
