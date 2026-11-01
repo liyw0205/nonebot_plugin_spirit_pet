@@ -49,7 +49,7 @@ from ..domain.crop_content import Crop
 from ..domain.stage_star_content import StageStarReward
 from ..domain.arena_tier_content import ArenaTierReward
 from ..domain.gear_word_content import GearWord
-from ..utils.elements import expand_elements
+from ..utils.elements import element_ancestors, expand_elements
 
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
@@ -720,6 +720,13 @@ class Catalog:
 
     def _validate_attunements(self):
         table = self.attunements
+        # Attunement targets must be base elements, so a broken parent chain has to be reported as
+        # such before this check can blame the attunement table for it.
+        for element in self.elements.values():
+            try:
+                element_ancestors(element.id, self.elements)
+            except ValueError as error:
+                raise ValueError(f"element parent chain is invalid: {element.id}") from error
         seen = set()
         for option in table.options:
             element = self.elements.get(option.element)
