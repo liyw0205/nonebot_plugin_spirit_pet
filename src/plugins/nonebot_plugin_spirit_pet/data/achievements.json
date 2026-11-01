@@ -76,5 +76,12 @@
   {"id":"equipment_set_all","name":"套装全收","description":"领取全部四套装备的首次完成奖励。","metric":"equipment_set_claims","target":4,"reward":{"stones":1200,"items":{"bloodline_essence":3}}},
   {"id":"lineage_all","name":"万脉同归","description":"觉醒全部五十四支血脉分支。","metric":"lineage_branches","target":54,"reward":{"stones":3000,"items":{"bloodline_essence":8}}},
   {"id":"skill_codex_all","name":"万法通鉴","description":"收录全部二十四门灵术。","metric":"skills_learned","target":24,"reward":{"stones":2500,"items":{"book_spirit_wave":2}}},
-  {"id":"dungeon_clear_all","name":"秘境踏遍","description":"亲自通关全部二十处秘境。","metric":"dungeon_clears","target":20,"reward":{"stones":3500,"items":{"bloodline_essence":6}}}
+  {"id":"dungeon_clear_all","name":"秘境踏遍","description":"亲自通关全部二十处秘境。","metric":"dungeon_clears","target":20,"reward":{"stones":3500,"items":{"bloodline_essence":6}}},
+  {"id":"hybrid_first","name":"初试杂交","description":"完成一次种子杂交。","metric":"hybrid_brews","target":1,"reward":{"stones":150,"items":{"spirit_food":2}}},
+  {"id":"hybrid_adept","name":"调配有度","description":"累计完成 10 次杂交。","metric":"hybrid_brews","target":10,"reward":{"stones":600,"items":{"forge_ore":3}}},
+  {"id":"alchemy_first","name":"开炉初成","description":"首次炼成丹药。","metric":"alchemy_brews","target":1,"reward":{"stones":150,"items":{"energy_pill":1}}},
+  {"id":"alchemy_adept","name":"丹火纯青","description":"累计炼丹 10 次。","metric":"alchemy_brews","target":10,"reward":{"stones":600,"items":{"exp_pill":1}}},
+  {"id":"contract_first","name":"履约之人","description":"首次达成一份秘境契约。","metric":"contracts_met","target":1,"reward":{"stones":200,"items":{"bloodline_essence":1}}},
+  {"id":"desperate_first","name":"绝境行者","description":"在强化难度下通关一次。","metric":"hard_clears","target":1,"reward":{"stones":260,"items":{"forge_ore":2}}},
+  {"id":"release_first","name":"送别与重逢","description":"为一只伙伴举行归灵。","metric":"pets_released","target":1,"reward":{"stones":200,"items":{"spirit_food":3}}}
 ]

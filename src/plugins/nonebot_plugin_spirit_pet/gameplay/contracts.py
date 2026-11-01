@@ -12,6 +12,7 @@ from ..domain.content import Range, Reward
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from . import adventure
+from . import counters
 from .rewards import grant
 
 STAT_NAMES = {"stones": "灵石", "exp": "修为"}
@@ -117,6 +118,7 @@ def run(ctx: Context, arg: str) -> Reply:
     held = satisfied(ctx, contract, battle, allies)
     lines = list(reply.lines)
     if won and held:
+        counters.bump(ctx, "contracts_met")
         granted = grant(ctx, bonus_of(ctx, contract, dungeon))
         lines.append(f"{contract.name}达成：{'，'.join(granted)}")
         title = f"{reply.title} · {contract.name}"

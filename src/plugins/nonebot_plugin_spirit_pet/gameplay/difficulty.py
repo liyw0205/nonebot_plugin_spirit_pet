@@ -13,6 +13,7 @@ from ..domain.content import Range, Reward
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from . import adventure
+from . import counters
 
 STAT_NAMES = {"hp": "气血", "attack": "攻击", "defense": "防御", "speed": "速度"}
 
@@ -101,9 +102,11 @@ def run(ctx: Context, arg: str) -> Reply:
 
     reward = reward_of(ctx, dungeon, entry)
     outcome = adventure.run_dungeon(
-        ctx, dungeon, [ctx.user_id], enemy_scale=entry.enemy_scale, reward=reward,
+        ctx, dungeon, [ctx.user_id], enemy_scale=entry.enemy_scale, reward=reward, return_state=True,
     )
-    reply = outcome if not isinstance(outcome, tuple) else outcome[0]
+    reply, battle = outcome[0], outcome[1]
+    if battle.winner == 0:
+        counters.bump(ctx, "hard_clears")
     lines = list(reply.lines)
     lines.append(f"{entry.name}档：{scale_text(ctx, entry)}，奖励按 +{entry.reward_percent}% 结算。")
     return Reply(f"{reply.title} · {entry.name}", tuple(lines), reply.commands)

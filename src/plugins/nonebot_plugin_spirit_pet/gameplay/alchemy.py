@@ -8,6 +8,7 @@ produces a known number of an existing pill, so the farming loop finally feeds t
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, named
+from . import counters
 
 KEY = "alchemy_"
 
@@ -98,6 +99,7 @@ def brew(ctx: Context, arg: str) -> Reply:
     player.stones -= cost
     produced = entry.yield_ * amount
     ctx.repo.add_item(ctx.user_id, entry.item_id, produced)
+    counters.bump(ctx, "alchemy_brews")
     product = ctx.content.items[entry.item_id]
     return Reply(
         "炼丹完成",

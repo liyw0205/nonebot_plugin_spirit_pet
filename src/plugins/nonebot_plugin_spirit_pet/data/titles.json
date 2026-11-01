@@ -198,5 +198,21 @@
     "metric": "rebirth_count",
     "target": 3,
     "order": 25
+  },
+  {
+    "id": "alchemy_master",
+    "name": "丹道初窥",
+    "description": "累计炼丹 10 次。",
+    "metric": "alchemy_brews",
+    "target": 10,
+    "order": 26
+  },
+  {
+    "id": "desperate_walker",
+    "name": "踏破绝境",
+    "description": "在强化难度下通关 8 次。",
+    "metric": "hard_clears",
+    "target": 8,
+    "order": 27
   }
 ]

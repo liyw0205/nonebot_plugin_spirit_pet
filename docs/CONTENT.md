@@ -266,6 +266,12 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 累计指标
+
+杂交、炼丹、契约、强化通关与归灵没有可派生的存档状态，因此各自维护一个单调计数器：`quest_progress` 的 `stat_<指标名>` 行（`progress` 即累计次数）。`gameplay/counters.bump()` 只在成功路径调用，`value()` 供 `achievements._metric` 读取，`pets_released` 则直接由 `released_<伙伴编号>` 标记行派生，不需要计数器。
+
+对应指标写进 `domain/achievement_content.py` 的 `AchievementMetric` 白名单（`hybrid_brews`、`alchemy_brews`、`contracts_met`、`hard_clears`、`pets_released`），因此成就、称号、主线与日常四类内容都能引用；这些指标**没有上限**（可以无限累积），所以不进入 `_metric_ceilings()`，内容侧可以把目标定得较高。
+
 ## 难度定义
 
 `difficulties.json` 是难度数组，由 `domain/difficulty_content.py` 校验：每项声明 `id`、`name`、`description`、`enemy_scale`（1.0-3.0）与 `reward_percent`（0-200）。`Difficulty` 拒绝「只加奖励不加数值」与「只加数值不加奖励」，让档位始终是取舍；`Catalog._validate_difficulties` 要求表非空且**必须包含一档 `enemy_scale == 1.0` 的基准档**，否则玩家没有「原样挑战」的参照。

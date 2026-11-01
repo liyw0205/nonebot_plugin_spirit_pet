@@ -9,6 +9,7 @@ frost-wheat and crimson-lotus lines is to spend the low tiers on them.
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
+from . import counters
 
 KEY = "hybrid_"
 
@@ -101,6 +102,7 @@ def brew(ctx: Context, arg: str) -> Reply:
         ctx.repo.consume_item(ctx.user_id, seed, 1)
     player.stones -= entry.stones
     ctx.repo.add_item(ctx.user_id, entry.output, 1)
+    counters.bump(ctx, "hybrid_brews")
     output = ctx.content.items[entry.output]
     return Reply(
         "杂交完成",

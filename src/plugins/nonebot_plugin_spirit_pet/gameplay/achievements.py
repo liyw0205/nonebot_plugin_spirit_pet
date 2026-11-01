@@ -182,6 +182,16 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
             f"AND r.battle_key IN ({placeholders})"
         )
         params = (user_id, *dungeon_ids)
+    elif metric in ("hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears"):
+        # Systems that leave no other trace bump a monotonic counter instead.
+        from .counters import value as counter_value
+
+        return counter_value(ctx, metric, user_id)
+    elif metric == "pets_released":
+        query, params = (
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND quest_id LIKE 'released_%'",
+            (user_id,),
+        )
     elif metric == "resonances_enabled":
         query, params = "SELECT COUNT(*) FROM player_resonance WHERE user_id=?", (user_id,)
     elif metric == "ascended_pets":
