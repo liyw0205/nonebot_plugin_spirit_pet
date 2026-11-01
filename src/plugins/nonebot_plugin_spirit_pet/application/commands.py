@@ -48,6 +48,7 @@ from ..gameplay import lineup_presets
 from ..gameplay import release
 from ..gameplay import contracts
 from ..gameplay import hybrid
+from ..gameplay import alchemy
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -221,6 +222,7 @@ ACTIONS = {
     "pet_release": Command(release.dispatch, True, registered=False),
     "contracts": Command(contracts.dispatch, True, registered=False),
     "hybrid": Command(hybrid.dispatch, True, registered=False),
+    "alchemy": Command(alchemy.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -367,6 +369,7 @@ COMMANDS = {
     "灵宠归灵": "pet_release",
     "灵宠契约": "contracts",
     "灵宠杂交": "hybrid",
+    "灵宠炼丹": "alchemy",
     "灵宠传功": "transfer",
     "灵宠团队试炼": "team_trial",
     "灵宠组队关卡": "team_stage_challenge",

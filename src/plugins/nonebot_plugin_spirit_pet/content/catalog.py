@@ -37,6 +37,7 @@ from ..domain.attunement_content import AttunementOption, Attunements
 from ..domain.formation_content import Formation, Formations
 from ..domain.contract_content import Contract
 from ..domain.hybrid_content import Hybrid
+from ..domain.alchemy_content import AlchemyRecipe
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -148,6 +149,7 @@ class Catalog:
     formations: Formations
     contracts: dict[str, Contract]
     hybrids: dict[str, Hybrid]
+    alchemy: dict[str, AlchemyRecipe]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -215,6 +217,7 @@ class Catalog:
             formations=Formations(positions=list(_index(directory / "formations.json", Formation).values())),
             contracts=_index(directory / "contracts.json", Contract),
             hybrids=_index(directory / "hybrids.json", Hybrid),
+            alchemy=_index(directory / "alchemy.json", AlchemyRecipe),
         )
         catalog.validate()
         return catalog
@@ -333,6 +336,7 @@ class Catalog:
         self._validate_formations()
         self._validate_contracts()
         self._validate_hybrids()
+        self._validate_alchemy()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -775,6 +779,15 @@ class Catalog:
             )
             if crop is None:
                 raise ValueError(f"hybrid {hybrid.id} output has no crop")
+
+    def _validate_alchemy(self):
+        if not self.alchemy:
+            raise ValueError("alchemy recipes must not be empty")
+        for entry in self.alchemy.values():
+            self._require([entry.item_id], self.items, f"alchemy {entry.id} product")
+            self._require(entry.materials, self.items, f"alchemy {entry.id} materials")
+            if self.items[entry.item_id].kind not in {"consumable", "breakthrough"}:
+                raise ValueError(f"alchemy {entry.id} must produce a consumable")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

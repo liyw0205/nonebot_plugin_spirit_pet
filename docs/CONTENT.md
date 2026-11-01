@@ -266,6 +266,18 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 炼丹定义
+
+`alchemy.json` 是丹方数组，由 `domain/alchemy_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`stones`（≥1）、`materials`（≥1 项）与 `yield`（1-10）。`AlchemyRecipe` 拒绝「消耗自己的产物」，`Catalog._validate_alchemy` 进一步要求产物与材料都存在于 `items.json`、且产物是 `consumable` 或 `breakthrough`——丹药方产出装备或材料会在启动时被拒。
+
+```json
+{"id": "energy_draught", "name": "回元丹", "description": "以灵稻与灵血草为底。",
+ "item_id": "energy_pill", "stones": 30,
+ "materials": {"spirit_food": 2, "seed_blood_herb": 1}, "yield": 1}
+```
+
+批量炼制按份数线性放大：材料与灵石都乘以份数，产物也乘以份数，因此单份与十份的收益比恒等。炼丹不写任何进度状态——消耗与产出在同一事务内完成，重复提交由既有操作缓存去重，因此不会出现「炼了两次却只扣一次料」。
+
 ## 杂交定义
 
 `hybrids.json` 是配方数组，由 `domain/hybrid_content.py` 校验：每项声明 `id`、`name`、`description`、`seeds`（恰好 2 个）、`stones`（1-100000）与 `output`。`Hybrid` 要求两个种子不同、产物不能是输入之一；`Catalog._validate_hybrids` 进一步要求输入与产物都在 `items.json`、产物是 `material`、且 `crops.json` 里存在以该产物为 `seed_item` 的作物。

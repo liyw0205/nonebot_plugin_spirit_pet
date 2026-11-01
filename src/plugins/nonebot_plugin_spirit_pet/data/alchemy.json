@@ -1,0 +1,38 @@
+[
+  {
+    "id": "energy_draught",
+    "name": "回元丹",
+    "description": "以灵稻与灵血草为底，文火慢炼成回元丹。",
+    "item_id": "energy_pill",
+    "stones": 30,
+    "materials": {"spirit_food": 2, "seed_blood_herb": 1},
+    "yield": 1
+  },
+  {
+    "id": "spirit_elixir",
+    "name": "蕴灵丹",
+    "description": "蕴灵穗的灵气凝在丹心，服下修为大涨。",
+    "item_id": "exp_pill",
+    "stones": 80,
+    "materials": {"seed_aura_ear": 1, "forge_ore": 1},
+    "yield": 1
+  },
+  {
+    "id": "bond_pill",
+    "name": "同心丹",
+    "description": "以灵血草与灵粮调和，炼出增进亲密的丹药。",
+    "item_id": "affinity_pill",
+    "stones": 60,
+    "materials": {"seed_blood_herb": 1, "spirit_food": 1},
+    "yield": 1
+  },
+  {
+    "id": "breakthrough_elixir",
+    "name": "破境丹",
+    "description": "血脉精华与古灵根同炼，助伙伴冲击破境。",
+    "item_id": "breakthrough_pill",
+    "stones": 120,
+    "materials": {"bloodline_essence": 1, "seed_ancient_root": 1},
+    "yield": 1
+  }
+]
