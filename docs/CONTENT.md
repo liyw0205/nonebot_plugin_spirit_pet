@@ -266,6 +266,36 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 斗法定义
+
+`duels.json` 是斗法护法数组，由 `domain/duel_content.py` 校验：每项声明 `id`、`name`、`description`、`realm`（已有境界 id）、`stats`（四维）与 `reward`（`exp`/`stones` 区间加可选物品）；奖励必须至少发灵石或修为之一。`Catalog._validate_duels` 要求表非空、境界存在、奖励物品都在 `items.json` 里。
+
+```json
+{
+  "id": "songfeng",
+  "name": "松风道人",
+  "description": "启灵境入门护法，出招直来直去，正好试手。",
+  "realm": "qiling",
+  "stats": {"hp": 150, "attack": 18, "defense": 4, "speed": 20},
+  "reward": {
+    "exp": {"minimum": 40, "maximum": 60},
+    "stones": {"minimum": 50, "maximum": 70},
+    "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+  }
+}
+```
+
+`rules.json` 的 `duel` 由 `DuelRule` 校验：`energy` 为每回合精力（不超过 100），`exchanges` 限定 3-20，`stances` 至少两条且名称唯一；每条出手的 `dealt`/`taken` 都在 0.5-1.5 之间、必须同向移动（拒绝纯增益或纯亏损），整套出手还必须同时给出进攻与防守两种选择。
+
+```json
+{"energy": 3, "exchanges": 12,
+ "stances": {"assault": {"name": "抢攻", "dealt": 1.3, "taken": 1.2},
+             "feint": {"name": "游斗", "dealt": 1.12, "taken": 1.06},
+             "guard": {"name": "稳守", "dealt": 0.85, "taken": 0.7}}}
+```
+
+运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
+
 ## 委托线定义
 
 `rules.json` 的 `expedition_lines` 由 `ExpeditionLinesRule` 校验：`count` 限定 1-2，`unlock_cost` 为一次性灵石费用；当 `count` 为 1 时费用必须为 0，否则「只有一条线却收开辟费」会被启动校验直接拒绝。

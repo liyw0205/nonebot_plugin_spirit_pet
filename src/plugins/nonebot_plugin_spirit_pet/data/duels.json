@@ -1,0 +1,62 @@
+[
+  {
+    "id": "songfeng",
+    "name": "松风道人",
+    "description": "启灵境入门护法，出招直来直去，正好试手。",
+    "realm": "qiling",
+    "stats": {"hp": 150, "attack": 18, "defense": 4, "speed": 20},
+    "reward": {
+      "exp": {"minimum": 40, "maximum": 60},
+      "stones": {"minimum": 50, "maximum": 70},
+      "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+    }
+  },
+  {
+    "id": "shiquan",
+    "name": "石泉客",
+    "description": "凝气境青石护法，守得极稳，急躁的出手会被拖垮。",
+    "realm": "ningqi",
+    "stats": {"hp": 420, "attack": 46, "defense": 16, "speed": 55},
+    "reward": {
+      "exp": {"minimum": 80, "maximum": 120},
+      "stones": {"minimum": 90, "maximum": 120},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+    }
+  },
+  {
+    "id": "chixia",
+    "name": "赤霞子",
+    "description": "筑基境赤霞护法，攻守均衡，拖到后面会连续抢攻。",
+    "realm": "zhuji",
+    "stats": {"hp": 1000, "attack": 110, "defense": 40, "speed": 120},
+    "reward": {
+      "exp": {"minimum": 150, "maximum": 200},
+      "stones": {"minimum": 150, "maximum": 190},
+      "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+    }
+  },
+  {
+    "id": "xuanyu",
+    "name": "玄羽真君",
+    "description": "金丹境玄羽护法，气血厚实，靠速攻才能抢在回合上限前破局。",
+    "realm": "jindan",
+    "stats": {"hp": 2400, "attack": 240, "defense": 90, "speed": 260},
+    "reward": {
+      "exp": {"minimum": 260, "maximum": 320},
+      "stones": {"minimum": 240, "maximum": 300},
+      "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}
+    }
+  },
+  {
+    "id": "wuxiang",
+    "name": "无相居士",
+    "description": "元婴境无相护法，四维俱高，只有把每回合的取舍都算准才拿得下。",
+    "realm": "yuanying",
+    "stats": {"hp": 4600, "attack": 520, "defense": 150, "speed": 420},
+    "reward": {
+      "exp": {"minimum": 400, "maximum": 480},
+      "stones": {"minimum": 360, "maximum": 440},
+      "items": {"forge_ore": {"minimum": 3, "maximum": 3}, "bloodline_essence": {"minimum": 1, "maximum": 1}}
+    }
+  }
+]

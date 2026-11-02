@@ -43,6 +43,7 @@ from ..domain.bounty_content import Bounty
 from ..domain.sect_exchange_content import SectOffer
 from ..domain.intent_content import BattleIntent
 from ..domain.gem_content import SocketGem
+from ..domain.duel_content import DuelOpponent
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -160,6 +161,7 @@ class Catalog:
     sect_exchange: dict[str, SectOffer]
     intents: dict[str, BattleIntent]
     gems: dict[str, SocketGem]
+    duels: dict[str, DuelOpponent]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -233,6 +235,7 @@ class Catalog:
             sect_exchange=_index(directory / "sect_exchange.json", SectOffer),
             intents=_index(directory / "intents.json", BattleIntent),
             gems=_index(directory / "gems.json", SocketGem),
+            duels=_index(directory / "duels.json", DuelOpponent),
         )
         catalog.validate()
         return catalog
@@ -357,6 +360,7 @@ class Catalog:
         self._validate_sect_exchange()
         self._validate_intents()
         self._validate_gems()
+        self._validate_duels()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -847,6 +851,15 @@ class Catalog:
             self._require([gem.item_id], self.items, f"gem {gem.id} item")
             if self.items[gem.item_id].kind != "material":
                 raise ValueError(f"gem {gem.id} must consume a material item")
+
+    def _validate_duels(self):
+        if not self.duels:
+            raise ValueError("duels must offer at least one opponent")
+        realms = [realm.id for realm in self.realms]
+        for opponent in self.duels.values():
+            if opponent.realm not in realms:
+                raise ValueError(f"duel opponent {opponent.id} has an unknown realm")
+            self._require(opponent.reward.items, self.items, f"duel {opponent.id} reward items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

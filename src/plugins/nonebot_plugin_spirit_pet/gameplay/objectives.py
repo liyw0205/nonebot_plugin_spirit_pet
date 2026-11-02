@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import adventure_collection_rewards, daily_assignment, daily_dungeon, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
+from . import adventure_collection_rewards, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
@@ -509,6 +509,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (sect_exchange.objective_line(ctx, player.user_id), "灵宠贡献"),
         (intent.objective_line(ctx, player.user_id), "灵宠战意"),
         (sockets.objective_line(ctx, player.user_id), "灵宠镶嵌"),
+        (duel.objective_line(ctx, player.user_id), "灵宠斗法"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

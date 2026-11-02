@@ -54,6 +54,7 @@ from ..gameplay import bounty
 from ..gameplay import sect_exchange
 from ..gameplay import intent
 from ..gameplay import sockets
+from ..gameplay import duel
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -233,6 +234,7 @@ ACTIONS = {
     "sect_exchange": Command(sect_exchange.dispatch, True, registered=False),
     "intent": Command(intent.dispatch, True, registered=False),
     "socket": Command(sockets.dispatch, True, registered=False),
+    "duel": Command(duel.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -364,6 +366,7 @@ COMMANDS = {
     "灵宠贡献": "sect_exchange",
     "灵宠战意": "intent",
     "灵宠镶嵌": "socket",
+    "灵宠斗法": "duel",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",

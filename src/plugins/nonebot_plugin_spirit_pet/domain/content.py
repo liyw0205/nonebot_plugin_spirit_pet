@@ -385,6 +385,41 @@ class SectRule(Definition):
     switch_stones: NonNegative
 
 
+class DuelStance(Definition):
+    """One way to spend a duel exchange: both damage multipliers move together."""
+
+    name: Name
+    dealt: Annotated[float, Field(ge=0.5, le=1.5)]
+    taken: Annotated[float, Field(ge=0.5, le=1.5)]
+
+    @model_validator(mode="after")
+    def _tradeoff(self):
+        if (self.dealt - 1) * (self.taken - 1) < 0:
+            raise ValueError(f"duel stance {self.name} must move both multipliers the same way")
+        return self
+
+
+class DuelRule(Definition):
+    """Exchange-based duels: one stance per message, health carried between them."""
+
+    energy: Positive
+    exchanges: Annotated[int, Field(ge=3, le=20)]
+    stances: dict[Identifier, DuelStance]
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.energy > 100:
+            raise ValueError("duel exchange energy exceeds a pet's pool")
+        if len(self.stances) < 2:
+            raise ValueError("a duel needs at least two stances")
+        if len({stance.name for stance in self.stances.values()}) != len(self.stances):
+            raise ValueError("duel stance names must be unique")
+        dealt = [stance.dealt for stance in self.stances.values()]
+        if not any(rate > 1 for rate in dealt) or not any(rate < 1 for rate in dealt):
+            raise ValueError("duel stances must offer both an aggressive and a defensive choice")
+        return self
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -419,3 +454,4 @@ class Rules(Definition):
     pet_release: PetReleaseRule
     farm_rotation: FarmRotationRule
     expedition_lines: ExpeditionLinesRule
+    duel: DuelRule

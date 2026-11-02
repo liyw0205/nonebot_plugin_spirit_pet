@@ -972,6 +972,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_expedition_lines.py` 13 项（新建库含 slot 列与按线索引、20→21 迁移留底并换索引、迁移后旧进行中行程落在 slot 0、未开辟时第二次派遣被拒、开辟扣费且只扣一次、灵石不足零写入、两只伙伴分占两线、第三条拒绝、同一只伙伴不能占两线、两线独立结算与领取、总览列出两线与下一步、未开辟时总览给开辟入口、QQ 按钮与蓝字分离）。同时更新两处既有测试到新不变量：存储层改为断言按线唯一索引并验证「同线拒绝/异线允许/同宠拒绝」，总览页保留加急文案与入口。派遣批次 349 passed，命令/目标/内容/运行时/目录/道具循环批次 182 passed；`compileall` 与 `git diff --check` 通过。首轮 develop CI `41432059851` 在 19→20 迁移用例暴露一个真实缺陷：18/19 旧结构fixture 由当前 schema 推导，因此已带上 schema 21 的新索引，与迁移后的结构不匹配；改为先用 `legacy_schema20()` 还原 20 代基础再剥离旧列，并把写死的 `user_version == 20` 改为从 `SCHEMA_VERSION` 推导，修正提交 `c097184`；develop CI `41433204049` 全绿（3085 项），fast-forward 合入 main 后 main CI `41434010937` 全绿。排除项：未部署、未发送真实 QQ、未跑本地全量。
 
+### 灵宠斗法（2026-11-02，已完成）
+
+审计确认：`pet-goal-farming-seeds.md` 已交付，`pet-roadmap-index.md` 四条聚合线与 `pet-goal-index-10.md` 十张卡均已有提交与 CI 证据，本地目标队列已清空；既有交付记录反复标注的唯一玩法缺口是「`fight()` 一次处理完整场，玩家没有战斗内动作」。本切片把一场战斗拆成逐回合：每条消息结算一个回合，玩家在抢攻/稳守/游斗之间取舍，气血跨消息保留。
+
+实现要点：`combat.fight()` 增加可选 `max_rounds`（默认 None 仍是原来的 40 回合逐位不变），传 1 时只跑一回合并在未分胜负时返回 `winner=-1`；`data/duels.json` 定义五位按境界排列的护法，`domain/duel_content.py` 与 `Catalog._validate_duels` 校验境界、奖励与物品；`rules.json` 的 `duel` 由 `DuelRule`/`DuelStance` 校验每回合精力、回合上限与三条同向移动的出手；`gameplay/duel.py` 以 `quest_progress` 的 `duel_target`/`duel_round`/`duel_hp`/`duel_enemy_hp` 保存单局，`duel_week_<周一零点>_<护法id>` 保存周奖励凭证。斗法只用在出战伙伴、每回合扣 3 精力，不施放灵术（每回合重建单位时临时状态不跨回合），不写战报、不推进日常/周常/成就计数。击败护法发当周奖励一次，气血耗尽、12 回合用尽与认输都清空状态且不发奖；四行状态缺一行即视为没有进行中的斗法，开局会覆盖重建。
+
+页面逐行给出护法境界、奖励与状态（可挑战/本周已胜/需相应境界），只给可挑战行挂「挑战」蓝字；进行中页面给双方气血、三条出手与「认输」蓝字，按钮固定 `灵宠斗法`/`灵宠战报`/`我的灵宠`，蓝字与按钮零重叠。`灵宠目标` 新增斗法行，帮助「秘境与关卡」新增四条，`test_contract_audit.py` 把 `duel` 纳入只读页面并登记 5 项内容，`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。
+
+定向命令 `./.venv/bin/pytest -q tests/test_duel.py tests/test_commands.py tests/test_objectives.py tests/test_contract_audit.py tests/test_content.py tests/test_pet_catalog.py tests/test_battles.py tests/test_runtime.py tests/test_catalog_interaction.py tests/test_messaging.py`：`257 passed`（含新增 `test_duel.py` 19 项）。新增用例覆盖内容阶梯与规则负例、未结契只读、护法列表与唯一入口、境界/精力/派遣/重复开局拒绝、四行状态写入、逐回合精力与气血延续、获胜发奖与周凭证、跨周重开、失败与平局清空、认输、同操作重投、重启续战、残缺状态行、不写战报与计数，以及 `max_rounds=1` 只推进一回合而默认战斗仍打到分出胜负。未跑全量、未做仿真或压测、未发送真实 QQ、未部署；schema 21 与表结构不变。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -104,8 +104,16 @@ class _BattleLog(list[str]):
         self.history: list[str] = []
 
 
-def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, Element] | None = None) -> Battle:
-    """Custom bounded turn combat; health is local to a single encounter."""
+def fight(
+    left: list[Fighter], right: list[Fighter], rng, elements: dict[str, Element] | None = None,
+    *, max_rounds: int | None = None,
+) -> Battle:
+    """Custom bounded turn combat; health is local to a single encounter.
+
+    ``max_rounds`` stops after that many rounds and reports ``winner=-1`` when
+    neither side fell, which lets a caller resolve one exchange at a time. The
+    default keeps the historical 40-round battle byte for byte.
+    """
     teams = (left, right)
     initiative = [(unit, side, rng.random()) for side, team in enumerate(teams) for unit in team]
     turns = sorted(initiative, key=lambda entry: (entry[0].stats.speed, entry[2]), reverse=True)
@@ -115,7 +123,8 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
         event = talents.initialize(unit)
         if event:
             _record(log, event)
-    for round_number in range(1, 41):
+    limit = 40 if max_rounds is None else max(1, min(40, int(max_rounds)))
+    for round_number in range(1, limit + 1):
         for unit, side, _ in turns:
             if unit.hp <= 0:
                 continue
@@ -134,7 +143,7 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
                 return _result(side, round_number, teams, log)
             if not any(ally.hp > 0 for ally in teams[side]):
                 return _result(1 - side, round_number, teams, log)
-    return _result(-1, 40, teams, log)
+    return _result(-1, limit, teams, log)
 
 
 def scale_damage(amount: int, unit: Fighter, target: Fighter) -> int:
