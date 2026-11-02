@@ -12,7 +12,11 @@ REGISTRATION_COLUMN = "    registered_at INTEGER CHECK (registered_at >= 0),\n"
 
 
 def _legacy_schema(current_schema: str, version: int) -> str:
-    schema = re.sub(r"CREATE TABLE player_identity \([\s\S]*?\n\);\n", "", current_schema)
+    # Older fixtures are derived from the current file, so strip the schema-21 expedition changes
+    # first; otherwise an 18/19 fixture would already contain the newer index and never match.
+    schema = re.sub(
+        r"CREATE TABLE player_identity \([\s\S]*?\n\);\n", "", legacy_schema20(current_schema)
+    )
     match = re.search(r"CREATE TABLE players \(([\s\S]*?)\n\);", schema)
     if match is None:
         raise RuntimeError("Current schema is missing players table")

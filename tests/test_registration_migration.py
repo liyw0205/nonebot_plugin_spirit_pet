@@ -6,7 +6,7 @@ import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.storage import database
-from nonebot_plugin_spirit_pet.storage.database import Store
+from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
 from nonebot_plugin_spirit_pet.storage.registration import _legacy_schema
 
 
@@ -61,7 +61,7 @@ def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_p
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 20
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
         assert [tuple(row) for row in conn.execute(
             "SELECT rowid,user_id,stones,active_pet_id,registered_at FROM players ORDER BY rowid"
         )] == original_players
