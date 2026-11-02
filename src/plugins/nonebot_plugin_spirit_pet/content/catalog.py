@@ -42,6 +42,7 @@ from ..domain.difficulty_content import Difficulty
 from ..domain.bounty_content import Bounty
 from ..domain.sect_exchange_content import SectOffer
 from ..domain.intent_content import BattleIntent
+from ..domain.gem_content import SocketGem
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -158,6 +159,7 @@ class Catalog:
     bounties: dict[str, Bounty]
     sect_exchange: dict[str, SectOffer]
     intents: dict[str, BattleIntent]
+    gems: dict[str, SocketGem]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -230,6 +232,7 @@ class Catalog:
             bounties=_index(directory / "bounties.json", Bounty),
             sect_exchange=_index(directory / "sect_exchange.json", SectOffer),
             intents=_index(directory / "intents.json", BattleIntent),
+            gems=_index(directory / "gems.json", SocketGem),
         )
         catalog.validate()
         return catalog
@@ -353,6 +356,7 @@ class Catalog:
         self._validate_bounties()
         self._validate_sect_exchange()
         self._validate_intents()
+        self._validate_gems()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -832,6 +836,17 @@ class Catalog:
         names = [intent.name for intent in self.intents.values()]
         if len(set(names)) != len(names):
             raise ValueError("battle intents must have distinct names")
+
+    def _validate_gems(self):
+        if not self.gems:
+            raise ValueError("sockets must offer at least one gem")
+        stats = [gem.stat for gem in self.gems.values()]
+        if len(set(stats)) != len(stats):
+            raise ValueError("each socket gem must target a different stat")
+        for gem in self.gems.values():
+            self._require([gem.item_id], self.items, f"gem {gem.id} item")
+            if self.items[gem.item_id].kind != "material":
+                raise ValueError(f"gem {gem.id} must consume a material item")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

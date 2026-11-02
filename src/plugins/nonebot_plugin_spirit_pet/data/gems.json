@@ -1,0 +1,30 @@
+[
+  {
+    "id": "socket_flame",
+    "name": "赤炎石",
+    "item_id": "gem_flame",
+    "stat": "attack",
+    "rate": 0.08
+  },
+  {
+    "id": "socket_ward",
+    "name": "玄岩壁",
+    "item_id": "gem_ward",
+    "stat": "defense",
+    "rate": 0.08
+  },
+  {
+    "id": "socket_swift",
+    "name": "风灵石",
+    "item_id": "gem_swift",
+    "stat": "speed",
+    "rate": 0.06
+  },
+  {
+    "id": "socket_vital",
+    "name": "生灵髓",
+    "item_id": "gem_vital",
+    "stat": "hp",
+    "rate": 0.06
+  }
+]

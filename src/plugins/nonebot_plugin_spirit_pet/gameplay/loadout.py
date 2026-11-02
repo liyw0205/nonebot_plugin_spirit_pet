@@ -101,6 +101,11 @@ def combatant(
     specialised = specialisation(ctx, pet.pet_id, user_id or ctx.user_id)
     if specialised in skill_multipliers:
         skill_multipliers[specialised] *= 1 + rate_for(ctx, ctx.content.skills[specialised])
+    from .sockets import rates as socket_rates
+    for stat, rate in socket_rates(ctx, pet.pet_id, user_id or ctx.user_id).items():
+        # A socket scales one base stat, exactly like a formation slot does, so the flat bonuses
+        # documented for gear, words and sets keep their integers.
+        stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
     from .intent import rates as intent_rates
     dealt, taken = intent_rates(ctx, user_id or ctx.user_id)
     from .attunement import elements_of, primary_of

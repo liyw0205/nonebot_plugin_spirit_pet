@@ -440,5 +440,29 @@
     "id": "seed_crimson_lotus", "name": "赤霄莲种",
     "description": "杂交所得的赤霄莲种，18000 秒后收获血脉精华与修为。",
     "kind": "material", "price": null
+  },
+  {
+    "id": "gem_flame",
+    "name": "赤炎石",
+    "description": "镶嵌材料：嵌入槽位后按基础攻击提升。",
+    "kind": "material", "price": 120
+  },
+  {
+    "id": "gem_ward",
+    "name": "玄岩壁",
+    "description": "镶嵌材料：嵌入槽位后按基础防御提升。",
+    "kind": "material", "price": 120
+  },
+  {
+    "id": "gem_swift",
+    "name": "风灵石",
+    "description": "镶嵌材料：嵌入槽位后按基础速度提升。",
+    "kind": "material", "price": 140
+  },
+  {
+    "id": "gem_vital",
+    "name": "生灵髓",
+    "description": "镶嵌材料：嵌入槽位后按基础气血提升。",
+    "kind": "material", "price": 160
   }
 ]

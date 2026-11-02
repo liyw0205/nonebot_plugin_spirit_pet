@@ -266,6 +266,16 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 镶嵌定义
+
+`gems.json` 是宝石表，由 `domain/gem_content.py` 校验：每项声明 `id`、`name`、`item_id`、`stat`（`hp`/`attack`/`defense`/`speed`）与 `rate`（0.01-0.25）。`Catalog._validate_gems` 要求表非空、四颗宝石各对应不同属性、且消耗的物品必须是 `material`。
+
+```json
+{"id": "socket_flame", "name": "赤炎石", "item_id": "gem_flame", "stat": "attack", "rate": 0.08}
+```
+
+宝石本体是普通材料物品（`gem_flame`/`gem_ward`/`gem_swift`/`gem_vital`），因此可以照常购买、掉落、回收与制作，无需新增物品类型。槽位状态是每槽一行 `socket_<宠物id>_<槽位>_<宝石id>`，行归属玩家、宠物 id 写在键里，所以「一槽一宝石」由主键结构保证，跨账号也不会串号。镶嵌在单事务内消耗物品并写入行，二者不会一半成功。属性加成在 `loadout.combatant` 中按基础值乘算，位置在阵位之后、固定加成之前，与心情/同心/阵位的既有约定一致。
+
 ## 战意定义
 
 `intents.json` 是战意表，由 `domain/intent_content.py` 校验：每项声明 `id`、`name`、`description`、`dealt`（输出乘区）与 `taken`（承伤乘区），两者都限制在 0.5-1.5；`check_trade_off` 要求两个乘区**同向移动**——都大于 1（打得更痛也更痛）或都小于 1（打得更轻也更轻）。反向组合是纯增益，等值组合是纯亏损，都不算选择，直接拒绝。
