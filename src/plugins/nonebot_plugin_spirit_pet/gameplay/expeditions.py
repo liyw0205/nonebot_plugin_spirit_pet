@@ -21,6 +21,51 @@ def hasten_cost(remaining_seconds: int) -> int:
     return min(HASTEN_STONES_PER_MINUTE * minutes, HASTEN_MAX_STONES)
 
 
+LINES = "expedition_lines_"
+
+
+def unlocked_lines(ctx: Context, user_id: str | None = None) -> int:
+    """Commission lines this player may use: the second one is bought once with stones."""
+    rule = ctx.content.rules.expedition_lines
+    if rule.count < 2:
+        return 1
+    row = ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, f"{LINES}{user_id or ctx.user_id}"),
+    ).fetchone()
+    return 2 if row else 1
+
+
+def running_rows(ctx: Context, user_id: str | None = None) -> list[Row]:
+    return ctx.repo.conn.execute(
+        "SELECT * FROM expeditions WHERE user_id=? AND state='running' ORDER BY slot, job_id",
+        (user_id or ctx.user_id,),
+    ).fetchall()
+
+
+def open_line(ctx: Context) -> Reply:
+    """Buy the second commission line once; the voucher row is the idempotency guard."""
+    rule = ctx.content.rules.expedition_lines
+    player = ctx.player()
+    if rule.count < 2:
+        raise GameError("当前设定只有一条委托线。")
+    if unlocked_lines(ctx) >= 2:
+        raise GameError("第二条委托线已经开辟。")
+    cost = rule.unlock_cost
+    if player.stones < cost:
+        raise GameError(f"开辟第二条委托线需要 {cost} 灵石，当前灵石不足。")
+    player.stones -= cost
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=1",
+        (ctx.user_id, f"{LINES}{ctx.user_id}"),
+    )
+    return Reply("委托线开辟", (
+        f"支付 {cost} 灵石，开辟第二条委托线。",
+        "现在可以同时派两只不同灵宠外出，两条委托各自结算、各自归来。",
+    ), ("灵宠行程", "灵宠委托", "我的灵宠"))
+
+
 def catalog(ctx: Context, arg: str) -> Reply:
     tasks = ctx.content.expeditions
     if arg and not arg.isdecimal():
@@ -90,13 +135,40 @@ def _describe(ctx: Context, row: Row) -> Reply:
 
 def status(ctx: Context, arg: str) -> Reply:
     ctx.player()
-    row = _owned(ctx, arg) if arg else ctx.repo.conn.execute(
-        "SELECT * FROM expeditions WHERE user_id=? ORDER BY job_id DESC LIMIT 1", (ctx.user_id,),
-    ).fetchone()
-    if row is None:
-        return Reply("灵宠行程", ("尚无委托行程。",), ("灵宠委托", "灵宠列表"),
-                     (InlineCommand(0, "查看委托目录", "灵宠委托"),))
-    return _describe(ctx, row)
+    if arg:
+        return _describe(ctx, _owned(ctx, arg))
+    lines = unlocked_lines(ctx)
+    running = running_rows(ctx)
+    if not running:
+        last = ctx.repo.conn.execute(
+            "SELECT * FROM expeditions WHERE user_id=? ORDER BY job_id DESC LIMIT 1", (ctx.user_id,),
+        ).fetchone()
+        head = [f"两条委托线：已开辟 {lines}/2。"]
+        if last is not None:
+            head.append(f"最近一次：行程 {last['job_id']} · {last['task_name']}（{last['state']}）。")
+        head.append("尚无进行中的委托。")
+        links = [InlineCommand(0, "查看委托目录", "灵宠委托")]
+        if lines < 2:
+            head.append(f"第二条委托线尚未开辟，需 {ctx.content.rules.expedition_lines.unlock_cost} 灵石。")
+            links.append(InlineCommand(len(head) - 1, "开辟委托线", "灵宠派遣 开辟"))
+        return Reply("灵宠行程", tuple(head), ("灵宠委托", "灵宠列表"), tuple(links))
+    lines_out = [f"两条委托线：已开辟 {lines}/2，进行中 {len(running)} 条。"]
+    links = []
+    for row in running:
+        pet = ctx.repo.pet(row["pet_id"])
+        if ctx.now >= row["finishes_at"]:
+            state = "已完成，待归来领取"
+            links.append(InlineCommand(len(lines_out), "领取归来奖励", f"灵宠归来 {row['job_id']}"))
+        else:
+            remaining = row["finishes_at"] - ctx.now
+            state = f"外出中，剩余 {remaining} 秒；加急需 {hasten_cost(remaining)} 灵石。"
+            links.append(InlineCommand(len(lines_out), "提前召回", f"灵宠召回 {row['job_id']}"))
+            links.append(InlineCommand(len(lines_out), "加急完成", f"灵宠加急 {row['job_id']}"))
+        lines_out.append(f"委托{row['slot'] + 1}：{pet.name} · {row['task_name']} · {state} · 行程 {row['job_id']}")
+    if lines < 2:
+        lines_out.append(f"第二条委托线尚未开辟，需 {ctx.content.rules.expedition_lines.unlock_cost} 灵石。")
+        links.append(InlineCommand(len(lines_out) - 1, "开辟委托线", "灵宠派遣 开辟"))
+    return Reply("灵宠行程", tuple(lines_out), ("灵宠委托", "灵宠列表"), tuple(links))
 
 
 def start(ctx: Context, arg: str) -> Reply:
@@ -110,8 +182,16 @@ def start(ctx: Context, arg: str) -> Reply:
         if prior["user_id"] != ctx.user_id:
             raise GameError("该派遣消息已被处理，不能复用。")
         return _describe(ctx, prior)
-    if conn.execute("SELECT 1 FROM expeditions WHERE user_id=? AND state='running'", (ctx.user_id,)).fetchone():
-        raise GameError("已有外出委托，请先查看灵宠行程并归来或召回。")
+    if arg.strip() == "开辟":
+        return open_line(ctx)
+    used = {row["slot"] for row in running_rows(ctx)}
+    limit = unlocked_lines(ctx)
+    if len(used) >= limit:
+        raise GameError(
+            "两条委托线都在外出，请先查看灵宠行程并归来或召回。"
+            if limit > 1 else "已有外出委托，请先查看灵宠行程并归来或召回。"
+        )
+    slot = next(index for index in range(limit) if index not in used)
     previous = conn.execute(
         "SELECT settled_at FROM expeditions WHERE user_id=? ORDER BY job_id DESC LIMIT 1", (ctx.user_id,),
     ).fetchone()
@@ -140,14 +220,14 @@ def start(ctx: Context, arg: str) -> Reply:
     duration = ctx.config.spirit_pet_expedition_duration
     cursor = conn.execute(
         "INSERT INTO expeditions(user_id, pet_id, task_id, task_name, source_operation_id, started_at, "
-        "finishes_at, state, reward_snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, 'running', ?)",
+        "finishes_at, state, reward_snapshot, slot) VALUES (?, ?, ?, ?, ?, ?, ?, 'running', ?, ?)",
         (ctx.user_id, pet.pet_id, task.id, task.name, ctx.operation_id, ctx.now, ctx.now + duration,
-         snapshot.model_dump_json()),
+         snapshot.model_dump_json(), slot),
     )
     pet.energy -= task.energy
     ctx.repo.invalidate_ready(ctx.user_id)
     return Reply("灵宠启程", (
-        f"{pet.name}出发执行{task.name}，行程 {cursor.lastrowid}。",
+        f"{pet.name}从委托{slot + 1}出发执行{task.name}，行程 {cursor.lastrowid}。",
         f"精力 -{task.energy}，预计 {duration} 秒后完成；届时须主动归来领奖。",
         "外出及待领奖期间不能参战或养成；可切换其他闲置灵宠。",
     ), (f"灵宠行程 {cursor.lastrowid}", f"灵宠召回 {cursor.lastrowid}", "灵宠列表"))

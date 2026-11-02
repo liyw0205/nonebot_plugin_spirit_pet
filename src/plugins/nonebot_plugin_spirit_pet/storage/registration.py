@@ -60,8 +60,37 @@ def validate_schema19(conn: sqlite3.Connection, current_schema: str) -> None:
     _validate_schema(conn, _legacy_schema(current_schema, 19), 19)
 
 
+def legacy_schema20(current_schema: str) -> str:
+    """Reconstruct schema 20 from the current schema: no expedition slot, player-wide running index."""
+    schema = current_schema.replace(
+        "    slot INTEGER NOT NULL DEFAULT 0 CHECK (slot IN (0, 1)),\n", "", 1,
+    )
+    return schema.replace(
+        "CREATE UNIQUE INDEX expedition_running_slot ON expeditions(user_id, slot) WHERE state='running';",
+        "CREATE UNIQUE INDEX expedition_running_player ON expeditions(user_id) WHERE state='running';",
+        1,
+    )
+
+
 def validate_schema20(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 20)
+    _validate_schema(conn, legacy_schema20(current_schema), 20)
+
+
+def validate_schema21(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 21)
+
+
+def migrate_expedition_slots(conn: sqlite3.Connection) -> None:
+    """Schema 21: one running job per line instead of one per player."""
+    conn.execute(
+        "ALTER TABLE expeditions ADD COLUMN slot INTEGER NOT NULL DEFAULT 0 "
+        "CHECK (slot IN (0, 1))"
+    )
+    conn.execute("DROP INDEX expedition_running_player")
+    conn.execute(
+        "CREATE UNIQUE INDEX expedition_running_slot ON expeditions(user_id, slot) "
+        "WHERE state='running'"
+    )
 
 
 def backup_schema18(path: Path) -> Path:
@@ -70,6 +99,10 @@ def backup_schema18(path: Path) -> Path:
 
 def backup_schema19(path: Path) -> Path:
     return _backup_schema(path, 19)
+
+
+def backup_schema20(path: Path) -> Path:
+    return _backup_schema(path, 20)
 
 
 def _backup_schema(path: Path, version: int) -> Path:

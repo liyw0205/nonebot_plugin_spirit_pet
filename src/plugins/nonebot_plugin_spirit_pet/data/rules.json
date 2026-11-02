@@ -177,5 +177,9 @@
   },
   "farm_rotation": {
     "rate_percent": 20
+  },
+  "expedition_lines": {
+    "count": 2,
+    "unlock_cost": 3000
   }
 }

@@ -266,6 +266,16 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 委托线定义
+
+`rules.json` 的 `expedition_lines` 由 `ExpeditionLinesRule` 校验：`count` 限定 1-2，`unlock_cost` 为一次性灵石费用；当 `count` 为 1 时费用必须为 0，否则「只有一条线却收开辟费」会被启动校验直接拒绝。
+
+```json
+{"count": 2, "unlock_cost": 3000}
+```
+
+第二条线的解锁状态是 `quest_progress` 的 `expedition_lines_<用户>`，存在即为已开辟——行本身就是凭证，因此重复开辟只会命中「已经开辟」而不会二次扣费。`expeditions` 表在 schema 21 新增 `slot`（0 或 1），并把 `expedition_running_player` 换成 `expedition_running_slot (user_id, slot) WHERE state='running'`：同一玩家同一线最多一条进行中行程，这个限制由索引保证而不是靠代码自觉；`expedition_running_pet` 仍然保证同一只伙伴不会同时出现在两条线。
+
 ## 镶嵌定义
 
 `gems.json` 是宝石表，由 `domain/gem_content.py` 校验：每项声明 `id`、`name`、`item_id`、`stat`（`hp`/`attack`/`defense`/`speed`）与 `rate`（0.01-0.25）。`Catalog._validate_gems` 要求表非空、四颗宝石各对应不同属性、且消耗的物品必须是 `material`。

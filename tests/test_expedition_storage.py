@@ -72,29 +72,34 @@ def test_expedition_rejects_nonexistent_owner_or_pet(owners, missing):
     assert not sql(owners, "SELECT * FROM expeditions")
 
 
-def test_expedition_has_both_partial_unique_running_indexes(owners):
+def test_expedition_has_partial_unique_running_indexes_per_line_and_pet(owners):
     indexes = {row["name"]: row for row in sql(owners, "PRAGMA index_list(expeditions)")}
-    for name, field in (
-        ("expedition_running_player", "user_id"), ("expedition_running_pet", "pet_id"),
+    assert "expedition_running_player" not in indexes
+    for name, fields in (
+        ("expedition_running_slot", ["user_id", "slot"]), ("expedition_running_pet", ["pet_id"]),
     ):
         assert indexes[name]["unique"] == 1
         assert indexes[name]["partial"] == 1
-        assert [row["name"] for row in sql(owners, f"PRAGMA index_info({name})")] == [field]
+        assert [row["name"] for row in sql(owners, f"PRAGMA index_info({name})")] == fields
         definition = sql(owners, "SELECT sql FROM sqlite_master WHERE type='index' AND name=?", (name,))[0]["sql"]
         assert "WHERE state='running'" in definition
 
 
-def test_one_player_cannot_run_two_pets_but_different_players_can_depart(owners):
+def test_one_player_runs_one_job_per_line_but_two_pets_can_depart(owners):
     insert_record(owners, record(owners))
     sql(owners, "INSERT INTO pets(user_id, species_id, name, energy_updated) VALUES (?, ?, ?, ?)",
         ("u1", "qingluan", "备用灵宠", NOW))
     second_id = sql(owners, "SELECT MAX(pet_id) AS pet_id FROM pets WHERE user_id='u1'")[0]["pet_id"]
+    # A second pet may depart only on the other line.
     with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
-        insert_record(owners, record(owners, pet_id=second_id, source_operation_id="second-pet"))
+        insert_record(owners, record(owners, pet_id=second_id, source_operation_id="same-slot"))
+    insert_record(owners, record(owners, pet_id=second_id, source_operation_id="slot-two", slot=1))
+    # The same pet may never hold two running jobs, on any line.
     with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
-        insert_record(owners, record(owners, source_operation_id="same-pet"))
+        insert_record(owners, record(owners, source_operation_id="same-pet", slot=1))
     insert_record(owners, record(owners, user="u2", source_operation_id="other-owner"))
-    assert len(sql(owners, "SELECT * FROM expeditions WHERE state='running'")) == 2
+    assert len(sql(owners, "SELECT * FROM expeditions WHERE state='running'")) == 3
+    assert {row["slot"] for row in sql(owners, "SELECT slot FROM expeditions WHERE user_id='u1'")} == {0, 1}
 
 
 @pytest.mark.parametrize("terminal,settled", [("claimed", FINISH), ("cancelled", NOW)])

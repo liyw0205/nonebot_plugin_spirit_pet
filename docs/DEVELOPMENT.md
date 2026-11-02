@@ -962,6 +962,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_sockets.py` 16 项（四宝石四条不同属性、未结契只读、页面列出槽位装备与可镶宝石、镶嵌扣一颗并提升属性、加成符合声明倍率、空格位拒绝、已占拒绝、宝石不足拒绝且零写入、未知槽位/未知宝石/格式拒绝、卸下返还、空槽卸下拒绝、换装后宝石仍在、重启后仍在、重投不重复扣费、目标/帮助/解析、QQ 按钮与蓝字分离）。聚焦 10 个文件 `232 passed`，另跑商店/制作/锻造/回收/成就/图鉴/终局/成长/炼丹/阵位批次 `217 passed`；`compileall` 与 `git diff --check` 通过。首轮 develop CI `41420587753` 在 `test_item_loop.py` 抓到两处把商店页数写死为 11 的断言（新增四件材料后为 12 页），按既有约定改为由内容推导（`shop_pages()`），修正提交 `55fc5ec`；develop CI `41421527440` 全绿（3071 项），fast-forward 合入 main 后 main CI `41422110754` 全绿。排除项：未部署、未发送真实 QQ、未跑本地全量、未改 schema 与玩家存档。
 
+### 灵宠双线派遣（2026-11-02，已完成）
+
+镶嵌之后审计确认：`expedition_start` 用「存在任何进行中行程」拒绝再次出发，数据库还叠了 `expedition_running_player` 部分唯一索引，因此每人同时只能跑一条委托——这是剩余吞吐量最大的缺口，也是唯一需要动 schema 的功能。
+
+本切片把 schema 升到 21：`expeditions` 追加 `slot INTEGER NOT NULL DEFAULT 0 CHECK (slot IN (0, 1))`，删除 `expedition_running_player`，改为 `expedition_running_slot (user_id, slot) WHERE state='running'`；`expedition_running_pet` 保留，因此「一条线一条行程」与「一只伙伴一条行程」都由索引保证。迁移沿用既有模式：`legacy_schema20()` 重建旧结构供 `validate_schema20` 比对，`backup_schema20()` 在写库前留底，`migrate_expedition_slots()` 只做加列与换索引，随后 `validate_schema21` 与 integrity/foreign-key 检查，任何一步失败都回滚并保留原库。旧的进行中行程迁移后落在 slot 0。
+
+玩法层：`rules.json` 新增 `expedition_lines`（2 条、3000 灵石）与 `ExpeditionLinesRule`；`unlocked_lines()` 读 `expedition_lines_<用户>` 凭证，`open_line()` 一次性扣费并写凭证（重复开辟命中「已经开辟」，灵石不足零写入）；`start()` 改为按空闲槽位分配，两条线都满时给出明确拒绝。`灵宠行程` 无参数时变成两线总览：逐行给出伙伴、委托、剩余时间、行程号，外出中的行同时挂「提前召回」与「加急完成」（保留加急费用文案），已完成行挂「领取归来奖励」，未开辟时补「开辟委托线」。`灵宠行程 <行程号>` 的详情页保持不变。
+
+新增 `tests/test_expedition_lines.py` 13 项（新建库含 slot 列与按线索引、20→21 迁移留底并换索引、迁移后旧进行中行程落在 slot 0、未开辟时第二次派遣被拒、开辟扣费且只扣一次、灵石不足零写入、两只伙伴分占两线、第三条拒绝、同一只伙伴不能占两线、两线独立结算与领取、总览列出两线与下一步、未开辟时总览给开辟入口、QQ 按钮与蓝字分离）。同时更新两处既有测试到新不变量：存储层改为断言按线唯一索引并验证「同线拒绝/异线允许/同宠拒绝」，总览页保留加急文案与入口。派遣批次 349 passed，命令/目标/内容/运行时/目录/道具循环批次 182 passed；`compileall` 与 `git diff --check` 通过。排除项：未部署、未发送真实 QQ、未跑本地全量。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

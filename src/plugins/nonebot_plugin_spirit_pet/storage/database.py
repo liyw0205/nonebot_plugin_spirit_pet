@@ -7,11 +7,12 @@ from pathlib import Path
 
 from ..domain.models import GameError, Reply
 from .registration import (
-    add_registration_times, backup_schema18, backup_schema19, migrate_player_identity,
-    validate_schema18, validate_schema19, validate_schema20,
+    add_registration_times, backup_schema18, backup_schema19, backup_schema20,
+    migrate_expedition_slots, migrate_player_identity,
+    validate_schema18, validate_schema19, validate_schema20, validate_schema21,
 )
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -108,6 +109,34 @@ class Store:
                         raise RuntimeError("UID migration integrity check failed; database preserved")
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("UID migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=20")
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    conn.execute("PRAGMA foreign_keys=ON")
+                    raise
+                conn.execute("PRAGMA foreign_keys=ON")
+                version = 20
+            if version == 20:
+                conn.execute("PRAGMA foreign_keys=OFF")
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        conn.execute("PRAGMA foreign_keys=ON")
+                        return
+                    if version != 20:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema20(conn, schema)
+                    backup_schema20(self.path)
+                    migrate_expedition_slots(conn)
+                    validate_schema21(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Expedition slot migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Expedition slot migration foreign key check failed; database preserved")
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     conn.commit()
                 except BaseException:

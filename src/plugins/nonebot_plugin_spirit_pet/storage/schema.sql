@@ -71,13 +71,14 @@ CREATE TABLE expeditions (
     state TEXT NOT NULL CHECK(state IN ('running', 'claimed', 'cancelled')),
     reward_snapshot TEXT NOT NULL,
     settled_at INTEGER,
+    slot INTEGER NOT NULL DEFAULT 0 CHECK (slot IN (0, 1)),
     FOREIGN KEY(user_id, pet_id) REFERENCES pets(user_id, pet_id),
     CHECK((state='running' AND settled_at IS NULL)
         OR (state='claimed' AND settled_at IS NOT NULL AND settled_at>=finishes_at)
         OR (state='cancelled' AND settled_at IS NOT NULL
             AND settled_at>=started_at AND settled_at<finishes_at))
 );
-CREATE UNIQUE INDEX expedition_running_player ON expeditions(user_id) WHERE state='running';
+CREATE UNIQUE INDEX expedition_running_slot ON expeditions(user_id, slot) WHERE state='running';
 CREATE UNIQUE INDEX expedition_running_pet ON expeditions(pet_id) WHERE state='running';
 CREATE INDEX expedition_history ON expeditions(user_id, job_id DESC);
 CREATE TABLE equipment (

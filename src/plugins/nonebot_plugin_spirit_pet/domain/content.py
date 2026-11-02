@@ -271,6 +271,19 @@ class FarmRotationRule(Definition):
     rate_percent: Annotated[int, Field(ge=1, le=100)]
 
 
+class ExpeditionLinesRule(Definition):
+    """How many commissions one player may run at once, and what the second line costs."""
+
+    count: Annotated[int, Field(ge=1, le=2)]
+    unlock_cost: Annotated[int, Field(ge=1, le=1_000_000)]
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.count == 1 and self.unlock_cost:
+            raise ValueError("a single expedition line cannot charge an unlock cost")
+        return self
+
+
 class PetReleaseRule(Definition):
     stones_base: Annotated[int, Field(ge=0, le=100_000)]
     stones_per_realm: Annotated[int, Field(ge=0, le=100_000)]
@@ -405,3 +418,4 @@ class Rules(Definition):
     pair_bond: PairBondRule
     pet_release: PetReleaseRule
     farm_rotation: FarmRotationRule
+    expedition_lines: ExpeditionLinesRule
