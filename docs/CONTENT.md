@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 战意定义
+
+`intents.json` 是战意表，由 `domain/intent_content.py` 校验：每项声明 `id`、`name`、`description`、`dealt`（输出乘区）与 `taken`（承伤乘区），两者都限制在 0.5-1.5；`check_trade_off` 要求两个乘区**同向移动**——都大于 1（打得更痛也更痛）或都小于 1（打得更轻也更轻）。反向组合是纯增益，等值组合是纯亏损，都不算选择，直接拒绝。
+
+```json
+{"id": "intent_guard", "name": "守势", "description": "稳守阵脚，受伤更少，但推进更慢。",
+ "dealt": 0.86, "taken": 0.84}
+```
+
+乘区落在 `Fighter.dealt` 与 `Fighter.taken`（默认均为 1.0），由 `combat.scale_damage()` 在单体与群体两条伤害路径上统一应用，取值范围 0.25-2.5，且至少造成 1 点伤害。`Catalog._validate_intents` 要求表非空且名称不重复。战意状态是「一档一行」：`intent_<用户>_<战意id>`，切换时先删旧行再写新行，因此不会出现两条并存的歧义状态，清除即无行。
+
 ## 贡献兑换定义
 
 `sect_exchange.json` 是兑换表，由 `domain/sect_exchange_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`cost`（1-100000 贡献）与 `weekly_limit`（1-10）。`Catalog._validate_sect_exchange` 要求表非空、物品存在于 `items.json`、且同一物品不被两条报价重复收录。

@@ -101,6 +101,8 @@ def combatant(
     specialised = specialisation(ctx, pet.pet_id, user_id or ctx.user_id)
     if specialised in skill_multipliers:
         skill_multipliers[specialised] *= 1 + rate_for(ctx, ctx.content.skills[specialised])
+    from .intent import rates as intent_rates
+    dealt, taken = intent_rates(ctx, user_id or ctx.user_id)
     from .attunement import elements_of, primary_of
     name = f"{ctx.player(user_id).uid_label}的{pet.name}"
     return Fighter.create(
@@ -108,7 +110,7 @@ def combatant(
         primary_element=primary_of(ctx, pet), pet_id=pet.pet_id,
         talent=ctx.content.talents[talent_id], skill_multipliers=skill_multipliers,
         resonance_name=resonance_name, affinity=pet.affinity,
-        equipment_sets=tuple(equipment_set_names),
+        equipment_sets=tuple(equipment_set_names), dealt=dealt, taken=taken,
     )
 
 

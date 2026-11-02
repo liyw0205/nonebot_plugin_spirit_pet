@@ -52,6 +52,7 @@ from ..gameplay import alchemy
 from ..gameplay import difficulty
 from ..gameplay import bounty
 from ..gameplay import sect_exchange
+from ..gameplay import intent
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -229,6 +230,7 @@ ACTIONS = {
     "difficulty": Command(difficulty.dispatch, True, registered=False),
     "bounty": Command(bounty.dispatch, True, registered=False),
     "sect_exchange": Command(sect_exchange.dispatch, True, registered=False),
+    "intent": Command(intent.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -358,6 +360,7 @@ COMMANDS = {
     "灵宠回廊": "corridor",
     "灵宠师门": "sect",
     "灵宠贡献": "sect_exchange",
+    "灵宠战意": "intent",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",

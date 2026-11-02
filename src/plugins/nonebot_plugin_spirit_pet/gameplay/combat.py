@@ -51,15 +51,20 @@ class Fighter:
     skill_interval: int = 1
     affinity: int | None = None
     bond_protection_used: bool = False
+    dealt: float = 1.0
+    taken: float = 1.0
 
     @classmethod
     def create(
         cls, name: str, stats: Stats, elements=(), skills=(), *, primary_element=None,
         pet_id=None, talent=None, skill_multipliers=None, resonance_name=None, skill_interval=1,
-        affinity=None, equipment_sets=(),
+        affinity=None, equipment_sets=(), dealt=1.0, taken=1.0,
     ):
         if type(skill_interval) is not int or skill_interval < 1:
             raise ValueError("skill interval must be a positive integer")
+        for label, rate in (("dealt", dealt), ("taken", taken)):
+            if not 0.25 <= rate <= 2.5:
+                raise ValueError(f"{label} multiplier must be between 0.25 and 2.5")
         if affinity is not None and (type(affinity) is not int or not 0 <= affinity <= 100):
             raise ValueError("affinity must be between 0 and 100")
         return cls(
@@ -67,7 +72,7 @@ class Fighter:
             primary_element=primary_element,
             pet_id=pet_id, talent=talent, skill_multipliers=dict(skill_multipliers or {}),
             resonance_name=resonance_name, equipment_sets=tuple(equipment_sets),
-            skill_interval=skill_interval, affinity=affinity,
+            skill_interval=skill_interval, affinity=affinity, dealt=dealt, taken=taken,
         )
 
 
@@ -132,6 +137,17 @@ def fight(left: list[Fighter], right: list[Fighter], rng, elements: dict[str, El
     return _result(-1, 40, teams, log)
 
 
+def scale_damage(amount: int, unit: Fighter, target: Fighter) -> int:
+    """Apply the attacker's outgoing and the defender's incoming multipliers.
+
+    Both default to 1.0, so every caller that does not opt in keeps the exact integer a plain
+    fight produced before this layer existed.
+    """
+    if unit.dealt == 1.0 and target.taken == 1.0:
+        return amount
+    return max(1, int(amount * unit.dealt * target.taken))
+
+
 def _act(unit, allies, targets, rng, definitions, log):
     skill_due = unit.actions % unit.skill_interval == unit.skill_interval - 1
     skill = unit.skills[unit.actions % len(unit.skills)] if unit.skills and skill_due else None
@@ -172,6 +188,7 @@ def _act(unit, allies, targets, rng, definitions, log):
         _record(log, f"{target.name}以天赋{target.talent.name}闪避了{unit.name}的攻击。")
         return
     amount = max(1, int(effects.attack(unit) * rng.randint(90, 110) / 100 * power * factor * bonus) - defense)
+    amount = scale_damage(amount, unit, target)
     damage, absorbed = talents.receive_damage(target, amount)
     move = f"施展{skill.name}攻击" if skill else "攻击"
     details = f"，天赋{talent_name}" if talent_name else ""
@@ -196,6 +213,7 @@ def _attack_all(unit, skill, targets, rng, definitions, log, multiplier):
         bonus, defense, talent_name = talents.attack_modifiers(unit, target, skill.element, definitions)
         amount = max(1, int(effects.attack(unit) * rng.randint(90, 110) / 100
                              * skill.coefficient * multiplier * factor * bonus) - defense)
+        amount = scale_damage(amount, unit, target)
         damage, absorbed = talents.receive_damage(target, amount)
         details = f"，天赋{talent_name}" if talent_name else ""
         details += "，属性克制" if factor > 1 else ("，属性受克" if factor < 1 else "")

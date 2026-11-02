@@ -1,0 +1,23 @@
+[
+  {
+    "id": "intent_assault",
+    "name": "强攻",
+    "description": "全线压上，出手更狠，也更容易被打穿。",
+    "dealt": 1.16,
+    "taken": 1.14
+  },
+  {
+    "id": "intent_guard",
+    "name": "守势",
+    "description": "稳守阵脚，受伤更少，但推进更慢。",
+    "dealt": 0.86,
+    "taken": 0.84
+  },
+  {
+    "id": "intent_skirmish",
+    "name": "游斗",
+    "description": "以快打慢，小幅提高输出，也略微放松防护。",
+    "dealt": 1.08,
+    "taken": 1.05
+  }
+]
