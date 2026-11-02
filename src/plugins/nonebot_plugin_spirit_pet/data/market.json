@@ -1,0 +1,40 @@
+{
+  "listing_days": 3,
+  "min_unit_price": 1,
+  "max_unit_price": 50000,
+  "max_quantity": 30,
+  "sellable_kinds": [
+    "material",
+    "consumable"
+  ],
+  "stalls": [
+    {
+      "id": "stall_spread",
+      "name": "散铺",
+      "unlock_cost": 0,
+      "slots": 2,
+      "fee_percent": 10
+    },
+    {
+      "id": "stall_long",
+      "name": "长摊",
+      "unlock_cost": 800,
+      "slots": 4,
+      "fee_percent": 8
+    },
+    {
+      "id": "stall_shop",
+      "name": "铺面",
+      "unlock_cost": 2400,
+      "slots": 6,
+      "fee_percent": 6
+    },
+    {
+      "id": "stall_guild",
+      "name": "商号",
+      "unlock_cost": 6000,
+      "slots": 8,
+      "fee_percent": 4
+    }
+  ]
+}

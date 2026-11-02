@@ -992,6 +992,20 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_merchant.py tests/test_commands.py tests/test_objectives.py tests/test_contract_audit.py tests/test_content.py tests/test_pet_catalog.py tests/test_runtime.py tests/test_messaging.py tests/test_item_loop.py tests/test_duel.py`：`258 passed`（含新增 `test_merchant.py` 16 项），另跑赏金/每日特供/炼丹/杂交/灵田/贡献/成就商店/每日课题批次 `124 passed`。新增用例覆盖内容与定价校验（未知物品、套利定价、无基础单）、规则负例、未结契只读、看板同日稳定与隔日轮换、声望门槛与扩池、交付扣料发货与凭证、按序号交付与重复拒绝、五类拒绝零写入、日清奖励当天一次且隔日可再得、声望累计、重投幂等、重启持久、不写战报与计数、帮助/目标/解析、native 按钮与蓝字分离。未跑全量、未做仿真或压测、未发送真实 QQ、未部署；schema 21 与表结构不变。
 
+### 灵宠集市（2026-11-03，已完成）
+
+审计确认本地 goal 队列已清空，历次交付记录反复标注的最后系统级缺口是「no cross-player economy (needs new tables)」；`docs/DEVELOPMENT.md` 早前把「好友/交易/信箱」列为需要新表的排除方向，但没有任何合同测试锁定交易命令，赠送/寄养也证明了跨玩家转移本身可行，只是没有定价与撮合。本切片因此交付玩家集市：上架托管 → 浏览比价 → 购买成交 → 卖家入账与成交记录 → 下架或到期退回，形成真实的多用户闭环，与商会的 NPC 每日委托完全不同。
+
+内容与校验：新增 `data/market.json`（挂单 3 天、单价 1-50000、单次 1-30 件、可售 `material`/`consumable`，四级摊位散铺 0/2 位/10% → 长摊 800/4/8% → 铺面 2400/6/6% → 商号 6000/8/4%）；`domain/market_content.py` 的 `Stall`/`MarketRule` 校验字段区间与价格上下界，`Catalog._validate_market` 要求首级免费、解锁价与陈列位严格递增、税率不升、摊位 id 唯一、每种可售种类至少有一件物品。
+
+持久化：schema 升至 22。`market_listings` 保存托管挂单并用表级 CHECK 约束 `active`/`sold`/`cancelled`/`expired` 与 `closed_at`、`buyer_id` 的组合（成交时买家不得等于卖家）；`market_sales` 是永久成交账本，CHECK `fee + net = gross` 且买卖双方不同；索引 `market_listing_board`、`market_listing_seller`、`market_sales_seller` 分别服务浏览、我的摊位与成交记录。迁移沿用既有模式：`legacy_schema21` 还原 21 代结构（21/20/19/18 fixture 都先剥掉集市表再剥远征改动）、`backup_schema21` 留底、`migrate_market_tables` 从 `schema.sql` 取出完全相同的建表/索引语句执行、`validate_schema22` 与完整性/外键检查、失败回滚；20→21 分支改为写 `user_version=21` 后继续落入 21→22，而不是直接跳到最新版本。
+
+玩法层 `gameplay/market.py`：摊位等级存 `quest_progress` 的 `market_stall`（1 起，缺省为散铺）。上架先解析物品与种类、数量、单价，再检查陈列位与持有量，全部通过后才在同一事务内扣背包并写挂单（托管）；购买先惰性结算到期挂单，再校验编号、状态、非自家、灵石足够，随后以 `state='active'` 为守卫更新为 `sold`，扣买家灵石、按**卖家**摊位税率计算 `fee = 总价 × 税率 // 100` 并把 `总价 - fee` 加给卖家、给买家加物品、写成交账本；下架同样以状态守卫更新为 `cancelled` 并原样退回托管；升级一次扣费并写等级，已是最高级或灵石不足整笔拒绝。到期挂单在打开集市相关页面时惰性结算为 `expired` 并退回卖家，重复扫描不会二次退款。
+
+界面：`灵宠集市` 每页 5 条、按物品与单价排序，逐行给出物品/数量/单价/总价/卖家 UID/剩余天数，只有非自家且买得起的行挂「购买」蓝字；`灵宠集市 我的` 给出摊位、税率、陈列占用、下一级费用、在售挂单与「下架」蓝字，资源足够时挂「升级摊位」，并展示最近三笔成交；`灵宠集市 记录` 分页回顾总价/税额/实收。按钮始终不超过四条，蓝字命令不进入按钮。`灵宠目标` 新增集市行，帮助「血脉与道具」新增五条，`test_contract_audit.py` 把 `market` 纳入只读页面。
+
+新增 `tests/test_market.py` 22 项（内容阶梯与负例、规则区间、未结契只读不建号、托管与看板、七类上架拒绝零写入、成交金额/税费/账本、自家/灵石不足/已售拒绝、下架与越权、到期退回、已下架物品关闭、升级扣费与上限、同操作重投、重启持久、帮助/目标/解析、QQ 按钮与蓝字分离、分页、21→22 迁移与留底）；聚焦 12 个文件 `302 passed`，另跑道具/信息/体验/商会/赠送/称号/成就/文档批 `185 passed`；`compileall` 与 `git diff --check` 通过。排除项：未部署、未发送真实 QQ、未跑本地全量、未改既有商店价格/回收比例/商会委托/战斗结算。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

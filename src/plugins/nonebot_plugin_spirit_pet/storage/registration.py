@@ -12,8 +12,9 @@ REGISTRATION_COLUMN = "    registered_at INTEGER CHECK (registered_at >= 0),\n"
 
 
 def _legacy_schema(current_schema: str, version: int) -> str:
-    # Older fixtures are derived from the current file, so strip the schema-21 expedition changes
-    # first; otherwise an 18/19 fixture would already contain the newer index and never match.
+    # Older fixtures are derived from the current file, so strip the newer market tables and the
+    # schema-21 expedition changes first; otherwise an 18/19 fixture would already contain newer
+    # structures and never match.
     schema = re.sub(
         r"CREATE TABLE player_identity \([\s\S]*?\n\);\n", "", legacy_schema20(current_schema)
     )
@@ -65,8 +66,8 @@ def validate_schema19(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def legacy_schema20(current_schema: str) -> str:
-    """Reconstruct schema 20 from the current schema: no expedition slot, player-wide running index."""
-    schema = current_schema.replace(
+    """Reconstruct schema 20 from the current schema: no market tables, no expedition slot."""
+    schema = legacy_schema21(current_schema).replace(
         "    slot INTEGER NOT NULL DEFAULT 0 CHECK (slot IN (0, 1)),\n", "", 1,
     )
     return schema.replace(
@@ -80,8 +81,38 @@ def validate_schema20(conn: sqlite3.Connection, current_schema: str) -> None:
     _validate_schema(conn, legacy_schema20(current_schema), 20)
 
 
+def legacy_schema21(current_schema: str) -> str:
+    """Reconstruct schema 21 from the current schema: no player market tables."""
+    schema = re.sub(r"CREATE TABLE market_listings \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(r"CREATE TABLE market_sales \([\s\S]*?\n\);\n", "", schema, count=1)
+    for name in ("market_listing_board", "market_listing_seller", "market_sales_seller"):
+        schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
+    if "market_" in schema:
+        raise RuntimeError("Current schema still carries market definitions")
+    return schema
+
+
+def validate_schema22(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 22)
+
+
+def migrate_market_tables(conn: sqlite3.Connection) -> None:
+    """Schema 22: the player market needs real listing and sale tables."""
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for table in ("market_listings", "market_sales"):
+        match = re.search(rf"CREATE TABLE {table} \([\s\S]*?\n\);", schema)
+        if match is None:
+            raise RuntimeError(f"Current schema is missing {table}")
+        conn.execute(match.group(0))
+    for name in ("market_listing_board", "market_listing_seller", "market_sales_seller"):
+        match = re.search(rf"CREATE INDEX {name} [^;]*;", schema)
+        if match is None:
+            raise RuntimeError(f"Current schema is missing {name}")
+        conn.execute(match.group(0))
+
+
 def validate_schema21(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 21)
+    _validate_schema(conn, legacy_schema21(current_schema), 21)
 
 
 def migrate_expedition_slots(conn: sqlite3.Connection) -> None:
@@ -107,6 +138,10 @@ def backup_schema19(path: Path) -> Path:
 
 def backup_schema20(path: Path) -> Path:
     return _backup_schema(path, 20)
+
+
+def backup_schema21(path: Path) -> Path:
+    return _backup_schema(path, 21)
 
 
 def _backup_schema(path: Path, version: int) -> Path:

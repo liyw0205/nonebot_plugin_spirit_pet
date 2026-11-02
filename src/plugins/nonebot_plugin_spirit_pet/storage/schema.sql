@@ -235,3 +235,35 @@ CREATE TABLE operations (
     reply TEXT NOT NULL
 );
 CREATE INDEX operations_age ON operations(created_at);
+CREATE TABLE market_listings (
+    listing_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 99),
+    unit_price INTEGER NOT NULL CHECK(unit_price >= 1),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+    state TEXT NOT NULL CHECK(state IN ('active', 'sold', 'cancelled', 'expired')),
+    closed_at INTEGER,
+    buyer_id TEXT REFERENCES players(user_id),
+    CHECK((state='active' AND closed_at IS NULL AND buyer_id IS NULL)
+        OR (state='sold' AND closed_at IS NOT NULL AND buyer_id IS NOT NULL AND buyer_id!=seller_id)
+        OR (state IN ('cancelled', 'expired') AND closed_at IS NOT NULL AND buyer_id IS NULL))
+);
+CREATE INDEX market_listing_board ON market_listings(state, item_id, unit_price, listing_id);
+CREATE INDEX market_listing_seller ON market_listings(seller_id, state, listing_id DESC);
+CREATE TABLE market_sales (
+    listing_id INTEGER PRIMARY KEY REFERENCES market_listings(listing_id),
+    seller_id TEXT NOT NULL REFERENCES players(user_id),
+    buyer_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity >= 1),
+    unit_price INTEGER NOT NULL CHECK(unit_price >= 1),
+    gross INTEGER NOT NULL CHECK(gross >= 1),
+    fee INTEGER NOT NULL CHECK(fee >= 0),
+    net INTEGER NOT NULL CHECK(net >= 0),
+    sold_at INTEGER NOT NULL,
+    CHECK(fee + net = gross),
+    CHECK(buyer_id!=seller_id)
+);
+CREATE INDEX market_sales_seller ON market_sales(seller_id, sold_at DESC);

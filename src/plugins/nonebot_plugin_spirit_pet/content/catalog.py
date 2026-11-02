@@ -45,6 +45,7 @@ from ..domain.intent_content import BattleIntent
 from ..domain.gem_content import SocketGem
 from ..domain.duel_content import DuelOpponent
 from ..domain.commission_content import Commission
+from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -164,6 +165,7 @@ class Catalog:
     gems: dict[str, SocketGem]
     duels: dict[str, DuelOpponent]
     commissions: dict[str, Commission]
+    market: MarketRule
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -239,6 +241,7 @@ class Catalog:
             gems=_index(directory / "gems.json", SocketGem),
             duels=_index(directory / "duels.json", DuelOpponent),
             commissions=_index(directory / "commissions.json", Commission),
+            market=MarketRule.model_validate(_read(directory / "market.json")),
         )
         catalog.validate()
         return catalog
@@ -365,6 +368,7 @@ class Catalog:
         self._validate_gems()
         self._validate_duels()
         self._validate_commissions()
+        self._validate_market()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -881,6 +885,24 @@ class Catalog:
                 )
         if not any(entry.min_rep == 0 for entry in self.commissions.values()):
             raise ValueError("at least one commission must be open to a new merchant")
+
+    def _validate_market(self):
+        """The stall ladder must be worth climbing and every sellable kind must exist."""
+        stalls = self.market.stalls
+        if stalls[0].unlock_cost != 0:
+            raise ValueError("the first market stall must be free")
+        for previous, current in zip(stalls, stalls[1:]):
+            if current.unlock_cost <= previous.unlock_cost:
+                raise ValueError("market stall unlock costs must strictly increase")
+            if current.slots <= previous.slots:
+                raise ValueError("market stall slots must strictly increase")
+            if current.fee_percent > previous.fee_percent:
+                raise ValueError("market stall fees must not increase with the tier")
+        if len({stall.id for stall in stalls}) != len(stalls):
+            raise ValueError("duplicate market stall id")
+        for kind in self.market.sellable_kinds:
+            if not any(item.kind == kind for item in self.items.values()):
+                raise ValueError(f"market has no {kind} item to sell")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

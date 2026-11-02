@@ -320,6 +320,28 @@
 
 运行状态写在既有 `quest_progress`：`merchant_rep` 存累计声望，`merchant_order_<北京日期>_<委托id>` 与 `merchant_bonus_<北京日期>` 存当日已交与日清凭证；换日自动失效，无需清理。看板按北京日序数在「当前声望可接」的委托池里取连续 `offers_per_day` 条，因此同一天同一声望下稳定。
 
+## 集市定义
+
+`market.json` 是单个对象，由 `domain/market_content.py` 的 `MarketRule` 校验：`listing_days`（1-30 天）、`min_unit_price` 与 `max_unit_price`（1-1000000，且最小值不得大于最大值）、`max_quantity`（1-99）、`sellable_kinds`（可取 `material`、`consumable`，不得重复），以及 `stalls` 摊位阶梯（1-6 级）。每个摊位声明 `id`、`name`、`unlock_cost`、`slots`（1-12）与 `fee_percent`（0-25）。
+
+`Catalog._validate_market` 要求：首个摊位 `unlock_cost = 0`；后续每级解锁价**严格递增**、陈列位**严格递增**、成交税**不得上升**；摊位 id 不得重复；每种 `sellable_kinds` 在 `items.json` 里至少存在一件对应种类的物品，避免上架表指向空集。
+
+```json
+{
+  "listing_days": 3,
+  "min_unit_price": 1,
+  "max_unit_price": 50000,
+  "max_quantity": 30,
+  "sellable_kinds": ["material", "consumable"],
+  "stalls": [
+    {"id": "stall_spread", "name": "散铺", "unlock_cost": 0, "slots": 2, "fee_percent": 10},
+    {"id": "stall_long", "name": "长摊", "unlock_cost": 800, "slots": 4, "fee_percent": 8}
+  ]
+}
+```
+
+schema 22 新增两张表：`market_listings` 保存托管挂单（`seller_id`、`item_id`、`quantity`、`unit_price`、`created_at`、`expires_at`、`state` 为 `active`/`sold`/`cancelled`/`expired`、`closed_at`、`buyer_id`），表级 CHECK 保证四种状态与 `closed_at`、`buyer_id` 的组合自洽，成交时买家不得等于卖家；`market_sales` 是永久成交账本（`gross`、`fee`、`net`，CHECK `fee + net = gross`，且买家不等于卖家）。索引 `market_listing_board` 服务集市浏览，`market_listing_seller` 服务我的摊位，`market_sales_seller` 服务成交记录。摊位等级存 `quest_progress` 的 `market_stall`（值为 1 起的等级号），不额外加列。
+
 ## 委托线定义
 
 `rules.json` 的 `expedition_lines` 由 `ExpeditionLinesRule` 校验：`count` 限定 1-2，`unlock_cost` 为一次性灵石费用；当 `count` 为 1 时费用必须为 0，否则「只有一条线却收开辟费」会被启动校验直接拒绝。

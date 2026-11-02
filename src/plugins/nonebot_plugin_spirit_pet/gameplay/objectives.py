@@ -43,6 +43,7 @@ from . import bounty
 from . import sect_exchange
 from . import intent
 from . import merchant
+from . import market
 from . import sockets
 from . import team_trial
 from . import cuisine
@@ -512,6 +513,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (sockets.objective_line(ctx, player.user_id), "灵宠镶嵌"),
         (duel.objective_line(ctx, player.user_id), "灵宠斗法"),
         (merchant.objective_line(ctx, player.user_id), "灵宠商会"),
+        (market.objective_line(ctx, player.user_id), "灵宠集市"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
