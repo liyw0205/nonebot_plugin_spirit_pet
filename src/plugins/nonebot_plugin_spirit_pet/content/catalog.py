@@ -40,6 +40,7 @@ from ..domain.hybrid_content import Hybrid
 from ..domain.alchemy_content import AlchemyRecipe
 from ..domain.difficulty_content import Difficulty
 from ..domain.bounty_content import Bounty
+from ..domain.sect_exchange_content import SectOffer
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -154,6 +155,7 @@ class Catalog:
     alchemy: dict[str, AlchemyRecipe]
     difficulties: dict[str, Difficulty]
     bounties: dict[str, Bounty]
+    sect_exchange: dict[str, SectOffer]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -224,6 +226,7 @@ class Catalog:
             alchemy=_index(directory / "alchemy.json", AlchemyRecipe),
             difficulties=_index(directory / "difficulties.json", Difficulty),
             bounties=_index(directory / "bounties.json", Bounty),
+            sect_exchange=_index(directory / "sect_exchange.json", SectOffer),
         )
         catalog.validate()
         return catalog
@@ -345,6 +348,7 @@ class Catalog:
         self._validate_alchemy()
         self._validate_difficulties()
         self._validate_bounties()
+        self._validate_sect_exchange()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -808,6 +812,15 @@ class Catalog:
             raise ValueError("bounties must offer at least three entries")
         for bounty in self.bounties.values():
             self._require(bounty.reward.items, self.items, f"bounty {bounty.id} reward items")
+
+    def _validate_sect_exchange(self):
+        if not self.sect_exchange:
+            raise ValueError("sect exchange must not be empty")
+        items = [offer.item_id for offer in self.sect_exchange.values()]
+        if len(set(items)) != len(items):
+            raise ValueError("sect exchange must not offer the same item twice")
+        for offer in self.sect_exchange.values():
+            self._require([offer.item_id], self.items, f"sect offer {offer.id} item")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

@@ -266,6 +266,17 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 贡献兑换定义
+
+`sect_exchange.json` 是兑换表，由 `domain/sect_exchange_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`cost`（1-100000 贡献）与 `weekly_limit`（1-10）。`Catalog._validate_sect_exchange` 要求表非空、物品存在于 `items.json`、且同一物品不被两条报价重复收录。
+
+```json
+{"id": "sect_rice", "name": "灵粮", "description": "以贡献换取库房灵粮。",
+ "item_id": "spirit_food", "cost": 20, "weekly_limit": 5}
+```
+
+状态是两条 `quest_progress` 行：`sect_contrib_<门派id>` 仍是**总贡献**（阶位与被动只读它），`sect_spent_<门派id>` 记录已用贡献，可用贡献 = 两者之差；因此兑换不会改写阶位来源。每周库存是计数行 `sect_exchange_<周一零点>_<报价id>`，换周换 key 自动重置，而已用贡献跨周保留。
+
 ## 赏金定义
 
 `bounties.json` 是赏金池，由 `domain/bounty_content.py` 校验：每项声明 `id`、`name`、`description`、`metric`（只允许 `hybrid_brews`/`alchemy_brews`/`contracts_met`/`hard_clears` 四个新指标之一）、`target`（1-100）与 `reward`。`Catalog._validate_bounties` 要求池内至少三条并校验奖励物品存在。

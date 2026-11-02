@@ -1,0 +1,42 @@
+[
+  {
+    "id": "sect_rice",
+    "name": "灵粮",
+    "description": "以贡献换取库房灵粮。",
+    "item_id": "spirit_food",
+    "cost": 20,
+    "weekly_limit": 5
+  },
+  {
+    "id": "sect_ore",
+    "name": "锻灵矿",
+    "description": "以贡献换取锻造材料。",
+    "item_id": "forge_ore",
+    "cost": 40,
+    "weekly_limit": 3
+  },
+  {
+    "id": "sect_energy_pill",
+    "name": "回元丹",
+    "description": "以贡献换取丹药。",
+    "item_id": "energy_pill",
+    "cost": 60,
+    "weekly_limit": 2
+  },
+  {
+    "id": "sect_exp_pill",
+    "name": "蕴灵丹",
+    "description": "以贡献换取增进修为的丹药。",
+    "item_id": "exp_pill",
+    "cost": 90,
+    "weekly_limit": 2
+  },
+  {
+    "id": "sect_essence",
+    "name": "血脉精华",
+    "description": "以贡献换取珍贵材料。",
+    "item_id": "bloodline_essence",
+    "cost": 120,
+    "weekly_limit": 1
+  }
+]

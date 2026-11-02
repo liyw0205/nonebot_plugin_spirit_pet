@@ -143,6 +143,12 @@ def page(ctx: Context, arg: str) -> Reply:
     )
     lines.append(member.description)
     lines.append(f"阶位加成：{_ladder_text(member)}（随贡献提升）。")
+    try:
+        from .sect_exchange import balance as _balance
+
+        lines.append(f"可用贡献 {_balance(ctx, member)}（可兑换，不影响阶位）。")
+    except ImportError:  # pragma: no cover - the module always ships together
+        pass
     state = "今日已修行" if practiced_today(ctx) else "今日可修行"
     lines.append(
         f"每日修行：{state} · 消耗精力 {ctx.content.rules.sect.practice_energy}"
