@@ -420,6 +420,20 @@ class DuelRule(Definition):
         return self
 
 
+class MerchantRule(Definition):
+    """Daily merchant board: how many orders rotate in, and the all-clear bonus."""
+
+    offers_per_day: Annotated[int, Field(ge=1, le=5)]
+    all_clear_stones: NonNegative
+    all_clear_rep: NonNegative
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if self.all_clear_stones + self.all_clear_rep == 0:
+            raise ValueError("merchant all-clear bonus must grant stones or reputation")
+        return self
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -455,3 +469,4 @@ class Rules(Definition):
     farm_rotation: FarmRotationRule
     expedition_lines: ExpeditionLinesRule
     duel: DuelRule
+    merchant: MerchantRule

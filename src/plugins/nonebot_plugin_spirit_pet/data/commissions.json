@@ -1,0 +1,92 @@
+[
+  {
+    "id": "grain_run",
+    "name": "粮车押运",
+    "description": "商会要给远行的商队备粮，灵粮永远不嫌多。",
+    "min_rep": 0,
+    "items": {"spirit_food": 5},
+    "stones": 55,
+    "rep": 4
+  },
+  {
+    "id": "ore_order",
+    "name": "矿样收购",
+    "description": "新到的矿样要送去做锻造比对，锻灵矿按品质论价。",
+    "min_rep": 0,
+    "items": {"forge_ore": 2},
+    "stones": 90,
+    "rep": 5
+  },
+  {
+    "id": "seed_basket",
+    "name": "种子配货",
+    "description": "山下农户订的灵稻种，顺手就能配齐。",
+    "min_rep": 0,
+    "items": {"seed_spirit_rice": 3},
+    "stones": 70,
+    "rep": 4
+  },
+  {
+    "id": "herb_supply",
+    "name": "血草供货",
+    "description": "丹房要一批灵血草，配两份灵粮做药引。",
+    "min_rep": 0,
+    "items": {"seed_blood_herb": 1, "spirit_food": 2},
+    "stones": 100,
+    "rep": 5
+  },
+  {
+    "id": "pill_rush",
+    "name": "丹药急单",
+    "description": "两家弟子同时受创，回元丹要得急。",
+    "min_rep": 60,
+    "items": {"energy_pill": 2},
+    "stones": 130,
+    "rep": 8
+  },
+  {
+    "id": "essence_crate",
+    "name": "精华箱",
+    "description": "商会收一份血脉精华转卖给外门长老，价码开得高。",
+    "min_rep": 60,
+    "items": {"bloodline_essence": 1},
+    "stones": 210,
+    "rep": 9
+  },
+  {
+    "id": "gem_crate",
+    "name": "灵石匣",
+    "description": "镶嵌用的风灵石，商会愿意现钱收。",
+    "min_rep": 60,
+    "items": {"gem_swift": 1},
+    "stones": 110,
+    "rep": 7
+  },
+  {
+    "id": "feast_prep",
+    "name": "宴席备料",
+    "description": "洞府要办一桌宴，灵米粥和灵粮一起送去。",
+    "min_rep": 60,
+    "items": {"meal_rice": 1, "spirit_food": 4},
+    "stones": 70,
+    "rep": 6
+  },
+  {
+    "id": "high_seed",
+    "name": "高阶育种",
+    "description": "别家商号求购蕴灵穗种，这单只有熟手接得下。",
+    "min_rep": 60,
+    "items": {"seed_aura_ear": 2},
+    "stones": 240,
+    "rep": 10
+  },
+  {
+    "id": "mixed_supply",
+    "name": "杂货单",
+    "description": "一份矿、一份草，凑齐就能结账。",
+    "min_rep": 60,
+    "items": {"forge_ore": 1, "seed_blood_herb": 1},
+    "stones": 150,
+    "rep": 8
+  }
+]

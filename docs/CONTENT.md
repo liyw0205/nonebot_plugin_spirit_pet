@@ -296,6 +296,30 @@
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
 
+## 商会委托定义
+
+`commissions.json` 是委托数组，由 `domain/commission_content.py` 校验：每项声明 `id`、`name`、`description`、`min_rep`（接单所需声望）、`items`（物品 id → 数量 1-99）、`stones` 与 `rep`（正的回报）。`Catalog._validate_commissions` 要求表非空、物品都存在、至少有一条 `min_rep = 0` 的基础单，并且每条委托的灵石回报**严格低于**所需物品的商店售价合计（没有商店价的物品按 0 计），从根上堵死「买货→交付」的套利。
+
+```json
+{
+  "id": "grain_run",
+  "name": "粮车押运",
+  "description": "商会要给远行的商队备粮，灵粮永远不嫌多。",
+  "min_rep": 0,
+  "items": {"spirit_food": 5},
+  "stones": 55,
+  "rep": 4
+}
+```
+
+`rules.json` 的 `merchant` 由 `MerchantRule` 校验：`offers_per_day` 限定 1-5，`all_clear_stones` 与 `all_clear_rep` 至少一项为正。
+
+```json
+{"offers_per_day": 3, "all_clear_stones": 60, "all_clear_rep": 4}
+```
+
+运行状态写在既有 `quest_progress`：`merchant_rep` 存累计声望，`merchant_order_<北京日期>_<委托id>` 与 `merchant_bonus_<北京日期>` 存当日已交与日清凭证；换日自动失效，无需清理。看板按北京日序数在「当前声望可接」的委托池里取连续 `offers_per_day` 条，因此同一天同一声望下稳定。
+
 ## 委托线定义
 
 `rules.json` 的 `expedition_lines` 由 `ExpeditionLinesRule` 校验：`count` 限定 1-2，`unlock_cost` 为一次性灵石费用；当 `count` 为 1 时费用必须为 0，否则「只有一条线却收开辟费」会被启动校验直接拒绝。

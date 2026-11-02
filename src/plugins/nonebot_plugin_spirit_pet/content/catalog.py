@@ -44,6 +44,7 @@ from ..domain.sect_exchange_content import SectOffer
 from ..domain.intent_content import BattleIntent
 from ..domain.gem_content import SocketGem
 from ..domain.duel_content import DuelOpponent
+from ..domain.commission_content import Commission
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -162,6 +163,7 @@ class Catalog:
     intents: dict[str, BattleIntent]
     gems: dict[str, SocketGem]
     duels: dict[str, DuelOpponent]
+    commissions: dict[str, Commission]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -236,6 +238,7 @@ class Catalog:
             intents=_index(directory / "intents.json", BattleIntent),
             gems=_index(directory / "gems.json", SocketGem),
             duels=_index(directory / "duels.json", DuelOpponent),
+            commissions=_index(directory / "commissions.json", Commission),
         )
         catalog.validate()
         return catalog
@@ -361,6 +364,7 @@ class Catalog:
         self._validate_intents()
         self._validate_gems()
         self._validate_duels()
+        self._validate_commissions()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -860,6 +864,23 @@ class Catalog:
             if opponent.realm not in realms:
                 raise ValueError(f"duel opponent {opponent.id} has an unknown realm")
             self._require(opponent.reward.items, self.items, f"duel {opponent.id} reward items")
+
+    def _validate_commissions(self):
+        if not self.commissions:
+            raise ValueError("the merchant board needs at least one commission")
+        for entry in self.commissions.values():
+            self._require(entry.items, self.items, f"commission {entry.id} items")
+            # Never pay more than the shop value of what is handed in, or a player could
+            # buy the goods and deliver them for a profit.
+            paid = sum(
+                (self.items[item_id].price or 0) * amount for item_id, amount in entry.items.items()
+            )
+            if paid and entry.stones >= paid:
+                raise ValueError(
+                    f"commission {entry.id} pays {entry.stones} for goods worth {paid}"
+                )
+        if not any(entry.min_rep == 0 for entry in self.commissions.values()):
+            raise ValueError("at least one commission must be open to a new merchant")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

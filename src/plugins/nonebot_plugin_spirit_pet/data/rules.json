@@ -190,5 +190,10 @@
       "feint": {"name": "游斗", "dealt": 1.12, "taken": 1.06},
       "guard": {"name": "稳守", "dealt": 0.85, "taken": 0.7}
     }
+  },
+  "merchant": {
+    "offers_per_day": 3,
+    "all_clear_stones": 60,
+    "all_clear_rep": 4
   }
 }

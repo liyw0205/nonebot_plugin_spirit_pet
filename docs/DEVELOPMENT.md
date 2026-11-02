@@ -982,6 +982,16 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 定向命令 `./.venv/bin/pytest -q tests/test_duel.py tests/test_commands.py tests/test_objectives.py tests/test_contract_audit.py tests/test_content.py tests/test_pet_catalog.py tests/test_battles.py tests/test_runtime.py tests/test_catalog_interaction.py tests/test_messaging.py`：`257 passed`（含新增 `test_duel.py` 19 项）。新增用例覆盖内容阶梯与规则负例、未结契只读、护法列表与唯一入口、境界/精力/派遣/重复开局拒绝、四行状态写入、逐回合精力与气血延续、获胜发奖与周凭证、跨周重开、失败与平局清空、认输、同操作重投、重启续战、残缺状态行、不写战报与计数，以及 `max_rounds=1` 只推进一回合而默认战斗仍打到分出胜负。未跑全量、未做仿真或压测、未发送真实 QQ、未部署；schema 21 与表结构不变。 提交 `7310186` 已推送 develop，develop CI `41459445207` 全绿（3105 项），fast-forward 合入 main 后 main CI `41460479772` 全绿（3105 项）。Release `v0.1.19` 由 `main` `7310186` 发布：tag run `41461552998` 的 `tests 3.10`/`tests 3.13`/`install-smoke`/`release` 全部 success，Release 非草稿非预发布，资产 `project.tar.gz` 1,111,242 字节 / sha256 `26763bbb38d47ee364a16591bf2b4a9790d59ec9da69eed94a15a70fdeb0d76d`，文件清单与 `git archive 7310186` 逐项一致且包含 `gameplay/duel.py`、`domain/duel_content.py`、`data/duels.json`、`tests/test_duel.py`。
 
+### 灵宠商会（2026-11-03，已完成）
+
+审计确认：本地 `docs/goals/*` 全部已交付，`pet-roadmap-index.md` 四线与 `pet-goal-index-10.md` 十卡均有提交与 CI 证据；上一轮 `pet-goal-duel.md` 也已发布 `v0.1.19`。因此本轮按死路审计选新闭环：材料与作物只有「固定打造消耗」和「回收 40% 售价」两条出口，没有按需求交付换更好价格的循环，也没有把日常产出转成长期经营目标的路径。
+
+实现要点：新增 `data/commissions.json` 十条委托（四条 0 声望基础单 + 六条 60 声望高阶单），`domain/commission_content.py` 校验结构，`Catalog._validate_commissions` 要求物品存在、至少一条基础单、且灵石回报严格低于所需物品商店售价合计（堵死买货再交付的套利）；`rules.json` 新增 `merchant`（每日三单、日清灵石 60 / 声望 4）与 `MerchantRule`。`gameplay/merchant.py` 按北京日序数在「当前声望可接」的委托池里取连续三条，因此同日同声望稳定、隔日轮换；交付在同一事务内扣物品、加灵石与声望、写 `merchant_order_<日期>_<id>`，交齐当日三单追加一次 `merchant_bonus_<日期>` 日清奖励。声望存 `merchant_rep` 累计值且不因交付扣减，跨过 60 后可接池由 4 条扩到 10 条（看板即时刷新，已交凭证与已领日清不受影响）。拒绝路径覆盖未上架、重复交付、声望不足、物品不足、未知名称与越界序号，全部零写入；同 operation_id 重投返回原回复。
+
+页面逐条列出今日委托的持有/需求、灵石与声望回报、状态，只有确实可交付的行挂「交付」蓝字，按钮固定 `灵宠商会`/`灵宠背包`/`灵宠目标`；`灵宠目标` 新增商会行，帮助「灵物与灵术」新增两条，`test_contract_audit.py` 把 `merchant` 纳入只读页面并登记 10 项内容，`docs/GAMEPLAY.md` 与 `docs/CONTENT.md` 已同步。
+
+定向命令 `./.venv/bin/pytest -q tests/test_merchant.py tests/test_commands.py tests/test_objectives.py tests/test_contract_audit.py tests/test_content.py tests/test_pet_catalog.py tests/test_runtime.py tests/test_messaging.py tests/test_item_loop.py tests/test_duel.py`：`258 passed`（含新增 `test_merchant.py` 16 项），另跑赏金/每日特供/炼丹/杂交/灵田/贡献/成就商店/每日课题批次 `124 passed`。新增用例覆盖内容与定价校验（未知物品、套利定价、无基础单）、规则负例、未结契只读、看板同日稳定与隔日轮换、声望门槛与扩池、交付扣料发货与凭证、按序号交付与重复拒绝、五类拒绝零写入、日清奖励当天一次且隔日可再得、声望累计、重投幂等、重启持久、不写战报与计数、帮助/目标/解析、native 按钮与蓝字分离。未跑全量、未做仿真或压测、未发送真实 QQ、未部署；schema 21 与表结构不变。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
