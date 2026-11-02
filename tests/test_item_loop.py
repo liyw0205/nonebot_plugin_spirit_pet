@@ -41,6 +41,11 @@ def priced(game):
     return [item for item in game[0].content.items.values() if item.price is not None]
 
 
+def shop_pages(game):
+    """Derive the page count from content so adding a priced item never breaks this test."""
+    return max(1, (len(priced(game)) + 5 - 1) // 5)
+
+
 def item_of(game, kind):
     return next(item for item in game[0].content.items.values() if item.kind == kind)
 
@@ -58,7 +63,7 @@ def stock(game, *item_ids):
 def test_shop_list_links_each_item_detail_on_its_own_row(game, play):
     listing = play("shop")
     selected = priced(game)[:5]
-    assert listing.title == "山海灵坊 1/11"
+    assert listing.title == f"山海灵坊 1/{shop_pages(game)}"
     assert links(listing) == [
         (index, "查看详情", f"灵宠商店 {item.name}") for index, item in enumerate(selected)
     ]
@@ -76,7 +81,7 @@ def test_shop_list_links_each_item_detail_on_its_own_row(game, play):
 def test_shop_second_page_links_its_own_rows_and_keeps_both_page_buttons(game, play):
     listing = play("shop", "2")
     selected = priced(game)[5:10]
-    assert listing.title == "山海灵坊 2/11"
+    assert listing.title == f"山海灵坊 2/{shop_pages(game)}"
     assert [command for _, _, command in links(listing)] == [
         f"灵宠商店 {item.name}" for item in selected
     ]
