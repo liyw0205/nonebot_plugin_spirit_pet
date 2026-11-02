@@ -8,6 +8,7 @@ cache short-circuits the command.
 """
 
 from ..application.context import Context
+from ..utils.time import beijing_day
 
 PREFIX = "stat_"
 
@@ -16,17 +17,31 @@ def key(metric: str) -> str:
     return f"{PREFIX}{metric}"
 
 
+def day_key(metric: str, now: int) -> str:
+    return f"{PREFIX}{metric}_day_{beijing_day(now)}"
+
+
 def bump(ctx: Context, metric: str, amount: int = 1, user_id: str | None = None) -> int:
     """Increase one counter and return the new total."""
     if amount <= 0:
         raise ValueError("counter increments must be positive")
     owner = user_id or ctx.user_id
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
-        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress",
-        (owner, key(metric), amount),
-    )
+    for quest_id in (key(metric), day_key(metric, ctx.now)):
+        ctx.repo.conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
+            "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress",
+            (owner, quest_id, amount),
+        )
     return value(ctx, metric, owner)
+
+
+def today_value(ctx: Context, metric: str, user_id: str | None = None) -> int:
+    """Work done on this metric since the Beijing day started."""
+    row = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, day_key(metric, ctx.now)),
+    ).fetchone()
+    return int(row["progress"]) if row else 0
 
 
 def value(ctx: Context, metric: str, user_id: str | None = None) -> int:

@@ -266,6 +266,19 @@
 
 运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
 
+## 赏金定义
+
+`bounties.json` 是赏金池，由 `domain/bounty_content.py` 校验：每项声明 `id`、`name`、`description`、`metric`（只允许 `hybrid_brews`/`alchemy_brews`/`contracts_met`/`hard_clears` 四个新指标之一）、`target`（1-100）与 `reward`。`Catalog._validate_bounties` 要求池内至少三条并校验奖励物品存在。
+
+```json
+{"id": "bounty_alchemy", "name": "丹火悬赏", "description": "今日炼成一炉丹药。",
+ "metric": "alchemy_brews", "target": 1,
+ "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 200, "maximum": 200},
+            "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}}
+```
+
+当天展示的三份由日序数取模决定窗口（连续三条、循环跨越池尾），窗口内顺序固定，因此同一天内页面稳定、跨日整体前移。进度不走快照：`counters.bump` 除单调总量外还维护 `stat_<指标>_day_<北京日期>`，赏金直接读当日值，昨天的工作天然不计入。领取凭证是 `bounty_<北京日期>_<赏金id>`，因此每份每天只能领一次，且与既有每日课题的「三选一」凭证互不影响。
+
 ## 累计指标
 
 杂交、炼丹、契约、强化通关与归灵没有可派生的存档状态，因此各自维护一个单调计数器：`quest_progress` 的 `stat_<指标名>` 行（`progress` 即累计次数）。`gameplay/counters.bump()` 只在成功路径调用，`value()` 供 `achievements._metric` 读取，`pets_released` 则直接由 `released_<伙伴编号>` 标记行派生，不需要计数器。

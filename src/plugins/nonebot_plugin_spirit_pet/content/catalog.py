@@ -39,6 +39,7 @@ from ..domain.contract_content import Contract
 from ..domain.hybrid_content import Hybrid
 from ..domain.alchemy_content import AlchemyRecipe
 from ..domain.difficulty_content import Difficulty
+from ..domain.bounty_content import Bounty
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
@@ -152,6 +153,7 @@ class Catalog:
     hybrids: dict[str, Hybrid]
     alchemy: dict[str, AlchemyRecipe]
     difficulties: dict[str, Difficulty]
+    bounties: dict[str, Bounty]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -221,6 +223,7 @@ class Catalog:
             hybrids=_index(directory / "hybrids.json", Hybrid),
             alchemy=_index(directory / "alchemy.json", AlchemyRecipe),
             difficulties=_index(directory / "difficulties.json", Difficulty),
+            bounties=_index(directory / "bounties.json", Bounty),
         )
         catalog.validate()
         return catalog
@@ -341,6 +344,7 @@ class Catalog:
         self._validate_hybrids()
         self._validate_alchemy()
         self._validate_difficulties()
+        self._validate_bounties()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -798,6 +802,12 @@ class Catalog:
             raise ValueError("difficulties must not be empty")
         if not any(entry.enemy_scale == 1.0 for entry in self.difficulties.values()):
             raise ValueError("difficulties must include a baseline tier")
+
+    def _validate_bounties(self):
+        if len(self.bounties) < 3:
+            raise ValueError("bounties must offer at least three entries")
+        for bounty in self.bounties.values():
+            self._require(bounty.reward.items, self.items, f"bounty {bounty.id} reward items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

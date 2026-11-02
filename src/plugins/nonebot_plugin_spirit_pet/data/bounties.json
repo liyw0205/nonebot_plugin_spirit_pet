@@ -1,0 +1,47 @@
+[
+  {
+    "id": "bounty_hybrid",
+    "name": "调配悬赏",
+    "description": "今日完成一次种子杂交。",
+    "metric": "hybrid_brews",
+    "target": 1,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 180, "maximum": 180},
+               "items": {"spirit_food": {"minimum": 2, "maximum": 2}}}
+  },
+  {
+    "id": "bounty_alchemy",
+    "name": "丹火悬赏",
+    "description": "今日炼成一炉丹药。",
+    "metric": "alchemy_brews",
+    "target": 1,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 200, "maximum": 200},
+               "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}
+  },
+  {
+    "id": "bounty_contract",
+    "name": "履约悬赏",
+    "description": "今日达成一份秘境契约。",
+    "metric": "contracts_met",
+    "target": 1,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 240, "maximum": 240},
+               "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}
+  },
+  {
+    "id": "bounty_desperate",
+    "name": "绝境悬赏",
+    "description": "今日在强化难度下通关一次。",
+    "metric": "hard_clears",
+    "target": 1,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 260, "maximum": 260},
+               "items": {"exp_pill": {"minimum": 1, "maximum": 1}}}
+  },
+  {
+    "id": "bounty_double_brew",
+    "name": "双炉悬赏",
+    "description": "今日累计炼成两炉丹药。",
+    "metric": "alchemy_brews",
+    "target": 2,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 320, "maximum": 320},
+               "items": {"energy_pill": {"minimum": 2, "maximum": 2}}}
+  }
+]
