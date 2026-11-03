@@ -458,6 +458,14 @@ class FriendRule(Definition):
     request_hours: Annotated[int, Field(ge=1, le=72)]
 
 
+class ShareRule(Definition):
+    """灵宠分享: how many battle reports one may publish a day and how long a code lives."""
+
+    daily_limit: Annotated[int, Field(ge=1, le=20)]
+    code_days: Annotated[int, Field(ge=1, le=30)]
+    list_page_size: Annotated[int, Field(ge=1, le=10)]
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -496,3 +504,4 @@ class Rules(Definition):
     merchant: MerchantRule
     mail: MailRule
     friend: FriendRule
+    share: ShareRule

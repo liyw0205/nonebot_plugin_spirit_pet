@@ -309,3 +309,16 @@ CREATE TABLE friend_requests (
 );
 CREATE INDEX friend_request_inbox ON friend_requests(to_id, expires_at);
 CREATE INDEX friend_request_outbox ON friend_requests(from_id, expires_at);
+CREATE TABLE battle_shares (
+    share_id TEXT PRIMARY KEY CHECK(length(share_id) BETWEEN 6 AND 24),
+    battle_id INTEGER NOT NULL REFERENCES battle_records(battle_id) ON DELETE CASCADE,
+    owner_id TEXT NOT NULL REFERENCES players(user_id),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+    state TEXT NOT NULL CHECK(state IN ('active', 'revoked')),
+    closed_at INTEGER,
+    views INTEGER NOT NULL DEFAULT 0 CHECK(views >= 0),
+    CHECK((state='active' AND closed_at IS NULL) OR (state='revoked' AND closed_at IS NOT NULL))
+);
+CREATE INDEX battle_share_owner ON battle_shares(owner_id, state, created_at DESC);
+CREATE INDEX battle_share_battle ON battle_shares(battle_id);

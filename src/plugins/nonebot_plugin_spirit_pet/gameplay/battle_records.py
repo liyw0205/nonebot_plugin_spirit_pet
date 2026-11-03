@@ -201,10 +201,14 @@ def _member_text(member: dict) -> str:
     )
 
 
-def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:
-    row = ctx.repo.battle_report(ctx.user_id, battle_id)
-    if row is None:
-        raise GameError("战报不存在，或你不是该场战斗的参与者。")
+def render_report(row, page: int = 1, *, shareable: bool = False) -> Reply:
+    """Render a stored report from its own snapshot and log.
+
+    Authorization stays with the caller: the participant path resolves `row` through
+    ``repo.battle_report`` and the share path through an active share code. This
+    function only renders, so there is exactly one renderer and a share can never
+    become a way around the participant gate.
+    """
     snapshot = json.loads(row["snapshot"])
     log = json.loads(row["battle_log"])
     summary = [
@@ -224,14 +228,23 @@ def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:
         raise GameError(f"该战报共 {pages} 页。")
     commands = ["灵宠战报"]
     if page > 1:
-        commands.append(f"灵宠战报 详情 {battle_id} {page - 1}")
+        commands.append(f"灵宠战报 详情 {row['battle_id']} {page - 1}")
     if page < pages:
-        commands.append(f"灵宠战报 详情 {battle_id} {page + 1}")
+        commands.append(f"灵宠战报 详情 {row['battle_id']} {page + 1}")
+    if shareable:
+        commands.append(f"灵宠分享 {row['battle_id']}")
     return Reply(
         f"战报 #{row['battle_id']} {page}/{pages}",
         (*summary, "战斗记录：", *log[(page - 1) * DETAIL_PAGE_SIZE:page * DETAIL_PAGE_SIZE]),
         tuple(commands),
     )
+
+
+def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:
+    row = ctx.repo.battle_report(ctx.user_id, battle_id)
+    if row is None:
+        raise GameError("战报不存在，或你不是该场战斗的参与者。")
+    return render_report(row, page, shareable=True)
 
 
 def reports(ctx: Context, arg: str) -> Reply:

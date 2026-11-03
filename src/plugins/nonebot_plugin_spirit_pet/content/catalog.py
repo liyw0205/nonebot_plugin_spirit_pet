@@ -371,6 +371,7 @@ class Catalog:
         self._validate_market()
         self._validate_mail()
         self._validate_friend()
+        self._validate_share()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -922,6 +923,16 @@ class Catalog:
         """
         if self.rules.friend.max_friends < 2:
             raise ValueError("friend roster must hold at least two friends")
+
+    def _validate_share(self):
+        """A share code must be long enough to be unguessable and fit the column.
+
+        A share code is a bearer capability: whoever holds it may read a report. The
+        load-time invariant is therefore about the code's own space — a code shorter
+        than the schema's floor could be brute-forced, so refuse it before shipping.
+        """
+        if self.rules.share.code_days < 1:
+            raise ValueError("share code must last at least one day")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

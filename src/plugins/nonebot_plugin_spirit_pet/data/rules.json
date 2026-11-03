@@ -207,5 +207,10 @@
   "friend": {
     "max_friends": 50,
     "request_hours": 24
+  },
+  "share": {
+    "daily_limit": 5,
+    "code_days": 7,
+    "list_page_size": 5
   }
 }

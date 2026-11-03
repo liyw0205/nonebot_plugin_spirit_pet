@@ -1018,6 +1018,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_mail.py` 31 项（规则接线与区间、重复种类与未知种类负例、可寄种类无物品时拒绝、未结契只读且不建号、寄出托管与收件箱、灵石寄出与领取、领取只交付一次且第二次拒绝、未领取可收回、到期惰性退回且只退一次、当日封数只按当天计、信箱满整笔拒绝零写入、五类格式/物品/种类拒绝零写入、自己/陌生人/UID 不存在拒绝、上限与持有不足拒绝、同操作重投只托管一次、双方权限与不存在编号拒绝、领取后不能收回、重启持久、不写战报与进度、目标页两行、寄件箱过滤已领取、帮助与解析、QQ 按钮与蓝字分离、新库含两表两索引、22→23 迁移保留旧行并留底）。聚焦 11 个文件 `250 passed`，另跑道具/信息/体验/消息/分页/商会/赏金/贡献/斗法/双线/回收/图鉴交互/灵术赏批次 `237 passed`；`compileall` 与 `git diff --check` 通过。提交 `ff2b03f` 已推送 develop，develop CI `41558390144` 全绿（3176 项）；fast-forward 合入 main 后 main CI `41559227285` 全绿（同为 3176 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改赠送/寄养/集市规则与战斗结算、未创建新 Release tag。
 
+### 灵宠分享（2026-11-03，已完成）
+
+审计方向从「还能加什么」换成「已有什么永远看不到」：`battle_records` 永久保存每场战斗的不可变战报（战前快照、逐条事件日志、当时回复，全库 50 处引用），但 `repository.battle_report(user_id, battle_id)` 的授权条件是 `JOIN battle_participants p ... AND p.user_id=?`，而 `battle_participants.permission` 只有 `participant`/`defender` 两个值。于是战报**只可能**被已经打过这场的人读到：一场决定性的论剑胜负或一次首领击杀，无法给任何其他人看。`grep -rl '分享' src/` 只命中 `companionship.py` 的文案与首领击退奖励措辞，没有任何分享动词；`tests/test_battle_records.py:85` 与 `tests/test_lineup_coverage.py:434` 都在断言这道参与者门，说明封闭是有意的、必须保留。本切片因此新增第二条**独立守卫**的读取路径，而不是放宽第一条。
+
+内容与校验：`rules.json` 新增 `share` 与 `domain/content.py` 的 `ShareRule`（`daily_limit` 1-20、`code_days` 1-30、`list_page_size` 1-10），`Catalog._validate_share` 要求有效期至少一天。分享没有逐条内容，因此不新增数据文件，也不进 `DOCUMENTED_COUNTS`（与 `mail`/`friend` 同理）。
+
+持久化：schema 升至 25。新增单表 `battle_shares`（`share_id` 主键并 `CHECK(length BETWEEN 6 AND 24)`、`battle_id` 外键到 `battle_records`、`owner_id` 外键到 `players`、`created_at`、`expires_at` 且 `CHECK(expires_at > created_at)`、`state` ∈ `active`/`revoked`、`closed_at`、`views`），表级 CHECK 把状态与关闭时间绑死；索引 `battle_share_owner (owner_id, state, created_at DESC)` 与 `battle_share_battle`。表里只存 `battle_id`，绝不复制 `snapshot`——战报已不可变，复制只会多一条会漂移的路径。迁移沿用冻结链：`legacy_schema24` 剥掉分享表与两个索引，调用它的是 `legacy_schema23`（newest-first），因此 18–23 fixture 仍逐级还原；`backup_schema24` 留底、`migrate_share_tables` 从 `schema.sql` 取相同语句执行、`validate_schema25` 与完整性/外键检查、失败回滚；23→24 分支写 `user_version=24` 后继续落入 24→25（上一切片修掉的两个缺陷不回退，另有 23 库一次走到 25 的回归用例）。
+
+玩法层 `gameplay/shares.py`：`create` 用**参与者门**的 `repo.battle_report(ctx.user_id, id)` 取战报，所以只能分享自己打过的；随后检查当日次数，再用 `secrets` 随机铸码并处理碰撞。码的字母表去掉 `0/O/1/I`（要口头转述与人手重输），长度 12，与自增的战报编号无关——分享码是 bearer 凭据，谁拿到谁就能读那一场，因此不能可推导。`view` 对任何玩家开放：先惰性清理到期码，再按有效码取 `battle_id`，用**分享者**在该场战斗的 `side` 渲染（页首注明「以分享者视角」），并只在该次成功读取时 `views+1`。`revoke` 以 `UPDATE ... WHERE share_id=? AND owner_id=? AND state='active'` 作守卫、`rowcount != 1` 即拒绝，因此重复撤回不可能成功两次。渲染函数从 `battle_records._detail` 中抽出为 `render_report(row, page, *, shareable=False)`，授权留在各自调用方：参与者路径仍走 `battle_report`，分享路径走有效码，两者共用一个渲染器，分享因此不可能变成绕过参与者校验的后门。页面 `灵宠分享 我的` 每页 5 条、只为有效期内的行挂「查看」「撤回」；`灵宠战报 查看` 的详情页在参与者视角下多一条 `灵宠分享 <编号>`。
+
+新增 `tests/test_shares.py` 31 项（规则接线与区间、铸码随机性与字母表、未结契只读、空页、创建写一行 active 且到期时间正确、未参与与未知编号与格式拒绝零写入、`defender` 行对局外人仍拒绝但对本人放行、每日上限拒绝且次日恢复、他人可读且渲染快照而非现况、改名后不影响旧战报、每次成功读取才计数、坏码拒绝不计数、过期码不可开、过期后可重新分享出新码、撤回对所有人关闭、非本人撤回拒绝、未知码撤回拒绝、我的分享状态与行内动作、分页与链接可解析、目标页两行、战报详情给出分享入口且局外人仍被拒、重启持久、同 operation_id 只铸一码、分享不动资源也不写新战报、帮助与解析、QQ 按钮与蓝字分离、新库含表与两索引、半闭合行被表约束拒绝、23 库一次迁到 25、24 库补齐分享表并留底）。聚焦 14 个文件 `309 passed`，另跑论剑/战斗/秘境/关卡/阵容/道具/信息/分页/集市/信箱批次 `314 passed`；`compileall` 与 `git diff --check` 通过。
+
 ### 灵宠好友（2026-11-03，已完成）
 
 审计确认 `docs/DEVELOPMENT.md:261` 把「好友/交易/信箱（需要新表）」列为排除方向，其中交易已由集市（schema 22）交付、信箱已由邮寄（schema 23）交付，**好友始终没有实现**：`grep -rl '好友' src/` 为空。更要紧的是 `gifting.are_friends()` 只是把「同场战斗或同队」*推导*成好友边，玩家看不到、加不了、也结束不了这条边，而 `灵宠赠送`、`灵宠寄养` 与 `灵宠信箱` 都依赖它。本切片把这条派生边变成可主动经营的关系，同时保留旧判断，避免影响既有存档。

@@ -35,7 +35,7 @@
 | ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
 | shop_rotation.json | 灵坊每日特供池：物品、折扣百分比与当日库存；按北京时间日期轮换三件 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
-| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）与好友（名册上限/申请有效小时数） |
+| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）、好友（名册上限/申请有效小时数）与战报分享（每日次数/分享码有效天数/每页条数） |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
@@ -1061,3 +1061,16 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 schema 24 新增两张表。`friend_links (user_low, user_high, created_at)` 用 `PRIMARY KEY(user_low, user_high)` 与 `CHECK(user_low < user_high)` 把「两人是好友」归一化成唯一一行：关系天然对称，既不可能重复记录，也不可能只记一半。`friend_requests (from_id, to_id, created_at, expires_at)` 用 `PRIMARY KEY(from_id, to_id)` 锁定单向待处理申请，`CHECK(from_id != to_id)` 禁止自申请，`CHECK(expires_at > created_at)` 保证有效期为正。索引 `friend_link_low` 与 `friend_link_high` 服务「我的好友」两个方向，`friend_request_inbox` 服务待我处理，`friend_request_outbox` 服务我发出的。
 
 两张表互不蕴含：申请只是意图，接受时才在同一事务里写入归一化边并删除申请；任一方「解除」直接删除该行，双方名册同时消失。因此查询好友一律是 `WHERE user_low=? OR user_high=?`，名册计数也必须同时统计两列，否则一半好友不会计入上限。
+
+
+## 战报分享定义
+
+分享同样没有独立内容文件：`rules.json` 的 `share` 只给出每日次数、分享码有效期与每页条数。
+
+    {"daily_limit": 5, "code_days": 7, "list_page_size": 5}
+
+`ShareRule` 校验三个字段的区间（`daily_limit` 1-20、`code_days` 1-30、`list_page_size` 1-10）；`Catalog._validate_share` 要求有效期至少一天。
+
+schema 25 新增单表 `battle_shares`：`share_id` 主键并限定长度 6-24（分享码是凭据，太短就能被穷举），`battle_id` 外键指向 `battle_records`，`owner_id` 外键指向 `players`，`created_at`/`expires_at`（`CHECK(expires_at > created_at)`）、`state` 取 `active`/`revoked`、`closed_at`、`views`（`CHECK(views >= 0)`）。表级 CHECK 把状态与关闭时间绑死：`active` 必须没有关闭时间，`revoked` 必须有。索引 `battle_share_owner (owner_id, state, created_at DESC)` 服务「我的分享」，`battle_share_battle` 服务按战报反查。
+
+表里只存 `battle_id`，不复制 `snapshot`：战报本身已经不可变，复制只会多出一条会漂移的路径。分享码由 `secrets` 随机生成、字母表去掉 `0/O/1/I`（需要口头转述与人手重输），因此不可能从自增的战报编号推出。读取路径与参与者的读取路径是两个独立出口：`灵宠战报 查看` 仍走 `repo.battle_report` 的参与者校验，`灵宠分享 查看 <码>` 只认有效分享码，两者共用同一个渲染函数，所以分享不会成为绕过参与者校验的后门。

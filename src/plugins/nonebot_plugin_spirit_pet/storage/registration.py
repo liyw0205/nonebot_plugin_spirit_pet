@@ -93,9 +93,45 @@ def legacy_schema21(current_schema: str) -> str:
     return schema
 
 
+def legacy_schema24(current_schema: str) -> str:
+    """Reconstruct schema 24 from the current schema: no battle-report shares."""
+    schema = re.sub(r"CREATE TABLE battle_shares \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    for name in ("battle_share_owner", "battle_share_battle"):
+        schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
+    if "battle_share" in schema:
+        raise RuntimeError("Current schema still carries share definitions")
+    return schema
+
+
+def validate_schema25(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 25)
+
+
+def migrate_share_tables(conn: sqlite3.Connection) -> None:
+    """Schema 25: a revocable share code needs its own table."""
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    match = re.search(r"CREATE TABLE battle_shares \([\s\S]*?\n\);", schema)
+    if match is None:
+        raise RuntimeError("Current schema is missing battle_shares")
+    conn.execute(match.group(0))
+    for name in ("battle_share_owner", "battle_share_battle"):
+        index = re.search(rf"CREATE INDEX {name} [^;]*;", schema)
+        if index is None:
+            raise RuntimeError(f"Current schema is missing {name}")
+        conn.execute(index.group(0))
+
+
+def backup_schema24(path: Path) -> Path:
+    return _backup_schema(path, 24)
+
+
+def validate_schema24(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, legacy_schema24(current_schema), 24)
+
+
 def legacy_schema23(current_schema: str) -> str:
     """Reconstruct schema 23 from the current schema: no friend tables."""
-    schema = current_schema
+    schema = legacy_schema24(current_schema)
     for table in ("friend_links", "friend_requests"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for name in ("friend_link_low", "friend_link_high", "friend_request_inbox", "friend_request_outbox"):
@@ -103,10 +139,6 @@ def legacy_schema23(current_schema: str) -> str:
     if "friend_" in schema:
         raise RuntimeError("Current schema still carries friend definitions")
     return schema
-
-
-def validate_schema24(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 24)
 
 
 def migrate_friend_tables(conn: sqlite3.Connection) -> None:
