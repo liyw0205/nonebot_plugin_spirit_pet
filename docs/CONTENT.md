@@ -296,6 +296,16 @@
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
 
+## 今日汇总定义
+
+`灵宠今日` 没有内容文件与规则数值：它是纯入口聚合，每一条都由来源模块自己的只读 helper 生成
+（`free_summon.available`、`mailbox.inbox`、`affinity_milestone_rewards.claimable`、
+`realm_milestone_rewards.claimable`、`expeditions.running_rows`、`merchant.todays`/`delivered`/`_missing`、
+`drill.remaining`、`codex_trials.weekly_slots`/`weekly_cleared`），本模块不复制它们的业务规则，也不写任何表。
+
+因此加一条 `rules.today` 只会是伪配置；页面的唯一契约是「只读」：打开前后整库快照必须逐位相同。
+若某个来源将来需要新的判定，应先在它自己的模块里暴露只读 helper，再由今日页调用，而不是在今日页里重算。
+
 ## 配装预设定义
 
 配装没有内容文件与规则数值：它只是玩家自己穿在身上的三件灵物的快照，不存在可调的刻度，因此任何 `rules.gear_preset` 都只会是伪配置。每只伙伴固定 3 套。
