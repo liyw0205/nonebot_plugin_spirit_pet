@@ -8,13 +8,14 @@ from pathlib import Path
 from ..domain.models import GameError, Reply
 from .registration import (
     add_registration_times, backup_schema18, backup_schema19, backup_schema20, backup_schema21,
-    backup_schema22, backup_schema23, backup_schema24, migrate_expedition_slots, migrate_friend_tables,
-    migrate_mail_tables, migrate_market_tables, migrate_share_tables,
-    migrate_player_identity, validate_schema18, validate_schema19, validate_schema20,
-    validate_schema21, validate_schema22, validate_schema23, validate_schema24, validate_schema25,
+    backup_schema22, backup_schema23, backup_schema24, backup_schema25, migrate_expedition_slots,
+    migrate_friend_tables, migrate_bid_tables, migrate_mail_tables, migrate_market_tables,
+    migrate_share_tables, migrate_player_identity, validate_schema18, validate_schema19,
+    validate_schema20, validate_schema21, validate_schema22, validate_schema23, validate_schema24,
+    validate_schema25, validate_schema26,
 )
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -251,6 +252,34 @@ class Store:
                         raise RuntimeError("Share migration integrity check failed; database preserved")
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Share migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=25")
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    conn.execute("PRAGMA foreign_keys=ON")
+                    raise
+                conn.execute("PRAGMA foreign_keys=ON")
+                version = 25
+            if version == 25:
+                conn.execute("PRAGMA foreign_keys=OFF")
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        conn.execute("PRAGMA foreign_keys=ON")
+                        return
+                    if version != 25:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema25(conn, schema)
+                    backup_schema25(self.path)
+                    migrate_bid_tables(conn)
+                    validate_schema26(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Buy-order migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Buy-order migration foreign key check failed; database preserved")
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     conn.commit()
                 except BaseException:

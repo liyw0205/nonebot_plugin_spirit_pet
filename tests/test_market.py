@@ -127,12 +127,19 @@ def test_market_rule_rejects_bad_bounds_and_duplicate_kinds():
         "max_quantity": 30,
         "sellable_kinds": ["material"],
         "stalls": [{"id": "stall_free", "name": "散铺", "unlock_cost": 0, "slots": 2, "fee_percent": 10}],
+        "bid_days": 3,
+        "max_bid_quantity": 30,
+        "bid_slots": 2,
     }
     with pytest.raises(ValidationError, match="minimum unit price"):
         MarketRule.model_validate(base)
     base["min_unit_price"] = 1
     base["sellable_kinds"] = ["material", "material"]
     with pytest.raises(ValidationError, match="sellable kinds must be unique"):
+        MarketRule.model_validate(base)
+    base["sellable_kinds"] = ["material"]
+    base["bid_slots"] = 5
+    with pytest.raises(ValidationError, match="bid slots must not exceed the largest stall"):
         MarketRule.model_validate(base)
 
 

@@ -24,6 +24,9 @@ class MarketRule(Definition):
     max_quantity: Annotated[int, Field(ge=1, le=99)]
     sellable_kinds: list[Literal["material", "consumable"]] = Field(min_length=1, max_length=2)
     stalls: list[Stall] = Field(min_length=1, max_length=6)
+    bid_days: Annotated[int, Field(ge=1, le=30)]
+    max_bid_quantity: Annotated[int, Field(ge=1, le=99)]
+    bid_slots: Annotated[int, Field(ge=1, le=6)]
 
     @model_validator(mode="after")
     def check_rule(self):
@@ -31,4 +34,6 @@ class MarketRule(Definition):
             raise ValueError("market minimum unit price must not exceed the maximum")
         if len(set(self.sellable_kinds)) != len(self.sellable_kinds):
             raise ValueError("market sellable kinds must be unique")
+        if self.bid_slots > max(stall.slots for stall in self.stalls):
+            raise ValueError("market bid slots must not exceed the largest stall")
         return self

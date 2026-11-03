@@ -93,18 +93,55 @@ def legacy_schema21(current_schema: str) -> str:
     return schema
 
 
+def legacy_schema25(current_schema: str) -> str:
+    """Reconstruct schema 25 from the current schema: no market buy orders."""
+    schema = current_schema
+    for table in ("market_bids", "market_bid_sales"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for name in ("market_bid_board", "market_bid_buyer", "market_bid_sales_seller", "market_bid_sales_buyer"):
+        schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
+    if "market_bid" in schema:
+        raise RuntimeError("Current schema still carries buy-order definitions")
+    return schema
+
+
+def validate_schema26(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 26)
+
+
+def migrate_bid_tables(conn: sqlite3.Connection) -> None:
+    """Schema 26: a standing buy order needs its escrow row and its ledger."""
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for table in ("market_bids", "market_bid_sales"):
+        match = re.search(rf"CREATE TABLE {table} \([\s\S]*?\n\);", schema)
+        if match is None:
+            raise RuntimeError(f"Current schema is missing {table}")
+        conn.execute(match.group(0))
+    for name in ("market_bid_board", "market_bid_buyer", "market_bid_sales_seller", "market_bid_sales_buyer"):
+        index = re.search(rf"CREATE INDEX {name} [^;]*;", schema)
+        if index is None:
+            raise RuntimeError(f"Current schema is missing {name}")
+        conn.execute(index.group(0))
+
+
+def backup_schema25(path: Path) -> Path:
+    return _backup_schema(path, 25)
+
+
+def validate_schema25(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, legacy_schema25(current_schema), 25)
+
+
 def legacy_schema24(current_schema: str) -> str:
     """Reconstruct schema 24 from the current schema: no battle-report shares."""
-    schema = re.sub(r"CREATE TABLE battle_shares \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(
+        r"CREATE TABLE battle_shares \([\s\S]*?\n\);\n", "", legacy_schema25(current_schema), count=1,
+    )
     for name in ("battle_share_owner", "battle_share_battle"):
         schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
     if "battle_share" in schema:
         raise RuntimeError("Current schema still carries share definitions")
     return schema
-
-
-def validate_schema25(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 25)
 
 
 def migrate_share_tables(conn: sqlite3.Connection) -> None:

@@ -322,9 +322,9 @@
 
 ## 集市定义
 
-`market.json` 是单个对象，由 `domain/market_content.py` 的 `MarketRule` 校验：`listing_days`（1-30 天）、`min_unit_price` 与 `max_unit_price`（1-1000000，且最小值不得大于最大值）、`max_quantity`（1-99）、`sellable_kinds`（可取 `material`、`consumable`，不得重复），以及 `stalls` 摊位阶梯（1-6 级）。每个摊位声明 `id`、`name`、`unlock_cost`、`slots`（1-12）与 `fee_percent`（0-25）。
+`market.json` 是单个对象，由 `domain/market_content.py` 的 `MarketRule` 校验：`listing_days`（1-30 天）、`min_unit_price` 与 `max_unit_price`（1-1000000，且最小值不得大于最大值）、`max_quantity`（1-99）、`sellable_kinds`（可取 `material`、`consumable`，不得重复）、`bid_days`（1-30 天）、`max_bid_quantity`（1-99 且不得大于 `max_quantity`）、`bid_slots`（1-6 且不得大于最高摊位的陈列位），以及 `stalls` 摊位阶梯（1-6 级）。每个摊位声明 `id`、`name`、`unlock_cost`、`slots`（1-12）与 `fee_percent`（0-25）。
 
-`Catalog._validate_market` 要求：首个摊位 `unlock_cost = 0`；后续每级解锁价**严格递增**、陈列位**严格递增**、成交税**不得上升**；摊位 id 不得重复；每种 `sellable_kinds` 在 `items.json` 里至少存在一件对应种类的物品，避免上架表指向空集。
+`Catalog._validate_market` 要求：首个摊位 `unlock_cost = 0`；后续每级解锁价**严格递增**、陈列位**严格递增**、成交税**不得上升**；摊位 id 不得重复；每种 `sellable_kinds` 在 `items.json` 里至少存在一件对应种类的物品，避免上架表指向空集；求购单笔上限不得超过上架的数量上限。
 
 ```json
 {
@@ -332,6 +332,9 @@
   "min_unit_price": 1,
   "max_unit_price": 50000,
   "max_quantity": 30,
+  "bid_days": 3,
+  "max_bid_quantity": 30,
+  "bid_slots": 2,
   "sellable_kinds": ["material", "consumable"],
   "stalls": [
     {"id": "stall_spread", "name": "散铺", "unlock_cost": 0, "slots": 2, "fee_percent": 10},
@@ -341,6 +344,10 @@
 ```
 
 schema 22 新增两张表：`market_listings` 保存托管挂单（`seller_id`、`item_id`、`quantity`、`unit_price`、`created_at`、`expires_at`、`state` 为 `active`/`sold`/`cancelled`/`expired`、`closed_at`、`buyer_id`），表级 CHECK 保证四种状态与 `closed_at`、`buyer_id` 的组合自洽，成交时买家不得等于卖家；`market_sales` 是永久成交账本（`gross`、`fee`、`net`，CHECK `fee + net = gross`，且买家不等于卖家）。索引 `market_listing_board` 服务集市浏览，`market_listing_seller` 服务我的摊位，`market_sales_seller` 服务成交记录。摊位等级存 `quest_progress` 的 `market_stall`（值为 1 起的等级号），不额外加列。
+
+schema 26 新增两张表，承载集市的反向一侧。`market_bids` 保存求购挂单（`buyer_id`、`item_id`、`quantity`、`unit_price`、`escrow`、`created_at`、`expires_at`、`state` 为 `active`/`filled`/`cancelled`/`expired`、`closed_at`、`seller_id`），表级 CHECK 把三件事绑死：`escrow = quantity * unit_price`（托管额必须等于标价总额，代码写错也造不出付款与价格不符的单）、四种状态与 `closed_at`/`seller_id` 的组合自洽（`filled` 必须两者都有且卖家不是买家）、`expires_at > created_at`。`market_bid_sales` 是求购的永久成交账本（`buyer_id`、`seller_id`、`gross`、`fee`、`net`，CHECK `fee + net = gross` 且买家不等于卖家），主键就是 `bid_id`，一单只能结算一次。索引 `market_bid_board` 服务公开看板（按物品与单价倒序），`market_bid_buyer` 服务我的求购，`market_bid_sales_seller`/`market_bid_sales_buyer` 服务「交货」「收货」两侧记录。
+
+托管的方向与上架相反：上架把**物品**移出卖家背包，求购把**灵石**移出买家钱包，因此成交时不再向买家收钱，撤单与到期退的是灵石而不是道具——即使求购的物品已从内容中移除，退款也照常可付，不需要把死 id 塞回背包。
 
 ## 信箱定义
 

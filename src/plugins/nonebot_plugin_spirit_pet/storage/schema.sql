@@ -322,3 +322,38 @@ CREATE TABLE battle_shares (
 );
 CREATE INDEX battle_share_owner ON battle_shares(owner_id, state, created_at DESC);
 CREATE INDEX battle_share_battle ON battle_shares(battle_id);
+CREATE TABLE market_bids (
+    bid_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    buyer_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 99),
+    unit_price INTEGER NOT NULL CHECK(unit_price >= 1),
+    escrow INTEGER NOT NULL CHECK(escrow >= 1),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+    state TEXT NOT NULL CHECK(state IN ('active', 'filled', 'cancelled', 'expired')),
+    closed_at INTEGER,
+    seller_id TEXT REFERENCES players(user_id),
+    CHECK(escrow = quantity * unit_price),
+    CHECK((state='active' AND closed_at IS NULL AND seller_id IS NULL)
+        OR (state='filled' AND closed_at IS NOT NULL AND seller_id IS NOT NULL AND seller_id!=buyer_id)
+        OR (state IN ('cancelled', 'expired') AND closed_at IS NOT NULL AND seller_id IS NULL))
+);
+CREATE INDEX market_bid_board ON market_bids(state, item_id, unit_price DESC, bid_id);
+CREATE INDEX market_bid_buyer ON market_bids(buyer_id, state, bid_id DESC);
+CREATE TABLE market_bid_sales (
+    bid_id INTEGER PRIMARY KEY REFERENCES market_bids(bid_id),
+    buyer_id TEXT NOT NULL REFERENCES players(user_id),
+    seller_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity >= 1),
+    unit_price INTEGER NOT NULL CHECK(unit_price >= 1),
+    gross INTEGER NOT NULL CHECK(gross >= 1),
+    fee INTEGER NOT NULL CHECK(fee >= 0),
+    net INTEGER NOT NULL CHECK(net >= 0),
+    sold_at INTEGER NOT NULL,
+    CHECK(fee + net = gross),
+    CHECK(buyer_id != seller_id)
+);
+CREATE INDEX market_bid_sales_seller ON market_bid_sales(seller_id, sold_at DESC);
+CREATE INDEX market_bid_sales_buyer ON market_bid_sales(buyer_id, sold_at DESC);

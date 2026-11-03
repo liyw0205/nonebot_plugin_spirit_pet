@@ -906,6 +906,8 @@ class Catalog:
         for kind in self.market.sellable_kinds:
             if not any(item.kind == kind for item in self.items.values()):
                 raise ValueError(f"market has no {kind} item to sell")
+        if self.market.max_bid_quantity > self.market.max_quantity:
+            raise ValueError("market buy orders must not exceed the listing quantity cap")
 
     def _validate_mail(self):
         """Every kind a mail may carry must actually exist in the item catalog."""
