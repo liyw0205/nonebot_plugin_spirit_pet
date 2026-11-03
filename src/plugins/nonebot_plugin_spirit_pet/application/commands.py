@@ -33,6 +33,7 @@ from ..gameplay import survival
 from ..gameplay import arcs
 from ..gameplay import support
 from ..gameplay import borrow
+from ..gameplay import card
 from ..gameplay import tribulations
 from ..gameplay import achievement_shop, combos
 from ..gameplay import specialization
@@ -94,6 +95,7 @@ class Command:
 ACTIONS = {
     "help": Command(help.help_game, True, registered=False),
     "identity": Command(identity.profile, registered=False),
+    "card": Command(card.dispatch, True, registered=False),
     "status": Command(information.status),
     "catalog": Command(information.catalog, True, registered=False),
     "catalog_counter": Command(information.counter_lookup, True, registered=False),
@@ -331,6 +333,7 @@ ACTIONS = {
 }
 COMMANDS = {
     "灵宠": "help", "灵宠帮助": "help", "我的信息": "identity",
+    "灵宠名帖": "card",
     "我的灵宠": "status", "我的宠": "status",
     "灵宠图鉴": "catalog", "灵宠图鉴克制": "catalog_counter", "灵宠图鉴掉落": "catalog_drop", "灵宠排行奖励": "rank_rewards", "灵宠排行领奖": "rank_reward_claim", "灵宠排行": "rank", "灵宠奇闻榜": "adventure_rank", "灵宠奇闻奖励": "adventure_collection_rewards", "灵宠奇闻领奖": "adventure_collection_reward_claim", "灵宠论剑榜": "pvp_rank",
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季奖励回顾": "arena_reward_history", "灵宠赛季领奖": "season_claim",

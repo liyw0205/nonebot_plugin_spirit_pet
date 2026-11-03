@@ -45,6 +45,11 @@ def _personal_rank(ctx: Context, user_id: str) -> int | None:
     return int(row["ranked"]) if row is not None else None
 
 
+def personal_rank(ctx: Context, user_id: str) -> int | None:
+    """Public alias of the standing calculation, so cards and the board agree."""
+    return _personal_rank(ctx, user_id)
+
+
 def collection_rank(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠收集榜 不接受参数，直接发送即可。")

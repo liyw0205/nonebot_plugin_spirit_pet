@@ -5,6 +5,17 @@ from ..utils.randomness import weighted_choice
 from .cultivation import available_co_training_partner
 
 
+def pet_label(ctx: Context, pet) -> str:
+    """The one rendering rule for a companion's name.
+
+    `create_pet` names every pet after its species, so the species only needs spelling
+    out once a name differs from it. Two pages carried this rule inline; a third surface
+    that printed ``name（species）`` unconditionally rendered 玄狐（玄狐）.
+    """
+    species_name = ctx.content.species[pet.species_id].name
+    return pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
+
+
 def adopt(ctx: Context, arg: str) -> Reply:
     if ctx.repo.player(ctx.user_id):
         raise GameError("你已与灵宠结契，可通过灵宠召唤获得更多灵宠。")
@@ -15,11 +26,9 @@ def adopt(ctx: Context, arg: str) -> Reply:
     ctx.repo.set_active_pets(ctx.user_id, [pet.pet_id])
     for item_id, amount in ctx.content.rules.starter_items.items():
         ctx.repo.add_item(ctx.user_id, item_id, amount)
-    species_name = ctx.content.species[pet.species_id].name
-    pet_label = pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
     return Reply("领养成功", (
         f"UID：{player.uid}",
-        f"初始灵宠：{pet_label} · 编号 {pet.pet_id}",
+        f"初始灵宠：{pet_label(ctx, pet)} · 编号 {pet.pet_id}",
         "伙伴已自动出战，可以一起修炼与历练了。",
         f"境界：{ctx.content.realms[0].name}一层 · 血脉：{ctx.content.bloodlines[0].name}",
         f"获赠 {player.stones} 灵石。",
@@ -84,11 +93,9 @@ def pet_list(ctx: Context, arg: str) -> Reply:
         if expedition is not None:
             state = "外出中" if ctx.now < expedition["finishes_at"] else "待领取"
             activity = f" · {state}：{expedition['task_name']}"
-        species_name = ctx.content.species[pet.species_id].name
-        pet_label = pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
         state = "【出战】" if pet.pet_id in active_ids else ""
         lines.append(
-            f"{state}编号 {pet.pet_id}：{pet_label} · "
+            f"{state}编号 {pet.pet_id}：{pet_label(ctx, pet)} · "
             f"{ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
         )
         if pet.pet_id not in active_ids:
