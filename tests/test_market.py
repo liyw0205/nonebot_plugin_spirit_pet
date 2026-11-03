@@ -130,6 +130,7 @@ def test_market_rule_rejects_bad_bounds_and_duplicate_kinds():
         "bid_days": 3,
         "max_bid_quantity": 30,
         "bid_slots": 2,
+        "trend_days": 7,
     }
     with pytest.raises(ValidationError, match="minimum unit price"):
         MarketRule.model_validate(base)

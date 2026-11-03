@@ -96,7 +96,7 @@ def test_rule_model_rejects_bad_bid_bounds():
         "sellable_kinds": ["material"], "stalls": [
             {"id": "s1", "name": "散铺", "unlock_cost": 0, "slots": 2, "fee_percent": 10},
         ],
-        "bid_days": 3, "max_bid_quantity": 30, "bid_slots": 2,
+        "bid_days": 3, "max_bid_quantity": 30, "bid_slots": 2, "trend_days": 7,
     }
     with pytest.raises(ValidationError):
         MarketRule.model_validate({**base, "bid_days": 0})

@@ -27,6 +27,7 @@ class MarketRule(Definition):
     bid_days: Annotated[int, Field(ge=1, le=30)]
     max_bid_quantity: Annotated[int, Field(ge=1, le=99)]
     bid_slots: Annotated[int, Field(ge=1, le=6)]
+    trend_days: Annotated[int, Field(ge=1, le=30)]
 
     @model_validator(mode="after")
     def check_rule(self):

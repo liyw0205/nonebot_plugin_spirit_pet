@@ -459,9 +459,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return cancel_bid(ctx, rest)
     if head == "求购记录":
         return bid_records(ctx, rest)
+    if head == "行情":
+        from . import market_trends
+
+        return market_trends.dispatch(ctx, rest)
     raise GameError(
         "格式：灵宠集市 [页码|上架 物品 数量 单价|购买 编号|下架 编号|我的|记录|升级|"
-        "求购 [物品 数量 单价]|应单 编号|撤单 编号|求购记录]。"
+        "求购 [物品 数量 单价]|应单 编号|撤单 编号|求购记录|行情 [物品|页码]]。"
     )
 
 

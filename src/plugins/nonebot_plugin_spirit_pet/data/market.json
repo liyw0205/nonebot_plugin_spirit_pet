@@ -6,6 +6,7 @@
   "bid_days": 3,
   "max_bid_quantity": 30,
   "bid_slots": 2,
+  "trend_days": 7,
   "sellable_kinds": [
     "material",
     "consumable"
