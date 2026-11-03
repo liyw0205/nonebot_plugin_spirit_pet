@@ -296,6 +296,31 @@
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
 
+## 每周图鉴试炼定义
+
+`codex_trials.json` 的单个图鉴试炼条目新增三项：`weekly_slots`（1-5，实配 3）、`weekly_bonus`（三场全清奖励）与
+`rotations`（每周轮换条件，实配 5 条）。三者必须同进同退：只写 `weekly_slots` 不写 `weekly_bonus`（或反之）、
+声明了 `rotations` 却没有 `weekly_slots`、或轮换条数少于槽位数，都会在加载期被拒绝——否则周页会渲染出一个永远
+无法结算或恒定重复的周。
+
+每条 `CodexRotation` 只武装**一个**条件，由 `kind` 决定，其余种类的字段必须留空：
+
+| kind | 字段 | 战斗中的效果 |
+| --- | --- | --- |
+| `round_limit` | `rounds`（1-40） | 到该回合仍未分胜负即判负，`rounds` 内必须取胜 |
+| `element_lock` | `elements`（≥2，去重） | 只允许携带该属性之一的伙伴出战；具体是哪一个由周号从池中轮换 |
+| `stat_scale` | `scale`（1.0-3.0） | 幻影四维在 `boost` 之上再乘 `scale` |
+
+`Catalog._validate_codex_trials` 校验轮换奖励物品、轮换属性引用与能量上限（不超过宠物精力池 100），
+并校验 `weekly_bonus` 的物品引用。
+
+轮换是纯确定性的：第 i 个槽位取 `rotations[(周序号 + i) % 轮换数]`，目标种族取 `species[(周序号 + i) % 27]`，
+`element_lock` 的属性取 `elements[(周序号 + i) % 属性池长度]`。因为 `i < 槽位数 ≤ 轮换数`，同一周内三个槽位
+必然是三条不同轮换，且同周全服一致、跨周整体滑一位。周序号是北京周一 00:00 的 Unix 秒除以一周秒数，不使用随机数。
+
+状态全部落在 `quest_progress`：`codex_week_<周起点>_<槽位>` 记录该场通关回合数、`codex_week_all_<周起点>` 记录
+周奖已发。日期写在键里，换周即自动失效，无需清理任务，也不与新表打交道。
+
 ## 行情定义
 
 `rules.json` 的 `market.trend_days`（1-30，实配 7）由 `MarketRule` 校验，决定行情窗口长度。行情没有内容文件：它不定义任何物品或价格，只把 schema 22 的 `market_sales` 与 schema 26 的 `market_bid_sales` 两张成交账本按窗口聚合，因此不存在可调的加成表；改 `trend_days` 就是改「市场记住多久」。

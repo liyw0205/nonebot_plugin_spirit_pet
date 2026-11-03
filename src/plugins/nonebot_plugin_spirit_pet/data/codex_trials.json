@@ -13,6 +13,79 @@
       {"count": 9, "items": {"forge_ore": 4}},
       {"count": 18, "items": {"bloodline_essence": 4}},
       {"count": 27, "items": {"exp_pill": 4}}
+    ],
+    "weekly_slots": 3,
+    "weekly_bonus": {
+      "exp": {"minimum": 200, "maximum": 200},
+      "stones": {"minimum": 400, "maximum": 400},
+      "items": {"exp_pill": {"minimum": 2, "maximum": 2}}
+    },
+    "rotations": [
+      {
+        "id": "round_pressure",
+        "name": "限时破影",
+        "description": "十二回合内破影",
+        "kind": "round_limit",
+        "rounds": 12,
+        "energy": 10,
+        "reward": {
+          "exp": {"minimum": 120, "maximum": 120},
+          "stones": {"minimum": 180, "maximum": 180},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "quick_kill",
+        "name": "速战速决",
+        "description": "八回合内见胜负",
+        "kind": "round_limit",
+        "rounds": 8,
+        "energy": 12,
+        "reward": {
+          "exp": {"minimum": 150, "maximum": 150},
+          "stones": {"minimum": 240, "maximum": 240},
+          "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+        }
+      },
+      {
+        "id": "element_lock",
+        "name": "同源相争",
+        "description": "只容对应属性出战",
+        "kind": "element_lock",
+        "elements": ["fire", "thunder", "wood"],
+        "energy": 10,
+        "reward": {
+          "exp": {"minimum": 130, "maximum": 130},
+          "stones": {"minimum": 200, "maximum": 200},
+          "items": {"gem_flame": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "mirror_edge",
+        "name": "幻影加身",
+        "description": "幻影四维额外增强",
+        "kind": "stat_scale",
+        "scale": 1.25,
+        "energy": 10,
+        "reward": {
+          "exp": {"minimum": 140, "maximum": 140},
+          "stones": {"minimum": 220, "maximum": 220},
+          "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+        }
+      },
+      {
+        "id": "mirror_wall",
+        "name": "幻影如山",
+        "description": "幻影四维大幅增强",
+        "kind": "stat_scale",
+        "scale": 1.45,
+        "energy": 14,
+        "reward": {
+          "exp": {"minimum": 170, "maximum": 170},
+          "stones": {"minimum": 280, "maximum": 280},
+          "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+        }
+      }
     ]
   }
 ]

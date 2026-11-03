@@ -661,6 +661,15 @@ class Catalog:
                 self._require(milestone.items, self.items, "codex trial milestone items")
                 if milestone.count > len(self.species):
                     raise ValueError(f"codex trial {trial.id} milestone exceeds the codex size")
+            for rotation in trial.rotations:
+                self._require(rotation.reward.items, self.items, "codex rotation reward items")
+                self._require(
+                    rotation.elements, self.elements, f"codex rotation {rotation.id} elements",
+                )
+                if rotation.energy > 100:
+                    raise ValueError(f"codex rotation {rotation.id} energy exceeds a pet's pool")
+            if trial.weekly_bonus is not None:
+                self._require(trial.weekly_bonus.items, self.items, "codex weekly bonus items")
 
     def _validate_survival(self):
         if not self.survival:
