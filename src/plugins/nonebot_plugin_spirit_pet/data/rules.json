@@ -215,5 +215,9 @@
   },
   "drill": {
     "daily_attempts": 5
+  },
+  "borrow": {
+    "rate": 0.12,
+    "keep_days": 7
   }
 }

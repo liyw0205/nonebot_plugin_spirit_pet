@@ -65,6 +65,9 @@ def combatant(
     if pet.pet_id == ctx.player(user_id or ctx.user_id).active_pet_id:
         for key, value in support_bonus(ctx, user_id or ctx.user_id).items():
             stats[key] += value
+        from .borrow import bonus as borrow_bonus
+        for key, value in borrow_bonus(ctx, user_id or ctx.user_id).items():
+            stats[key] += value
     for item_id, enhancement in loadout(ctx, pet.pet_id).values():
         item = ctx.content.items[item_id]
         gear = ctx.content.equipment[item.equipment_id]

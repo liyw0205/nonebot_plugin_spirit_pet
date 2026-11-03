@@ -38,7 +38,7 @@ READ_ONLY_PAGES = (
     "codex", "codex_trials", "collection", "collection_rank", "corridor", "cuisine", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "attunement", "equipment_sets", "formation", "alchemy", "bounty", "sect_exchange", "intent", "socket", "contracts", "difficulty", "hybrid", "lineup_presets", "pair_bond", "pet_release", "escort", "expedition_catalog", "expedition_history", "expedition_status",
-    "duel", "merchant", "market", "mail", "friends", "shares", "drill", "farm", "first_clear", "gauntlet", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
+    "duel", "merchant", "market", "mail", "friends", "shares", "drill", "borrow", "farm", "first_clear", "gauntlet", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",
     "race", "race_board", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",

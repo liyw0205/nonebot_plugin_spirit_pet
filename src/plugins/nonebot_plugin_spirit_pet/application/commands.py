@@ -32,6 +32,7 @@ from ..gameplay import tempering
 from ..gameplay import survival
 from ..gameplay import arcs
 from ..gameplay import support
+from ..gameplay import borrow
 from ..gameplay import tribulations
 from ..gameplay import achievement_shop, combos
 from ..gameplay import specialization
@@ -216,6 +217,7 @@ ACTIONS = {
     "survival": Command(survival.dispatch, True, registered=False),
     "arcs": Command(arcs.dispatch, True, registered=False),
     "support": Command(support.dispatch, True, registered=False),
+    "borrow": Command(borrow.dispatch, True, registered=False),
     "tribulations": Command(tribulations.dispatch, True, registered=False),
     "combos": Command(combos.dispatch, True, registered=False),
     "specialization": Command(specialization.dispatch, True, registered=False),
@@ -386,6 +388,7 @@ COMMANDS = {
     "灵宠守关": "survival",
     "灵宠奇缘": "arcs",
     "灵宠助战": "support",
+    "灵宠借力": "borrow",
     "灵宠劫境": "tribulations",
     "灵宠连携": "combos",
     "灵宠专精": "specialization",

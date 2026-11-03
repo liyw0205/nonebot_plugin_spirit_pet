@@ -472,6 +472,13 @@ class DrillRule(Definition):
     daily_attempts: Annotated[int, Field(ge=1, le=10)]
 
 
+class BorrowRule(Definition):
+    """灵宠借力: how much of a friend's lent companion reaches your active pet, and for how long."""
+
+    rate: Annotated[float, Field(gt=0, le=0.25)]
+    keep_days: Annotated[int, Field(ge=1, le=30)]
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -512,3 +519,4 @@ class Rules(Definition):
     friend: FriendRule
     share: ShareRule
     drill: DrillRule
+    borrow: BorrowRule

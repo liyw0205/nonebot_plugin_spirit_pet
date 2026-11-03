@@ -376,6 +376,7 @@ class Catalog:
         self._validate_mail()
         self._validate_friend()
         self._validate_share()
+        self._validate_borrow()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -958,6 +959,20 @@ class Catalog:
         """
         if self.rules.share.code_days < 1:
             raise ValueError("share code must last at least one day")
+
+    def _validate_borrow(self):
+        """A borrowed companion may not outshine your own bench.
+
+        ``support`` is the self-built path: ``slots`` bench companions each lend ``rate``
+        of their base stats. If one borrowed friend's companion lent more than all of
+        those together, the support roster would become a formality and every player's
+        best move would be social recruiting rather than raising their own pets.
+        """
+        ceiling = self.rules.support.rate * self.rules.support.slots
+        if self.rules.borrow.rate > ceiling + 1e-9:
+            raise ValueError(
+                f"borrow.rate ({self.rules.borrow.rate}) exceeds the support roster's own ceiling ({ceiling})"
+            )
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
