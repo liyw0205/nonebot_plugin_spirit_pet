@@ -296,6 +296,15 @@
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
 
+## 约战定义
+
+`rules.json` 的 `spar_request` 由 `SparRequestRule` 校验：`expires_hours` 限定 1-72，实配 24。约战没有内容文件——
+它借用的是双方现有阵容，不产生新的敌手、奖励或掉落，因此没有可调数值表。
+
+状态是对方名下一行 `quest_progress`：`spar_req_<发起者 user_id>`，`progress` 存到期时间戳。不发奖、不扣资源，
+所以不存在托管与结算一致性问题；应战成功即删除该行，撤回同样删除。过期条目由读取端按 `progress > now` 过滤，
+不做后台清理，也不会阻塞同一发起者的再次约战（重复发起覆盖同一行）。
+
 ## 今日汇总定义
 
 `灵宠今日` 没有内容文件与规则数值：它是纯入口聚合，每一条都由来源模块自己的只读 helper 生成

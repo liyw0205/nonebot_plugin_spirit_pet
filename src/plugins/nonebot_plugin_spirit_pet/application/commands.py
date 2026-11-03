@@ -36,6 +36,7 @@ from ..gameplay import borrow
 from ..gameplay import card
 from ..gameplay import gear_presets
 from ..gameplay import today
+from ..gameplay import spar_requests
 from ..gameplay import tribulations
 from ..gameplay import achievement_shop, combos
 from ..gameplay import specialization
@@ -320,6 +321,7 @@ ACTIONS = {
     "equipment_catalog": Command(equipment.catalog, True, registered=False),
     "gear_preset": Command(gear_presets.dispatch, True, registered=False),
     "today": Command(today.dispatch, True, registered=False),
+    "spar_request": Command(spar_requests.dispatch, True, registered=False),
     "unequip": Command(equipment.unequip, True),
     "enhance": Command(forging.enhance, True),
     "recipe_catalog": Command(crafting.catalog, True, registered=False),
@@ -438,6 +440,7 @@ COMMANDS = {
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
     "灵宠配装": "gear_preset",
     "灵宠今日": "today",
+    "灵宠约战": "spar_request",
     "灵宠套装": "equipment_sets", "灵宠套装穿戴": "equipment_set_equip",
     "灵宠套装领奖": "equipment_set_claim",
     "灵宠强化": "enhance",

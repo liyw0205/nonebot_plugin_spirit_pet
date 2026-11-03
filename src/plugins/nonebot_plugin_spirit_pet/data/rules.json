@@ -219,5 +219,8 @@
   "borrow": {
     "rate": 0.12,
     "keep_days": 7
+  },
+  "spar_request": {
+    "expires_hours": 24
   }
 }

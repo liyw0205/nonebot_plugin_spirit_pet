@@ -479,6 +479,12 @@ class BorrowRule(Definition):
     keep_days: Annotated[int, Field(ge=1, le=30)]
 
 
+class SparRequestRule(Definition):
+    """灵宠约战: how long an unanswered spar request stays actionable."""
+
+    expires_hours: Annotated[int, Field(ge=1, le=72)]
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -520,3 +526,4 @@ class Rules(Definition):
     share: ShareRule
     drill: DrillRule
     borrow: BorrowRule
+    spar_request: SparRequestRule

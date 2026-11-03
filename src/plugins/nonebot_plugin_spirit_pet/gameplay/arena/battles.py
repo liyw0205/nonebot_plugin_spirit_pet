@@ -87,31 +87,48 @@ def pvp(ctx: Context, arg: str) -> Reply:
     return reply
 
 
-def spar(ctx: Context, arg: str) -> Reply:
-    challenger = ctx.player()
-    if not arg:
-        raise GameError("请填写对方 UID。")
-    target = _target(ctx, arg)
-    if challenger.active_pet_id is None:
+def spar_fight(ctx: Context, *, attacker: str, defender: str, title: str, tail: str) -> Reply:
+    """Run one mirror match between two lineups and record it.
+
+    Shared by ``灵宠切磋`` (immediate) and ``灵宠约战`` (settled when the other side
+    answers) so both paths fight and record exactly the same way; only the trigger and
+    the closing line differ.
+    """
+    attacking_pets = ctx.repo.active_pets(attacker)
+    defending_pets = ctx.repo.active_pets(defender)
+    if not attacking_pets:
         raise GameError("尚未选择出战灵宠。")
-    attacking_pets = ctx.repo.active_pets(ctx.user_id)
-    defending_pets = ctx.repo.active_pets(target.user_id)
+    if not defending_pets:
+        raise GameError("对方尚未选择出战灵宠。")
     for pet in attacking_pets:
         ctx.require_idle_pet(pet)
-    attacking_pet = attacking_pets[0]
-    defending_pet = defending_pets[0]
-    attackers = combatants(ctx, recover_energy=False)
-    defenders = combatants(ctx, target.user_id, recover_energy=False)
+    attackers = combatants(ctx, recover_energy=False, user_id=attacker)
+    defenders = combatants(ctx, user_id=defender, recover_energy=False)
     capture = capture_snapshot(
         ctx, (attackers, defenders),
-        ([ctx.user_id] * len(attackers), [target.user_id] * len(defenders)),
+        ([attacker] * len(attackers), [defender] * len(defenders)),
     )
     battle = fight(attackers, defenders, ctx.rng, ctx.content.elements)
-    result = "双方战平。" if battle.winner == -1 else f"{(challenger, target)[battle.winner].uid_label}获胜。"
-    reply = Reply("切磋结算", (
-        f"{challenger.uid_label}的{len(attackers)}宠阵容 对 {target.uid_label}的{len(defenders)}宠阵容镜像"
-        f" · {battle.rounds} 回合", *battle.lines, result,
-        "切磋不消耗资源，不计赛季积分和熟练度。",
+    first, second = ctx.repo.player(attacker), ctx.repo.player(defender)
+    if first is None or second is None:
+        raise GameError("对战双方的账号不存在。")
+    result = "双方战平。" if battle.winner == -1 else f"{(first, second)[battle.winner].uid_label}获胜。"
+    reply = Reply(title, (
+        f"{first.uid_label}的{len(attackers)}宠阵容 对 {second.uid_label}的{len(defenders)}宠阵容镜像"
+        f" · {battle.rounds} 回合", *battle.lines, result, tail,
     ), ("灵宠战报", "我的灵宠", "灵宠论剑榜"))
     record_battle(ctx, kind="spar", battle_key="", battle=battle, capture=capture, reply=reply)
     return reply
+
+
+def spar(ctx: Context, arg: str) -> Reply:
+    ctx.player()
+    if not arg:
+        raise GameError("请填写对方 UID。")
+    target = _target(ctx, arg)
+    if not ctx.repo.active_pets(ctx.user_id):
+        raise GameError("尚未选择出战灵宠。")
+    return spar_fight(
+        ctx, attacker=ctx.user_id, defender=target.user_id,
+        title="切磋结算", tail="切磋不消耗资源，不计赛季积分和熟练度。",
+    )
