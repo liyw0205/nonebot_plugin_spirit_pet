@@ -267,3 +267,26 @@ CREATE TABLE market_sales (
     CHECK(buyer_id!=seller_id)
 );
 CREATE INDEX market_sales_seller ON market_sales(seller_id, sold_at DESC);
+CREATE TABLE mail_messages (
+    message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id TEXT NOT NULL REFERENCES players(user_id),
+    recipient_id TEXT NOT NULL REFERENCES players(user_id),
+    kind TEXT NOT NULL CHECK(kind IN ('item', 'stones')),
+    stones INTEGER NOT NULL CHECK(stones >= 0),
+    item_id TEXT,
+    quantity INTEGER NOT NULL CHECK(quantity >= 0),
+    body TEXT NOT NULL CHECK(length(body) <= 60),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+    state TEXT NOT NULL CHECK(state IN ('active', 'claimed', 'recalled', 'returned')),
+    closed_at INTEGER,
+    claimed_at INTEGER,
+    CHECK(sender_id != recipient_id),
+    CHECK((kind='item' AND stones=0 AND item_id IS NOT NULL AND quantity >= 1)
+        OR (kind='stones' AND stones >= 1 AND item_id IS NULL AND quantity=0)),
+    CHECK((state='active' AND closed_at IS NULL AND claimed_at IS NULL)
+        OR (state='claimed' AND closed_at IS NOT NULL AND claimed_at IS NOT NULL)
+        OR (state IN ('recalled', 'returned') AND closed_at IS NOT NULL AND claimed_at IS NULL))
+);
+CREATE INDEX mail_inbox ON mail_messages(recipient_id, state, message_id);
+CREATE INDEX mail_outbox ON mail_messages(sender_id, state, message_id DESC);

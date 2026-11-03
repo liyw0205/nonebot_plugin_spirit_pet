@@ -1006,6 +1006,18 @@ QQ 最多两项合修动作加两项翻页，正文蓝链只作成长/行程等�
 
 新增 `tests/test_market.py` 22 项（内容阶梯与负例、规则区间、未结契只读不建号、托管与看板、七类上架拒绝零写入、成交金额/税费/账本、自家/灵石不足/已售拒绝、下架与越权、到期退回、已下架物品关闭、升级扣费与上限、同操作重投、重启持久、帮助/目标/解析、QQ 按钮与蓝字分离、分页、21→22 迁移与留底）；聚焦 12 个文件 `302 passed`，另跑道具/信息/体验/商会/赠送/称号/成就/文档批 `185 passed`；`compileall` 与 `git diff --check` 通过。提交 `079944d` 已推送 develop，develop CI `41494309145` 全绿（3144 项）；fast-forward 合入 main 后 main CI `41495353767` 全绿（3.10/3.13 测试与安装冒烟全部 success，release 任务按分支跳过）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改既有商店价格/回收比例/商会委托/战斗结算。
 
+### 灵宠信箱（2026-11-03，已完成）
+
+审计确认本地 goal 队列已清空（56 张本地卡全部交付并有提交与双绿 CI 证据），也逐一核对过新体系没有未接线的数据键、没有只进不出的货币、没有不可达内容。`docs/DEVELOPMENT.md:261` 早前把「好友/交易/信箱（需要新表）」列为排除方向：交易已由集市（schema 22）交付，**信箱始终没有实现**——`grep -rl '信箱\|邮件' src/` 为空，玩家在对方离线时无法转交任何东西，而赠送只在双方同时在线且每日三次内有效，集市只做「物品换灵石」。本切片补上第三种跨玩家转移：把材料或灵石连同一句留言寄给其他修士，对方上线自取，到期未领自动退回。
+
+内容与校验：`rules.json` 新增 `mail` 与 `domain/content.py` 的 `MailRule`（`days` 1-30、`daily_limit` 1-10、`max_stones` 1-10000、`max_items` 1-50、`inbox_capacity` 1-50、`kinds` 限定 `material`/`consumable` 且去重），`Catalog._validate_mail` 要求每种可寄种类在物品表里至少有一件（与 `_validate_market` 同一口径）。信箱不需要新的内容文件：附件是既有物品与灵石。
+
+持久化：schema 升至 23。新增单表 `mail_messages`（`sender_id`/`recipient_id` 外键到 `players`、`kind` ∈ `item`/`stones`、`stones`、`item_id`、`quantity`、`body` ≤ 60 字、`created_at`、`expires_at`、`state` ∈ `active`/`claimed`/`recalled`/`returned`、`closed_at`、`claimed_at`），表级 CHECK 同时约束三件事：寄件人不得是收件人；附件形状必须与 `kind` 一致（道具类 `quantity ≥ 1` 且无灵石，灵石类 `stones ≥ 1` 且无道具）；状态与时间戳必须一致（`active` 无关闭时间、`claimed` 两者都有、`recalled`/`returned` 只有关闭时间）。索引 `mail_inbox (recipient_id, state, message_id)` 与 `mail_outbox (sender_id, state, message_id DESC)`。迁移沿用既有模式：`legacy_schema22` 剥掉信箱表与两个索引，`legacy_schema21` 先调用它再剥集市表，因此 20/19/18 fixture 仍然逐级还原；`backup_schema22` 留底、`migrate_mail_tables` 从 `schema.sql` 取出完全相同的建表/索引语句执行、`validate_schema23` 与完整性/外键检查、失败回滚；21→22 分支改为写 `user_version=22` 后继续落入 22→23，而不是直接跳到 `SCHEMA_VERSION`。
+
+玩法层 `gameplay/mailbox.py`：`send` 先整体校验（UID、好友边、当日封数、对方信箱容量、物品种类或灵石、上限与持有量），通过后才在同一事务内扣背包或扣灵石并写一行 `active`；`claim` 与 `recall` 都以 `UPDATE ... WHERE state='active'` 作为守卫，`rowcount != 1` 即视为「刚被领取/退回」并拒绝，因此一封托管只可能被支付一次；`_pay` 直接写 `players.stones` 或 `repo.add_item`，绕开 `grant`（`grant` 会把修为发给出战伙伴并要求它空闲，而信箱只转交附件、不发修为）。`sweep_expired` 在任一方打开信箱或寄件页时把过期信件改成 `returned` 并退回寄件人，重复扫描不会二次退款。页面对未领取信件只给可领取行挂「领取」蓝字，寄件页只给未领取行挂「收回」蓝字，按钮不超过四条且与蓝字零重叠。
+
+新增 `tests/test_mail.py` 31 项（规则接线与区间、重复种类与未知种类负例、可寄种类无物品时拒绝、未结契只读且不建号、寄出托管与收件箱、灵石寄出与领取、领取只交付一次且第二次拒绝、未领取可收回、到期惰性退回且只退一次、当日封数只按当天计、信箱满整笔拒绝零写入、五类格式/物品/种类拒绝零写入、自己/陌生人/UID 不存在拒绝、上限与持有不足拒绝、同操作重投只托管一次、双方权限与不存在编号拒绝、领取后不能收回、重启持久、不写战报与进度、目标页两行、寄件箱过滤已领取、帮助与解析、QQ 按钮与蓝字分离、新库含两表两索引、22→23 迁移保留旧行并留底）。聚焦 11 个文件 `250 passed`，另跑道具/信息/体验/消息/分页/商会/赏金/贡献/斗法/双线/回收/图鉴交互/灵术赏批次 `237 passed`；`compileall` 与 `git diff --check` 通过。排除项：未部署、未发送真实 QQ、未跑本地全量、未改赠送/寄养/集市规则与战斗结算、未创建新 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。

@@ -434,6 +434,23 @@ class MerchantRule(Definition):
         return self
 
 
+class MailRule(Definition):
+    """灵宠信箱: how long a mail stays claimable and what one may hold."""
+
+    days: Annotated[int, Field(ge=1, le=30)]
+    daily_limit: Annotated[int, Field(ge=1, le=10)]
+    max_stones: Annotated[int, Field(ge=1, le=10_000)]
+    max_items: Annotated[int, Field(ge=1, le=50)]
+    inbox_capacity: Annotated[int, Field(ge=1, le=50)]
+    kinds: list[Literal["material", "consumable"]] = Field(min_length=1, max_length=2)
+
+    @model_validator(mode="after")
+    def _sane(self):
+        if len(set(self.kinds)) != len(self.kinds):
+            raise ValueError("mail kinds must be unique")
+        return self
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -470,3 +487,4 @@ class Rules(Definition):
     expedition_lines: ExpeditionLinesRule
     duel: DuelRule
     merchant: MerchantRule
+    mail: MailRule

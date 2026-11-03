@@ -35,7 +35,7 @@
 | ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
 | shop_rotation.json | 灵坊每日特供池：物品、折扣百分比与当日库存；按北京时间日期轮换三件 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
-| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例与灵田互助浇水（缩短秒数/每日次数/灵石） |
+| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）与信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类） |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
@@ -341,6 +341,18 @@
 ```
 
 schema 22 新增两张表：`market_listings` 保存托管挂单（`seller_id`、`item_id`、`quantity`、`unit_price`、`created_at`、`expires_at`、`state` 为 `active`/`sold`/`cancelled`/`expired`、`closed_at`、`buyer_id`），表级 CHECK 保证四种状态与 `closed_at`、`buyer_id` 的组合自洽，成交时买家不得等于卖家；`market_sales` 是永久成交账本（`gross`、`fee`、`net`，CHECK `fee + net = gross`，且买家不等于卖家）。索引 `market_listing_board` 服务集市浏览，`market_listing_seller` 服务我的摊位，`market_sales_seller` 服务成交记录。摊位等级存 `quest_progress` 的 `market_stall`（值为 1 起的等级号），不额外加列。
+
+## 信箱定义
+
+信箱没有独立内容文件：附件就是既有物品与灵石，数值写在 `rules.json` 的 `mail`。
+
+```json
+{"days": 7, "daily_limit": 5, "max_stones": 5000, "max_items": 20, "inbox_capacity": 20, "kinds": ["material", "consumable"]}
+```
+
+`MailRule` 校验每个字段的区间（`days` 1-30、`daily_limit` 1-10、`max_stones` 1-10000、`max_items` 1-50、`inbox_capacity` 1-50），`kinds` 只接受 `material`/`consumable` 且不得重复；`Catalog._validate_mail` 进一步要求每种已声明种类在 `items.json` 里至少有一件物品——广告一个寄不出去的品类会在启动时直接失败，与 `_validate_market` 同一口径。
+
+schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向 `players`，`kind` 只取 `item`/`stones`，`stones`、`item_id`、`quantity`、`body`（≤60 字）、`created_at`、`expires_at`、`state`（`active`/`claimed`/`recalled`/`returned`）、`closed_at`、`claimed_at`。表级 CHECK 同时约束三件事：寄件人不得等于收件人；附件形状必须与 `kind` 一致（道具类 `quantity ≥ 1` 且无灵石，灵石类 `stones ≥ 1` 且无道具）；状态与时间戳必须一致（`active` 无关闭与领取时间、`claimed` 两者都有、`recalled`/`returned` 只有关闭时间）。索引 `mail_inbox (recipient_id, state, message_id)` 服务收件箱，`mail_outbox (sender_id, state, message_id DESC)` 服务寄件箱。托管形状与状态一致性都由表约束保证，因此 `claim`/`recall` 只要用 `state='active'` 作更新守卫，同一封邮件的附件就不可能被支付两次。
 
 ## 委托线定义
 

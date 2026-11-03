@@ -195,5 +195,13 @@
     "offers_per_day": 3,
     "all_clear_stones": 60,
     "all_clear_rep": 4
+  },
+  "mail": {
+    "days": 7,
+    "daily_limit": 5,
+    "max_stones": 5000,
+    "max_items": 20,
+    "inbox_capacity": 20,
+    "kinds": ["material", "consumable"]
   }
 }

@@ -83,7 +83,8 @@ def validate_schema20(conn: sqlite3.Connection, current_schema: str) -> None:
 
 def legacy_schema21(current_schema: str) -> str:
     """Reconstruct schema 21 from the current schema: no player market tables."""
-    schema = re.sub(r"CREATE TABLE market_listings \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = legacy_schema22(current_schema)
+    schema = re.sub(r"CREATE TABLE market_listings \([\s\S]*?\n\);\n", "", schema, count=1)
     schema = re.sub(r"CREATE TABLE market_sales \([\s\S]*?\n\);\n", "", schema, count=1)
     for name in ("market_listing_board", "market_listing_seller", "market_sales_seller"):
         schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
@@ -92,8 +93,40 @@ def legacy_schema21(current_schema: str) -> str:
     return schema
 
 
+def legacy_schema22(current_schema: str) -> str:
+    """Reconstruct schema 22 from the current schema: no mailbox tables."""
+    schema = re.sub(r"CREATE TABLE mail_messages \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    for name in ("mail_inbox", "mail_outbox"):
+        schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
+    if "mail_" in schema:
+        raise RuntimeError("Current schema still carries mailbox definitions")
+    return schema
+
+
+def validate_schema23(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 23)
+
+
+def migrate_mail_tables(conn: sqlite3.Connection) -> None:
+    """Schema 23: an asynchronous player mailbox needs a real message table."""
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    match = re.search(r"CREATE TABLE mail_messages \([\s\S]*?\n\);", schema)
+    if match is None:
+        raise RuntimeError("Current schema is missing mail_messages")
+    conn.execute(match.group(0))
+    for name in ("mail_inbox", "mail_outbox"):
+        index = re.search(rf"CREATE INDEX {name} [^;]*;", schema)
+        if index is None:
+            raise RuntimeError(f"Current schema is missing {name}")
+        conn.execute(index.group(0))
+
+
+def backup_schema22(path: Path) -> Path:
+    return _backup_schema(path, 22)
+
+
 def validate_schema22(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 22)
+    _validate_schema(conn, legacy_schema22(current_schema), 22)
 
 
 def migrate_market_tables(conn: sqlite3.Connection) -> None:

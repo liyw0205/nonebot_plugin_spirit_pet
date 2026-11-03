@@ -55,6 +55,7 @@ from ..gameplay import sect_exchange
 from ..gameplay import intent
 from ..gameplay import sockets
 from ..gameplay import duel, market, merchant
+from ..gameplay import mailbox
 from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
@@ -237,6 +238,7 @@ ACTIONS = {
     "duel": Command(duel.dispatch, True, registered=False),
     "merchant": Command(merchant.dispatch, True, registered=False),
     "market": Command(market.dispatch, True, registered=False),
+    "mail": Command(mailbox.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -371,6 +373,7 @@ COMMANDS = {
     "灵宠斗法": "duel",
     "灵宠商会": "merchant",
     "灵宠集市": "market",
+    "灵宠信箱": "mail",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",

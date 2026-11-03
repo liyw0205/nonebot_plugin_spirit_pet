@@ -369,6 +369,7 @@ class Catalog:
         self._validate_duels()
         self._validate_commissions()
         self._validate_market()
+        self._validate_mail()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -903,6 +904,12 @@ class Catalog:
         for kind in self.market.sellable_kinds:
             if not any(item.kind == kind for item in self.items.values()):
                 raise ValueError(f"market has no {kind} item to sell")
+
+    def _validate_mail(self):
+        """Every kind a mail may carry must actually exist in the item catalog."""
+        for kind in self.rules.mail.kinds:
+            if not any(item.kind == kind for item in self.items.values()):
+                raise ValueError(f"mail has no {kind} item to send")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.
