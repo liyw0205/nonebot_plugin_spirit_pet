@@ -44,6 +44,7 @@ from ..domain.sect_exchange_content import SectOffer
 from ..domain.intent_content import BattleIntent
 from ..domain.gem_content import SocketGem
 from ..domain.duel_content import DuelOpponent
+from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
@@ -166,6 +167,7 @@ class Catalog:
     duels: dict[str, DuelOpponent]
     commissions: dict[str, Commission]
     market: MarketRule
+    drills: dict[str, DrillDummy]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -242,6 +244,7 @@ class Catalog:
             duels=_index(directory / "duels.json", DuelOpponent),
             commissions=_index(directory / "commissions.json", Commission),
             market=MarketRule.model_validate(_read(directory / "market.json")),
+            drills=_index(directory / "drills.json", DrillDummy),
         )
         catalog.validate()
         return catalog
@@ -367,6 +370,7 @@ class Catalog:
         self._validate_intents()
         self._validate_gems()
         self._validate_duels()
+        self._validate_drills()
         self._validate_commissions()
         self._validate_market()
         self._validate_mail()
@@ -871,6 +875,25 @@ class Catalog:
             if opponent.realm not in realms:
                 raise ValueError(f"duel opponent {opponent.id} has an unknown realm")
             self._require(opponent.reward.items, self.items, f"duel {opponent.id} reward items")
+
+    def _validate_drills(self):
+        """Every dummy must point at real content and be distinguishable from the rest."""
+        if not self.drills:
+            raise ValueError("the drill ground needs at least one dummy")
+        realms = [realm.id for realm in self.realms]
+        orders, names = set(), set()
+        for dummy in self.drills.values():
+            if dummy.realm not in realms:
+                raise ValueError(f"drill dummy {dummy.id} has an unknown realm")
+            for element in dummy.elements:
+                if element not in self.elements:
+                    raise ValueError(f"drill dummy {dummy.id} has an unknown element {element}")
+            if dummy.order in orders:
+                raise ValueError(f"drill dummy {dummy.id} repeats order {dummy.order}")
+            orders.add(dummy.order)
+            if dummy.name in names:
+                raise ValueError(f"drill dummy {dummy.id} repeats the name {dummy.name}")
+            names.add(dummy.name)
 
     def _validate_commissions(self):
         if not self.commissions:

@@ -76,6 +76,7 @@ from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay import friends
 from ..gameplay import shares
+from ..gameplay import drill
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards, team_arena
 from ..gameplay.teams import management, party, requests
@@ -238,6 +239,7 @@ ACTIONS = {
     "intent": Command(intent.dispatch, True, registered=False),
     "socket": Command(sockets.dispatch, True, registered=False),
     "duel": Command(duel.dispatch, True, registered=False),
+    "drill": Command(drill.dispatch, True, registered=False),
     "merchant": Command(merchant.dispatch, True, registered=False),
     "market": Command(market.dispatch, True, registered=False),
     "mail": Command(mailbox.dispatch, True, registered=False),
@@ -415,6 +417,7 @@ COMMANDS = {
     "灵宠赛季征途": "season_road", "灵宠征途领奖": "season_road_claim", "灵宠切磋": "spar",
     "灵宠战报": "battle_reports",
     "灵宠分享": "shares",
+    "灵宠演武": "drill",
     "灵宠战斗功勋": "battle_merits", "灵宠战斗功勋领奖": "battle_merit_claim",
     "灵宠组队": "team_create", "灵宠入队": "team_join", "灵宠队伍": "team_status",
     "灵宠准备": "team_ready", "灵宠取消准备": "team_unready", "灵宠退队": "team_leave",

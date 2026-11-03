@@ -1,0 +1,42 @@
+[
+  {
+    "id": "firewood_post",
+    "name": "柴木桩",
+    "description": "启灵境最常见的练手桩，出招朴素，用来确认伙伴站得住。",
+    "realm": "qiling",
+    "stats": {"hp": 85, "attack": 17, "defense": 5, "speed": 12},
+    "elements": ["wood", "earth"],
+    "primary_element": "wood",
+    "order": 1
+  },
+  {
+    "id": "bluestone_post",
+    "name": "青石桩",
+    "description": "凝气境的青石桩守得稳，急躁的阵容会被它拖到回合上限。",
+    "realm": "ningqi",
+    "stats": {"hp": 290, "attack": 62, "defense": 24, "speed": 38},
+    "elements": ["water"],
+    "primary_element": "water",
+    "order": 2
+  },
+  {
+    "id": "thunder_post",
+    "name": "雷纹桩",
+    "description": "筑基境刻了雷纹的桩子出手极快，正是检验速度与减伤的地方。",
+    "realm": "zhuji",
+    "stats": {"hp": 1000, "attack": 165, "defense": 75, "speed": 65},
+    "elements": ["water", "thunder"],
+    "primary_element": "thunder",
+    "order": 3
+  },
+  {
+    "id": "blackiron_post",
+    "name": "玄铁桩",
+    "description": "金丹境的玄铁桩厚且记仇，撑不过它说明阵容还差一层。",
+    "realm": "jindan",
+    "stats": {"hp": 2100, "attack": 240, "defense": 120, "speed": 140},
+    "elements": ["fire"],
+    "primary_element": "fire",
+    "order": 4
+  }
+]

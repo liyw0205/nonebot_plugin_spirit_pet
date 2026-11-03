@@ -466,6 +466,12 @@ class ShareRule(Definition):
     list_page_size: Annotated[int, Field(ge=1, le=10)]
 
 
+class DrillRule(Definition):
+    """灵宠演武: how many zero-cost trial fights a player may run each day."""
+
+    daily_attempts: Annotated[int, Field(ge=1, le=10)]
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -505,3 +511,4 @@ class Rules(Definition):
     mail: MailRule
     friend: FriendRule
     share: ShareRule
+    drill: DrillRule

@@ -47,6 +47,7 @@ from . import market
 from . import mailbox
 from . import friends
 from . import shares
+from . import drill
 from . import sockets
 from . import team_trial
 from . import cuisine
@@ -520,6 +521,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (mailbox.objective_line(ctx, player.user_id), "灵宠信箱"),
         (friends.objective_line(ctx, player.user_id), "灵宠好友"),
         (shares.objective_line(ctx, player.user_id), "灵宠分享"),
+        (drill.objective_line(ctx, player.user_id), "灵宠演武"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),

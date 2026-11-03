@@ -35,7 +35,7 @@
 | ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
 | shop_rotation.json | 灵坊每日特供池：物品、折扣百分比与当日库存；按北京时间日期轮换三件 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
-| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）、好友（名册上限/申请有效小时数）与战报分享（每日次数/分享码有效天数/每页条数） |
+| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）、好友（名册上限/申请有效小时数）、战报分享（每日次数/分享码有效天数/每页条数）与演武场（每日次数） |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
@@ -295,6 +295,29 @@
 ```
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
+
+## 演武场定义
+
+`drills.json` 是木人桩数组，由 `domain/drill_content.py` 的 `DrillDummy` 校验：每项声明 `id`、`name`（1-12 字）、`description`、`realm`（已有境界 id）、`stats`（四维，`speed` 必须为正）、`elements`（1-4 个）、`primary_element`、`order`（1-99）。`model_validator` 要求 `primary_element` 必须出现在自己的 `elements` 里——本命元素不属于自身属性的桩子在克制计算里没有意义。
+
+`Catalog._validate_drills` 要求表非空、`realm` 引用现有境界、每个 `elements` 引用现有元素、`order` 与名称都唯一。重名同时会被 `_index` 的通用去重拦下，因此 `_validate_drills` 里的重名判断只是对绕过加载器的调用方的兜底。
+
+四座木人桩的四维**直接锚定同境界既有秘境敌手**（`wood_guard`、`moon_wolf`、`thunder_dragon`、`ember_wraith`），不引入新的平衡带：演武的意义是让玩家在不花资源的前提下预演真实内容，若木人桩比真实敌手更强或更弱，这个预演就会误导配装。
+
+```json
+{
+  "id": "firewood_post",
+  "name": "柴木桩",
+  "description": "启灵境最常见的练手桩，出招朴素，用来确认伙伴站得住。",
+  "realm": "qiling",
+  "stats": {"hp": 85, "attack": 17, "defense": 5, "speed": 12},
+  "elements": ["wood", "earth"],
+  "primary_element": "wood",
+  "order": 1
+}
+```
+
+`rules.json` 的 `drill` 由 `DrillRule` 校验：`daily_attempts` 限定 1-10，实配 5。演武不建表：每日额度写在既有 `quest_progress` 的 `drill_<北京日期>`，行内 `progress` 就是当日已用次数，缺行即 0 次。
 
 ## 商会委托定义
 
