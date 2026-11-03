@@ -131,7 +131,7 @@ def send(ctx: Context, arg: str) -> Reply:
     if target is None or target.user_id == player.user_id:
         raise GameError("请填写其他玩家的 UID。")
     if not are_friends(ctx, player.user_id, target.user_id):
-        raise GameError("只能寄给论剑或同队出现过的玩家。")
+        raise GameError("只能寄给好友、论剑或同队出现过的玩家，可用 灵宠好友 结交。")
     rules = rule(ctx)
     if _sent_today(ctx, player.user_id) >= rules.daily_limit:
         raise GameError(f"今日寄信已达 {rules.daily_limit} 封，明日 00:00（北京时间）再寄。")
@@ -179,7 +179,7 @@ def page(ctx: Context, arg: str = "") -> Reply:
             "灵宠信箱",
             (
                 "尚未结契，先完成领养，才能收寄信件。",
-                "信箱把材料或灵石寄给论剑或同队出现过的修士，对方上线后自取。",
+                "信箱把材料或灵石寄给好友或同队出现过的修士，对方上线后自取。",
                 "没人领取的信件到期会自动退回寄件人。",
             ),
             ("灵宠帮助",),

@@ -290,3 +290,22 @@ CREATE TABLE mail_messages (
 );
 CREATE INDEX mail_inbox ON mail_messages(recipient_id, state, message_id);
 CREATE INDEX mail_outbox ON mail_messages(sender_id, state, message_id DESC);
+CREATE TABLE friend_links (
+    user_low TEXT NOT NULL REFERENCES players(user_id),
+    user_high TEXT NOT NULL REFERENCES players(user_id),
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY(user_low, user_high),
+    CHECK(user_low < user_high)
+);
+CREATE INDEX friend_link_low ON friend_links(user_low);
+CREATE INDEX friend_link_high ON friend_links(user_high);
+CREATE TABLE friend_requests (
+    from_id TEXT NOT NULL REFERENCES players(user_id),
+    to_id TEXT NOT NULL REFERENCES players(user_id),
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+    PRIMARY KEY(from_id, to_id),
+    CHECK(from_id != to_id)
+);
+CREATE INDEX friend_request_inbox ON friend_requests(to_id, expires_at);
+CREATE INDEX friend_request_outbox ON friend_requests(from_id, expires_at);

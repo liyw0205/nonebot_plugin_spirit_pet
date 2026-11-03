@@ -451,6 +451,13 @@ class MailRule(Definition):
         return self
 
 
+class FriendRule(Definition):
+    """灵宠好友: roster ceiling and how long a friend request stays actionable."""
+
+    max_friends: Annotated[int, Field(ge=1, le=200)]
+    request_hours: Annotated[int, Field(ge=1, le=72)]
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -488,3 +495,4 @@ class Rules(Definition):
     duel: DuelRule
     merchant: MerchantRule
     mail: MailRule
+    friend: FriendRule

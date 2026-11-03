@@ -203,5 +203,9 @@
     "max_items": 20,
     "inbox_capacity": 20,
     "kinds": ["material", "consumable"]
+  },
+  "friend": {
+    "max_friends": 50,
+    "request_hours": 24
   }
 }

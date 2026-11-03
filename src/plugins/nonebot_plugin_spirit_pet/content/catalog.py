@@ -370,6 +370,7 @@ class Catalog:
         self._validate_commissions()
         self._validate_market()
         self._validate_mail()
+        self._validate_friend()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -910,6 +911,17 @@ class Catalog:
         for kind in self.rules.mail.kinds:
             if not any(item.kind == kind for item in self.items.values()):
                 raise ValueError(f"mail has no {kind} item to send")
+
+    def _validate_friend(self):
+        """The shipped roster ceiling must exceed the request window's own reach.
+
+        A friendship has no content of its own, so there is nothing to cross-check
+        against a data file; the only load-time invariant is that a player can
+        actually hold more friends than one request round trip would need, i.e.
+        the ceiling is at least 2 so an added friend never immediately hits the cap.
+        """
+        if self.rules.friend.max_friends < 2:
+            raise ValueError("friend roster must hold at least two friends")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

@@ -35,7 +35,7 @@
 | ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
 | shop_rotation.json | 灵坊每日特供池：物品、折扣百分比与当日库存；按北京时间日期轮换三件 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
-| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）与信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类） |
+| rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）与好友（名册上限/申请有效小时数） |
 | dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
@@ -1049,3 +1049,15 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 `recipes.json` 由 `domain/crafting_content.py` 定义。每件 equipment 物品恰有一个配方，item_id/name 指向并对应物品；stones 为正，materials 与 salvage_materials 仅允许材料。材料必须有商店、初始资源或正数量奖励等非分解来源。enhancement_refund_percent 为 0-50 的整数百分比，不是概率。
 
 分解回收通过 `salvage_yield` 统一计算：基础回收加每种累计升级材料投入乘回收百分比，按单件向下取整。校验遍历 +0 至 +10，要求每种材料回收不超过投入、整体严格损耗；有商店价格的回收不得比直接购买装备再分解更便宜。新增装备必须同时补配方，不能只在商店与装备图鉴出现而无法维护工艺链。
+
+## 好友定义
+
+好友同样没有独立内容文件：`rules.json` 的 `friend` 只给出名册上限与申请有效期。
+
+    {"max_friends": 50, "request_hours": 24}
+
+`FriendRule` 校验两个字段的区间（`max_friends` 1-200、`request_hours` 1-72）；`Catalog._validate_friend` 额外要求上限至少为 2——名册小到装不下第二个人就没有结交的可能，这种配置应在启动时直接失败，而不是等玩家撞上。
+
+schema 24 新增两张表。`friend_links (user_low, user_high, created_at)` 用 `PRIMARY KEY(user_low, user_high)` 与 `CHECK(user_low < user_high)` 把「两人是好友」归一化成唯一一行：关系天然对称，既不可能重复记录，也不可能只记一半。`friend_requests (from_id, to_id, created_at, expires_at)` 用 `PRIMARY KEY(from_id, to_id)` 锁定单向待处理申请，`CHECK(from_id != to_id)` 禁止自申请，`CHECK(expires_at > created_at)` 保证有效期为正。索引 `friend_link_low` 与 `friend_link_high` 服务「我的好友」两个方向，`friend_request_inbox` 服务待我处理，`friend_request_outbox` 服务我发出的。
+
+两张表互不蕴含：申请只是意图，接受时才在同一事务里写入归一化边并删除申请；任一方「解除」直接删除该行，双方名册同时消失。因此查询好友一律是 `WHERE user_low=? OR user_high=?`，名册计数也必须同时统计两列，否则一半好友不会计入上限。

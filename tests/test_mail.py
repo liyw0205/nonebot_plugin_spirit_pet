@@ -304,7 +304,7 @@ def test_send_refuses_self_strangers_and_missing_funds(game, play):
     before = snapshot(game)
     for argument, message in (
         (f"邮寄 {own_uid} 锻灵矿 1 你好", "请填写其他玩家的 UID"),
-        (f"邮寄 {stranger_uid} 锻灵矿 1 你好", "只能寄给论剑或同队出现过的玩家"),
+        (f"邮寄 {stranger_uid} 锻灵矿 1 你好", "只能寄给好友、论剑或同队出现过的玩家"),
         ("邮寄 999999 锻灵矿 1 你好", "请填写其他玩家的 UID"),
         (f"邮寄 {own_uid} 锻灵矿 9 你好", "请填写其他玩家的 UID"),
     ):

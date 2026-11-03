@@ -21,6 +21,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import item_amount, quantity
 from ..utils.time import beijing_day
 from .economy import _use_consumable
+from .friends import linked
 from .rewards import grant
 
 GIFT_LOG_PREFIX = "gift_log_"
@@ -52,7 +53,14 @@ def _log_gift(ctx: Context, day: str, ordinal: int) -> None:
 
 
 def are_friends(ctx: Context, sender: str, target: str) -> bool:
-    """One shared battle or team edge is enough (mirrors 论剑/同队 history)."""
+    """An accepted friendship, or one shared battle/team edge.
+
+    The derived edge (论剑/同队 history) is what older saves rely on and stays
+    valid; an explicit friendship made through 灵宠好友 is accepted as well, which
+    is the only path for two players who have never met in a battle or a team.
+    """
+    if linked(ctx, sender, target):
+        return True
     arena = ctx.repo.conn.execute(
         "SELECT 1 FROM battle_participants a JOIN battle_participants b USING(battle_id) "
         "WHERE a.user_id=? AND b.user_id=? LIMIT 1",
@@ -99,7 +107,7 @@ def gift(ctx: Context, arg: str) -> Reply:
     if target is None or target.user_id == player.user_id:
         raise GameError("请填写其他玩家的 UID。")
     if not are_friends(ctx, player.user_id, target.user_id):
-        raise GameError("只能向论剑或同队出现过的玩家赠送。")
+        raise GameError("只能向好友、论剑或同队出现过的玩家赠送，可用 灵宠好友 结交。")
     day = _today(ctx)
     ordinal = gift_log_count(ctx, day)
     if ordinal >= GIFTS_PER_DAY:
@@ -144,7 +152,7 @@ def foster(ctx: Context, arg: str) -> Reply:
     if target is None or target.user_id == player.user_id:
         raise GameError("请填写其他玩家的 UID。")
     if not are_friends(ctx, player.user_id, target.user_id):
-        raise GameError("只能把灵宠寄养给论剑或同队出现过的玩家。")
+        raise GameError("只能把灵宠寄养给好友、论剑或同队出现过的玩家，可用 灵宠好友 结交。")
     pet_id = quantity(pet_text, 9_223_372_036_854_775_807)
     pet = ctx.repo.pet(pet_id)
     if pet is None or pet.user_id != player.user_id:

@@ -74,6 +74,7 @@ from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats, talent_reforge, world_boss
 from ..gameplay import bond_levels
 from ..gameplay import gifting
+from ..gameplay import friends
 from ..gameplay.arena import battles, matching, reward_history, seasons
 from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards, team_arena
 from ..gameplay.teams import management, party, requests
@@ -239,6 +240,7 @@ ACTIONS = {
     "merchant": Command(merchant.dispatch, True, registered=False),
     "market": Command(market.dispatch, True, registered=False),
     "mail": Command(mailbox.dispatch, True, registered=False),
+    "friends": Command(friends.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -374,6 +376,7 @@ COMMANDS = {
     "灵宠商会": "merchant",
     "灵宠集市": "market",
     "灵宠信箱": "mail",
+    "灵宠好友": "friends",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",

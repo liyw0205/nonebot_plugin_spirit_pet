@@ -93,9 +93,44 @@ def legacy_schema21(current_schema: str) -> str:
     return schema
 
 
+def legacy_schema23(current_schema: str) -> str:
+    """Reconstruct schema 23 from the current schema: no friend tables."""
+    schema = current_schema
+    for table in ("friend_links", "friend_requests"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for name in ("friend_link_low", "friend_link_high", "friend_request_inbox", "friend_request_outbox"):
+        schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
+    if "friend_" in schema:
+        raise RuntimeError("Current schema still carries friend definitions")
+    return schema
+
+
+def validate_schema24(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 24)
+
+
+def migrate_friend_tables(conn: sqlite3.Connection) -> None:
+    """Schema 24: a player-managed friendship needs link and request tables."""
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for table in ("friend_links", "friend_requests"):
+        match = re.search(rf"CREATE TABLE {table} \([\s\S]*?\n\);", schema)
+        if match is None:
+            raise RuntimeError(f"Current schema is missing {table}")
+        conn.execute(match.group(0))
+    for name in ("friend_link_low", "friend_link_high", "friend_request_inbox", "friend_request_outbox"):
+        match = re.search(rf"CREATE INDEX {name} [^;]*;", schema)
+        if match is None:
+            raise RuntimeError(f"Current schema is missing {name}")
+        conn.execute(match.group(0))
+
+
+def backup_schema23(path: Path) -> Path:
+    return _backup_schema(path, 23)
+
+
 def legacy_schema22(current_schema: str) -> str:
     """Reconstruct schema 22 from the current schema: no mailbox tables."""
-    schema = re.sub(r"CREATE TABLE mail_messages \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(r"CREATE TABLE mail_messages \([\s\S]*?\n\);\n", "", legacy_schema23(current_schema), count=1)
     for name in ("mail_inbox", "mail_outbox"):
         schema = re.sub(rf"CREATE INDEX {name} [^;]*;\n", "", schema, count=1)
     if "mail_" in schema:
@@ -104,7 +139,7 @@ def legacy_schema22(current_schema: str) -> str:
 
 
 def validate_schema23(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 23)
+    _validate_schema(conn, legacy_schema23(current_schema), 23)
 
 
 def migrate_mail_tables(conn: sqlite3.Connection) -> None:
