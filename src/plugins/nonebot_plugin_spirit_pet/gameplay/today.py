@@ -18,7 +18,9 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from . import (
     affinity_milestone_rewards,
+    checkin_rewards,
     codex_trials,
+    daily_assignment,
     drill,
     expeditions,
     free_summon,
@@ -71,6 +73,21 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         ))
 
     claimable.extend(_milestones(ctx, owner))
+
+    streaks = checkin_rewards.claimable(ctx, owner)
+    if streaks:
+        claimable.append(_entry(
+            CLAIM, f"签到里程碑 {len(streaks)} 项可领", "连续签到已达成的奖励还没领", "灵宠签到奖励",
+        ))
+    assignments = daily_assignment.claimable(ctx, owner)
+    if assignments:
+        claimable.append(_entry(
+            CLAIM, f"今日课题 {len(assignments)} 项已达标", "每天只能领其中一项", "灵宠课题领奖",
+        ))
+    if not checkin_rewards.signed_today(ctx, owner):
+        pending.append(_entry(
+            TODO, "今日还没签到", "签到累计连续天数并给灵石与灵粮", "灵宠签到",
+        ))
 
     rows = expeditions.running_rows(ctx, owner)
     ready = [row for row in rows if row["finishes_at"] <= ctx.now]

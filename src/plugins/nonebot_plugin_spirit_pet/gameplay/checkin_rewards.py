@@ -100,6 +100,27 @@ def claim_id(days: int) -> str:
     return f"{CLAIM_PREFIX}{days}"
 
 
+def signed_today(ctx: Context, user_id: str) -> bool:
+    """Has this player already signed in today (Beijing)? Read-only."""
+    return date.fromisoformat(beijing_day(ctx.now)) in stored_days(ctx, user_id)
+
+
+def claimable(ctx: Context, user_id: str) -> list[tuple]:
+    """Milestones this player has reached but not yet collected.
+
+    Read-only twin of :func:`claim`'s guard, so a digest can say "you have rewards
+    waiting" without granting anything. ``claim`` keeps its own authoritative checks.
+    """
+    player = ctx.repo.player(user_id)
+    if player is None:
+        return []
+    best = best_streak(ctx, player)
+    return [
+        milestone for milestone in MILESTONES
+        if best >= milestone[0] and not _claimed(ctx, user_id, milestone[0])
+    ]
+
+
 def _claimed(ctx: Context, user_id: str, days: int) -> bool:
     row = ctx.repo.conn.execute(
         "SELECT claimed FROM quest_progress WHERE user_id=? AND quest_id=?",

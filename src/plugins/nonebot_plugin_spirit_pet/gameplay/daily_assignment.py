@@ -103,6 +103,20 @@ def _state(ctx: Context, user_id: str, assignment, chosen) -> str:
     return f"进行中（{value}/{assignment.target}）"
 
 
+def claimable(ctx: Context, user_id: str) -> list:
+    """Today's assignments already at their target, while none has been picked yet.
+
+    Read-only twin of :func:`claim`'s guard: one assignment may be claimed per day, so
+    once one is chosen nothing else is claimable.
+    """
+    if _chosen(ctx, user_id) is not None:
+        return []
+    return [
+        assignment for assignment in todays(ctx)
+        if _value(ctx, user_id, assignment) >= assignment.target
+    ]
+
+
 def _summary(ctx: Context, assignment) -> str:
     parts = [f"灵石 {assignment.reward.stones.minimum}"]
     parts.extend(

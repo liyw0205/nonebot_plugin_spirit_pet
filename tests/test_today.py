@@ -2,6 +2,7 @@
 
 import re
 from contextlib import closing
+from datetime import date, timedelta
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -13,6 +14,8 @@ from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay import drill, mailbox, merchant, today
 from nonebot_plugin_spirit_pet.storage.repository import Repository
+
+from nonebot_plugin_spirit_pet.utils.time import beijing_day
 
 from .support import player, sql
 
@@ -254,3 +257,75 @@ def test_the_objectives_page_does_not_grow_a_line(game, play):
     play("adopt", "青鸾")
     assert all(not line.startswith("今日：") for line in play("objectives").lines)
     assert today.objective_line(None, "u1") == ""
+
+
+# ---------------------------------------------------------------- check-in and assignments
+
+def signed_days(game, count, user="u1"):
+    """Mark the last `count` Beijing days (ending yesterday) as signed in."""
+    today = date.fromisoformat(beijing_day(NOW))
+    for offset in range(1, count + 1):
+        day = today - timedelta(days=offset)
+        sql(
+            game[1],
+            "INSERT OR IGNORE INTO quest_progress(user_id, quest_id, progress, claimed)"
+            " VALUES (?, ?, 1, 1)",
+            (user, f"signin_day_{day.isoformat()}"),
+        )
+
+
+def test_a_fresh_player_is_reminded_to_sign_in(game, play):
+    play("adopt", "青鸾")
+    pending = labels(today.collect(context(game))[1])
+    assert "今日还没签到" in pending
+
+
+def test_signing_in_clears_the_reminder(game, play):
+    play("adopt", "青鸾")
+    play("sign")
+    pending = labels(today.collect(context(game))[1])
+    assert "今日还没签到" not in pending
+
+
+def test_a_reached_streak_milestone_becomes_claimable(game, play):
+    play("adopt", "青鸾")
+    signed_days(game, 3)
+    claimable = today.collect(context(game))[0]
+    assert "签到里程碑 1 项可领" in labels(claimable)
+    assert "灵宠签到奖励" in claim_commands(claimable)
+
+
+def test_claiming_the_streak_reward_clears_the_entry(game, play):
+    play("adopt", "青鸾")
+    signed_days(game, 3)
+    assert "签到里程碑 1 项可领" in labels(today.collect(context(game))[0])
+    play("checkin_reward_claim", "3")
+    assert "签到里程碑 1 项可领" not in labels(today.collect(context(game))[0])
+
+
+def test_assignments_count_as_claimable_only_at_their_target(game, play, monkeypatch):
+    play("adopt", "青鸾")
+    from nonebot_plugin_spirit_pet.gameplay import daily_assignment
+
+    assert daily_assignment.claimable(context(game), "u1") == []
+    monkeypatch.setattr(daily_assignment, "_value", lambda *args, **kwargs: 10_000)
+    claimable = daily_assignment.claimable(context(game), "u1")
+    assert len(claimable) == len(daily_assignment.todays(context(game)))
+    assert "今日课题" in " ".join(labels(today.collect(context(game))[0]))
+
+
+def test_only_one_assignment_is_claimable_per_day(game, play, monkeypatch):
+    play("adopt", "青鸾")
+    from nonebot_plugin_spirit_pet.gameplay import daily_assignment
+
+    monkeypatch.setattr(daily_assignment, "_value", lambda *args, **kwargs: 10_000)
+    monkeypatch.setattr(daily_assignment, "_chosen", lambda *args, **kwargs: object())
+    assert daily_assignment.claimable(context(game), "u1") == []
+
+
+def test_the_extra_sources_still_write_nothing(game, play):
+    play("adopt", "青鸾")
+    signed_days(game, 3)
+    before = snapshot(game)
+    play("today")
+    assert snapshot(game) == before

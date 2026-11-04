@@ -308,7 +308,8 @@
 ## 今日汇总定义
 
 `灵宠今日` 没有内容文件与规则数值：它是纯入口聚合，每一条都由来源模块自己的只读 helper 生成
-（`free_summon.available`、`mailbox.inbox`、`affinity_milestone_rewards.claimable`、
+（`checkin_rewards.signed_today`/`claimable`、`daily_assignment.claimable`、`free_summon.available`、
+`mailbox.inbox`、`affinity_milestone_rewards.claimable`、
 `realm_milestone_rewards.claimable`、`expeditions.running_rows`、`merchant.todays`/`delivered`/`_missing`、
 `drill.remaining`、`codex_trials.weekly_slots`/`weekly_cleared`），本模块不复制它们的业务规则，也不写任何表。
 
