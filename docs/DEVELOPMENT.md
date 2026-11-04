@@ -1265,6 +1265,18 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_race_prizes.py tests/test_race.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`253 passed`（含新增 `test_race_prizes.py` 23 项：内容/模型/倒挂校验、未结契只读、上周前三与并列排序、三档奖励、第 4 名/未参赛/旧周/坏记录/未结契领奖拒绝零写入、往期分页与越界、详情、只读快照、目标/帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `a57eb6c`（功能）与 `346ecee`（空名次保护）已推送 develop，develop CI `41908028269` 全绿（3528 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41908919871` 全绿（同为 3528 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改竞速报名/用时/精力/冷却、未新增 schema 或 Release tag。
 
+### 灵宠商会声望兑换（2026-11-05，已完成）
+
+审计确认商会声望在最高门槛之后没有出口：`merchant_rep` 只增不减，`todays()` 只看 `min_rep`，而 `data/commissions.json` 的最高门槛是 60。达到 60 后十份委托全部解锁，继续交付仍会加声望（每单 4-10、日清 +4），但页面、兑换与阶位都不再读取它。本切片补一个“可用余额”经济出口，同时保持累计声望的门槛语义不变。
+
+内容：新增 `data/merchant_exchange.json` 五条固定兑换项（`food_pack` 灵粮补给 8 声望/3 份/周 5、`ore_pack` 锻灵矿包 12/2/4、`pill_pack` 蕴灵丹匣 18/1/2、`essence_pack` 血脉精华匣 24/1/2、`gem_pack` 风灵石匣 32/1/1），`domain/merchant_exchange_content.py` 的 `MerchantOffer` 校验 `cost_rep` 正整数、`amount` 1-99、`weekly_limit` 1-20；`Catalog` 增加 `merchant_exchange` 索引与 `_validate_merchant_exchange`（至少一条、物品存在且为 `consumable`/`material`）。
+
+业务：`gameplay/merchant_exchange.py` 定义 `merchant_spent` 与 `merchant_buy_<北京周起点>_<兑换 id>` 两类 `quest_progress` 状态。可用余额 = `max(0, merchant_rep - merchant_spent)`；兑换只增加 `merchant_spent` 与本周计数，再把物品加入背包。`merchant_rep` 始终不变，因此 `todays()` 的门槛判断、十份委托池和日清奖励完全不受影响。`灵宠商会 兑换` 只读页列出五项、花费、每周剩余与可用余额，余额不足或售罄的行不给入口；`灵宠商会 兑换 <名称|序号>` 校验余额、周限购、物品定义后同事务写入，所有拒绝路径零写入。主看板增加“累计/可用”一行与兑换蓝字；帮助「灵物与灵术」补两条；`灵宠目标` 的商会行保持原样。
+
+不变量：不新增 schema（保持 26）、不改 `merchant.rep` 的累计语义、`todays()` 的声望门槛、委托价格、日清奖励、交付事务与 `players` 表；兑换不扣灵石、不写战报、不推进成就/任务/熟练度。页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；同一 operation 重投返回原回复。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_merchant_exchange.py tests/test_merchant.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`246 passed`（含新增 `test_merchant_exchange.py` 21 项：内容/模型/未知物品/空表校验、未结契只读、页面与余额、三档兑换、累计声望不降、周限购与跨周重置、余额不足/坏参数/缺失物品/坏记录拒绝零写入、同操作重投、重复兑换叠加、重启持久、只读快照、副作用边界、主页面入口、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `863d318` 已推送 develop，develop CI `41914177315` 全绿（3549 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41915023470` 全绿（同为 3549 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改商会交付/门槛/价格/日清、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
