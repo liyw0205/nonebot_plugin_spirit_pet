@@ -1234,3 +1234,5 @@ schema 25 新增单表 `battle_shares`：`share_id` 主键并限定长度 6-24�
 表里只存 `battle_id`，不复制 `snapshot`：战报本身已经不可变，复制只会多出一条会漂移的路径。分享码由 `secrets` 随机生成、字母表去掉 `0/O/1/I`（需要口头转述与人手重输），因此不可能从自增的战报编号推出。读取路径与参与者的读取路径是两个独立出口：`灵宠战报 查看` 仍走 `repo.battle_report` 的参与者校验，`灵宠分享 查看 <码>` 只认有效分享码，两者共用同一个渲染函数，所以分享不会成为绕过参与者校验的后门。
 
 `share_rewards.json` 是分享读者里程碑数组，由 `domain/share_reward_content.py` 的 `ShareReward` 校验：每项声明 `readers`（1-100）、`name`、`stones`（非负）与 `items`（物品 id → 正整数），奖励不能全空。`Catalog._validate_share_rewards` 强制档位恰为 3、10、30；物品必须存在且为 `consumable`/`material`；读者越多奖励不得越低。读者去重行写入分享者名下的 `quest_progress` 的 `shareview_<读者 user_id>`，同一读者只一行；领取标记写 `share_read_reward_<读者数>`，`progress` 保存领取时的读者数，`claimed=1`。
+
+`灵宠分享榜` 没有独立内容文件：它直接按 `shareview_` 前缀分组计数，JOIN `players` 与 `player_identity` 只用于确认玩家存在并取 UID（`identity.id + 9999`，与收集榜同一口径）；排序为读者数降序、user_id 升序，展示前十。榜单不写表、不发奖励，因此没有可配置档位；改榜口径只需改 `gameplay/share_board.py` 的查询，不需要新增 schema 或内容 JSON。
