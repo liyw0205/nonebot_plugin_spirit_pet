@@ -395,7 +395,13 @@ def test_sharing_moves_nothing_and_does_not_write_a_battle(game, play):
     code = code_of(share(play, battle_id))
     play("shares", f"查看 {code}", user="u2")
     play("shares", f"撤回 {code}")
-    assert snapshot(game) == before
+    after = snapshot(game)
+    assert after[:3] == before[:3]
+    # The only new row is the de-duplicated reader marker; resources and battles
+    # are unchanged.
+    assert after[3] == [{
+        "user_id": "u1", "quest_id": "shareview_u2", "progress": 1, "claimed": 1,
+    }]
 
 
 # ---------------------------------------------------------------- surfaces

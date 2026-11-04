@@ -43,6 +43,7 @@ READ_ONLY_PAGES = (
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",
     "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "collection_rank_rewards",
+    "share_rewards",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
     "skill_catalog", "skill_mastery_rewards", "skill_overview", "skills",
     "sect", "sigils", "specialization", "stage_catalog", "stage_stars", "stage_stats", "status", "support", "survival", "talent_history", "temper",
@@ -66,6 +67,7 @@ DOCUMENTED_COUNTS = {
     "race_prizes": 3,
     "merchant_exchange": 5,
     "collection_rank_rewards": 3,
+    "share_rewards": 3,
 }
 
 

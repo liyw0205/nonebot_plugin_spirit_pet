@@ -35,10 +35,29 @@ from . import battle_records
 # excluded and the alphabet is documented for the acceptance test.
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 12
+READER_PREFIX = "shareview_"
 
 
 def rule(ctx: Context):
     return ctx.content.rules.share
+
+
+def readers(ctx: Context, user_id: str | None = None) -> int:
+    """Distinct players who successfully opened any share owned by ``user_id``."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS total FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (user_id or ctx.user_id, f"{READER_PREFIX}%"),
+    ).fetchone()
+    return int(row["total"])
+
+
+def record_reader(ctx: Context, owner_id: str, viewer_id: str) -> None:
+    """One row per owner/viewer; repeat reads of any share do not add another."""
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 1) "
+        "ON CONFLICT(user_id, quest_id) DO NOTHING",
+        (owner_id, f"{READER_PREFIX}{viewer_id}"),
+    )
 
 
 def mint_code() -> str:
@@ -156,6 +175,8 @@ def view(ctx: Context, arg: str) -> Reply:
     report = _report_row(ctx, int(row["battle_id"]), row["owner_id"])
     if report is None:
         raise GameError("该战报已不可读取。")
+    if row["owner_id"] != ctx.user_id:
+        record_reader(ctx, row["owner_id"], ctx.user_id)
     ctx.repo.conn.execute(
         "UPDATE battle_shares SET views=views+1 WHERE share_id=? AND state='active'", (code,),
     )
@@ -246,7 +267,7 @@ def catalog(ctx: Context, arg: str = "") -> Reply:
         index = len(lines) - 1
         links.append(InlineCommand(index, "查看", f"灵宠分享 查看 {row['share_id']}"))
         links.append(InlineCommand(index, "撤回", f"灵宠分享 撤回 {row['share_id']}"))
-    return Reply("灵宠分享", tuple(lines), ("灵宠分享 我的", "灵宠战报", "灵宠目标")[:4], tuple(links))
+    return Reply("灵宠分享", tuple(lines), ("灵宠分享 我的", "灵宠分享奖励", "灵宠战报", "灵宠目标")[:4], tuple(links))
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:

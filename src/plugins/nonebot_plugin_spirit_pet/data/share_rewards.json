@@ -1,0 +1,5 @@
+[
+  {"readers": 3, "name": "初传佳话", "stones": 120, "items": {"spirit_food": 1}},
+  {"readers": 10, "name": "声名渐起", "stones": 300, "items": {"forge_ore": 1, "spirit_food": 2}},
+  {"readers": 30, "name": "名动山海", "stones": 800, "items": {"forge_ore": 2, "spirit_food": 3, "bloodline_essence": 1}}
+]

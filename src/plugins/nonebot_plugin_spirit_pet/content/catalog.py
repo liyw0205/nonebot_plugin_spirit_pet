@@ -49,6 +49,7 @@ from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.collection_rank_reward_content import CollectionRankReward
+from ..domain.share_reward_content import ShareReward
 from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
@@ -172,6 +173,7 @@ class Catalog:
     commissions: dict[str, Commission]
     merchant_exchange: dict[str, MerchantOffer]
     collection_rank_rewards: dict[int, CollectionRankReward]
+    share_rewards: dict[int, ShareReward]
     market: MarketRule
     drills: dict[str, DrillDummy]
 
@@ -254,6 +256,7 @@ class Catalog:
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
+            share_rewards=_index(directory / "share_rewards.json", ShareReward, "readers"),
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
         )
@@ -385,6 +388,7 @@ class Catalog:
         self._validate_commissions()
         self._validate_merchant_exchange()
         self._validate_collection_rank_rewards()
+        self._validate_share_rewards()
         self._validate_market()
         self._validate_mail()
         self._validate_friend()
@@ -984,6 +988,27 @@ class Catalog:
                 if higher.items.get(item_id, 0) < amount:
                     raise ValueError(
                         f"collection rank reward {item_id} must not fall as the rank improves"
+                    )
+
+    def _validate_share_rewards(self):
+        """Share reader milestones must be three ordered, real rewards."""
+        if set(self.share_rewards) != {3, 10, 30}:
+            raise ValueError("share rewards must cover 3, 10 and 30 readers")
+        ordered = [self.share_rewards[readers] for readers in (3, 10, 30)]
+        for reward in ordered:
+            self._require(reward.items, self.items, f"share reward {reward.readers} items")
+            if any(self.items[item_id].kind not in {"consumable", "material"}
+                   for item_id in reward.items):
+                raise ValueError(
+                    f"share reward {reward.readers} items must be consumable or material"
+                )
+        for lower, higher in zip(ordered, ordered[1:]):
+            if higher.stones < lower.stones:
+                raise ValueError("share reward stones must not fall as readers grow")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"share reward {item_id} must not fall as readers grow"
                     )
 
     def _validate_market(self):
