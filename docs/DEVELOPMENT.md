@@ -1277,6 +1277,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_merchant_exchange.py tests/test_merchant.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`246 passed`（含新增 `test_merchant_exchange.py` 21 项：内容/模型/未知物品/空表校验、未结契只读、页面与余额、三档兑换、累计声望不降、周限购与跨周重置、余额不足/坏参数/缺失物品/坏记录拒绝零写入、同操作重投、重复兑换叠加、重启持久、只读快照、副作用边界、主页面入口、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `863d318` 已推送 develop，develop CI `41914177315` 全绿（3549 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41915023470` 全绿（同为 3549 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改商会交付/门槛/价格/日清、未新增 schema 或 Release tag。
 
+### 灵宠师徒传道（2026-11-05，已完成）
+
+审计确认师徒关系建立后没有任何每日互动：`mentorship.py` 只有递帖/同意/拒绝/逐出/出师，徒弟要修到筑基境才能出师，在此之前两行关系不产生一次主动玩法；`grep -rn "传道\|授课\|师德" src/` 为 0。本切片在关系存续期间补一条师父主动、徒弟受益的日常。
+
+内容：`rules.json` 的 `mentor` 增加 `lesson`（`energy` 10、`exp` 30、`stones` 20、`daily_limit` 3），`domain/content.py` 新增 `MentorLessonRule` 并挂到 `MentorRule`；`MentorRule` 裸夹具同步补 `lesson`，不设默认值。业务：`gameplay/mentorship.py` 定义 `mentorlesson_<北京日期>_<徒弟 user_id>`，`lessons_today` 按同一前缀统计当天总次数；`灵宠师徒 传道` 只读页列出每位徒弟的「今日已传道/可传道/徒弟无出战伙伴/徒弟伙伴外出/今日次数用尽」状态，只给可执行的行挂入口；`灵宠师徒 传道 <UID>` 校验目标确为当前徒弟、双方出战伙伴均未派遣、师父伙伴精力足够、当天总次数与这对师徒次数未用尽，然后扣师父精力、加徒弟伙伴修为、加师父灵石并写当天凭证。主页面在徒弟列表前增加「今日传道 n/3」与入口；帮助「组队与派遣」补两条；`灵宠目标` 的师徒行保持原样。
+
+不变量：不新增 schema（保持 26）、不改拜师/收徒/拒绝/逐出/出师的判定与谢礼、不改好友/队伍/赠送/信箱规则与 `players` 表；传道不写战报、不推进成就/任务/周常/熟练度；所有拒绝路径零写入。传道页只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；同一 operation 重投返回原回复。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_mentor_lessons.py tests/test_mentorship.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`250 passed`（含新增 `test_mentor_lessons.py` 15 项：规则接线与越界、未结契只读、主页面入口、成功扣精力/加修为/加灵石、同日重复与每日 3 次上限、跨日重置、非徒弟/自己/未知/已出师拒绝、双方无出战伙伴或派遣拒绝、精力不足拒绝、同操作重投、重启持久、只读快照、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `6703940` 已推送 develop，develop CI `41919107837` 全绿（3564 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41919914159` 全绿（同为 3564 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改出师条件/谢礼/师徒判定、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
