@@ -1299,6 +1299,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_collection_rank_rewards.py tests/test_collection_rank.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`233 passed`（含新增 `test_collection_rank_rewards.py` 16 项：内容/模型/档位/未知物品校验、未结契只读、页面与当前名次、第 3 名可领 3/10 不可领 1、三档领取、掉榜不撤回、未入榜/坏参数/缺物种拒绝零写入、只读快照、同操作重投、重启持久、收集榜入口与 native 按钮、帮助/解析、目标页不变）。`compileall` 与 `git diff --check` 通过。提交 `7f6e746` 已推送 develop，develop CI `41923703697` 全绿（3580 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41924440050` 全绿（同为 3580 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改收集榜/逐族奖励/万灵榜/竞技奖励、未新增 schema 或 Release tag。
 
+### 灵宠分享读者里程碑（2026-11-05，已完成）
+
+审计确认分享是唯一“只写不读”的社交计数：`shares.view` 每次成功读取都 `views=views+1`，`灵宠分享 我的` 只显示“已读 N 次”，但没有任何奖励、成就或里程碑读取它；分享者提供可读战报却没有反馈。本切片把阅读次数升级为去重读者里程碑，同时保留原有 `views` 展示。
+
+内容：新增 `data/share_rewards.json` 三档（3 位读者 120 灵石 + 灵粮 1；10 位 300 + 锻灵矿 1 + 灵粮 2；30 位 800 + 锻灵矿 2 + 灵粮 3 + 血脉精华 1），`domain/share_reward_content.py` 的 `ShareReward` 校验 `readers` 1-100、非负灵石、正整数物品且奖励非空；`Catalog` 增加 `share_rewards` 索引与 `_validate_share_rewards`（档位恰为 3/10/30、物品存在且为 `consumable`/`material`、奖励随读者数不得倒挂）。业务：`shares.view` 在成功解析有效分享码后，若读者不是分享者，在分享者名下写一行 `shareview_<读者 user_id>`（`ON CONFLICT DO NOTHING`）；`shares.readers` 按该前缀计数，重复阅读与多码阅读都只算一位，分享者自读不计。`gameplay/share_rewards.py` 的 `灵宠分享奖励` 列出档位与当前读者数，达到档位且未领的行挂 `灵宠分享领奖 <读者数>`；`claim` 校验档位、读者数、重复领取与物品定义后发奖并写 `share_read_reward_<读者数>`。分享页增加奖励入口（按钮仍 ≤4），帮助「对战与赛季」补两条，`test_contract_audit.py` 纳入只读页并登记 3 项内容。
+
+不变量：不新增 schema（保持 26）、不改分享码生成/有效期/撤回/`views` 展示/战报读取权限、不改 `battle_shares` 表；读者行与领取行写入 `quest_progress`；坏码/过期/撤回不写读者；领取不写战报、不推进成就/任务/周常/熟练度；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；同一 operation 重投返回原回复。`tests/test_shares.py` 的“分享不移动资源”合同同步改为允许唯一的去重读者行，资源与战报仍不变。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`255 passed`（含新增 `test_share_rewards.py` 15 项：内容/模型/档位/未知物品校验、未结契只读、零读者页、跨码与重复阅读去重、分享者自读不计、三档领取、读者不足/坏参数拒绝零写入、只读快照、过期码不计数、重启持久、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `19a462a` 已推送 develop，develop CI `41928273432` 全绿（3595 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41929044749` 全绿（同为 3595 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/战报结算、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
