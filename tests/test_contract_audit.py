@@ -42,6 +42,7 @@ READ_ONLY_PAGES = (
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "pvp_rank", "quests",
     "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
+    "collection_rank_rewards",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
     "skill_catalog", "skill_mastery_rewards", "skill_overview", "skills",
     "sect", "sigils", "specialization", "stage_catalog", "stage_stars", "stage_stats", "status", "support", "survival", "talent_history", "temper",
@@ -64,6 +65,7 @@ DOCUMENTED_COUNTS = {
     "forbidden": 3, "cuisine": 6, "team_trials": 3, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 3, "combos": 6, "attunements": 8, "contracts": 3, "hybrids": 2, "alchemy": 4, "bounties": 5, "sect_exchange": 5, "intents": 3, "gems": 4, "difficulties": 3, "formations": 3, "escorts": 3, "sigils": 8, "gauntlets": 1, "races": 3, "moods": 4, "specializations": 4, "achievement_shop": 6, "tribulations": 1, "duels": 5, "commissions": 10,
     "race_prizes": 3,
     "merchant_exchange": 5,
+    "collection_rank_rewards": 3,
 }
 
 

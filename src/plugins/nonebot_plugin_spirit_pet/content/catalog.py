@@ -48,6 +48,7 @@ from ..domain.duel_content import DuelOpponent
 from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
+from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
@@ -170,6 +171,7 @@ class Catalog:
     duels: dict[str, DuelOpponent]
     commissions: dict[str, Commission]
     merchant_exchange: dict[str, MerchantOffer]
+    collection_rank_rewards: dict[int, CollectionRankReward]
     market: MarketRule
     drills: dict[str, DrillDummy]
 
@@ -249,6 +251,9 @@ class Catalog:
             duels=_index(directory / "duels.json", DuelOpponent),
             commissions=_index(directory / "commissions.json", Commission),
             merchant_exchange=_index(directory / "merchant_exchange.json", MerchantOffer),
+            collection_rank_rewards=_index(
+                directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
+            ),
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
         )
@@ -379,6 +384,7 @@ class Catalog:
         self._validate_drills()
         self._validate_commissions()
         self._validate_merchant_exchange()
+        self._validate_collection_rank_rewards()
         self._validate_market()
         self._validate_mail()
         self._validate_friend()
@@ -956,6 +962,29 @@ class Catalog:
                 raise ValueError(
                     f"merchant exchange {offer.id} item must be consumable or material"
                 )
+
+    def _validate_collection_rank_rewards(self):
+        """Collection rank milestones must be three ordered, real rewards."""
+        if set(self.collection_rank_rewards) != {1, 3, 10}:
+            raise ValueError("collection rank rewards must cover ranks 1, 3 and 10")
+        ordered = [self.collection_rank_rewards[rank] for rank in (1, 3, 10)]
+        for reward in ordered:
+            self._require(
+                reward.items, self.items, f"collection rank {reward.rank} reward items",
+            )
+            if any(self.items[item_id].kind not in {"consumable", "material"}
+                   for item_id in reward.items):
+                raise ValueError(
+                    f"collection rank {reward.rank} reward items must be consumable or material"
+                )
+        for higher, lower in zip(ordered, ordered[1:]):
+            if higher.stones < lower.stones:
+                raise ValueError("collection rank reward stones must not fall as the rank improves")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"collection rank reward {item_id} must not fall as the rank improves"
+                    )
 
     def _validate_market(self):
         """The stall ladder must be worth climbing and every sellable kind must exist."""

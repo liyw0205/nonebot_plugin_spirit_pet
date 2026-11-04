@@ -79,6 +79,7 @@ from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats, talent_reforge, world_boss
+from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay import friends
@@ -264,6 +265,8 @@ ACTIONS = {
     "achievement_shop": Command(achievement_shop.dispatch, True, registered=False),
     "collection": Command(achievements.collection, True, registered=False),
     "collection_rank": Command(collection_rank.collection_rank, True, registered=False),
+    "collection_rank_rewards": Command(collection_rank_rewards.catalog, True, registered=False),
+    "collection_rank_reward_claim": Command(collection_rank_rewards.claim, True),
     "dungeon_stats": Command(dungeon_stats.catalog, True, registered=False),
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
     "skill_overview": Command(skill_overview.catalog, True, registered=False),
@@ -425,6 +428,7 @@ COMMANDS = {
     "灵宠组队关卡": "team_stage_challenge",
     "灵宠成就": "achievements", "灵宠成就详情": "achievement_detail",
     "灵宠成就领奖": "achievement_claim", "灵宠成就商店": "achievement_shop", "灵宠收集": "collection", "灵宠收集榜": "collection_rank",
+    "灵宠收集榜奖励": "collection_rank_rewards", "灵宠收集榜领奖": "collection_rank_reward_claim",
     "灵宠图鉴奖励": "codex", "灵宠图鉴领奖": "codex_claim",
     "灵宠共鸣": "resonance",
     "灵宠委托": "expedition_catalog", "灵宠派遣": "expedition_start", "灵宠行程": "expedition_status",

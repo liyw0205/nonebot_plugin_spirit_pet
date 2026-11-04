@@ -157,6 +157,8 @@
 
 `codex_rewards.json` 的每项只定义 `species`、`stones` 与 `items`，不保存玩家进度。`species` 必须引用已有种族且每个种族恰好一条（不多不少），`items` 必须引用已有物品，`stones` 非负且与 `items` 至少有一项非空。奖励是固定值而非区间，领取时按单值发放；收集状态由 `pets` 表即时派生（封存宠物仍计入），领取标记写入 `quest_progress` 的 `codex_<种族>` 行，因此每族只发一次且永久有效。
 
+`collection_rank_rewards.json` 是收集榜名次奖励数组，由 `domain/collection_rank_reward_content.py` 的 `CollectionRankReward` 校验：每项声明 `rank`（1-10）、`name`、`stones`（非负）与 `items`（物品 id → 正整数），奖励不能全空。`Catalog._validate_collection_rank_rewards` 强制档位恰为 1、3、10；物品必须存在且为 `consumable`/`material`；名次越高奖励不得越低。领取标记写入 `quest_progress` 的 `collection_rank_reward_<档位>`，`progress` 保存领取时的实际名次，`claimed=1`；因此每档只发一次，掉出榜单不撤回。
+
 ## 禁地定义
 
 `forbidden.json` 是禁地对象数组，由 `domain/forbidden_content.py` 严格校验，当前三处禁地按北京时间自然周轮换开放。每处禁地定义 `id`、`name`、`description`、`restriction`、`bonus` 与 `depths`，不接受额外字段。

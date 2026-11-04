@@ -63,7 +63,7 @@ def collection_rank(ctx: Context, arg: str) -> Reply:
     if player is None:
         return Reply(
             "灵宠收集榜", board,
-            ("灵宠图鉴", "灵宠帮助"),
+            ("灵宠图鉴", "灵宠收集榜奖励", "灵宠帮助"),
             (InlineCommand(len(board), "开始领养", "灵宠领养 "),),
         )
     mine = collected_species(ctx, player.user_id)
@@ -73,5 +73,5 @@ def collection_rank(ctx: Context, arg: str) -> Reply:
         if rank is not None else f"你尚未收得灵宠种族 · 已收集 0/{total} 族。"
     )
     return Reply("灵宠收集榜", (*board, suffix), (
-        "灵宠收集", "灵宠图鉴奖励", "灵宠目标",
+        "灵宠收集", "灵宠图鉴奖励", "灵宠收集榜奖励", "灵宠目标",
     ), (InlineCommand(len(board), "查看收集奖励", "灵宠图鉴奖励"),))

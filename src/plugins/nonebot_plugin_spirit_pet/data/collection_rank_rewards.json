@@ -1,0 +1,5 @@
+[
+  {"rank": 1, "name": "三甲之首", "stones": 500, "items": {"forge_ore": 3, "spirit_food": 1}},
+  {"rank": 3, "name": "三甲在望", "stones": 260, "items": {"forge_ore": 1, "spirit_food": 1}},
+  {"rank": 10, "name": "十强留名", "stones": 120, "items": {"spirit_food": 1}}
+]
