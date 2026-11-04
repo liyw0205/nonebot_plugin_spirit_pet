@@ -1319,6 +1319,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_board.py tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`263 passed`（含新增 `test_share_board.py` 9 项）。`compileall` 与 `git diff --check` 通过。提交 `2226717` 已推送 develop，develop CI `41932561769` 全绿（3604 项）；fast-forward 合入 main 后 main CI `41933285959` 全绿（同为 3604 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/读者里程碑、未新增 schema 或 Release tag。
 
+### 灵宠分享榜名次奖励（2026-11-05，已完成）
+
+分享榜已展示去重读者前十与自己的名次，但名次只是文字；收集榜、万灵榜、竞速与段位都有名次奖励，分享榜是唯一“有榜无奖”的榜。本切片给榜补一次性名次奖励，复用 `shareview_` 计数与 `share_board.ranking`，不新增状态。
+
+内容：新增 `data/share_rank_rewards.json` 三档（前 1 名 500 灵石 + 锻灵矿 3 + 灵粮 2；前 3 名 260 + 锻灵矿 1 + 灵粮 2；前 10 名 120 + 灵粮 1），`domain/share_rank_reward_content.py` 的 `ShareRankReward` 校验 `rank` 1-100、非负灵石、正整数物品且奖励非空；`Catalog` 增加 `share_rank_rewards` 索引与 `_validate_share_rank_rewards`（档位恰为 1/3/10、物品存在且为 `consumable`/`material`、名次越高奖励不得倒挂）。业务：`gameplay/share_rank_rewards.py` 复用 `share_board.ranking`，`灵宠分享榜奖励` 列出档位/奖励/当前名次/状态，达到档位且未领的行挂 `灵宠分享榜领奖 <名次>`；`claim` 校验档位、当前名次、重复领取与物品定义后发奖，写 `share_rank_reward_<名次>`（progress 为领取时名次）。分享榜页增加奖励按钮（仍 ≤4），帮助「对战与赛季」补两条。
+
+不变量：不新增 schema（保持 26）、不改分享/读者里程碑/榜单排序/`views`/战报权限/`battle_shares` 表；领取不写战报、不推进成就/任务/周常/熟练度；掉榜不撤回、不重复发同一档；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；所有拒绝路径零写入；同一 operation 重投返回原回复。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_rank_rewards.py tests/test_share_board.py tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_objectives.py`：`276 passed`（含新增 `test_share_rank_rewards.py` 15 项：内容/模型/档位/未知物品校验、未结契只读、空榜、三档领取与第 1/3/10/11 名边界、重复领取、坏参数拒绝零写入、只读快照、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `f29ac17` 已推送 develop，develop CI `41935958710` 全绿（3617 项）；fast-forward 合入 main 后 main CI `41936647027` 全绿（同为 3617 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/读者里程碑、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
