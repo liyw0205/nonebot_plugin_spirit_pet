@@ -1255,6 +1255,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 新增 `tests/test_friends.py` 37 项（规则接线与区间、上限负例、未结契只读且不建号、空名册、添加只写申请不建边、同意写一行归一化边并删申请、反向申请也归一化、拒绝与撤回零写入、任一方解除、自己/未知/多参/格式拒绝、已是好友与双向重复申请拒绝、接受方与发起人权限拒绝、名册上限与对方上限拒绝、全部拒绝路径数据库不变、过期后释放与过期申请不可接受、好友边解锁赠送与信箱、旧战斗边仍然有效、解除后边关闭、`linked` 对称且自我为假、重启持久、同 operation_id 只结算一次、目标页两行、好友操作不动资源与战报、帮助与解析、渲染行仅挂可执行蓝字、QQ 按钮与蓝字分离、OneBot 文本、新库含两表四索引、归一化与自连接约束、双方计数、22→24 与 23→24 迁移留底）。聚焦 14 个文件 `357 passed`，另跑经济与日常批次 `269 passed`；`compileall` 与 `git diff --check` 通过。提交 `197e034` 已推送 develop，develop CI `41567508366` 全绿（3214 项）；fast-forward 合入 main 后 main CI `41568342282` 全绿（同为 3214 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改赠送/寄养/信箱的价格与上限（只放宽好友边判定）、未做好友通知推送、未创建新 Release tag。
 
+### 灵宠竞速周结算与历史回顾（2026-11-05，已完成）
+
+审计确认竞速的周成绩从写入起就没有读取出口：`gameplay/race.py` 只读当前周的 `race_best_<周起点>`，换周后旧行永久保留，`灵宠竞速榜` 与 `_rank` 也只查当前周；帮会/秘境/论剑等竞争系统都有结算或历史，唯独竞速在每周一直接丢弃成绩，前三名没有任何奖励。本切片把已有行变成可读档案，不复制用时计算、不改报名路径。
+
+内容：新增 `data/race_prizes.json`（第 1 名灵石 600 + 锻灵矿 3 + 灵粮 2；第 2 名灵石 320 + 锻灵矿 1 + 灵粮 2；第 3 名灵石 160 + 灵粮 1），`domain/race_prize_content.py` 的 `RacePrize` 校验 `rank` 1-3、非负灵石、正整数物品且奖励非空；`Catalog` 增加 `race_prizes` 索引，`_validate_races` 强制名次恰为 1/2/3、物品存在且为 `consumable`/`material`、灵石与逐项物品随名次不得倒挂。业务：`gameplay/race_prizes.py` 复用 `beijing_week` 与 `race.time_text`，按成绩升序、`player_identity.id` 升序给出上周前三与个人名次；默认页展示上周结算、固定奖励、自己的成绩/领取状态，`往期` 每页 6 周、逐周可打开 `灵宠竞速奖励 <周一日期>`，`灵宠竞速领奖` 只允许上一自然周前三名领取一次，奖励与 `quest_progress` 的 `race_prize_<周起点>` 标记（`progress=名次`、`claimed=1`）在同一事务提交；更早周只读、不补领，未参赛、第 4 名及以后、重复领取、未知/非周一日期、本周尚未结算全部稳定拒绝且零写入。接线：`race_prizes`（只读页）/`race_prize_claim`（registered）两个动作，别名 `灵宠竞速奖励`/`灵宠竞速领奖`，帮助「对战与赛季」三条，`灵宠目标` 仅在可领时改为「竞速：上周第 N 名，奖励可领」，`test_contract_audit.py` 纳入只读页并登记 `race_prizes` 3 项内容。
+
+不变量：不新增 schema（保持 26）、不改 `race.enter` 的赛道轮换、用时公式、每日 3 次/20 精力与当前周榜；领取不写战报、不推进成就/任务/熟练度、不改 `race_best_*`/`race_day_*`/精力；默认页、往期页、详情页均为只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等。领取路径只增加奖励与一行标记；同一 operation 重投返回原回复。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_race_prizes.py tests/test_race.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`253 passed`（含新增 `test_race_prizes.py` 23 项：内容/模型/倒挂校验、未结契只读、上周前三与并列排序、三档奖励、第 4 名/未参赛/旧周/坏记录/未结契领奖拒绝零写入、往期分页与越界、详情、只读快照、目标/帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `a57eb6c`（功能）与 `346ecee`（空名次保护）已推送 develop，develop CI `41908028269` 全绿（3528 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41908919871` 全绿（同为 3528 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改竞速报名/用时/精力/冷却、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
