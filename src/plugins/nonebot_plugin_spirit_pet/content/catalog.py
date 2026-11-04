@@ -377,6 +377,7 @@ class Catalog:
         self._validate_friend()
         self._validate_share()
         self._validate_borrow()
+        self._validate_mentor()
         self._validate_main_quests()
         self._validate_ascension()
         self._validate_shop_rotation()
@@ -982,6 +983,17 @@ class Catalog:
             raise ValueError(
                 f"borrow.rate ({self.rules.borrow.rate}) exceeds the support roster's own ceiling ({ceiling})"
             )
+
+    def _validate_mentor(self):
+        """Graduation must be reachable and meaningful, and its rewards must exist."""
+        realms = [realm.id for realm in self.realms]
+        rule = self.rules.mentor
+        if rule.graduate_realm not in realms:
+            raise ValueError(f"mentor graduate realm {rule.graduate_realm} does not exist")
+        if realms.index(rule.graduate_realm) == 0:
+            raise ValueError("mentor graduate realm must not be the starting realm")
+        self._require(rule.mentor_reward.items, self.items, "mentor reward items")
+        self._require(rule.apprentice_reward.items, self.items, "apprentice reward items")
 
     def _metric_ceilings(self):
         """Largest value each bounded metric can reach with the shipped content.

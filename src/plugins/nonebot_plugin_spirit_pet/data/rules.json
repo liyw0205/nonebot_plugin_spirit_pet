@@ -222,5 +222,20 @@
   },
   "spar_request": {
     "expires_hours": 24
+  },
+  "mentor": {
+    "max_apprentices": 3,
+    "request_hours": 24,
+    "graduate_realm": "zhuji",
+    "mentor_reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 300, "maximum": 300},
+      "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+    },
+    "apprentice_reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 150, "maximum": 150},
+      "items": {"spirit_food": {"minimum": 2, "maximum": 2}}
+    }
   }
 }

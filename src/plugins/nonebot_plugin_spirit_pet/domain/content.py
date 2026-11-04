@@ -485,6 +485,16 @@ class SparRequestRule(Definition):
     expires_hours: Annotated[int, Field(ge=1, le=72)]
 
 
+class MentorRule(Definition):
+    """灵宠师徒: how many apprentices one mentor keeps and what graduation pays."""
+
+    max_apprentices: Annotated[int, Field(ge=1, le=5)]
+    request_hours: Annotated[int, Field(ge=1, le=72)]
+    graduate_realm: Identifier
+    mentor_reward: Reward
+    apprentice_reward: Reward
+
+
 class Rules(Definition):
     starter_stones: NonNegative
     starter_items: dict[Identifier, Positive]
@@ -527,3 +537,4 @@ class Rules(Definition):
     drill: DrillRule
     borrow: BorrowRule
     spar_request: SparRequestRule
+    mentor: MentorRule

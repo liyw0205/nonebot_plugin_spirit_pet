@@ -296,6 +296,20 @@
 
 运行状态写在既有 `quest_progress`：`duel_target` 存护法序号（1 起）、`duel_round` 存本回合序号、`duel_hp`/`duel_enemy_hp` 存双方气血，四行齐全才算一局；周奖励凭证是 `duel_week_<北京周一零点>_<护法id>`。斗法不写 `battle_records`、不写 `pve_stage_progress`，因此不会污染战报、关卡战绩与任何计数。
 
+## 师徒定义
+
+`rules.json` 的 `mentor` 由 `MentorRule` 校验：`max_apprentices`（1-5，实配 3）、`request_hours`（1-72，实配 24）、
+`graduate_realm`（境界 id，实配 `zhuji` 筑基）以及 `mentor_reward`/`apprentice_reward` 两份奖励。
+`Catalog._validate_mentor` 要求出师境界存在、且不是起始境界（否则开局即出师），并校验两份奖励的物品引用。
+
+关系存两行 `quest_progress`，成对写入、成对删除：徒弟行 `mentorlink_<师父 user_id>`、师父行
+`apprentice_<徒弟 user_id>`。缺一半即视为没有关系，因此不会出现「单边师徒」。拜师帖是师父行上的
+`mentorreq_<徒弟 user_id>`，`progress` 存到期时间戳，读取时按 `progress > now` 过滤，不需要清理任务。
+
+出师凭证是徒弟行上的 `graduated` 一行：它让已出师者无法再次拜师，也就堵住了「拜师—被逐—再拜师」
+重复领取谢礼的路径。谢礼用模块内的 `_pay` 发放（只发灵石与物品），刻意不走 `rewards.grant`——
+后者顺带发修为并要求收礼方伙伴空闲，会让出师因为师父正在外派而失败。
+
 ## 约战定义
 
 `rules.json` 的 `spar_request` 由 `SparRequestRule` 校验：`expires_hours` 限定 1-72，实配 24。约战没有内容文件——

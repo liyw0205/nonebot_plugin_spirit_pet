@@ -19,7 +19,7 @@ from . import codex_trials
 from . import tempering
 from . import survival
 from . import arcs
-from . import support, borrow
+from . import support, borrow, mentorship
 from . import tribulations
 from . import combos
 from . import achievement_shop
@@ -492,6 +492,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (survival.objective_line(ctx, player.user_id), "灵宠守关"),
         (arcs.objective_line(ctx, player.user_id), "灵宠奇缘"),
         (support.objective_line(ctx, player.user_id), "灵宠助战"),
+        (mentorship.objective_line(ctx, player.user_id), "灵宠师徒"),
         (borrow.objective_line(ctx, player.user_id), "灵宠借力"),
         (tribulations.objective_line(ctx, player.user_id), "灵宠劫境"),
         (combos.objective_line(ctx, player.user_id), "灵宠连携"),
