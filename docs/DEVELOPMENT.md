@@ -1309,6 +1309,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`255 passed`（含新增 `test_share_rewards.py` 15 项：内容/模型/档位/未知物品校验、未结契只读、零读者页、跨码与重复阅读去重、分享者自读不计、三档领取、读者不足/坏参数拒绝零写入、只读快照、过期码不计数、重启持久、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `19a462a` 已推送 develop，develop CI `41928273432` 全绿（3595 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41929044749` 全绿（同为 3595 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/战报结算、未新增 schema 或 Release tag。
 
+### 灵宠分享榜（2026-11-05，已完成）
+
+分享读者里程碑把去重读者写进 `quest_progress` 的 `shareview_<读者 user_id>`，但只有分享者自己能在 `灵宠分享奖励` 看到数量，没有公开页面回答“谁的分享被最多不同玩家读过”；`battle_shares.views` 按单码累加且含重复阅读，不能直接当榜用。本切片补一个只读社交榜，不新增任何状态。
+
+实现：新增 `gameplay/share_board.py`，`ranking(ctx)` 按 `shareview_` 前缀分组计数，JOIN `players` 与 `player_identity` 确认玩家存在并取 UID（`identity.id + 9999`，与收集榜同口径），排序为读者数降序、user_id 升序，展示前十；`catalog` 输出总分享者数、前十、未入前十的当前玩家名次、空榜文案与未结契“开始领养”入口。命令 `灵宠分享榜`（`share_board`，`registered=False` 只读页），帮助「对战与赛季」补一条；`test_contract_audit.py` 纳入只读页，不登记内容计数。榜单不读 `battle_shares.views`，不暴露分享码/战报内容，不写表、不发奖励。
+
+不变量：不新增 schema（保持 26）、不改分享/读者里程碑/`views`/战报权限/`battle_shares` 表；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；参数错误零写入；native 按钮 ≤4 且与行蓝字零重叠；链接可被 `handlers._parse` 回解析。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_board.py tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`263 passed`（含新增 `test_share_board.py` 9 项）。`compileall` 与 `git diff --check` 通过。提交 `2226717` 已推送 develop，develop CI `41932561769` 全绿（3604 项）；fast-forward 合入 main 后 main CI `41933285959` 全绿（同为 3604 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/读者里程碑、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
