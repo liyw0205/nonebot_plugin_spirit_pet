@@ -485,12 +485,22 @@ class SparRequestRule(Definition):
     expires_hours: Annotated[int, Field(ge=1, le=72)]
 
 
+class MentorLessonRule(Definition):
+    """Daily mentoring: what the master pays and what the apprentice gains."""
+
+    energy: Positive
+    exp: Positive
+    stones: NonNegative
+    daily_limit: Annotated[int, Field(ge=1, le=10)]
+
+
 class MentorRule(Definition):
     """灵宠师徒: how many apprentices one mentor keeps and what graduation pays."""
 
     max_apprentices: Annotated[int, Field(ge=1, le=5)]
     request_hours: Annotated[int, Field(ge=1, le=72)]
     graduate_realm: Identifier
+    lesson: MentorLessonRule
     mentor_reward: Reward
     apprentice_reward: Reward
 

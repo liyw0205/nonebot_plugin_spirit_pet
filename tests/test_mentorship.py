@@ -62,6 +62,9 @@ def test_the_rule_is_wired_and_bounded(game):
     assert 1 <= rule.max_apprentices <= 5
     assert 1 <= rule.request_hours <= 72
     assert rule.graduate_realm in {realm.id for realm in game[0].content.realms}
+    assert (rule.lesson.energy, rule.lesson.exp, rule.lesson.stones, rule.lesson.daily_limit) == (
+        10, 30, 20, 3,
+    )
 
 
 def test_the_rule_model_rejects_out_of_range_values():
@@ -69,6 +72,7 @@ def test_the_rule_model_rejects_out_of_range_values():
 
     base = {
         "graduate_realm": "zhuji",
+        "lesson": {"energy": 10, "exp": 30, "stones": 20, "daily_limit": 3},
         "mentor_reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 1, "maximum": 1}, "items": {}},
         "apprentice_reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 1, "maximum": 1}, "items": {}},
     }
@@ -78,6 +82,9 @@ def test_the_rule_model_rejects_out_of_range_values():
         MentorRule.model_validate({**base, "max_apprentices": 6, "request_hours": 24})
     with pytest.raises(ValidationError):
         MentorRule.model_validate({**base, "max_apprentices": 3, "request_hours": 0})
+    with pytest.raises(ValidationError):
+        MentorRule.model_validate({**base, "max_apprentices": 3, "request_hours": 24,
+                                  "lesson": {**base["lesson"], "daily_limit": 0}})
 
 
 def test_the_catalog_rejects_an_unreachable_graduation_realm(tmp_path):

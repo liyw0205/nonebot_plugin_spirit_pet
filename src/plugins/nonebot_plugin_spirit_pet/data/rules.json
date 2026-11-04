@@ -227,6 +227,7 @@
     "max_apprentices": 3,
     "request_hours": 24,
     "graduate_realm": "zhuji",
+    "lesson": {"energy": 10, "exp": 30, "stones": 20, "daily_limit": 3},
     "mentor_reward": {
       "exp": {"minimum": 0, "maximum": 0},
       "stones": {"minimum": 300, "maximum": 300},

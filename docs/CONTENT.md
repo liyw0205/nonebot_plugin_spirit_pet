@@ -299,8 +299,12 @@
 ## 师徒定义
 
 `rules.json` 的 `mentor` 由 `MentorRule` 校验：`max_apprentices`（1-5，实配 3）、`request_hours`（1-72，实配 24）、
-`graduate_realm`（境界 id，实配 `zhuji` 筑基）以及 `mentor_reward`/`apprentice_reward` 两份奖励。
+`graduate_realm`（境界 id，实配 `zhuji` 筑基）、`lesson`（`MentorLessonRule`：`energy` 1-100、`exp` 1-500、
+`stones` 非负、`daily_limit` 1-10；实配 10/30/20/3）以及 `mentor_reward`/`apprentice_reward` 两份奖励。
 `Catalog._validate_mentor` 要求出师境界存在、且不是起始境界（否则开局即出师），并校验两份奖励的物品引用。
+
+传道状态是师父行上的 `mentorlesson_<北京日期>_<徒弟 user_id>`，`progress=1`；当天总次数按同一前缀计数，
+跨日换 key 自动重置。传道只写这一行并扣师父伙伴精力、加徒弟伙伴修为与师父灵石，不写战报、不推进成就/任务。
 
 关系存两行 `quest_progress`，成对写入、成对删除：徒弟行 `mentorlink_<师父 user_id>`、师父行
 `apprentice_<徒弟 user_id>`。缺一半即视为没有关系，因此不会出现「单边师徒」。拜师帖是师父行上的
