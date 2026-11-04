@@ -1,0 +1,5 @@
+[
+  {"rank": 1, "name": "传书之首", "stones": 500, "items": {"forge_ore": 3, "spirit_food": 2}},
+  {"rank": 3, "name": "传书三甲", "stones": 260, "items": {"forge_ore": 1, "spirit_food": 2}},
+  {"rank": 10, "name": "传书十强", "stones": 120, "items": {"spirit_food": 1}}
+]

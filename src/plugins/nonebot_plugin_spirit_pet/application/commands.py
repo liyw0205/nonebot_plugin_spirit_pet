@@ -85,6 +85,7 @@ from ..gameplay import gifting
 from ..gameplay import friends
 from ..gameplay import shares
 from ..gameplay import share_board
+from ..gameplay import share_rank_rewards
 from ..gameplay import share_rewards
 from ..gameplay import drill
 from ..gameplay.arena import battles, matching, reward_history, seasons
@@ -307,6 +308,8 @@ ACTIONS = {
     "battle_reports": Command(battle_records.reports, True),
     "shares": Command(shares.dispatch, True, registered=False),
     "share_board": Command(share_board.catalog, True, registered=False),
+    "share_rank_rewards": Command(share_rank_rewards.catalog, True, registered=False),
+    "share_rank_claim": Command(share_rank_rewards.claim, True),
     "share_rewards": Command(share_rewards.catalog, True, registered=False),
     "share_read_claim": Command(share_rewards.claim, True),
     "battle_merits": Command(battle_merits.catalog, True, registered=False),
@@ -445,6 +448,7 @@ COMMANDS = {
     "灵宠战报": "battle_reports",
     "灵宠分享": "shares",
     "灵宠分享榜": "share_board",
+    "灵宠分享榜奖励": "share_rank_rewards", "灵宠分享榜领奖": "share_rank_claim",
     "灵宠分享奖励": "share_rewards", "灵宠分享领奖": "share_read_claim",
     "灵宠演武": "drill",
     "灵宠战斗功勋": "battle_merits", "灵宠战斗功勋领奖": "battle_merit_claim",

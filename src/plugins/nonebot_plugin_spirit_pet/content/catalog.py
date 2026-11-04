@@ -49,6 +49,7 @@ from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.collection_rank_reward_content import CollectionRankReward
+from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
 from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
@@ -174,6 +175,7 @@ class Catalog:
     merchant_exchange: dict[str, MerchantOffer]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
+    share_rank_rewards: dict[int, ShareRankReward]
     market: MarketRule
     drills: dict[str, DrillDummy]
 
@@ -257,6 +259,9 @@ class Catalog:
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
             share_rewards=_index(directory / "share_rewards.json", ShareReward, "readers"),
+            share_rank_rewards=_index(
+                directory / "share_rank_rewards.json", ShareRankReward, "rank",
+            ),
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
         )
@@ -389,6 +394,7 @@ class Catalog:
         self._validate_merchant_exchange()
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
+        self._validate_share_rank_rewards()
         self._validate_market()
         self._validate_mail()
         self._validate_friend()
@@ -988,6 +994,29 @@ class Catalog:
                 if higher.items.get(item_id, 0) < amount:
                     raise ValueError(
                         f"collection rank reward {item_id} must not fall as the rank improves"
+                    )
+
+    def _validate_share_rank_rewards(self):
+        """Share board rank milestones must be three ordered, real rewards."""
+        if set(self.share_rank_rewards) != {1, 3, 10}:
+            raise ValueError("share rank rewards must cover ranks 1, 3 and 10")
+        ordered = [self.share_rank_rewards[rank] for rank in (1, 3, 10)]
+        for reward in ordered:
+            self._require(
+                reward.items, self.items, f"share rank {reward.rank} reward items",
+            )
+            if any(self.items[item_id].kind not in {"consumable", "material"}
+                   for item_id in reward.items):
+                raise ValueError(
+                    f"share rank {reward.rank} reward items must be consumable or material"
+                )
+        for higher, lower in zip(ordered, ordered[1:]):
+            if higher.stones < lower.stones:
+                raise ValueError("share rank reward stones must not fall as the rank improves")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"share rank reward {item_id} must not fall as the rank improves"
                     )
 
     def _validate_share_rewards(self):

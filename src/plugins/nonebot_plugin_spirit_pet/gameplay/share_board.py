@@ -49,7 +49,9 @@ def catalog(ctx: Context, arg: str) -> Reply:
         return Reply("灵宠分享榜", tuple(lines), ("灵宠帮助",), (
             InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "),
         ))
-    return Reply("灵宠分享榜", tuple(lines), ("灵宠分享", "灵宠分享奖励", "灵宠战报"), ())
+    return Reply("灵宠分享榜", tuple(lines), (
+        "灵宠分享", "灵宠分享榜奖励", "灵宠分享奖励", "灵宠战报",
+    ), ())
 
 
 __all__ = ["PAGE_SIZE", "catalog", "ranking"]

@@ -44,6 +44,7 @@ READ_ONLY_PAGES = (
     "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "collection_rank_rewards",
     "share_board",
+    "share_rank_rewards",
     "share_rewards",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
     "skill_catalog", "skill_mastery_rewards", "skill_overview", "skills",
@@ -68,6 +69,7 @@ DOCUMENTED_COUNTS = {
     "race_prizes": 3,
     "merchant_exchange": 5,
     "collection_rank_rewards": 3,
+    "share_rank_rewards": 3,
     "share_rewards": 3,
 }
 

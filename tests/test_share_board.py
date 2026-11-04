@@ -75,7 +75,7 @@ def test_empty_board_is_honest(game, play):
     account(game, play, "u1")
     page = play("share_board")
     assert "还没有人分享过被阅读的战报。" in page.text()
-    assert page.commands == ("灵宠分享", "灵宠分享奖励", "灵宠战报")
+    assert page.commands == ("灵宠分享", "灵宠分享榜奖励", "灵宠分享奖励", "灵宠战报")
 
 
 def test_unregistered_player_can_view_and_only_gets_adoption_link(game, play):
