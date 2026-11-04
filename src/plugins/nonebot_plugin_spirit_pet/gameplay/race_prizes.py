@@ -210,7 +210,7 @@ def _settlement(ctx: Context, argument: str) -> Reply:
     rank = rank_of(ctx, player.user_id, start)
     mine = my_time(ctx, player.user_id, start)
     links = []
-    if mine is not None:
+    if mine is not None and rank is not None:
         state = _state(ctx, player.user_id, start, rank)
         lines.append(f"你的上周成绩：第 {rank} 名 · {time_text(mine)} · {state}")
         if state == "可领取":
@@ -299,7 +299,7 @@ def _detail(ctx: Context, argument: str) -> Reply:
     if player is not None:
         mine = my_time(ctx, player.user_id, start)
         rank = rank_of(ctx, player.user_id, start)
-        if mine is None:
+        if mine is None or rank is None:
             lines.append("你该周没有参赛。")
         else:
             state = _state(ctx, player.user_id, start, rank)
