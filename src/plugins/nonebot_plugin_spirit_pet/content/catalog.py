@@ -30,6 +30,7 @@ from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
+from ..domain.race_prize_content import RacePrize
 from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
 from ..domain.escort_content import EscortMission
@@ -151,6 +152,7 @@ class Catalog:
     specializations: dict[str, Specialization]
     moods: dict[str, MoodLevel]
     races: dict[str, RaceTrack]
+    race_prizes: dict[int, RacePrize]
     gauntlets: dict[str, Gauntlet]
     sigils: dict[str, Sigil]
     escorts: dict[str, EscortMission]
@@ -228,6 +230,7 @@ class Catalog:
             specializations=_index(directory / "specializations.json", Specialization),
             moods=_index(directory / "moods.json", MoodLevel, "id"),
             races=_index(directory / "races.json", RaceTrack),
+            race_prizes=_index(directory / "race_prizes.json", RacePrize, "rank"),
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
             sigils=_index(directory / "sigils.json", Sigil),
             escorts=_index(directory / "escorts.json", EscortMission),
@@ -758,6 +761,21 @@ class Catalog:
             weighted = set(self.rules.race.weights)
             if track.terrain.stat not in weighted:
                 raise ValueError(f"race {track.id} terrain stat is not a weighted stat")
+        if set(self.race_prizes) != {1, 2, 3}:
+            raise ValueError("race prizes must cover ranks 1, 2 and 3")
+        ordered = [self.race_prizes[rank] for rank in (1, 2, 3)]
+        for prize in ordered:
+            self._require(prize.items, self.items, f"race rank {prize.rank} prize items")
+            if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in prize.items):
+                raise ValueError(f"race rank {prize.rank} prize items must be consumable or material")
+        for higher, lower in ((ordered[0], ordered[1]), (ordered[1], ordered[2])):
+            if higher.stones < lower.stones:
+                raise ValueError("race prize stones must not fall as the rank improves")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"race prize {item_id} must not fall as the rank improves"
+                    )
 
     def _validate_gauntlets(self):
         if not self.gauntlets:

@@ -725,6 +725,16 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 只有两行状态，都在 `quest_progress`：`race_best_<北京周起点>` 存本周最好用时（十分之一秒），`race_day_<北京日期>` 存当日已报名次数（`progress` 为整数，恰好适配）。换日换 key 自动重置次数，换周换 key 自动重置最好成绩，旧行保留在库中但不再参与排名；不写 `players.last_*` 冷却列，也不写战报或 `pve_stage_progress`。
 
+### 竞速周奖励定义
+
+`race_prizes.json` 是三条按名次固定的周结算奖励数组，由 `domain/race_prize_content.py` 的 `RacePrize` 校验：每项声明 `rank`（1-3）、`stones`（非负）与 `items`（物品 id → 正整数），且 `stones` 与 `items` 不能同时为空。
+
+```json
+{"rank": 1, "stones": 600, "items": {"forge_ore": 3, "spirit_food": 2}}
+```
+
+`Catalog._validate_races` 强制名次恰为 1、2、3；奖励物品必须存在且为 `consumable`/`material`；高名次不得低于低名次——`stones` 与每个出现的物品逐项比较，低名次有而高名次缺的物品按 0 计。因此奖励表倒挂会在启动时被拒绝。领取标记 `race_prize_<北京周起点>` 也写在 `quest_progress`，`progress` 保存最终名次、`claimed=1`；不新增表或列。
+
 ## 心境定义
 
 `moods.json` 是心境等级数组，由 `domain/mood_content.py` 校验：每项声明 `id`、`name`、`description`、`threshold`（达到该值即为本等级）与 `rate`（四维倍率，−30% 到 +30%；阈值 0 的等级不得为正加成）。

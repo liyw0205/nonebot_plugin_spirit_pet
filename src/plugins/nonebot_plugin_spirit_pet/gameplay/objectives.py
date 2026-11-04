@@ -26,6 +26,7 @@ from . import achievement_shop
 from . import specialization
 from . import mood
 from . import race
+from . import race_prizes
 from . import research
 from . import gauntlet
 from . import sigils
@@ -463,6 +464,13 @@ def _rank_reward_line(ctx: Context, user_id: str) -> str:
     return f"万灵榜奖励：暂无可领 · 当前第 {rank} 名"
 
 
+def _race_line(ctx: Context, user_id: str) -> tuple[str, str]:
+    prize = race_prizes.objective_line(ctx, user_id)
+    if prize is not None:
+        return prize, "灵宠竞速奖励"
+    return race.objective_line(ctx, user_id), "灵宠竞速"
+
+
 def objectives(ctx: Context, arg: str) -> Reply:
     """One read-only page summarising every objective system's claimable state."""
     if arg.strip():
@@ -499,7 +507,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (achievement_shop.objective_line(ctx, player.user_id), "灵宠成就商店"),
         (specialization.objective_line(ctx, player.user_id), "灵宠专精"),
         (mood.objective_line(ctx, player.user_id), "灵宠心境"),
-        (race.objective_line(ctx, player.user_id), "灵宠竞速"),
+        (_race_line(ctx, player.user_id)),
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
         (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (sigils.objective_line(ctx, player.user_id), "灵宠符印"),
