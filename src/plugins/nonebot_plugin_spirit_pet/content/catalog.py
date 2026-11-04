@@ -47,6 +47,7 @@ from ..domain.gem_content import SocketGem
 from ..domain.duel_content import DuelOpponent
 from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
+from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.market_content import MarketRule
 from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
@@ -168,6 +169,7 @@ class Catalog:
     gems: dict[str, SocketGem]
     duels: dict[str, DuelOpponent]
     commissions: dict[str, Commission]
+    merchant_exchange: dict[str, MerchantOffer]
     market: MarketRule
     drills: dict[str, DrillDummy]
 
@@ -246,6 +248,7 @@ class Catalog:
             gems=_index(directory / "gems.json", SocketGem),
             duels=_index(directory / "duels.json", DuelOpponent),
             commissions=_index(directory / "commissions.json", Commission),
+            merchant_exchange=_index(directory / "merchant_exchange.json", MerchantOffer),
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
         )
@@ -375,6 +378,7 @@ class Catalog:
         self._validate_duels()
         self._validate_drills()
         self._validate_commissions()
+        self._validate_merchant_exchange()
         self._validate_market()
         self._validate_mail()
         self._validate_friend()
@@ -940,6 +944,18 @@ class Catalog:
                 )
         if not any(entry.min_rep == 0 for entry in self.commissions.values()):
             raise ValueError("at least one commission must be open to a new merchant")
+
+    def _validate_merchant_exchange(self):
+        """Reputation exchange must reference real consumables/materials."""
+        if not self.merchant_exchange:
+            raise ValueError("the merchant exchange needs at least one offer")
+        for offer in self.merchant_exchange.values():
+            if offer.item not in self.items:
+                raise ValueError(f"merchant exchange {offer.id} has an unknown item")
+            if self.items[offer.item].kind not in {"consumable", "material"}:
+                raise ValueError(
+                    f"merchant exchange {offer.id} item must be consumable or material"
+                )
 
     def _validate_market(self):
         """The stall ladder must be worth climbing and every sellable kind must exist."""

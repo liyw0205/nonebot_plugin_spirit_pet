@@ -132,7 +132,7 @@ def _missing(ctx: Context, entry: Commission) -> list[str]:
 
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠商会 [交付 <委托名|序号>]。")
+        raise GameError("格式：灵宠商会 [交付 <委托名|序号> | 兑换 [名称|序号]]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠商会",
@@ -144,10 +144,13 @@ def page(ctx: Context, arg: str) -> Reply:
             ("灵宠帮助",),
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
+    player = ctx.player()
     current = rep(ctx)
     offers = todays(ctx)
+    from . import merchant_exchange
+    balance = merchant_exchange.available(ctx, player.user_id)
     lines = [
-        f"商会声望：{current}",
+        f"商会声望：{current}（累计）· 可用 {balance}",
         f"今日委托 {len(offers)} 份（每日轮换，按声望解锁更高阶委托）。",
     ]
     links = []
@@ -170,6 +173,8 @@ def page(ctx: Context, arg: str) -> Reply:
             f"日清奖励：交齐今日全部委托可得 灵石 {rule(ctx).all_clear_stones}"
             f" · 声望 {rule(ctx).all_clear_rep}。"
         )
+    lines.append("可用声望可在商会兑换灵粮、材料与丹药。")
+    links.append(InlineCommand(len(lines) - 1, "商会兑换", "灵宠商会 兑换"))
     return Reply("灵宠商会", tuple(lines), ("灵宠商会", "灵宠背包", "灵宠目标"), tuple(links))
 
 
@@ -234,7 +239,10 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return page(ctx, "")
     if parts[0] == "交付":
         return deliver(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠商会 [交付 <委托名|序号>]。")
+    if parts[0] == "兑换":
+        from . import merchant_exchange
+        return merchant_exchange.dispatch(ctx, " ".join(parts[1:]))
+    raise GameError("格式：灵宠商会 [交付 <委托名|序号> | 兑换 [名称|序号]]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

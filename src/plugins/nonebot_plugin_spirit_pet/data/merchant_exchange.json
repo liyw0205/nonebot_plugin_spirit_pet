@@ -1,0 +1,7 @@
+[
+  {"id": "food_pack", "name": "灵粮补给", "description": "三份灵粮，日常喂养与派遣都用得上。", "cost_rep": 8, "item": "spirit_food", "amount": 3, "weekly_limit": 5},
+  {"id": "ore_pack", "name": "锻灵矿包", "description": "两份锻灵矿，装备强化的基础材料。", "cost_rep": 12, "item": "forge_ore", "amount": 2, "weekly_limit": 4},
+  {"id": "pill_pack", "name": "蕴灵丹匣", "description": "一枚蕴灵丹，直接增加修为。", "cost_rep": 18, "item": "exp_pill", "amount": 1, "weekly_limit": 2},
+  {"id": "essence_pack", "name": "血脉精华匣", "description": "一份血脉精华，进化与传功都要用。", "cost_rep": 24, "item": "bloodline_essence", "amount": 1, "weekly_limit": 2},
+  {"id": "gem_pack", "name": "风灵石匣", "description": "一枚风灵石，可嵌入装备槽位提升速度。", "cost_rep": 32, "item": "gem_swift", "amount": 1, "weekly_limit": 1}
+]

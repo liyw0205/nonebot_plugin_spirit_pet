@@ -735,6 +735,17 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 `Catalog._validate_races` 强制名次恰为 1、2、3；奖励物品必须存在且为 `consumable`/`material`；高名次不得低于低名次——`stones` 与每个出现的物品逐项比较，低名次有而高名次缺的物品按 0 计。因此奖励表倒挂会在启动时被拒绝。领取标记 `race_prize_<北京周起点>` 也写在 `quest_progress`，`progress` 保存最终名次、`claimed=1`；不新增表或列。
 
+### 商会兑换定义
+
+`merchant_exchange.json` 是商会声望兑换项数组，由 `domain/merchant_exchange_content.py` 的 `MerchantOffer` 校验：每项声明 `id`、`name`、`description`、`cost_rep`（正整数）、`item`（物品 id）、`amount`（1-99）与 `weekly_limit`（1-20）。
+
+```json
+{"id": "food_pack", "name": "灵粮补给", "description": "三份灵粮。",
+ "cost_rep": 8, "item": "spirit_food", "amount": 3, "weekly_limit": 5}
+```
+
+`Catalog._validate_merchant_exchange` 要求至少一条兑换项、物品存在且为 `consumable`/`material`。兑换从 `max(0, merchant_rep - merchant_spent)` 扣除可用余额并增加 `merchant_spent`，累计 `merchant_rep` 不变；购买计数写在 `merchant_buy_<北京周起点>_<兑换 id>`，跨周换 key 自动重置。两条状态都在 `quest_progress`，不新增表或列。
+
 ## 心境定义
 
 `moods.json` 是心境等级数组，由 `domain/mood_content.py` 校验：每项声明 `id`、`name`、`description`、`threshold`（达到该值即为本等级）与 `rate`（四维倍率，−30% 到 +30%；阈值 0 的等级不得为正加成）。
