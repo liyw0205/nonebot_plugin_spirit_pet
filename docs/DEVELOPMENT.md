@@ -1287,6 +1287,18 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_mentor_lessons.py tests/test_mentorship.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`250 passed`（含新增 `test_mentor_lessons.py` 15 项：规则接线与越界、未结契只读、主页面入口、成功扣精力/加修为/加灵石、同日重复与每日 3 次上限、跨日重置、非徒弟/自己/未知/已出师拒绝、双方无出战伙伴或派遣拒绝、精力不足拒绝、同操作重投、重启持久、只读快照、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `6703940` 已推送 develop，develop CI `41919107837` 全绿（3564 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41919914159` 全绿（同为 3564 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改出师条件/谢礼/师徒判定、未新增 schema 或 Release tag。
 
+### 灵宠收集榜名次奖励（2026-11-05，已完成）
+
+审计确认收集榜是最后一块“只有展示、没有终点”的榜单：`collection_rank.py` 只列出前十与个人名次，`灵宠收集`/图鉴奖励按种族发一次性奖励，万灵榜有 `rank_rewards`，竞技场有段位奖励，唯独收集榜没有名次出口。`grep -rn "收集榜.*奖励\|collection_rank.*reward\|收集榜领奖" src/` 只命中页面本身。本切片补一个与万灵榜同构、口径独立的一次性里程碑。
+
+内容：新增 `data/collection_rank_rewards.json` 三档（前 1 名 500 灵石 + 锻灵矿 3 + 灵粮 1；前 3 名 260 + 锻灵矿 1 + 灵粮 1；前 10 名 120 + 灵粮 1），`domain/collection_rank_reward_content.py` 的 `CollectionRankReward` 校验 `rank` 1-10、非负灵石、正整数物品且奖励非空；`Catalog` 增加 `collection_rank_rewards` 索引与 `_validate_collection_rank_rewards`（档位恰为 1/3/10、物品存在且为 `consumable`/`material`、灵石与逐项物品不得随名次倒挂）。
+
+业务：`gameplay/collection_rank_rewards.py` 复用 `collection_rank.personal_rank` 的同一排名口径（不同种族数、同数最早收得者在前、封存仍计入），`灵宠收集榜奖励` 列出档位、奖励、当前名次与状态；达到档位且未领的行挂 `灵宠收集榜领奖 <名次>`，`claim` 校验档位、当前名次、重复领取与奖励物品后发奖并写 `collection_rank_reward_<名次>`（`progress` 保存领取时名次、`claimed=1`）；掉出榜单不撤回。收集榜页增加奖励入口（按钮仍 ≤4），帮助「身份与收集」补两条，`test_contract_audit.py` 纳入只读页并登记 3 项内容。
+
+不变量：不新增 schema（保持 26）、不改收集榜排序/前十展示/逐族收集奖励/万灵榜与竞技奖励、不改 `players`/`pets` 表；领取不写战报、不推进成就/任务/周常/熟练度；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；同一 operation 重投返回原回复。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_collection_rank_rewards.py tests/test_collection_rank.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_objectives.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_update_documentation.py`：`233 passed`（含新增 `test_collection_rank_rewards.py` 16 项：内容/模型/档位/未知物品校验、未结契只读、页面与当前名次、第 3 名可领 3/10 不可领 1、三档领取、掉榜不撤回、未入榜/坏参数/缺物种拒绝零写入、只读快照、同操作重投、重启持久、收集榜入口与 native 按钮、帮助/解析、目标页不变）。`compileall` 与 `git diff --check` 通过。提交 `7f6e746` 已推送 develop，develop CI `41923703697` 全绿（3580 项，`tests 3.10`/`tests 3.13`/`install-smoke` 全部 success，release 任务按分支跳过）；fast-forward 合入 main 后 main CI `41924440050` 全绿（同为 3580 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改收集榜/逐族奖励/万灵榜/竞技奖励、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
