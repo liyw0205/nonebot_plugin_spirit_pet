@@ -22,6 +22,7 @@ from .titles import current as current_title
 REPORT_PAGE_SIZE = 5
 DETAIL_PAGE_SIZE = 8
 _KIND_NAMES = {"pvp": "论剑", "spar": "切磋", "pve": "秘境", "pve_stage": "关卡"}
+KIND_BY_NAME = {name: kind for kind, name in _KIND_NAMES.items()}
 
 
 @dataclass(frozen=True)
@@ -248,7 +249,7 @@ def _detail(ctx: Context, battle_id: int, page: int = 1) -> Reply:
 
 
 def reports(ctx: Context, arg: str) -> Reply:
-    """List reports or display a report detail after participant authorization."""
+    """List reports, optionally filtered by kind, or display a detail."""
     ctx.player()
     parts = arg.split()
     if parts and parts[0] in {"查看", "详情"}:
@@ -256,20 +257,33 @@ def reports(ctx: Context, arg: str) -> Reply:
             raise GameError("格式：灵宠战报 查看 编号 [分页]。")
         page = quantity(parts[2], 999999) if len(parts) == 3 else 1
         return _detail(ctx, int(parts[1]), page)
-    if len(parts) == 1 and parts[0].isdecimal():
+
+    kind = None
+    if parts and parts[0] in KIND_BY_NAME:
+        kind = KIND_BY_NAME[parts.pop(0)]
+    if not parts:
+        page = 1
+    elif len(parts) == 1 and parts[0].isdecimal():
         page = quantity(parts[0], 999999)
     elif len(parts) == 2 and parts[0] == "分页":
+        if not parts[1].isdecimal():
+            raise GameError(
+                "格式：灵宠战报 [论剑|切磋|秘境|关卡] [分页 N] 或 灵宠战报 查看 编号。"
+            )
         page = quantity(parts[1], 999999)
-    elif parts:
-        raise GameError("格式：灵宠战报 [分页 N] 或 灵宠战报 查看 编号。")
     else:
-        page = 1
-    total = ctx.repo.battle_history_count(ctx.user_id)
+        raise GameError(
+            "格式：灵宠战报 [论剑|切磋|秘境|关卡] [分页 N] 或 灵宠战报 查看 编号。"
+        )
+
+    kind_name = _KIND_NAMES[kind] if kind else None
+    title = f"灵宠战报{f' · {kind_name}' if kind_name else ''}"
+    total = ctx.repo.battle_history_count(ctx.user_id, kind=kind)
     pages = max(1, (total + REPORT_PAGE_SIZE - 1) // REPORT_PAGE_SIZE)
     if page > pages:
         raise GameError(f"战报共 {pages} 页。")
     rows = ctx.repo.battle_history(
-        ctx.user_id, limit=REPORT_PAGE_SIZE, offset=(page - 1) * REPORT_PAGE_SIZE,
+        ctx.user_id, limit=REPORT_PAGE_SIZE, offset=(page - 1) * REPORT_PAGE_SIZE, kind=kind,
     )
     lines = []
     links = []
@@ -286,14 +300,19 @@ def reports(ctx: Context, arg: str) -> Reply:
         )
         links.append(InlineCommand(index, "查看详情", f"灵宠战报 查看 {row['battle_id']}"))
     commands = [f"灵宠战报 查看 {row['battle_id']}" for row in rows]
+    prefix = f"灵宠战报 {kind_name}" if kind_name else "灵宠战报"
     if page > 1:
-        commands.append(f"灵宠战报 分页 {page - 1}")
+        commands.append(f"{prefix} 分页 {page - 1}")
     if page < pages:
-        commands.append(f"灵宠战报 分页 {page + 1}")
+        commands.append(f"{prefix} 分页 {page + 1}")
     if not rows:
-        return Reply(f"灵宠战报 {page}/{pages}", ("尚无参与过的战斗。",), ("灵宠列表",),
-                     (InlineCommand(0, "查看灵宠名册", "灵宠列表"),))
-    return Reply(f"灵宠战报 {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
+        message = "尚无参与过的战斗。" if kind is None else f"尚无{kind_name}战报。"
+        return Reply(
+            f"{title} {page}/{pages}", (message,),
+            ("灵宠列表",) if kind is None else ("灵宠战报", "灵宠列表"),
+            (InlineCommand(0, "查看灵宠名册", "灵宠列表"),),
+        )
+    return Reply(f"{title} {page}/{pages}", tuple(lines), tuple(commands), tuple(links))
 
 
 # Short aliases for integrations that prefer a verb matching their domain.

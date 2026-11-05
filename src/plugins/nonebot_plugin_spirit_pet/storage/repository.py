@@ -240,21 +240,36 @@ class Repository:
             raise GameError("operation ID reused by a different user")
         return json.loads(row["reply"])
 
-    def battle_history(self, user_id: str, *, limit: int = 5, offset: int = 0) -> list[sqlite3.Row]:
+    def battle_history(
+        self, user_id: str, *, limit: int = 5, offset: int = 0, kind: str | None = None,
+    ) -> list[sqlite3.Row]:
         if type(limit) is not int or limit < 1 or limit > 100:
             raise ValueError("battle history limit must be between 1 and 100")
         if type(offset) is not int or offset < 0:
             raise ValueError("battle history offset must be nonnegative")
-        return self.conn.execute(
+        query = (
             "SELECT b.*, p.side, p.permission FROM battle_records b "
             "JOIN battle_participants p ON p.battle_id=b.battle_id "
-            "WHERE p.user_id=? ORDER BY b.played_at DESC, b.battle_id DESC LIMIT ? OFFSET ?",
-            (user_id, limit, offset),
-        ).fetchall()
+            "WHERE p.user_id=?"
+        )
+        params: list = [user_id]
+        if kind is not None:
+            query += " AND b.kind=?"
+            params.append(kind)
+        query += " ORDER BY b.played_at DESC, b.battle_id DESC LIMIT ? OFFSET ?"
+        params.extend((limit, offset))
+        return self.conn.execute(query, params).fetchall()
 
-    def battle_history_count(self, user_id: str) -> int:
+    def battle_history_count(self, user_id: str, *, kind: str | None = None) -> int:
+        if kind is None:
+            return int(self.conn.execute(
+                "SELECT COUNT(*) FROM battle_participants WHERE user_id=?", (user_id,),
+            ).fetchone()[0])
         return int(self.conn.execute(
-            "SELECT COUNT(*) FROM battle_participants WHERE user_id=?", (user_id,),
+            "SELECT COUNT(*) FROM battle_participants p "
+            "JOIN battle_records b ON b.battle_id=p.battle_id "
+            "WHERE p.user_id=? AND b.kind=?",
+            (user_id, kind),
         ).fetchone()[0])
 
     def battle_report(self, user_id: str, battle_id: int) -> sqlite3.Row | None:
