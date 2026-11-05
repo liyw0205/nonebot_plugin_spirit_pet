@@ -45,6 +45,7 @@ READ_ONLY_PAGES = (
     "collection_rank_rewards",
     "adventure_stats",
     "share_board",
+    "spar_stats",
     "share_rank_rewards",
     "share_rewards",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
