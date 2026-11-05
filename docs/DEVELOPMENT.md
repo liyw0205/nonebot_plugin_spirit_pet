@@ -1329,6 +1329,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_share_rank_rewards.py tests/test_share_board.py tests/test_share_rewards.py tests/test_shares.py tests/test_contract_audit.py tests/test_commands.py tests/test_content.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_objectives.py`：`276 passed`（含新增 `test_share_rank_rewards.py` 15 项：内容/模型/档位/未知物品校验、未结契只读、空榜、三档领取与第 1/3/10/11 名边界、重复领取、坏参数拒绝零写入、只读快照、帮助/解析、native 按钮与蓝字分离）。`compileall` 与 `git diff --check` 通过。提交 `f29ac17` 已推送 develop，develop CI `41935958710` 全绿（3617 项）；fast-forward 合入 main 后 main CI `41936647027` 全绿（同为 3617 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改分享码/阅读权限/读者里程碑、未新增 schema 或 Release tag。
 
+### 灵宠历练战绩（2026-11-05，已完成）
+
+历练伏击已经写入真实战报（`kind='pve'`、`battle_key='ambush_<路线 id>'`），但 `dungeon_stats` 只聚合当前秘境目录的 key，`ambush_*` 被排除；玩家只能逐页翻 `灵宠战报`，无法看到各路线伏击次数、胜负平与最近五场。本切片补一个只读的战后回顾，不新增状态。
+
+实现：新增 `gameplay/adventure_stats.py`，`_rows` 从 `battle_records` JOIN `battle_participants` 过滤本人与 `battle_key LIKE 'ambush_%'`，按路线分组统计 `fights/wins/losses/draws/last_fight/last_win`，并按当前 `exploration_routes` 过滤未知路线；`catalog` 无参时按最近伏击倒序、同时间按目录顺序分页（每页 5 条），每行挂 `灵宠历练战绩 <路线名>` 蓝字；路线详情显示伏击概率、最近伏击/获胜、最近五场（`MM-DD · 胜|负|平`，新在前）与“再探此路”（`灵宠历练 <路线名>`）。命令 `灵宠历练战绩`（`adventure_stats`，`registered=False` 只读页），帮助「秘境与关卡」补一条；`test_contract_audit.py` 纳入只读页，无独立内容文件。
+
+不变量：不新增 schema（保持 26）、不改伏击概率/敌人选择/奖励/精力/战报写入、`dungeon_stats` 既有秘境口径与 `battle_records` 表结构；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；普通秘境、扫荡、未知 `ambush_*` 路线不计；所有拒绝路径零写入。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_adventure_stats.py tests/test_dungeon_stats.py tests/test_explore_ambush.py tests/test_adventure_routes.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`248 passed`（含新增 `test_adventure_stats.py` 10 项：聚合与排序、详情与最近五场、平局、目录外/未知路线排除、仅本人、未结契只读、分页越界、未知路线、帮助/解析、native 按钮、只读快照）。`compileall` 与 `git diff --check` 通过。提交 `e5e1db5` 已推送 develop，develop CI `41939313836` 全绿（3627 项）；fast-forward 合入 main 后 main CI `41940076390` 全绿（同为 3627 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改伏击结算/战报权限、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
