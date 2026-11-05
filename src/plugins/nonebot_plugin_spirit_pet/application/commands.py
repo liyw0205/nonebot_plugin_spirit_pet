@@ -78,7 +78,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats, talent_reforge, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, stage_stats, talent_reforge, world_boss
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -271,6 +271,7 @@ ACTIONS = {
     "collection_rank_rewards": Command(collection_rank_rewards.catalog, True, registered=False),
     "collection_rank_reward_claim": Command(collection_rank_rewards.claim, True),
     "dungeon_stats": Command(dungeon_stats.catalog, True, registered=False),
+    "adventure_stats": Command(adventure_stats.catalog, True, registered=False),
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
     "skill_overview": Command(skill_overview.catalog, True, registered=False),
     "farm": Command(farming.catalog, True, registered=False),
@@ -391,7 +392,7 @@ COMMANDS = {
     "灵宠飞升": "ascension", "灵宠特供": "daily_shop", "灵宠技能预设": "skill_presets",
     "灵宠防守": "defense",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
-    "灵宠秘境": "dungeons", "灵宠秘境战绩": "dungeon_stats", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
+    "灵宠秘境": "dungeons", "灵宠秘境战绩": "dungeon_stats", "灵宠历练战绩": "adventure_stats", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge",
     "灵宠关卡星级": "stage_stars", "灵宠关卡星级领奖": "stage_stars_claim",
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",

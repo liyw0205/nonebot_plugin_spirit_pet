@@ -1238,3 +1238,5 @@ schema 25 新增单表 `battle_shares`：`share_id` 主键并限定长度 6-24�
 `灵宠分享榜` 没有独立内容文件：它直接按 `shareview_` 前缀分组计数，JOIN `players` 与 `player_identity` 只用于确认玩家存在并取 UID（`identity.id + 9999`，与收集榜同一口径）；排序为读者数降序、user_id 升序，展示前十。榜单不写表、不发奖励，因此没有可配置档位；改榜口径只需改 `gameplay/share_board.py` 的查询，不需要新增 schema 或内容 JSON。
 
 `share_rank_rewards.json` 是分享榜名次奖励数组，由 `domain/share_rank_reward_content.py` 的 `ShareRankReward` 校验：每项声明 `rank`（1-100）、`name`、`stones`（非负）与 `items`（物品 id → 正整数），奖励不能全空。`Catalog._validate_share_rank_rewards` 强制档位恰为 1、3、10；物品必须存在且为 `consumable`/`material`；名次越高奖励不得越低。领取标记写 `share_rank_reward_<名次>`，`progress` 保存领取时的实际名次，`claimed=1`；榜单本身仍由 `shareview_` 行派生。
+
+`灵宠历练战绩` 也没有独立内容文件：它从 `battle_records` 中 `kind='pve'` 且 `battle_key` 以 `ambush_` 开头的永久战报派生，JOIN `battle_participants` 限定本人，按当前 `exploration_routes` 过滤未知路线；页面的场次、胜负平、最近五场都即时计算，不写 `quest_progress`、不重新抽奖，也不改伏击奖励或概率。
