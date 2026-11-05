@@ -1339,6 +1339,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_adventure_stats.py tests/test_dungeon_stats.py tests/test_explore_ambush.py tests/test_adventure_routes.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`248 passed`（含新增 `test_adventure_stats.py` 10 项：聚合与排序、详情与最近五场、平局、目录外/未知路线排除、仅本人、未结契只读、分页越界、未知路线、帮助/解析、native 按钮、只读快照）。`compileall` 与 `git diff --check` 通过。提交 `e5e1db5` 已推送 develop，develop CI `41939313836` 全绿（3627 项）；fast-forward 合入 main 后 main CI `41940076390` 全绿（同为 3627 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改伏击结算/战报权限、未新增 schema 或 Release tag。
 
+### 灵宠切磋战绩（2026-11-05，已完成）
+
+`灵宠切磋` 与 `灵宠约战` 都写入 `battle_records.kind='spar'`，但只能逐场从 `灵宠战报` 翻看；`pvp` 有论剑战绩/头对头，`pve` 有秘境/关卡/历练战绩，`spar` 是唯一没有按对手聚合的战斗类型。本切片补一个只读的切磋回顾，不改切磋规则。
+
+实现：新增 `gameplay/spar_stats.py`，`_rows` 取本人参与的 `spar` 战报并用对侧 `battle_participants` 识别对手；`_opponents` 按对手聚合场次/胜/负/平/最近切磋/最近获胜；列表按最近切磋倒序、同时间按 UID 升序，每页 5 条，`分页 N` 翻页；`灵宠切磋战绩 <UID>` 详情显示最近切磋/获胜、最近五场（`MM-DD · 胜|负|平`，新在前）与“再切磋”。未结契只读空列表，不建档；未知 UID、坏页码、非数字参数稳定拒绝。命令 `灵宠切磋战绩`（`spar_stats`，`registered=False` 只读页），帮助「对战与赛季」补一条，`test_contract_audit.py` 纳入只读页；无独立内容文件。
+
+不变量：不新增 schema（保持 26）、不改切磋/约战/战报写入、`battle_records` 表结构与赛季积分；页面只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等；双向视角胜负相反、场次相同；所有拒绝路径零写入。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_spar_stats.py tests/test_arena_battles.py tests/test_spar_requests.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`262 passed`（含新增 `test_spar_stats.py` 8 项：对手聚合与排序、详情与最近五场、双向视角、平局与仅本人、分页越界、未结契/未知 UID/坏参数、帮助/解析、native 按钮、只读快照）。`compileall` 与 `git diff --check` 通过。提交 `109b4d8` 已推送 develop，develop CI `41942626548` 全绿（3635 项）；fast-forward 合入 main 后 main CI `41943179969` 全绿（同为 3635 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改切磋/约战结算、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
