@@ -206,6 +206,8 @@ def page(ctx: Context, arg: str = "") -> Reply:
         ))
     if not rows:
         lines.append("暂时没有未领取的信件。")
+    else:
+        links.append(InlineCommand(0, "全部领取", "灵宠信箱 一键领取"))
     lines.append("写一封信：灵宠信箱 邮寄 <UID> <物品名|灵石> <数量> <留言>。")
     return Reply("灵宠信箱", tuple(lines), (*paged.navigation, "灵宠信箱 寄件", "灵宠目标")[:4], tuple(links))
 
@@ -234,6 +236,51 @@ def claim(ctx: Context, arg: str) -> Reply:
         f"来自 {_uid_label(ctx, row['sender_id'])}：{_attachment_text(ctx, row)}。",
         f"留言：{row['body']}",
     ), ("灵宠信箱", "灵宠背包", "灵宠目标"))
+
+
+def claim_all(ctx: Context, arg: str) -> Reply:
+    if arg.strip():
+        raise GameError("格式：灵宠信箱 一键领取。")
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply("灵宠信箱", (
+            "尚未结契，先完成领养，才能领取信件。",
+            "一键领取只处理当前可领信件，不会补发已过期的附件。",
+        ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
+    player = ctx.player()
+    swept = sweep_expired(ctx)
+    rows = inbox(ctx)
+    if not rows:
+        lines = ["没有可领取的信件，请查看 灵宠信箱。"]
+        if swept:
+            lines.append(f"本次已将 {swept} 封过期信件退回寄件人。")
+        return Reply("灵宠信箱", tuple(lines), ("灵宠信箱", "灵宠背包"))
+    paid, stones, item_count = [], 0, 0
+    for row in rows:
+        closed = ctx.repo.conn.execute(
+            "UPDATE mail_messages SET state='claimed', closed_at=?, claimed_at=? "
+            "WHERE message_id=? AND state='active'",
+            (ctx.now, ctx.now, row["message_id"]),
+        )
+        if closed.rowcount != 1:
+            continue
+        _pay(ctx, player.user_id, row)
+        paid.append(row)
+        if row["kind"] == "stones":
+            stones += int(row["stones"])
+        else:
+            item_count += int(row["quantity"])
+    if not paid:
+        return Reply("灵宠信箱", ("这些信件刚刚已被领取或退回，请刷新 灵宠信箱。",), ("灵宠信箱",))
+    lines = [f"已领取 {len(paid)} 封。"]
+    for row in paid[:8]:
+        lines.append(
+            f"#{row['message_id']} 来自 {_uid_label(ctx, row['sender_id'])}："
+            f"{_attachment_text(ctx, row)}"
+        )
+    if len(paid) > 8:
+        lines.append(f"另有 {len(paid) - 8} 封已一并领取。")
+    lines.append(f"合计：灵石 +{stones} · 物品 {item_count} 件。")
+    return Reply("信件已领取", tuple(lines), ("灵宠信箱", "灵宠背包", "灵宠目标"))
 
 
 def outbox_page(ctx: Context, arg: str = "") -> Reply:
@@ -295,11 +342,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return send(ctx, rest)
     if head == "领取":
         return claim(ctx, rest)
+    if head == "一键领取":
+        return claim_all(ctx, rest)
     if head == "寄件":
         return outbox_page(ctx, rest)
     if head == "收回":
         return recall(ctx, rest)
-    raise GameError("格式：灵宠信箱 [页码|邮寄 <UID> <物品名|灵石> <数量> <留言>|领取 <编号>|寄件|收回 <编号>]。")
+    raise GameError("格式：灵宠信箱 [页码|邮寄 <UID> <物品名|灵石> <数量> <留言>|领取 <编号>|一键领取|寄件|收回 <编号>]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
@@ -315,6 +364,6 @@ def objective_line(ctx: Context, user_id: str) -> str:
 
 
 __all__ = [
-    "claim", "dispatch", "inbox", "objective_line", "outbox", "outbox_page", "page", "recall",
+    "claim", "claim_all", "dispatch", "inbox", "objective_line", "outbox", "outbox_page", "page", "recall",
     "send", "sweep_expired",
 ]
