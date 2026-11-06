@@ -78,7 +78,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_stats, stage_stats, talent_reforge, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_stats, stage_stats, talent_reforge, world_boss
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -273,6 +273,7 @@ ACTIONS = {
     "dungeon_stats": Command(dungeon_stats.catalog, True, registered=False),
     "adventure_stats": Command(adventure_stats.catalog, True, registered=False),
     "spar_stats": Command(spar_stats.catalog, True, registered=False),
+    "spar_board": Command(spar_board.catalog, True, registered=False),
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
     "skill_overview": Command(skill_overview.catalog, True, registered=False),
     "farm": Command(farming.catalog, True, registered=False),
@@ -446,7 +447,7 @@ COMMANDS = {
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel", "灵宠加急": "expedition_hasten",
     "灵宠论剑": "pvp", "灵宠论剑交锋": "pvp_head_to_head", "灵宠论剑战绩": "pvp_head_to_head",
     "灵宠连胜奖励": "pvp_streak_rewards", "灵宠连胜领奖": "pvp_streak_claim",
-    "灵宠赛季征途": "season_road", "灵宠征途领奖": "season_road_claim", "灵宠切磋": "spar", "灵宠切磋战绩": "spar_stats",
+    "灵宠赛季征途": "season_road", "灵宠征途领奖": "season_road_claim", "灵宠切磋": "spar", "灵宠切磋战绩": "spar_stats", "灵宠切磋榜": "spar_board",
     "灵宠战报": "battle_reports",
     "灵宠分享": "shares",
     "灵宠分享榜": "share_board",
