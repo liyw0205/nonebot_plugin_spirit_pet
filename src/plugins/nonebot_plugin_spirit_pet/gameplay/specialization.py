@@ -149,9 +149,53 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
         return page(ctx, "")
+    if parts[0] == "总览":
+        if len(parts) > 1:
+            raise GameError("格式：灵宠专精 总览。")
+        return overview(ctx)
     if parts[0] == "取消":
         return cancel(ctx, arg[len("取消"):])
     return choose(ctx, " ".join(parts))
+
+
+def overview(ctx: Context) -> Reply:
+    """Read every owned pet's chosen specialization, not just the active one."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "灵宠专精 · 总览",
+            (
+                "尚未结契，先完成领养，才能查看伙伴的专精。",
+                "每只伙伴可专精一门已学灵术；首次免费，改投消耗灵石。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    pets = sorted(ctx.repo.owned_pets(ctx.user_id), key=lambda pet: pet.pet_id)
+    if not pets:
+        return Reply("灵宠专精 · 总览", ("名下还没有伙伴。",), ("灵宠召唤", "灵宠帮助"))
+    active_ids = {pet.pet_id for pet in ctx.repo.active_pets(ctx.user_id)}
+    lines = ["按伙伴编号列出当前专精；切换伙伴不会改变已有专精。"]
+    for pet in pets:
+        chosen = current(ctx, pet.pet_id)
+        marker = " · 当前出战" if pet.pet_id in active_ids else ""
+        if chosen is None:
+            state = "未选择专精"
+        else:
+            skill = ctx.content.skills.get(chosen)
+            if skill is None:
+                state = f"专精灵术已失效（{chosen}）"
+            else:
+                entry = archetype(ctx, skill)
+                state = f"专精 {skill.name} · {entry.name} {bonus(ctx, skill)}"
+        ready_count = sum(
+            1 for skill_id in learned(ctx, pet.pet_id)
+            if skill_id in ctx.content.skills
+            and progress(ctx, pet.pet_id)[skill_id][0] >= rule(ctx).min_level
+        )
+        lines.append(
+            f"{pet.name}（编号 {pet.pet_id}）{marker} · {state} · 可专精 {ready_count} 门"
+        )
+    return Reply("灵宠专精 · 总览", tuple(lines), ("灵宠专精", "灵宠技能", "我的灵宠"))
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
