@@ -1413,6 +1413,20 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_pet_compare.py tests/test_information.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_contract_audit.py`：`108 passed`。`compileall` 与 `git diff --check` 通过。提交 `76354dd` 已推送 develop，develop CI `42244052478` 全绿（3662 项）；fast-forward main 后 main CI `42244875556` 全绿（同为 3662 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
 
+### 灵宠逐宠整备（2026-11-07，已完成）
+
+缺陷：装备、灵术与符印的所有写操作都取 `ctx.pet()`，即当前出战伙伴；`灵宠切换` 只保留一只出战，玩家要为后备伙伴换装、学技能或镶符印，必须先切过去再切回来，期间整份三宠阵容被压成一只并取消组队准备。
+
+控制约定：命令参数末尾可用 `伙伴 <名字|编号>` 指定本人在册伙伴；解析统一走 `gameplay/pet_targets.py` 的 `split_selector`/`named_pet`，空值、重名、未知、封存分别给出稳定提示。选择器路径不修改 `active_pet_id` 与 `active_pet_slots`，只有目标本身在出战阵容内时才 `invalidate_ready`（`note_prep_change`），因此给后备伙伴换装不会误取消队伍准备。
+
+实现：`灵宠装备/灵宠卸装/灵宠强化/灵宠学习/灵宠携带/灵宠卸技` 与 `灵宠符印 装备|卸下` 接受选择器；`灵宠装备 [伙伴 X]` 与 `灵宠符印 伙伴 X` 复用同一详情渲染；`灵宠技能 伙伴 X` 可读后备伙伴的灵术（`skills` 命令改为接受参数）。`灵宠切换` 保留阵容：已在阵容内的伙伴升为领队，否则替换领队位，目标与其余成员同族时整条拒绝。新增只读页 `灵宠整备 <伙伴>`（不填则当前出战），逐项列出装备、灵术与符印，并给出带 `伙伴 <编号>` 的下一步蓝字。`灵宠套装穿戴` 仍要求目标在当前出战阵容内，保留旧详情蓝字的失效保护。
+
+不变量：不新增 schema（26）、不改奖励/战斗/商店公式；无选择器路径的行文与拒绝保持原样；装备与灵术仍按元素/种类/境界兼容性校验；封存、派遣、重名与未知编号稳定拒绝；整备页只读，渲染前后领域表逐位相等；按钮 ≤4 且与行内蓝字零重叠。
+
+定向命令：`flock -w 600 /tmp/nonebot-project-validation.lock env PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_pet_prep.py tests/test_equipment_set_loadout.py tests/test_equipment_overview.py tests/test_sigils.py tests/test_sigil_overview.py tests/test_forging.py tests/test_loadout.py tests/test_game.py tests/test_commands.py`：`134 passed`（12.13s）。`compileall` 与 `git diff --check` 通过。提交 `1e460c1` 已推送 develop，develop CI `42279877595` 全绿（3697 项）；未部署、未发送真实 QQ、未跑本地全量。
+
+测试效率：`tests/conftest.py` 改为会话级建库模板（`store_template` 只执行一次 schema，`game` 每次复制该文件），同一 134 项批次由 13.92s 降到 12.13s，用例数不变且每例仍使用独立数据库。曾尝试共享已解析的 `Catalog`（省约 71ms/例），但 `tests/test_merchant_exchange.py` 存在对嵌套内容的原地改写，共享会跨例泄漏并在 CI 产生 1 项失败，因此撤回该做法、继续逐例解析内容。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
