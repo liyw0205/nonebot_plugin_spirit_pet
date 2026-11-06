@@ -1427,6 +1427,22 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 测试效率：`tests/conftest.py` 改为会话级建库模板（`store_template` 只执行一次 schema，`game` 每次复制该文件），同一 134 项批次由 13.92s 降到 12.13s，用例数不变且每例仍使用独立数据库。曾尝试共享已解析的 `Catalog`（省约 71ms/例），但 `tests/test_merchant_exchange.py` 存在对嵌套内容的原地改写，共享会跨例泄漏并在 CI 产生 1 项失败，因此撤回该做法、继续逐例解析内容。
 
+### 今日出口、际遇、雕琢、复盘与计数接入（2026-11-07，已完成）
+
+这一阶段处理的是「系统已经存在，但玩家看不见或留不下痕迹」的五处缺口；五包都不新增 schema，全部复用 schema 26 既有表。
+
+**今日页补全。** `灵宠今日` 原本只汇总十个模块，每日特供、今日秘境首胜/三胜、每日赏金、洞府、师门修行与阶位奖励、竞速、研习与周常都还要另开页面确认。现在这些出口一并汇入同一页，仍保持「只汇总、不代领」：每条标 `[可领]`/`[待做]`、写明理由并挂「前往」，超过八条分页；打开页面不发放奖励、不推进计数、不改任何表。定向 `tests/test_today_outlets.py` 7 项与相关批次 `97 passed`；提交 `fe96e6e`，CI `42281573924`（3704 项）。
+
+**灵宠际遇。** 新增 `data/daily_encounters.json`（九条际遇、每条约两到三个选项）与 `domain/daily_encounter_content.py`（`DailyCost`/`DailyOption`/`DailyEncounter`：每个选项必须既有成本也有奖励、id 唯一、成本与奖励引用的物品必须存在）。`gameplay/daily_encounters.py` 以北京时间日序数取当日一条（同日稳定、跨日切换），用 `quest_progress` 的 `enc_<日>` 记录所选选项，一天只能选一次；结算顺序为先扣成本再发奖励，成本不足整笔拒绝且零写入，修为进入当前出战伙伴。命令 `encounters`（`registered=False`，别名 `灵宠际遇`）只读页列出选项与成本回报，只给付得起的挂蓝字。新增 `tests/test_daily_encounters.py` 11 项。
+
+**宝石雕琢。** `rules.json` 增 `socket_cut`（三级、`rate_step` 0.04、每级 1 颗同种宝石、灵石 150/300/600），`domain/content.py` 增 `SocketCutRule` 并校验灵石价格逐级齐全。`gameplay/sockets.py` 增 `CUT_PREFIX="gemcut_"`、`cut_level()` 与计入雕琢的 `rates()`，`_link()` 每格写出当前等级、下一级真实价格与提升后的总值，并挂 `灵宠镶嵌 雕琢 <槽位>`；`cut()` 的校验顺序是「格式→玩家→伙伴→槽位→有宝石→未满级→灵石与同种宝石」，通过后在同一事务内扣灵石、扣宝石、把 `gemcut_` 等级加一，最后按是否在阵容内决定是否取消组队准备。雕琢跟着槽位走：`_drop` 不清 `gemcut_`，换宝石保留等级。新增 `tests/test_socket_cut.py` 9 项；与镶嵌/配装/血脉批次 `79 passed`，与内容/目录/契约/命令/消息/装备总览/符印批次 `223 passed`；提交 `eaa470f` 与 `70d8837`，CI `42284546130`（3724 项）。
+
+**战报复盘。** 战报永久保存不可变快照，但 `灵宠战报 查看` 只按时间顺序还原事件，读者知道输赢却不知道差在数值、元素还是养成缺口。新增只读 `gameplay/battle_review.py`：从 `snapshot` 取双方成员，输出四维合计、双方主属性互相经 `combat.effectiveness` 的乘算（1.25/1.0/0.8）与克制结论、我方灵术/装备/强化合计；随后从**当前存档**重算最多四条带价格的下一步——全身最便宜的一处强化（真实灵石与材料）、首个空装备位、仍有空槽且已解锁的符印、空助战席与未满 100 的亲密，每条挂对应命令并可带 `伙伴 <编号>`。`battle_records.reports()` 增加 `复盘 <编号>` 分支，授权复用 `repo.battle_report(user_id, …)`，非参与者仍是同一条拒绝；页面零写入。新增 `tests/test_battle_review.py` 7 项；批次 `87 passed`；提交 `be79245`，CI `42285705986`（3731 项）。
+
+**计数与成就接入。** 际遇与雕琢此前只留当日标记，跨日就什么都不剩。`daily_encounters.choose()` 在写完 `enc_` 标记后、`sockets.cut()` 在完成扣费与等级写入后各调一次 `counters.bump`（`stat_encounter_choices`、`stat_gem_cuts`）；两处都在全部校验之后，拒绝路径零写入，重复提交由 operation 缓存拦下不重复计数。`AchievementMetric` 字面量、`achievements._metric` 的计数器分支与 `catalog._validate_achievements` 的必需集合同时扩到这两个指标；内容新增成就「路遇有缘」（首次际遇）与「琢玉成器」（首次雕琢）、称号「路遥知心」（10 次际遇）；`灵宠目标` 增 `际遇：<今日名称|已了>` 行与 `灵宠际遇` 链接，`HUB_PAGES` 一并纳入；`test_contract_audit.py` 的文档计数更新为 86 项成就、28 项称号。新增 `tests/test_p6_wiring.py` 9 项；批次 `206 passed`；提交 `1b306cb`，CI `42287388603`（3740 项）。
+
+阶段边界：五包均未新增 schema、未改奖励/战斗/商店公式、未部署、未发送真实 QQ；`compileall` 与 `git diff --check` 每包均通过。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
