@@ -78,7 +78,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_stats, stage_stats, talent_reforge, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_stats, stage_stats, talent_reforge, world_boss
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -129,6 +129,7 @@ ACTIONS = {
     "adopt": Command(pets.adopt, True, registered=False),
     "summon": Command(pets.summon, True),
     "pet_list": Command(pets.pet_list, True),
+    "pet_compare": Command(pet_compare.compare, True, registered=False),
     "pet_archive_list": Command(pets.archive_list, True),
     "pet_archive": Command(pets.archive, True),
     "pet_restore": Command(pets.restore, True),
@@ -364,7 +365,7 @@ COMMANDS = {
     "灵宠赛季": "season", "灵宠赛季奖励": "season_rewards", "灵宠赛季奖励回顾": "arena_reward_history", "灵宠赛季领奖": "season_claim",
     "灵宠段位奖励": "arena_tier_rewards", "灵宠段位领奖": "arena_tier_claim",
     "灵宠匹配": "match",
-    "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠切换": "switch",
+    "灵宠领养": "adopt", "灵宠召唤": "summon", "灵宠列表": "pet_list", "灵宠对比": "pet_compare", "灵宠切换": "switch",
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
     "灵宠签到领奖": "checkin_reward_claim", "灵宠签到月历": "checkin_calendar", "灵宠背包": "bag", "灵宠商店": "shop",
