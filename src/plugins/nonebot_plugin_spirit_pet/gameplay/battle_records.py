@@ -252,6 +252,14 @@ def reports(ctx: Context, arg: str) -> Reply:
     """List reports, optionally filtered by kind, or display a detail."""
     ctx.player()
     parts = arg.split()
+    if parts and parts[0] == "复盘":
+        if len(parts) != 2 or not parts[1].isdecimal():
+            raise GameError("格式：灵宠战报 复盘 编号。")
+        row = ctx.repo.battle_report(ctx.user_id, int(parts[1]))
+        if row is None:
+            raise GameError("战报不存在，或你不是该场战斗的参与者。")
+        from . import battle_review
+        return battle_review.review(ctx, row)
     if parts and parts[0] in {"查看", "详情"}:
         if len(parts) not in (2, 3) or not parts[1].isdecimal():
             raise GameError("格式：灵宠战报 查看 编号 [分页]。")
