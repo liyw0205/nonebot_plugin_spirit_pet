@@ -1359,6 +1359,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_battle_report_filters.py tests/test_battle_records.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py tests/test_pagination.py`：`262 passed`（含新增 `test_battle_report_filters.py` 8 项：四类筛选、类型分页与两种页码写法、无筛选旧合同、空类型/未知类型/坏页码、仅本人、详情仍可用、只读快照、帮助/解析、native 按钮）。`compileall` 与 `git diff --check` 通过。提交 `71dbf2a` 已推送 develop，develop CI `41945944103` 全绿（3643 项）；main CI `42077300414` 全绿（main 已在 `71dbf2a`）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改战报写入/详情授权/分享、未新增 schema 或 Release tag。
 
+### 灵宠切磋榜（2026-11-05，已完成）
+
+切磋已有按对手的个人回顾与胜场成就，但没有“本周谁赢得最多”的公开榜。本切片补一个只读的每周排名，不改切磋结算。
+
+实现：新增 `gameplay/spar_board.py`，`_rows` 用 `beijing_week()` 的本周起止过滤 `battle_records.kind='spar'`，按参与者聚合场次/胜/负/平/最近切磋，UID 用 `player_identity.id + 9999`；`catalog` 按胜场降序、同胜场按场次降序、再按 user_id 升序展示前十，未入前十的当前玩家显示名次，空周给出“本周还没有切磋记录。”；每行挂 `灵宠切磋战绩 <UID>` 蓝字。命令 `灵宠切磋榜`（`spar_board`，`registered=False` 只读页），帮助「对战与赛季」补一条，`test_contract_audit.py` 纳入只读页；无独立内容文件。
+
+不变量：不新增 schema（保持 26）、不改切磋/约战结算、成就、战报写入与 `battle_records` 表结构；周榜按北京时间自然周自动换窗；页面只读，渲染前后五张表快照逐位相等；参数拒绝零写入；未结契只读不建档。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_spar_board.py tests/test_spar_stats.py tests/test_arena_battles.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py`：`233 passed`（含新增 `test_spar_board.py` 6 项：周聚合、上周排除、前十与榜外名次、空周/未结契、参数拒绝、只读快照、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `dc92740` 已推送 develop，develop CI `42222329520` 全绿（3649 项）；fast-forward 合入 main 后 main CI `42223074131` 全绿（同为 3649 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改切磋结算/成就、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
