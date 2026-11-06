@@ -62,6 +62,7 @@ from ..domain.resonance_content import Resonance
 from ..domain.journey_content import Journey
 from ..domain.season_mission_content import SeasonMission
 from ..domain.daily_assignment_content import DailyAssignment
+from ..domain.daily_encounter_content import DailyEncounter
 from ..domain.codex_content import CodexReward
 from ..domain.crop_content import Crop
 from ..domain.stage_star_content import StageStarReward
@@ -134,6 +135,7 @@ class Catalog:
     journey: dict[str, Journey]
     season_missions: dict[str, SeasonMission]
     daily_assignments: dict[str, DailyAssignment]
+    daily_encounters: dict[str, DailyEncounter]
     codex_rewards: dict[str, CodexReward]
     crops: dict[str, Crop]
     stage_star_rewards: dict[int, StageStarReward]
@@ -216,6 +218,7 @@ class Catalog:
             journey=_index(directory / "journey.json", Journey),
             season_missions=_index(directory / "season_missions.json", SeasonMission),
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
+            daily_encounters=_index(directory / "daily_encounters.json", DailyEncounter),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
             crops=_index(directory / "crops.json", Crop),
             gear_words=_index(directory / "gear_words.json", GearWord),
@@ -309,10 +312,14 @@ class Catalog:
             *(chapter.reward for chapter in self.journey.values()),
             *(mission.reward for mission in self.season_missions.values()),
             *(assignment.reward for assignment in self.daily_assignments.values()),
+            *(option.reward for encounter in self.daily_encounters.values() for option in encounter.options),
             *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
             self._require(reward.items, self.items, "reward items")
+        for encounter in self.daily_encounters.values():
+            for option in encounter.options:
+                self._require(option.cost.items, self.items, "daily encounter costs")
         route_encounters = [
             encounter_id
             for route in self.exploration_routes.values()

@@ -37,6 +37,7 @@ from ..gameplay import card
 from ..gameplay import gear_presets
 from ..gameplay import today
 from ..gameplay import pet_prep
+from ..gameplay import daily_encounters
 from ..gameplay import spar_requests
 from ..gameplay import mentorship
 from ..gameplay import tribulations
@@ -343,6 +344,7 @@ ACTIONS = {
     "gear_preset": Command(gear_presets.dispatch, True, registered=False),
     "today": Command(today.dispatch, True, registered=False),
     "pet_prep": Command(pet_prep.prep, True, registered=False),
+    "encounters": Command(daily_encounters.dispatch, True, registered=False),
     "spar_request": Command(spar_requests.dispatch, True, registered=False),
     "mentorship": Command(mentorship.dispatch, True, registered=False),
     "unequip": Command(equipment.unequip, True),
@@ -469,6 +471,7 @@ COMMANDS = {
     "灵宠配装": "gear_preset",
     "灵宠今日": "today",
     "灵宠整备": "pet_prep",
+    "灵宠际遇": "encounters",
     "灵宠约战": "spar_request",
     "灵宠师徒": "mentorship",
     "灵宠套装": "equipment_sets", "灵宠套装穿戴": "equipment_set_equip",

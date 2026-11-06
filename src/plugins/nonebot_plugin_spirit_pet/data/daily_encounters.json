@@ -1,0 +1,467 @@
+[
+  {
+    "id": "rockslide",
+    "name": "落石挡道",
+    "description": "山道被碎石堵死，两头都看不见来路。",
+    "options": [
+      {
+        "id": "clear",
+        "label": "搬石",
+        "text": "你花灵石请来采石人，一条窄道勉强通了。",
+        "cost": {
+          "stones": 60
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "detour",
+        "label": "绕路",
+        "text": "绕行半日，顺手在溪边拾了些灵粮。",
+        "cost": {
+          "items": {
+            "spirit_food": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 50,
+            "maximum": 50
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "spring",
+    "name": "灵泉照影",
+    "description": "泉水映出伙伴的影子，比平日更清晰。",
+    "options": [
+      {
+        "id": "draw",
+        "label": "汲水",
+        "text": "你把泉水灌满水囊，灵粮在袋中轻轻发亮。",
+        "cost": {
+          "stones": 40
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 3,
+              "maximum": 3
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "gaze",
+        "label": "观照",
+        "text": "你与伙伴在水边坐了很久，起身时心神安定。",
+        "cost": {
+          "items": {
+            "spirit_food": 2
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 70,
+            "maximum": 70
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "night_knock",
+    "name": "夜半叩门",
+    "description": "客栈门外有人叩了三下，却不说话。",
+    "options": [
+      {
+        "id": "answer",
+        "label": "应门",
+        "text": "门外人留下一个小瓶，转身没入夜色。",
+        "cost": {
+          "stones": 120
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "bar",
+        "label": "闭门",
+        "text": "你没有开门，天亮后在门槛下摸到一袋灵石。",
+        "cost": {
+          "items": {
+            "forge_ore": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 140,
+            "maximum": 140
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "broken_bridge",
+    "name": "断桥残雪",
+    "description": "旧桥只剩半幅，桥下冰水正急。",
+    "options": [
+      {
+        "id": "repair",
+        "label": "修桥",
+        "text": "你出钱加固桥板，匠人把余料折成了锻灵矿。",
+        "cost": {
+          "stones": 90
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "ice",
+        "label": "踏冰",
+        "text": "冰面惊险，过河后你在对岸市集换到一笔灵石。",
+        "cost": {
+          "items": {
+            "spirit_food": 3
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 110,
+            "maximum": 110
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "herd",
+    "name": "兽群迁徙",
+    "description": "低阶灵兽成群结队，正要穿过山谷。",
+    "options": [
+      {
+        "id": "guide",
+        "label": "引路",
+        "text": "你带着兽群绕开陷阱，商队付了引路钱。",
+        "cost": {
+          "items": {
+            "spirit_food": 4
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 150,
+            "maximum": 150
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "glean",
+        "label": "拾穗",
+        "text": "兽群过后，谷里留下不少可食的灵粮。",
+        "cost": {
+          "stones": 70
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 6,
+              "maximum": 6
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "stele",
+    "name": "古碑残字",
+    "description": "荒碑上刻着半篇吐纳法，字迹被风磨平。",
+    "options": [
+      {
+        "id": "rubbing",
+        "label": "拓印",
+        "text": "你请人拓下残字，碑座夹层里滚出一枚血脉精华。",
+        "cost": {
+          "stones": 150
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "memorise",
+        "label": "默记",
+        "text": "你把残篇默记于心，转手卖给路过的 行商。",
+        "cost": {
+          "items": {
+            "bloodline_essence": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 320,
+            "maximum": 320
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "herbalist",
+    "name": "药农求助",
+    "description": "药农的竹篓翻在坡下，灵草撒了一地。",
+    "options": [
+      {
+        "id": "help",
+        "label": "帮手",
+        "text": "你帮着捡完灵草，药农塞给你一包灵粮。",
+        "cost": {
+          "stones": 50
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 4,
+              "maximum": 4
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "buy",
+        "label": "收药",
+        "text": "你按市价收下品相最好的几株，转手卖给行商。",
+        "cost": {
+          "items": {
+            "spirit_food": 2
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 75,
+            "maximum": 75
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "swordsman",
+    "name": "迷途剑修",
+    "description": "一位剑修在岔路口盘坐，剑鞘上落满灰。",
+    "options": [
+      {
+        "id": "feed",
+        "label": "赠粮",
+        "text": "你把灵粮分他一半，他回赠两块锻灵矿。",
+        "cost": {
+          "items": {
+            "spirit_food": 3
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "spar",
+        "label": "问剑",
+        "text": "你与他拆了三招，他留下灵石与一块矿石作谢礼。",
+        "cost": {
+          "stones": 110
+        },
+        "reward": {
+          "stones": {
+            "minimum": 60,
+            "maximum": 60
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "moon",
+    "name": "月下独酌",
+    "description": "月色正好，伙伴趴在脚边打盹。",
+    "options": [
+      {
+        "id": "drink",
+        "label": "对饮",
+        "text": "你把酒分给路过的小贩，他硬塞来一袋灵石。",
+        "cost": {
+          "items": {
+            "spirit_food": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 40,
+            "maximum": 40
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "alone",
+        "label": "独酌",
+        "text": "你独自饮尽，夜色里灵粮的香气格外清楚。",
+        "cost": {
+          "stones": 25
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  }
+]
