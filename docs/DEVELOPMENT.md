@@ -1379,6 +1379,12 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_specialization_overview.py tests/test_specialization.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：`127 passed`（含新增 `test_specialization_overview.py` 6 项：未结契、全员列表与出战标记、失效专精、只读快照、坏参数、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `3e2495c` 已推送 develop，develop CI `42231121884` 全绿（3655 项）；fast-forward 合入 main 后 main CI `42232016281` 全绿（同为 3655 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改专精结算/战斗倍率、未新增 schema 或 Release tag。
 
+### 信箱一键领取（2026-11-06，已完成）
+
+`mailbox.inbox()` 返回全部 active 信件，页面逐封挂「领取」，`claim()` 只接受一个编号；没有批量领取路径。本切片新增 `claim_all()`：`灵宠信箱 一键领取` 先惰性退回过期信件，再按编号顺序逐封以 `state='active'` 守卫领取，汇总灵石与物品；无信/重复领取只读说明且零写入，未结契只读；页面在表头挂「全部领取」蓝字。
+
+不变量：不新增 schema（保持 26）、不改变单封领取/寄出/收回/过期规则、不重复支付托管；只处理当前 active 信件；拒绝路径零写入。定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_mailbox_batch.py tests/test_mail.py tests/test_today.py tests/test_commands.py tests/test_messaging.py tests/test_contract_audit.py`：`112 passed`。`compileall` 与 `git diff --check` 通过。提交 `a8bd90a` 已推送 develop，develop CI `42258379606` 全绿（3674 项）；fast-forward main 后 main CI `42259030155` 全绿（同为 3674 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
+
 ### 灵宠周报（2026-11-06，已完成）
 
 签到、战斗、委托与信箱记录都按玩家永久保存，但只有分散页面；没有按北京时间自然周汇总的只读入口。本切片新增 `gameplay/weekly_report.py`，`灵宠周报` 汇总本周签到天数、战斗场次/胜场与论剑/切磋/秘境/关卡分布、委托出发次数、收到/已领信件数。
