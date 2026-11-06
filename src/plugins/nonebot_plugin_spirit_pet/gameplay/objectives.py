@@ -52,6 +52,7 @@ from . import drill
 from . import sockets
 from . import team_trial
 from . import cuisine
+from . import daily_encounters
 from . import rank_rewards
 from . import equipment_set_rewards
 from . import realm_milestone_rewards
@@ -72,6 +73,7 @@ HUB_PAGES = (
     "灵宠灵术赏",
     "灵宠亲密赏",
     "灵宠境界赏",
+    "灵宠际遇",
 )
 
 
@@ -525,6 +527,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (sect_exchange.objective_line(ctx, player.user_id), "灵宠贡献"),
         (intent.objective_line(ctx, player.user_id), "灵宠战意"),
         (sockets.objective_line(ctx, player.user_id), "灵宠镶嵌"),
+        (daily_encounters.objective_line(ctx, player.user_id), "灵宠际遇"),
         (duel.objective_line(ctx, player.user_id), "灵宠斗法"),
         (merchant.objective_line(ctx, player.user_id), "灵宠商会"),
         (market.objective_line(ctx, player.user_id), "灵宠集市"),

@@ -10,6 +10,7 @@ from ..application.context import Context
 from ..domain.gem_content import SocketGem
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
+from . import counters
 from .pet_targets import note_prep_change
 
 PREFIX = "socket_"
@@ -150,6 +151,7 @@ def cut(ctx: Context, arg: str) -> Reply:
             " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
             (player.user_id, f"{CUT_PREFIX}{pet.pet_id}_{slot}", level + 1),
         )
+    counters.bump(ctx, "gem_cuts")
     note_prep_change(ctx, pet)
     total = int((gem.rate + rule.rate_step * (level + 1)) * 100)
     return Reply("宝石雕琢", (

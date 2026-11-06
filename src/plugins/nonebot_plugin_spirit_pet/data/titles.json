@@ -214,5 +214,13 @@
     "metric": "hard_clears",
     "target": 8,
     "order": 27
+  },
+  {
+    "id": "roadside_regular",
+    "name": "路遥知心",
+    "description": "完成 10 次灵宠际遇。",
+    "metric": "encounter_choices",
+    "target": 10,
+    "order": 28
   }
 ]

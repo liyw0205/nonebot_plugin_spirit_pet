@@ -182,7 +182,10 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
             f"AND r.battle_key IN ({placeholders})"
         )
         params = (user_id, *dungeon_ids)
-    elif metric in ("hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears"):
+    elif metric in (
+        "hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears",
+        "encounter_choices", "gem_cuts",
+    ):
         # Systems that leave no other trace bump a monotonic counter instead.
         from .counters import value as counter_value
 

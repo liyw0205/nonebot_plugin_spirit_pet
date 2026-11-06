@@ -12,6 +12,7 @@ from datetime import datetime
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import BEIJING, beijing_day
+from . import counters
 from .rewards import grant
 
 PREFIX = "enc_"
@@ -163,6 +164,7 @@ def choose(ctx: Context, arg: str) -> Reply:
         " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
         (player.user_id, _key(ctx.now), index),
     )
+    counters.bump(ctx, "encounter_choices")
     lines = [f"{encounter.name} · {option.label}", option.text, *gained]
     return Reply("灵宠际遇", tuple(lines), ("灵宠际遇", "我的灵宠", "灵宠目标"))
 

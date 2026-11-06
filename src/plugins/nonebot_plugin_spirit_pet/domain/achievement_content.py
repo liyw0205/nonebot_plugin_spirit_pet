@@ -13,6 +13,7 @@ AchievementMetric = Literal[
     "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims", "skill_mastery_rewards",
     "dungeon_clears",
     "hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears", "pets_released",
+    "encounter_choices", "gem_cuts",
 ]
 
 

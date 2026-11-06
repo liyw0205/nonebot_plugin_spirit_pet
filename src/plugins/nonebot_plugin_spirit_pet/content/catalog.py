@@ -1174,6 +1174,7 @@ class Catalog:
             "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
             "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
             "dungeon_clears",
+            "encounter_choices", "gem_cuts",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):

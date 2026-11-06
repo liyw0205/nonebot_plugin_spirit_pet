@@ -83,5 +83,7 @@
   {"id":"alchemy_adept","name":"丹火纯青","description":"累计炼丹 10 次。","metric":"alchemy_brews","target":10,"reward":{"stones":600,"items":{"exp_pill":1}}},
   {"id":"contract_first","name":"履约之人","description":"首次达成一份秘境契约。","metric":"contracts_met","target":1,"reward":{"stones":200,"items":{"bloodline_essence":1}}},
   {"id":"desperate_first","name":"绝境行者","description":"在强化难度下通关一次。","metric":"hard_clears","target":1,"reward":{"stones":260,"items":{"forge_ore":2}}},
-  {"id":"release_first","name":"送别与重逢","description":"为一只伙伴举行归灵。","metric":"pets_released","target":1,"reward":{"stones":200,"items":{"spirit_food":3}}}
+  {"id":"release_first","name":"送别与重逢","description":"为一只伙伴举行归灵。","metric":"pets_released","target":1,"reward":{"stones":200,"items":{"spirit_food":3}}},
+  {"id":"encounter_first","name":"路遇有缘","description":"完成第一次灵宠际遇。","metric":"encounter_choices","target":1,"reward":{"stones":180,"items":{"spirit_food":2}}},
+  {"id":"gemcut_first","name":"琢玉成器","description":"第一次雕琢已镶嵌的宝石。","metric":"gem_cuts","target":1,"reward":{"stones":220,"items":{"forge_ore":1}}}
 ]
