@@ -79,7 +79,7 @@ def total_bonus(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[s
 
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>]。")
+        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠符印",
@@ -118,6 +118,47 @@ def page(ctx: Context, arg: str) -> Reply:
             links.append(InlineCommand(row, "装备", f"灵宠符印 装备 {sigil.name}"))
     lines.append("格式：灵宠符印 装备 <符印> / 灵宠符印 卸下 <符印>。")
     return Reply("灵宠符印", tuple(lines), ("灵宠符印", "我的灵宠", "灵宠技能"), tuple(links))
+
+
+def _total_text(totals: dict[str, int]) -> str:
+    parts = [f"{STAT_LABELS[key]} +{value}" for key, value in totals.items() if value]
+    return "、".join(parts) if parts else "无固定加成"
+
+
+def overview(ctx: Context, arg: str) -> Reply:
+    if arg.strip():
+        raise GameError("格式：灵宠符印 总览。")
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply("灵宠符印 总览", (
+            "尚未结契，先完成领养，才能查看伙伴的符印配置。",
+            "总览只读，不切换出战、不改变符印。",
+        ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
+    pets = ctx.repo.owned_pets(ctx.user_id)
+    active_ids = {pet.pet_id for pet in ctx.repo.active_pets(ctx.user_id)}
+    lines = [f"本命符印总览 · {len(pets)} 位伙伴。"]
+    for pet in pets:
+        filled = equipped(ctx, pet.pet_id)
+        totals = total_bonus(ctx, pet.pet_id)
+        unlocked_count = sum(
+            1 for sigil in ctx.content.sigils.values() if unlocked(ctx, sigil, pet)
+        )
+        marker = " · 当前出战" if pet.pet_id in active_ids else ""
+        lines.append(
+            f"{pet.name}（编号 {pet.pet_id}）{marker} · 符印 {len(filled)}/{SLOTS}"
+            f" · 总加成 {_total_text(totals)} · 已解锁 {unlocked_count} 枚"
+        )
+        if filled:
+            detail = "；".join(
+                f"{slot}号 {ctx.content.sigils[sigil_id].name}（{bonus_text(ctx, ctx.content.sigils[sigil_id])}）"
+                for slot, sigil_id in sorted(filled.items())
+            )
+            lines.append(f"   {detail}")
+        else:
+            lines.append("   未装备符印。")
+    if not pets:
+        lines.append("还没有在册伙伴。")
+    lines.append("总览只读，不切换出战、不改变符印；每只伙伴两个槽，加成互不叠加。")
+    return Reply("灵宠符印 总览", tuple(lines), ("灵宠符印", "我的灵宠", "灵宠技能"))
 
 
 def equip(ctx: Context, arg: str) -> Reply:
@@ -177,7 +218,9 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return equip(ctx, " ".join(parts[1:]))
     if parts[0] == "卸下":
         return unequip(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>]。")
+    if parts[0] == "总览":
+        return overview(ctx, " ".join(parts[1:]))
+    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
