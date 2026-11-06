@@ -1379,6 +1379,18 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_specialization_overview.py tests/test_specialization.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：`127 passed`（含新增 `test_specialization_overview.py` 6 项：未结契、全员列表与出战标记、失效专精、只读快照、坏参数、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `3e2495c` 已推送 develop，develop CI `42231121884` 全绿（3655 项）；fast-forward 合入 main 后 main CI `42232016281` 全绿（同为 3655 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改专精结算/战斗倍率、未新增 schema 或 Release tag。
 
+### 装备总览（2026-11-06，已完成）
+
+`equipment.page()` 只读 `ctx.pet()` 当前出战伙伴；`loadout()` 与 `active_sets()` 支持逐宠读取，但没有全名册装备列表。本切片在 `equipment.view` 增加 `总览` 分支：只读遍历在册伙伴，输出当前出战标记、装备数/3、逐部位名称与强化等级、强化合计、已激活套装；不切换出战、不改装备。
+
+不变量：不新增 schema（保持 26）、不改变穿戴/卸下/配装/套装规则、不写任何表；非法参数稳定拒绝；按钮 ≤4。定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_equipment_overview.py tests/test_item_loop.py tests/test_equipment_set_loadout.py tests/test_commands.py tests/test_messaging.py tests/test_contract_audit.py`：`68 passed`。`compileall` 与 `git diff --check` 通过。提交 `34cf9b8` 已推送 develop，develop CI `42263576161` 全绿（3682 项）；fast-forward main 后 main CI `42264305887` 全绿（同为 3682 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
+
+### 符印总览（2026-11-06，已完成）
+
+`sigils.page()` 只读 `ctx.pet()` 当前出战伙伴；`equipped()`/`total_bonus()` 支持逐宠读取，但后备伙伴的符印配置没有名册总览。本切片在 `sigils.dispatch` 增加 `总览`：只读遍历在册伙伴，输出当前出战标记、槽位 n/2、逐只总加成、已解锁数量与逐槽符印明细；不切换伙伴、不改符印。
+
+不变量：不新增 schema（保持 26）、不改变装备/卸下/解锁判定、不写任何表；非法参数稳定拒绝；按钮 ≤4。定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_sigil_overview.py tests/test_sigils.py tests/test_commands.py tests/test_messaging.py tests/test_contract_audit.py tests/test_information.py`：`83 passed`。`compileall` 与 `git diff --check` 通过。提交 `9718e2a` 已推送 develop，develop CI `42261592990` 全绿（3678 项）；fast-forward main 后 main CI `42262532415` 全绿（同为 3678 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
+
 ### 信箱一键领取（2026-11-06，已完成）
 
 `mailbox.inbox()` 返回全部 active 信件，页面逐封挂「领取」，`claim()` 只接受一个编号；没有批量领取路径。本切片新增 `claim_all()`：`灵宠信箱 一键领取` 先惰性退回过期信件，再按编号顺序逐封以 `state='active'` 守卫领取，汇总灵石与物品；无信/重复领取只读说明且零写入，未结契只读；页面在表头挂「全部领取」蓝字。
