@@ -5,6 +5,7 @@ from ..utils.pagination import paginate
 from .ascension_rules import skill_slots
 from .compatibility import check_requirements, requirement_text
 from .mastery import progress, progress_text
+from .pet_targets import named_pet, note_prep_change, split_selector
 
 
 def targeting_text(skill) -> str:
@@ -17,8 +18,9 @@ def learned(ctx: Context, pet_id: int) -> dict[str, int]:
     ))
 
 
-def view(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+def view(ctx: Context, arg: str = "") -> Reply:
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "查看灵术") if who else ctx.pet()
     skills = learned(ctx, pet.pet_id)
     mastery = progress(ctx, pet.pet_id)
     lines = tuple(
@@ -52,9 +54,10 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 
 def learn(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "学习灵术") if who else ctx.pet()
     ctx.require_idle_pet(pet)
-    skill = named(ctx.content.skills, arg)
+    skill = named(ctx.content.skills, body)
     check_requirements(ctx, pet, skill.requirements)
     current = learned(ctx, pet.pet_id)
     if skill.id in current:
@@ -65,7 +68,7 @@ def learn(ctx: Context, arg: str) -> Reply:
         "INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, ?, ?)",
         (pet.pet_id, skill.id, active),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("领悟灵术", (
         f"{pet.name}学会了{skill.name}，消耗 {ctx.content.items[skill.book_item].name} 1 本。",
         "已自动携带。" if active else "携带位已满，本技能已学会但未携带。",
@@ -73,9 +76,10 @@ def learn(ctx: Context, arg: str) -> Reply:
 
 
 def equip(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "携带灵术") if who else ctx.pet()
     ctx.require_idle_pet(pet)
-    skill = named(ctx.content.skills, arg)
+    skill = named(ctx.content.skills, body)
     check_requirements(ctx, pet, skill.requirements)
     current = learned(ctx, pet.pet_id)
     if skill.id not in current:
@@ -87,18 +91,19 @@ def equip(ctx: Context, arg: str) -> Reply:
     ctx.repo.conn.execute(
         "UPDATE learned_skills SET equipped=1 WHERE pet_id=? AND skill_id=?", (pet.pet_id, skill.id),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("携带灵术", (f"{pet.name}已携带{skill.name}。",))
 
 
 def unequip(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "卸下灵术") if who else ctx.pet()
     ctx.require_idle_pet(pet)
-    skill = named(ctx.content.skills, arg)
+    skill = named(ctx.content.skills, body)
     if not learned(ctx, pet.pet_id).get(skill.id):
         raise GameError("当前宠物未携带该技能。")
     ctx.repo.conn.execute(
         "UPDATE learned_skills SET equipped=0 WHERE pet_id=? AND skill_id=?", (pet.pet_id, skill.id),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("卸下灵术", (f"已卸下{skill.name}，仍保留学习记录。",))

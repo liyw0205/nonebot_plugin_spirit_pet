@@ -36,6 +36,7 @@ from ..gameplay import borrow
 from ..gameplay import card
 from ..gameplay import gear_presets
 from ..gameplay import today
+from ..gameplay import pet_prep
 from ..gameplay import spar_requests
 from ..gameplay import mentorship
 from ..gameplay import tribulations
@@ -341,6 +342,7 @@ ACTIONS = {
     "equipment_catalog": Command(equipment.catalog, True, registered=False),
     "gear_preset": Command(gear_presets.dispatch, True, registered=False),
     "today": Command(today.dispatch, True, registered=False),
+    "pet_prep": Command(pet_prep.prep, True, registered=False),
     "spar_request": Command(spar_requests.dispatch, True, registered=False),
     "mentorship": Command(mentorship.dispatch, True, registered=False),
     "unequip": Command(equipment.unequip, True),
@@ -348,7 +350,7 @@ ACTIONS = {
     "recipe_catalog": Command(crafting.catalog, True, registered=False),
     "craft": Command(crafting.craft, True),
     "salvage": Command(crafting.salvage, True),
-    "skills": Command(skills.view),
+    "skills": Command(skills.view, True),
     "skill_catalog": Command(skills.catalog, True, registered=False),
     "skill_mastery_rewards": Command(skill_mastery_rewards.catalog, True, registered=False),
     "skill_mastery_claim": Command(skill_mastery_rewards.claim, True),
@@ -466,6 +468,7 @@ COMMANDS = {
     "灵宠装备": "equipment", "灵宠装备图鉴": "equipment_catalog", "灵宠卸装": "unequip",
     "灵宠配装": "gear_preset",
     "灵宠今日": "today",
+    "灵宠整备": "pet_prep",
     "灵宠约战": "spar_request",
     "灵宠师徒": "mentorship",
     "灵宠套装": "equipment_sets", "灵宠套装穿戴": "equipment_set_equip",

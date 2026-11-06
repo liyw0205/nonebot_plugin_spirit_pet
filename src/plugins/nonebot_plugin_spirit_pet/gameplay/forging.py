@@ -1,6 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, Reply
 from .equipment import loadout, selected_slot
+from .pet_targets import named_pet, note_prep_change, split_selector
 
 
 def enhance(ctx: Context, arg: str) -> Reply:
@@ -10,11 +11,13 @@ def enhance(ctx: Context, arg: str) -> Reply:
     the target is priced from the forge ladder and charged in one transaction, so
     a shortfall leaves the equipment, stones and materials untouched.
     """
-    player, pet = ctx.player(), ctx.pet()
+    player = ctx.player()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "强化灵物") if who else ctx.pet()
     ctx.require_idle_pet(pet)
-    parts = arg.split()
+    parts = body.split()
     if len(parts) > 2:
-        raise GameError("格式：灵宠强化 灵器 [目标等级]，例如 灵宠强化 灵器 5。")
+        raise GameError("格式：灵宠强化 灵器 [目标等级] [伙伴 名字|编号]。")
     slot = selected_slot(ctx, pet.pet_id, parts[0] if parts else "")
     item_id, level = loadout(ctx, pet.pet_id)[slot]
     name = ctx.content.items[item_id].name
@@ -52,7 +55,7 @@ def enhance(ctx: Context, arg: str) -> Reply:
     ctx.repo.conn.execute(
         "UPDATE equipment SET enhancement=? WHERE pet_id=? AND slot=?", (reached, pet.pet_id, slot),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("灵物淬炼", (
         f"{pet.name}的{name}强化至 +{reached}。",
         f"消耗 {'、'.join(costs)}；装备属性倍率 {ctx.content.forge_levels[reached].bonus_multiplier:g}。",

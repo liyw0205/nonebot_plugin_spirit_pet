@@ -224,10 +224,22 @@ def switch(ctx: Context, arg: str) -> Reply:
             if row is not None:
                 raise GameError(f"{row['name']}已封存，请先发送 灵宠复原 {arg}。")
         raise GameError("未找到灵宠或名字重复，请用灵宠列表中的编号切换。")
-    player.active_pet_id = matches[0].pet_id
-    ctx.repo.set_active_pets(ctx.user_id, [matches[0].pet_id])
+    target = matches[0]
+    roster = ctx.repo.active_pets(ctx.user_id)
+    if any(member.pet_id == target.pet_id for member in roster):
+        ordered = [target, *(member for member in roster if member.pet_id != target.pet_id)]
+    else:
+        clash = next((member for member in roster[1:] if member.species_id == target.species_id), None)
+        if clash is not None:
+            raise GameError(
+                f"{target.name}与阵容中的{clash.name}同族，同一阵容不能重复种族；"
+                "请先发送 灵宠出战 调整阵容。"
+            )
+        ordered = [target, *roster[1:]]
+    ctx.repo.set_active_pets(ctx.user_id, [member.pet_id for member in ordered])
     ctx.repo.invalidate_ready(ctx.user_id)
-    return Reply("灵宠出战", (f"当前灵宠：{matches[0].name}（编号 {matches[0].pet_id}）。",))
+    extra = f"阵容共 {len(ordered)} 只。" if len(ordered) > 1 else ""
+    return Reply("灵宠出战", (f"当前灵宠：{target.name}（编号 {target.pet_id}）。{extra}",))
 
 
 def lineup(ctx: Context, arg: str) -> Reply:

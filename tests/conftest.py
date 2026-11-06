@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "plugins"))
 nonebot.init(_env_file=(), driver="~fastapi+~httpx+~websockets", log_level="WARNING")
 
 from nonebot_plugin_spirit_pet.application.game import Game
+from nonebot_plugin_spirit_pet.content.catalog import Catalog
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.storage.database import Store
 
@@ -21,11 +22,22 @@ class FixedRandom:
         return 0.0
 
 
+@pytest.fixture(scope="session")
+def catalog():
+    """Parse the static content once per session.
+
+    ``Catalog.load()`` costs ~70ms and every test used to pay it. Tests replace
+    ``game.content`` wholesale with dataclasses.replace instead of mutating the
+    shared catalog in place, so one immutable instance is safe to reuse.
+    """
+    return Catalog.load()
+
+
 @pytest.fixture
-def game(tmp_path):
+def game(tmp_path, catalog):
     store = Store(tmp_path / "shared" / "spirit.db")
     store.initialize()
-    return Game(store, Config(), FixedRandom()), store
+    return Game(store, Config(), FixedRandom(), catalog), store
 
 
 @pytest.fixture

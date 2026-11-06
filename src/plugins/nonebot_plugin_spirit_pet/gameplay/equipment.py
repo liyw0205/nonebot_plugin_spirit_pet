@@ -4,6 +4,7 @@ from ..utils.arguments import named, quantity
 from ..utils.pagination import paginate
 from .compatibility import check_requirements, requirement_text
 from .equipment_inventory import highest_enhancement, put, take
+from .pet_targets import named_pet, note_prep_change, split_selector
 
 SLOTS = {"weapon": "灵器", "armor": "护甲", "charm": "饰品"}
 
@@ -83,13 +84,22 @@ def overview(ctx: Context, arg: str) -> Reply:
 
 
 def view(ctx: Context, arg: str) -> Reply:
-    if arg.startswith("总览"):
-        return overview(ctx, arg[len("总览"):])
-    if arg:
-        return equip(ctx, arg)
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    if body.startswith("总览"):
+        return overview(ctx, body[len("总览"):])
+    if who:
+        pet = named_pet(ctx, who, "查看装备")
+        return equip_for(ctx, pet, body) if body else detail(ctx, pet)
+    if body:
+        return equip_for(ctx, ctx.pet(), body)
+    return detail(ctx, ctx.pet())
+
+
+def detail(ctx: Context, pet) -> Reply:
     items = loadout(ctx, pet.pet_id)
     lines, commands = [], []
+    roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
+    suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
     for slot, label in SLOTS.items():
         if slot not in items:
             lines.append(f"{label}：未装备")
@@ -113,7 +123,7 @@ def view(ctx: Context, arg: str) -> Reply:
         costs = [f"{forge.upgrade_stones} 灵石"]
         costs.extend(f"{ctx.content.items[key].name} {amount}" for key, amount in forge.upgrade_items.items())
         lines.append(f"强化至 +{level + 1}：{'、'.join(costs)}。")
-        commands.append(f"灵宠强化 {label}")
+        commands.append(f"灵宠强化 {label}{suffix}")
     equipped_ids = {
         ctx.content.items[item_id].equipment_id for item_id, _ in items.values()
     }
@@ -285,12 +295,12 @@ def wear_set(ctx: Context, arg: str) -> Reply:
     parts = arg.split(maxsplit=1)
     if len(parts) != 2:
         raise GameError("格式：灵宠套装穿戴 宠物编号 套装名。")
-    target_pet_id = quantity(parts[0], 9_223_372_036_854_775_807)
+    target_pet_id = quantity(parts[0], 9_223_372_036_854_775_807)  # validates the 编号 shape
     equipment_set = named(ctx.content.equipment_sets, parts[1])
     player = ctx.player()
-    if player.active_pet_id != target_pet_id:
+    pet = named_pet(ctx, str(target_pet_id), "穿戴套装")
+    if pet.pet_id not in {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}:
         raise GameError("当前出战伙伴已变化，请重新打开套装详情后再穿戴。")
-    pet = ctx.pet()
     ctx.require_idle_pet(pet)
     current = loadout(ctx, pet.pet_id)
     inventory = ctx.repo.inventory(player.user_id)
@@ -323,7 +333,7 @@ def wear_set(ctx: Context, arg: str) -> Reply:
             "ON CONFLICT(pet_id, slot) DO UPDATE SET item_id=excluded.item_id, enhancement=excluded.enhancement",
             (pet.pet_id, gear.slot, item.id, enhancement),
         )
-    ctx.repo.invalidate_ready(player.user_id)
+    note_prep_change(ctx, pet)
     lines = [f"{pet.name}已穿戴「{equipment_set.name}」。"]
     lines.extend(f"{SLOTS[gear.slot]}：{item.name} +{enhancement}" for gear, item, enhancement, _ in plan)
     lines.append("替换下的装备已返还背包；套装加成仅在同一只灵宠穿齐后生效。")
@@ -331,7 +341,12 @@ def wear_set(ctx: Context, arg: str) -> Reply:
 
 
 def equip(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "装备灵物") if who else ctx.pet()
+    return equip_for(ctx, pet, body)
+
+
+def equip_for(ctx: Context, pet, arg: str) -> Reply:
     ctx.require_idle_pet(pet)
     item = named(ctx.content.items, arg)
     if item.kind != "equipment":
@@ -350,7 +365,7 @@ def equip(ctx: Context, arg: str) -> Reply:
         "ON CONFLICT(pet_id, slot) DO UPDATE SET item_id=excluded.item_id, enhancement=excluded.enhancement",
         (pet.pet_id, gear.slot, item.id, enhancement),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("装备灵物", (
         f"{pet.name}装备了{item.name} +{enhancement}，占用{SLOTS[gear.slot]}位。",
         "替换下的旧装备已返回背包。" if current else "装备期间该灵物不在背包中。",
@@ -358,11 +373,12 @@ def equip(ctx: Context, arg: str) -> Reply:
 
 
 def unequip(ctx: Context, arg: str) -> Reply:
-    pet = ctx.pet()
+    body, who = split_selector(arg)
+    pet = named_pet(ctx, who, "卸下灵物") if who else ctx.pet()
     ctx.require_idle_pet(pet)
-    slot = selected_slot(ctx, pet.pet_id, arg)
+    slot = selected_slot(ctx, pet.pet_id, body)
     item_id, enhancement = loadout(ctx, pet.pet_id)[slot]
     ctx.repo.conn.execute("DELETE FROM equipment WHERE pet_id=? AND slot=?", (pet.pet_id, slot))
     put(ctx, item_id, enhancement)
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("卸下灵物", (f"{ctx.content.items[item_id].name} +{enhancement}已返回背包。",))

@@ -15,6 +15,7 @@ from ..utils.arguments import named
 from .achievements import claimed_count
 from .bond_levels import current_level
 from .collection_rank import collected_species
+from .pet_targets import named_pet, note_prep_change, split_selector
 
 PREFIX = "sigil_"
 SLOTS = 2
@@ -79,7 +80,7 @@ def total_bonus(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[s
 
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览]。")
+        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览|伙伴 <名字|编号>]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠符印",
@@ -91,6 +92,12 @@ def page(ctx: Context, arg: str) -> Reply:
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
     pet = ctx.pet()
+    return _detail(ctx, pet)
+
+
+def _detail(ctx: Context, pet) -> Reply:
+    roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
+    suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
     filled = equipped(ctx, pet.pet_id)
     slots_text = "、".join(
         f"{slot}号 {ctx.content.sigils[sigil_id].name}" for slot, sigil_id in sorted(filled.items())
@@ -113,10 +120,10 @@ def page(ctx: Context, arg: str) -> Reply:
         )
         row = len(lines) - 1
         if owned:
-            links.append(InlineCommand(row, "卸下", f"灵宠符印 卸下 {sigil.name}"))
+            links.append(InlineCommand(row, "卸下", f"灵宠符印 卸下 {sigil.name}{suffix}"))
         elif state == "可装备" and len(filled) < SLOTS:
-            links.append(InlineCommand(row, "装备", f"灵宠符印 装备 {sigil.name}"))
-    lines.append("格式：灵宠符印 装备 <符印> / 灵宠符印 卸下 <符印>。")
+            links.append(InlineCommand(row, "装备", f"灵宠符印 装备 {sigil.name}{suffix}"))
+    lines.append("格式：灵宠符印 装备 <符印> / 灵宠符印 卸下 <符印>；为后备伙伴操作时在末尾加 伙伴 <名字|编号>。")
     return Reply("灵宠符印", tuple(lines), ("灵宠符印", "我的灵宠", "灵宠技能"), tuple(links))
 
 
@@ -162,10 +169,11 @@ def overview(ctx: Context, arg: str) -> Reply:
 
 
 def equip(ctx: Context, arg: str) -> Reply:
-    if not arg.strip():
-        raise GameError("格式：灵宠符印 装备 <符印>。")
-    pet = ctx.pet()
-    sigil = named(ctx.content.sigils, arg)
+    body, who = split_selector(arg)
+    if not body.strip():
+        raise GameError("格式：灵宠符印 装备 <符印> [伙伴 名字|编号]。")
+    pet = named_pet(ctx, who, "镶嵌符印") if who else ctx.pet()
+    sigil = named(ctx.content.sigils, body)
     filled = equipped(ctx, pet.pet_id)
     if sigil.id in filled.values():
         raise GameError(f"{pet.name}已经装备了{sigil.name}。")
@@ -183,7 +191,7 @@ def equip(ctx: Context, arg: str) -> Reply:
         " ON CONFLICT(user_id, quest_id) DO NOTHING",
         (ctx.user_id, f"{PREFIX}{pet.pet_id}_{slot}_{sigil.id}"),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("镶嵌符印", (
         f"{pet.name}在 {slot} 号槽装备了{sigil.name}：{bonus_text(ctx, sigil)}。",
         f"符印槽 {len(filled) + 1}/{SLOTS}；符印不消耗材料，可随时卸下换给其他伙伴。",
@@ -191,10 +199,11 @@ def equip(ctx: Context, arg: str) -> Reply:
 
 
 def unequip(ctx: Context, arg: str) -> Reply:
-    if not arg.strip():
-        raise GameError("格式：灵宠符印 卸下 <符印>。")
-    pet = ctx.pet()
-    sigil = named(ctx.content.sigils, arg)
+    body, who = split_selector(arg)
+    if not body.strip():
+        raise GameError("格式：灵宠符印 卸下 <符印> [伙伴 名字|编号]。")
+    pet = named_pet(ctx, who, "卸下符印") if who else ctx.pet()
+    sigil = named(ctx.content.sigils, body)
     filled = equipped(ctx, pet.pet_id)
     slots = [slot for slot, sigil_id in filled.items() if sigil_id == sigil.id]
     if not slots:
@@ -203,7 +212,7 @@ def unequip(ctx: Context, arg: str) -> Reply:
         "DELETE FROM quest_progress WHERE user_id=? AND quest_id=?",
         (ctx.user_id, f"{PREFIX}{pet.pet_id}_{slots[0]}_{sigil.id}"),
     )
-    ctx.repo.invalidate_ready(ctx.user_id)
+    note_prep_change(ctx, pet)
     return Reply("卸下符印", (
         f"{pet.name}卸下了{sigil.name}，{slots[0]} 号槽空出。",
         "符印仍在，解锁状态不会消失。",
@@ -220,7 +229,11 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return unequip(ctx, " ".join(parts[1:]))
     if parts[0] == "总览":
         return overview(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览]。")
+    body, who = split_selector(arg)
+    if not body and who:
+        ctx.player()
+        return _detail(ctx, named_pet(ctx, who, "查看符印"))
+    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览|伙伴 <名字|编号>]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
