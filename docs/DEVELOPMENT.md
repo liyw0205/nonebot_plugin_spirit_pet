@@ -1369,6 +1369,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_spar_board.py tests/test_spar_stats.py tests/test_arena_battles.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py`：`233 passed`（含新增 `test_spar_board.py` 6 项：周聚合、上周排除、前十与榜外名次、空周/未结契、参数拒绝、只读快照、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `dc92740` 已推送 develop，develop CI `42222329520` 全绿（3649 项）；fast-forward 合入 main 后 main CI `42223074131` 全绿（同为 3649 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改切磋结算/成就、未新增 schema 或 Release tag。
 
+### 灵宠专精总览（2026-11-06，已完成）
+
+`specialization.py` 为每只伙伴写入 `quest_progress` 的 `spec_<宠物编号>_<灵术id>`，但 `page()` 只读当前出战伙伴，后备伙伴的专精行没有读出口；切换伙伴前无法知道谁专精了什么、哪些伙伴已有可专精灵术。本切片补一个只读名册总览。
+
+实现：`specialization.dispatch` 增加 `总览` 子命令；`overview` 遍历 `owned_pets`，用 `current()` 读每只专精、`learned()`/`progress()` 统计达到 `min_level` 的可专精英术数，当前出战用 `active_pets` 标记；已专精灵术从内容移除时显示“专精灵术已失效”，不抛 KeyError。未结契只读、无伙伴空态、参数错误稳定拒绝。帮助「灵物与灵术」补一条，GAMEPLAY 专精段补总览说明，CHANGELOG 增一条；不新增命令、内容文件或 schema。
+
+不变量：不新增 schema（保持 26）、不改专精选择/取消/改投费用、战斗倍率、`spec_` 键格式、`learned_skills` 与 `quest_progress` 表结构；页面只读，渲染前后五张表快照逐位相等；所有拒绝路径零写入；按钮 ≤4 且与行蓝字零重叠。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_specialization_overview.py tests/test_specialization.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：`127 passed`（含新增 `test_specialization_overview.py` 6 项：未结契、全员列表与出战标记、失效专精、只读快照、坏参数、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `3e2495c` 已推送 develop，develop CI `42231121884` 全绿（3655 项）；fast-forward 合入 main 后 main CI `42232016281` 全绿（同为 3655 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改专精结算/战斗倍率、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
