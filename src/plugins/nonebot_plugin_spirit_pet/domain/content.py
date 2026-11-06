@@ -378,6 +378,21 @@ class TemperRule(Definition):
     stones_per_layer: NonNegative
 
 
+class SocketCutRule(Definition):
+    """Refining a socketed gem: every level adds a flat rate step to that slot."""
+
+    max_level: Annotated[int, Field(ge=1, le=9)]
+    rate_step: Annotated[float, Field(gt=0, lt=0.5)]
+    gem_cost: Annotated[int, Field(ge=1, le=9)] = 1
+    stones: list[NonNegative] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def levels_match(self):
+        if len(self.stones) != self.max_level:
+            raise ValueError("socket_cut stones must price every level")
+        return self
+
+
 class SectRule(Definition):
     daily_contribution: Positive
     practice_energy: Positive
@@ -528,6 +543,7 @@ class Rules(Definition):
     sect: SectRule
     temper: TemperRule
     support: SupportRule
+    socket_cut: SocketCutRule
     transfer: TransferRule
     achievement_points: AchievementPointsRule
     specialization: SpecializationRule

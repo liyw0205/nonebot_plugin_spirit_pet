@@ -7,10 +7,13 @@ property instead of a validation rule.
 """
 
 from ..application.context import Context
+from ..domain.gem_content import SocketGem
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
+from .pet_targets import note_prep_change
 
 PREFIX = "socket_"
+CUT_PREFIX = "gemcut_"
 SLOTS = ("weapon", "armor", "charm")
 SLOT_NAMES = {"weapon": "兵刃", "armor": "护甲", "charm": "灵饰"}
 STAT_NAMES = {"hp": "气血", "attack": "攻击", "defense": "防御", "speed": "速度"}
@@ -37,19 +40,29 @@ def _rows(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[str, st
     return found
 
 
-def socketed(ctx: Context, pet_id: int, slot: str, user_id: str | None = None) -> object | None:
+def socketed(ctx: Context, pet_id: int, slot: str, user_id: str | None = None) -> SocketGem | None:
     gem_id = _rows(ctx, pet_id, user_id).get(slot)
     return ctx.content.gems.get(gem_id) if gem_id else None
 
 
 def rates(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[str, float]:
-    """Sum of gem rates per stat; at most one gem per slot, so each stat appears at most once."""
+    """Sum of gem rates per stat, including the slot's cut level."""
     out: dict[str, float] = {}
+    step = ctx.content.rules.socket_cut.rate_step
     for slot in SLOTS:
         gem = socketed(ctx, pet_id, slot, user_id)
         if gem is not None:
-            out[gem.stat] = out.get(gem.stat, 0.0) + gem.rate
+            out[gem.stat] = out.get(gem.stat, 0.0) + gem.rate + step * cut_level(ctx, pet_id, slot, user_id)
     return out
+
+
+def cut_level(ctx: Context, pet_id: int, slot: str, user_id: str | None = None) -> int:
+    """How many times this slot's gem has been refined."""
+    row = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, f"{CUT_PREFIX}{pet_id}_{slot}"),
+    ).fetchone()
+    return int(row["progress"]) if row else 0
 
 
 def _equipped(ctx: Context, pet_id: int) -> dict[str, str]:
@@ -76,6 +89,7 @@ def _drop(ctx: Context, pet_id: int, slot: str) -> None:
 def _link(ctx: Context, pet, arg: str) -> Reply:
     equipped = _equipped(ctx, pet.pet_id)
     sockets = _rows(ctx, pet.pet_id)
+    rule = ctx.content.rules.socket_cut
     lines = [f"{pet.name}的镶嵌：每个槽位可嵌入一颗宝石，宝石属该槽位，替换装备不会脱落。"]
     links = []
     for slot in SLOTS:
@@ -86,7 +100,20 @@ def _link(ctx: Context, pet, arg: str) -> Reply:
         detail = f"，{gem.name}（{STAT_NAMES[gem.stat]} +{int(gem.rate * 100)}%）" if gem else "，未镶嵌"
         lines.append(f"{SLOT_NAMES[slot]}：{gear}{detail}")
         if gem is not None:
+            level = cut_level(ctx, pet.pet_id, slot)
             links.append(InlineCommand(len(lines) - 1, "卸下", f"灵宠镶嵌 卸下 {SLOT_NAMES[slot]}"))
+            if level < rule.max_level:
+                cost = rule.stones[level]
+                total = int((gem.rate + rule.rate_step * (level + 1)) * 100)
+                lines.append(
+                    f"  雕琢 {level}/{rule.max_level} · 下一级 {cost} 灵石与 {gem.name} "
+                    f"{rule.gem_cost} 颗 · {STAT_NAMES[gem.stat]} 至 +{total}%"
+                )
+                links.append(InlineCommand(
+                    len(lines) - 1, "雕琢", f"灵宠镶嵌 雕琢 {SLOT_NAMES[slot]}",
+                ))
+            else:
+                lines.append(f"  雕琢 {level}/{rule.max_level} · 已到顶。")
         elif item is not None:
             for candidate in sorted(ctx.content.gems.values(), key=lambda gem: gem.stat):
                 if _owned(ctx, candidate.item_id):
@@ -96,9 +123,44 @@ def _link(ctx: Context, pet, arg: str) -> Reply:
     return Reply("灵宠镶嵌", tuple(lines), ("灵宠镶嵌", "灵宠装备", "灵宠背包"), tuple(links))
 
 
+def cut(ctx: Context, arg: str) -> Reply:
+    if not arg.strip():
+        raise GameError("格式：灵宠镶嵌 雕琢 <槽位>。")
+    player = ctx.player()
+    pet = ctx.pet()
+    slot = _slot(ctx, arg.strip())
+    gem = socketed(ctx, pet.pet_id, slot)
+    if gem is None:
+        raise GameError(f"{SLOT_NAMES[slot]}槽位没有宝石，无法雕琢。")
+    rule = ctx.content.rules.socket_cut
+    level = cut_level(ctx, pet.pet_id, slot)
+    if level >= rule.max_level:
+        raise GameError(f"{SLOT_NAMES[slot]}已雕琢到 +{level}，无法再提升。")
+    stones = rule.stones[level]
+    if player.stones < stones or _owned(ctx, gem.item_id) < rule.gem_cost:
+        raise GameError(
+            f"雕琢需要 {stones} 灵石与{gem.name} {rule.gem_cost} 颗；"
+            f"当前灵石 {player.stones}、{gem.name} {_owned(ctx, gem.item_id)} 颗。"
+        )
+    with ctx.repo.conn:
+        player.stones -= stones
+        ctx.repo.consume_item(player.user_id, gem.item_id, rule.gem_cost)
+        ctx.repo.conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+            " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+            (player.user_id, f"{CUT_PREFIX}{pet.pet_id}_{slot}", level + 1),
+        )
+    note_prep_change(ctx, pet)
+    total = int((gem.rate + rule.rate_step * (level + 1)) * 100)
+    return Reply("宝石雕琢", (
+        f"{pet.name}的{SLOT_NAMES[slot]}雕琢至 +{level + 1}，{STAT_NAMES[gem.stat]} +{total}%。",
+        f"消耗 {stones} 灵石与{gem.name} {rule.gem_cost} 颗；雕琢属于槽位，换宝石不会清零。",
+    ), ("灵宠镶嵌", "灵宠装备", "灵宠背包"))
+
+
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠镶嵌 [<槽位> <宝石> | 卸下 <槽位>]。")
+        raise GameError("格式：灵宠镶嵌 [<槽位> <宝石> | 卸下 <槽位> | 雕琢 <槽位>]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠镶嵌",
@@ -172,6 +234,8 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return page(ctx, "")
     if parts[0] == "卸下":
         return remove(ctx, " ".join(parts[1:]))
+    if parts[0] == "雕琢":
+        return cut(ctx, " ".join(parts[1:]))
     return socket(ctx, arg)
 
 

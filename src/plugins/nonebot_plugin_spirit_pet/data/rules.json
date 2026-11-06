@@ -113,6 +113,12 @@
     "slots": 2,
     "rate": 0.1
   },
+  "socket_cut": {
+    "max_level": 3,
+    "rate_step": 0.04,
+    "gem_cost": 1,
+    "stones": [150, 300, 600]
+  },
   "transfer": {
     "price_rate": 0.8,
     "min_stones": 80,
