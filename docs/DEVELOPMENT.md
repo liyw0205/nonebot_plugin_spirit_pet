@@ -1379,6 +1379,12 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_specialization_overview.py tests/test_specialization.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：`127 passed`（含新增 `test_specialization_overview.py` 6 项：未结契、全员列表与出战标记、失效专精、只读快照、坏参数、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `3e2495c` 已推送 develop，develop CI `42231121884` 全绿（3655 项）；fast-forward 合入 main 后 main CI `42232016281` 全绿（同为 3655 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改专精结算/战斗倍率、未新增 schema 或 Release tag。
 
+### 灵宠周报（2026-11-06，已完成）
+
+签到、战斗、委托与信箱记录都按玩家永久保存，但只有分散页面；没有按北京时间自然周汇总的只读入口。本切片新增 `gameplay/weekly_report.py`，`灵宠周报` 汇总本周签到天数、战斗场次/胜场与论剑/切磋/秘境/关卡分布、委托出发次数、收到/已领信件数。
+
+不变量：不新增 schema（保持 26）、不补发奖励、不写任何表、不推进任务/成就/周常；未结契只读说明；跨周自动切换窗口。定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_weekly_report.py tests/test_pet_compare.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_contract_audit.py`：`103 passed`。`compileall` 与 `git diff --check` 通过。提交 `975559f` 已推送 develop，develop CI `42254389227` 全绿（3668 项）；fast-forward main 后 main CI `42255254284` 全绿（同为 3668 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
+
 ### 灵宠名册对比（2026-11-06，已完成）
 
 `我的灵宠` 只展示当前出战伙伴的最终四维；`loadout.combatant()` 能计算任意伙伴，装备、技能、心境、羁绊、专精也都有逐宠读取函数，但没有并排比较命令。本切片补一个只读对比页，不改变阵容。
