@@ -46,7 +46,45 @@ def selected_slot(ctx: Context, pet_id: int, arg: str) -> str:
     return slot
 
 
+def overview(ctx: Context, arg: str) -> Reply:
+    if arg.strip():
+        raise GameError("格式：灵宠装备 总览。")
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply("灵宠装备 总览", (
+            "尚未结契，先完成领养，才能查看伙伴的装备。",
+            "总览只读，不切换出战、不改变装备。",
+        ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
+    pets = ctx.repo.owned_pets(ctx.user_id)
+    active_ids = {pet.pet_id for pet in ctx.repo.active_pets(ctx.user_id)}
+    lines = [f"灵宠装备总览 · {len(pets)} 位伙伴。"]
+    for pet in pets:
+        items = loadout(ctx, pet.pet_id)
+        marker = " · 当前出战" if pet.pet_id in active_ids else ""
+        levels = sum(level for _, level in items.values())
+        lines.append(
+            f"{pet.name}（编号 {pet.pet_id}）{marker} · 装备 {len(items)}/{len(SLOTS)}"
+            f" · 强化合计 +{levels}"
+        )
+        for slot, label in SLOTS.items():
+            if slot not in items:
+                lines.append(f"  {label}：未装备")
+                continue
+            item_id, level = items[slot]
+            lines.append(f"  {label}：{ctx.content.items[item_id].name} +{level}")
+        active = active_sets(ctx, pet.pet_id)
+        if active:
+            lines.append("  已激活套装：" + "、".join(equipment_set.name for equipment_set in active))
+        else:
+            lines.append("  未激活套装。")
+    if not pets:
+        lines.append("还没有在册伙伴。")
+    lines.append("总览只读，不切换出战、不改变装备；套装需同一只伙伴穿齐才生效。")
+    return Reply("灵宠装备 总览", tuple(lines), ("灵宠装备", "我的灵宠", "灵宠套装"))
+
+
 def view(ctx: Context, arg: str) -> Reply:
+    if arg.startswith("总览"):
+        return overview(ctx, arg[len("总览"):])
     if arg:
         return equip(ctx, arg)
     pet = ctx.pet()
