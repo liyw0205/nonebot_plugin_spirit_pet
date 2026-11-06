@@ -1379,6 +1379,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_specialization_overview.py tests/test_specialization.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py`：`127 passed`（含新增 `test_specialization_overview.py` 6 项：未结契、全员列表与出战标记、失效专精、只读快照、坏参数、帮助/解析/native）。`compileall` 与 `git diff --check` 通过。提交 `3e2495c` 已推送 develop，develop CI `42231121884` 全绿（3655 项）；fast-forward 合入 main 后 main CI `42232016281` 全绿（同为 3655 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改专精结算/战斗倍率、未新增 schema 或 Release tag。
 
+### 灵宠名册对比（2026-11-06，已完成）
+
+`我的灵宠` 只展示当前出战伙伴的最终四维；`loadout.combatant()` 能计算任意伙伴，装备、技能、心境、羁绊、专精也都有逐宠读取函数，但没有并排比较命令。本切片补一个只读对比页，不改变阵容。
+
+实现：新增 `gameplay/pet_compare.py`，`灵宠对比 <编号A> <编号B>` 校验本人、未封存、两只不同伙伴，输出最终气血/攻击/防御/速度及差值、技能数量与前几门、装备数量与名称、羁绊等级、心境值与名称、当前专精；`pet_compare` 命令（`registered=False`）与别名 `灵宠对比`，帮助「结契」补一条。
+
+不变量：不新增 schema（保持 26）、不切换出战、不改装备/技能/专精/心境、不写战报、不发奖励；页面只读，渲染前后五张表快照逐位相等；同宠、未知、他人、封存、格式错误稳定拒绝；按钮 ≤4。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_pet_compare.py tests/test_information.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_contract_audit.py`：`108 passed`。`compileall` 与 `git diff --check` 通过。提交 `76354dd` 已推送 develop，develop CI `42244052478` 全绿（3662 项）；fast-forward main 后 main CI `42244875556` 全绿（同为 3662 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
