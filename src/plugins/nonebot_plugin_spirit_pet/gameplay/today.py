@@ -18,15 +18,23 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from . import (
     affinity_milestone_rewards,
+    bounty,
+    cave,
     checkin_rewards,
     codex_trials,
     daily_assignment,
+    daily_dungeon,
+    daily_shop,
     drill,
     expeditions,
     free_summon,
     mailbox,
     merchant,
+    race,
     realm_milestone_rewards,
+    research,
+    sects,
+    weekly_quests,
 )
 
 TITLE = "灵宠今日"
@@ -103,6 +111,73 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     if open_orders:
         claimable.append(_entry(
             CLAIM, f"商会 {len(open_orders)} 单可交付", "材料已备齐，交付即得灵石与声望", "灵宠商会",
+        ))
+
+    shop_left = [
+        offer for offer in daily_shop.offers(ctx)
+        if daily_shop.bought(ctx, offer) < offer.stock
+    ]
+    if shop_left:
+        pending.append(_entry(
+            TODO, f"今日特供剩 {len(shop_left)} 件", "折扣限购，明日 00:00 换一批", "灵宠特供",
+        ))
+
+    dungeon = daily_dungeon.featured_dungeon(ctx.content, ctx.now)
+    wins = daily_dungeon.wins_today(ctx, owner, dungeon.id)
+    for label, claim, need in (
+        ("首胜", daily_dungeon.FIRST_CLAIM, 1),
+        ("三胜", daily_dungeon.THIRD_CLAIM, 3),
+    ):
+        if wins >= need and not daily_dungeon.claimed_today(ctx, owner, claim):
+            claimable.append(_entry(
+                CLAIM, f"今日秘境{label}可领", f"{dungeon.name} · 今日已胜 {wins} 场",
+                "灵宠今日秘境领奖",
+            ))
+            break
+
+    ready_bounties = [
+        entry for entry in bounty.todays(ctx)
+        if not bounty.claimed(ctx, entry, owner) and bounty.progress(ctx, entry, owner) >= entry.target
+    ]
+    if ready_bounties:
+        claimable.append(_entry(
+            CLAIM, f"赏金 {len(ready_bounties)} 份已达", "每日悬赏可分别领取", "灵宠赏金",
+        ))
+
+    if cave.remaining(ctx, owner):
+        pending.append(_entry(
+            TODO, f"洞府还剩 {cave.remaining(ctx, owner)} 次行动", "灵泉、兽栏与丹房每日各一次", "灵宠洞府",
+        ))
+
+    sect = sects.current(ctx, owner)
+    if sect is not None:
+        if not sects.practiced_today(ctx, owner):
+            pending.append(_entry(
+                TODO, f"{sect.name}今日尚未修行", "修行得贡献与修为，每日一次", "灵宠师门",
+            ))
+        if sects.claimable(ctx, sect, owner):
+            claimable.append(_entry(
+                CLAIM, f"{sect.name}有阶位奖励可领", "贡献达标后逐阶领取", "灵宠师门",
+            ))
+
+    if race.remaining_today(ctx, owner):
+        pending.append(_entry(
+            TODO, f"竞速还剩 {race.remaining_today(ctx, owner)} 次", "按用时计成绩，不写战报", "灵宠竞速",
+        ))
+
+    if research.left_today(ctx, owner):
+        pending.append(_entry(
+            TODO, f"研习还剩 {research.left_today(ctx, owner)} 次", "为已携带灵术积累熟练度", "灵宠研习",
+        ))
+
+    weekly = [
+        quest for quest in ctx.content.weekly_quests.values()
+        if not weekly_quests.claimed_this_week(ctx, owner, quest.id)
+        and weekly_quests._metric(ctx, owner, quest.metric) >= quest.target
+    ]
+    if weekly:
+        claimable.append(_entry(
+            CLAIM, f"周常 {len(weekly)} 项可领", "六项周度目标，按自然周重置", "灵宠周常领奖",
         ))
 
     left = drill.remaining(ctx, owner)
