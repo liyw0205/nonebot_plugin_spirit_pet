@@ -1349,6 +1349,16 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_spar_stats.py tests/test_arena_battles.py tests/test_spar_requests.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py`：`262 passed`（含新增 `test_spar_stats.py` 8 项：对手聚合与排序、详情与最近五场、双向视角、平局与仅本人、分页越界、未结契/未知 UID/坏参数、帮助/解析、native 按钮、只读快照）。`compileall` 与 `git diff --check` 通过。提交 `109b4d8` 已推送 develop，develop CI `41942626548` 全绿（3635 项）；fast-forward 合入 main 后 main CI `41943179969` 全绿（同为 3635 项）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改切磋/约战结算、未新增 schema 或 Release tag。
 
+### 战报类型筛选（2026-11-05，已完成）
+
+`battle_records` 已有四类永久战报，`灵宠战报` 却始终混排，`battle_history`/`battle_history_count` 也没有类型过滤；随着切磋、历练伏击、关卡、论剑回顾补齐，回看某一类只能逐页翻。本切片补列表筛选，不改详情与分享。
+
+实现：`Repository.battle_history(..., kind=None)` 与 `battle_history_count(..., kind=None)` 增加可选 `kind`，默认 SQL 与既有调用不变；`battle_records.reports()` 解析 `查看/详情` 优先，其次类型名，再解析页码或 `分页 N`；标题带 `· 类型`，页数与空态按筛选后计算，分页命令保留类型前缀。帮助「对战与赛季」补示例，GAMEPLAY 战报段补 `灵宠战报 切磋`、`灵宠战报 切磋 2`、`灵宠战报 切磋 分页 2`。
+
+不变量：不新增 schema（保持 26）、不改战报写入/快照/详情授权/分享、`battle_records` 表结构与分页大小；`查看 编号` 仍走参与者校验；未结契拒绝且不建档；所有拒绝路径零写入；筛选页只读，渲染前后玩家/宠物/背包/进度/战报快照逐位相等。
+
+定向命令：`PYTHONDONTWRITEBYTECODE=1 PYTEST_ADDOPTS='-p no:cacheprovider' ./.venv/bin/pytest -q tests/test_battle_report_filters.py tests/test_battle_records.py tests/test_contract_audit.py tests/test_commands.py tests/test_messaging.py tests/test_player_experience.py tests/test_information.py tests/test_content.py tests/test_objectives.py tests/test_pagination.py`：`262 passed`（含新增 `test_battle_report_filters.py` 8 项：四类筛选、类型分页与两种页码写法、无筛选旧合同、空类型/未知类型/坏页码、仅本人、详情仍可用、只读快照、帮助/解析、native 按钮）。`compileall` 与 `git diff --check` 通过。提交 `71dbf2a` 已推送 develop，develop CI `41945944103` 全绿（3643 项）；main CI `42077300414` 全绿（main 已在 `71dbf2a`）。排除项：未部署、未发送真实 QQ、未跑本地全量、未改战报写入/详情授权/分享、未新增 schema 或 Release tag。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
