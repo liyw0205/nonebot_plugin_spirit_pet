@@ -54,11 +54,11 @@ def finish_arc(game, play, arc_name, choices):
     return reply
 
 
-def test_content_defines_three_chained_arcs(game):
+def test_content_defines_five_chained_arcs(game):
     entries = arcs(game)
-    assert [arc.id for arc in entries] == ["wind_road", "snow_lantern", "star_ferry"]
-    assert [arc.requires for arc in entries] == [None, "wind_road", "snow_lantern"]
-    assert [arc.min_realm for arc in entries] == ["qiling", "zhuji", "jindan"]
+    assert [arc.id for arc in entries] == ["wind_road", "snow_lantern", "star_ferry", "cloud_ridge", "heaven_gate"]
+    assert [arc.requires for arc in entries] == [None, "wind_road", "snow_lantern", "star_ferry", "cloud_ridge"]
+    assert [arc.min_realm for arc in entries] == ["qiling", "zhuji", "jindan", "yuanying", "huashen"]
     for arc in entries:
         assert arc.length == 3
         assert [chapter.order for chapter in arc.chapters] == [1, 2, 3]
@@ -135,7 +135,7 @@ def test_page_without_a_pet_is_read_only(game, play):
 def test_page_lists_arcs_with_state_and_only_links_the_open_one(game, play):
     play("adopt", "青鸾")
     page = play("arcs")
-    assert "奇缘：已完成 0/3 条" in page.text()
+    assert "奇缘：已完成 0/5 条" in page.text()
     assert "风起青萍 · 可开启 · 启灵起" in page.text()
     assert "雪夜灯影 · 未开启（需先完成风起青萍） · 筑基起" in page.text()
     assert {link.command for link in page.inline_commands} == {"灵宠奇缘 风起青萍"}
@@ -231,7 +231,7 @@ def test_the_next_arc_opens_after_completion_and_realm_gate(game, play):
     finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
     boost(game)
     page = play("arcs")
-    assert "奇缘：已完成 1/3 条" in page.text()
+    assert "奇缘：已完成 1/5 条" in page.text()
     assert "风起青萍 · 已完成" in page.text()
     assert "雪夜灯影 · 可开启" in page.text()
     assert "星槎渡 · 未开启（需先完成雪夜灯影）" in page.text()
@@ -414,9 +414,9 @@ def test_help_objectives_and_parse_contract(game, play):
 
     section = _HELP_SECTIONS["秘境与关卡"]
     assert ("灵宠奇缘 奇缘名 继续", "灵宠奇缘 ", "只重读当前章节，不消耗选项、不发奖励。") in section
-    assert "奇缘：已完成 0/3 · 尚未开启" in play("objectives").text()
+    assert "奇缘：已完成 0/5 条 · 章节 0/15 · 尚未开启" in play("objectives").text()
     play("arcs", "风起青萍 相助")
-    assert "奇缘：已完成 0/3 · 进行中 风起青萍" in play("objectives").text()
+    assert "奇缘：已完成 0/5 条 · 章节 1/15 · 进行中 风起青萍" in play("objectives").text()
     assert handlers._parse("灵宠奇缘") == ("arcs", "")
     assert handlers._parse("灵宠奇缘 风起青萍 相助") == ("arcs", "风起青萍 相助")
     assert handlers._parse("灵宠奇缘 风起青萍 继续") == ("arcs", "风起青萍 继续")
@@ -467,3 +467,162 @@ def test_continuation_reply_payload_keeps_buttons_and_links_disjoint(game, play)
     }
     assert linked == {f"/{link.command}" for link in reply.inline_commands}
     assert not linked & buttons
+
+
+def test_the_new_high_realm_arcs_are_chained_and_reachable(game, play):
+    play("adopt", "青鸾")
+    for name, choices in (
+        ("风起青萍", ["相助", "借灯", "直言"]),
+        ("雪夜灯影", ["添油", "相认", "守灯"]),
+        ("星槎渡", ["造船", "掌舵", "靠岸"]),
+    ):
+        boost(game, realm=6)
+        finish_arc(game, play, name, choices)
+    boost(game, realm=6)
+    page = play("arcs")
+    assert "云岭旧约 · 可开启 · 元婴起" in page.text()
+    assert "天门问道 · 未开启（需先完成云岭旧约）" in page.text()
+    detail = play("arcs", "云岭旧约")
+    assert "岭下茶棚" in detail.text()
+    assert "问路" in detail.text() and "自寻" in detail.text()
+
+
+def test_a_high_realm_arc_pays_its_finale_once_and_reopens_read_only(game, play):
+    play("adopt", "青鸾")
+    for name, choices in (
+        ("风起青萍", ["相助", "借灯", "直言"]),
+        ("雪夜灯影", ["添油", "相认", "守灯"]),
+        ("星槎渡", ["造船", "掌舵", "靠岸"]),
+    ):
+        boost(game, realm=6)
+        finish_arc(game, play, name, choices)
+    boost(game, realm=6)
+    stones = player(game[1])["stones"]
+    play("arcs", "云岭旧约 问路", op="ridge-1")
+    play("arcs", "云岭旧约 认约", op="ridge-2")
+    play("arcs", "云岭旧约 留字", op="ridge-3")
+    paid = player(game[1])["stones"]
+    assert paid == stones + 200 + 240 + 300 + 380
+    assert done(game, "cloud_ridge")
+    with pytest.raises(GameError, match="已完成"):
+        play("arcs", "云岭旧约 问路")
+    assert player(game[1])["stones"] == paid
+
+
+def test_review_shows_every_choice_and_the_authored_ending(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["旁观", "独行", "沉默"])
+    page = play("arcs", "风起青萍 回顾")
+    assert "风起青萍 · 回顾" in page.text()
+    assert "第1章 山门初雪 · 你选了「旁观」" in page.text()
+    assert "第2章 雪夜归途 · 你选了「独行」" in page.text()
+    assert "第3章 灯下问心 · 你选了「沉默」" in page.text()
+    # the authored path ending, not the generic default
+    assert "你旁观、独行，且从不解释" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_review_is_read_only_and_pays_nothing(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    stones = player(game[1])["stones"]
+    play("arcs", "风起青萍 回顾")
+    play("arcs", "风起青萍 往事")
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+    assert player(game[1])["stones"] == stones
+
+
+def test_review_refuses_a_locked_or_unfinished_arc(game, play):
+    play("adopt", "青鸾")
+    with pytest.raises(GameError, match="尚未开启"):
+        play("arcs", "雪夜灯影 回顾")
+    play("arcs", "风起青萍 相助")
+    with pytest.raises(GameError, match="尚未完成"):
+        play("arcs", "风起青萍 回顾")
+    assert step(game, "wind_road") == 2
+
+
+def test_review_rejects_an_extra_argument(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
+    with pytest.raises(GameError, match="格式"):
+        play("arcs", "风起青萍 回顾 多")
+
+
+def test_review_survives_a_restart(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
+    reopened = Store(game[1].path)
+    reopened.initialize()
+    restarted = Game(reopened, game[0].config, game[0].rng, content=game[0].content)
+    page = restarted.execute("u1", "arcs", "风起青萍 回顾", "restart-review", NOW)
+    assert "第1章 山门初雪 · 你选了「相助」" in page.text()
+    assert "【风起青萍 · 终章】" in page.text()
+
+
+def test_review_degrades_honestly_on_a_legacy_pick(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
+    sql(
+        game[1],
+        "UPDATE quest_progress SET progress=0 WHERE quest_id='arc_wind_road_pick_2'",
+    )
+    page = play("arcs", "风起青萍 回顾")
+    assert "第2章 · 无记录（旧存档）" in page.text()
+    # the default finale text, since the recorded path no longer matches a full combination
+    assert "【风起青萍 · 终章】" in page.text()
+
+
+def test_each_choice_bumps_the_counter_once_and_replays_do_not(game, play):
+    play("adopt", "青鸾")
+    play("arcs", "风起青萍 相助", op="count-1")
+    rows = sql(
+        game[1], "SELECT progress FROM quest_progress WHERE quest_id='stat_arc_choices'",
+    )
+    assert rows and rows[0]["progress"] == 1
+    play("arcs", "风起青萍 相助", op="count-1")
+    rows = sql(
+        game[1], "SELECT progress FROM quest_progress WHERE quest_id='stat_arc_choices'",
+    )
+    assert rows[0]["progress"] == 1
+    play("arcs", "风起青萍 借灯", op="count-2")
+    play("arcs", "风起青萍 直言", op="count-3")
+    rows = sql(
+        game[1], "SELECT progress FROM quest_progress WHERE quest_id='stat_arc_choices'",
+    )
+    assert rows[0]["progress"] == 3
+
+
+def test_a_refused_choice_does_not_bump_the_counter(game, play):
+    play("adopt", "青鸾")
+    with pytest.raises(GameError):
+        play("arcs", "风起青萍 不存在")
+    with pytest.raises(GameError, match="尚未开启"):
+        play("arcs", "星槎渡 造船")
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='stat_arc_choices'") == []
+
+
+def test_the_arc_achievements_and_title_are_reachable(game, play):
+    assert "arc_choices" in {
+        achievement.metric for achievement in game[0].content.achievements.values()
+    }
+    assert "arc_choices" in {title.metric for title in game[0].content.titles.values()}
+    ceiling = game[0].content._metric_ceilings()["arc_choices"]
+    assert ceiling == sum(len(arc.chapters) for arc in game[0].content.arcs.values())
+    assert ceiling == 15
+
+
+def test_review_accepts_the_documented_leading_keyword(game, play):
+    play("adopt", "青鸾")
+    finish_arc(game, play, "风起青萍", ["相助", "借灯", "直言"])
+    leading = play("arcs", "回顾 风起青萍")
+    trailing = play("arcs", "风起青萍 回顾")
+    assert leading.text() == trailing.text()
+    assert "第1章 山门初雪 · 你选了「相助」" in leading.text()
+    with pytest.raises(GameError, match="格式"):
+        play("arcs", "回顾 风起青萍 多")
+    with pytest.raises(GameError, match="未找到"):
+        play("arcs", "回顾 不存在")
+    assert handlers._parse("灵宠奇缘 回顾 风起青萍") == ("arcs", "回顾 风起青萍")

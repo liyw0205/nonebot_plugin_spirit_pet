@@ -10,6 +10,7 @@ State lives in the existing ``quest_progress`` table:
 from ..application.context import Context
 from ..domain.arc_content import Arc, ArcOption
 from ..domain.models import GameError, InlineCommand, Reply
+from . import counters
 
 STEP = "arc_"
 PICK = "_pick_"
@@ -17,6 +18,8 @@ DONE = "_done"
 # Accepted in place of a chapter option: reading the current chapter again.
 # "继续" is the keyword older replies advertised, so it stays compatible.
 CONTINUE = frozenset({"继续", "续读"})
+# Accepted as the first token to read a finished story back: choices and ending.
+REVIEW = frozenset({"回顾", "往事"})
 
 
 def arcs(ctx: Context) -> list[Arc]:
@@ -105,6 +108,34 @@ def _state(ctx: Context, arc: Arc) -> str:
     return f"未开启（{reason}）" if reason else "可开启"
 
 
+def review(ctx: Context, arc: Arc) -> Reply:
+    """Read back a finished story: every recorded choice and its authored ending.
+
+    Read-only: pays nothing, writes nothing, never advances or resets a step. Locked or
+    unfinished arcs are refused so this can never reveal a path a player has not walked.
+    """
+    reason = unlock_reason(ctx, arc)
+    if reason is not None:
+        raise GameError(f"{arc.name}尚未开启：{reason}。")
+    if not done(ctx, arc):
+        raise GameError(f"{arc.name}尚未完成，先走完当前章节再看回顾。")
+    lines = [f"{arc.name} · 回顾"]
+    for chapter in range(1, arc.length + 1):
+        index = _pick_index(ctx, arc, chapter)
+        if index is None:
+            lines.append(f"第{chapter}章 · 无记录（旧存档）")
+            continue
+        choice = arc.chapters[chapter - 1]
+        option = choice.options[index - 1]
+        lines.append(f"第{chapter}章 {choice.title} · 你选了「{option.label}」")
+    lines.append(f"【{arc.name} · 终章】{_ending(ctx, arc)}")
+    lines.append("回顾只读：不重走、不发奖励、也不改变已记录的抉择。")
+    return Reply(
+        f"{arc.name} · 回顾", tuple(lines),
+        ("灵宠奇缘", "灵宠目标", "我的灵宠"), (),
+    )
+
+
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("格式：灵宠奇缘 [奇缘名] [选项]。")
@@ -113,7 +144,7 @@ def page(ctx: Context, arg: str) -> Reply:
             "灵宠奇缘",
             (
                 "尚未结契，先完成领养，才能走进这些故事。",
-                "三条奇缘各分三章，每章两个选项，选择会立刻带来不同的收获。",
+                "五条奇缘各分三章，每章两个选项，选择会立刻带来不同的收获。",
                 "后一条奇缘需要先完成前一条，并对伙伴境界有要求。",
             ),
             ("灵宠帮助",),
@@ -123,9 +154,11 @@ def page(ctx: Context, arg: str) -> Reply:
     links = []
     for arc in arcs(ctx):
         lines.append(f"{arc.name} · {_state(ctx, arc)} · {ctx.content.realms[_realm_index(ctx, arc.min_realm)].name}起")
-        if not done(ctx, arc) and unlock_reason(ctx, arc) is None:
+        if done(ctx, arc):
+            links.append(InlineCommand(len(lines) - 1, "回顾", f"灵宠奇缘 {arc.name} 回顾"))
+        elif unlock_reason(ctx, arc) is None:
             links.append(InlineCommand(len(lines) - 1, "进入", f"灵宠奇缘 {arc.name}"))
-    lines.append("每条奇缘三章，每章两个选项；通关后不可重走。")
+    lines.append("每条奇缘三章，每章两个选项；通关后不可重走，但可回顾。")
     return Reply("灵宠奇缘", tuple(lines), ("灵宠奇缘", "灵宠目标", "灵宠奇遇"), tuple(links))
 
 
@@ -207,6 +240,9 @@ def choose(ctx: Context, arc: Arc, text: str) -> Reply:
     _pay(ctx, option.reward, lines)
     _set(ctx, f"{STEP}{arc.id}{PICK}{current}", chapter.options.index(option) + 1)
     _set(ctx, f"{STEP}{arc.id}_step", current + 1)
+    # One bump per accepted chapter, after every validation and write: refusals and
+    # replays never reach here, so the counter matches the story a player actually walked.
+    counters.bump(ctx, "arc_choices")
 
     if current >= arc.length:
         _set(ctx, f"{STEP}{arc.id}{DONE}", 1)
@@ -228,11 +264,23 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
         return page(ctx, "")
+    # `回顾 <奇缘名>` and `<奇缘名> 回顾` are the same read-only command.
+    if parts[0] in REVIEW:
+        if len(parts) != 2:
+            raise GameError("格式：灵宠奇缘 回顾 <奇缘名>。")
+        arc = next((item for item in arcs(ctx) if item.name == parts[1] or item.id == parts[1]), None)
+        if arc is None:
+            raise GameError("未找到该奇缘，先发送 灵宠奇缘 查看列表。")
+        return review(ctx, arc)
     arc = next((item for item in arcs(ctx) if item.name == parts[0] or item.id == parts[0]), None)
     if arc is None:
         raise GameError("未找到该奇缘，先发送 灵宠奇缘 查看列表。")
     if len(parts) == 1:
         return detail(ctx, arc)
+    if parts[1] in REVIEW:
+        if len(parts) > 2:
+            raise GameError("格式：灵宠奇缘 回顾 <奇缘名>。")
+        return review(ctx, arc)
     text = " ".join(parts[1:])
     if text in CONTINUE:
         # Read-only: reopens the current chapter, never pays a reward or advances a step.
@@ -241,11 +289,20 @@ def dispatch(ctx: Context, arg: str) -> Reply:
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
-    completed = sum(1 for arc in arcs(ctx) if done(ctx, arc, user_id))
+    entries = arcs(ctx)
+    completed = sum(1 for arc in entries if done(ctx, arc, user_id))
+    chapters = sum(arc.length for arc in entries)
+    walked = 0
+    for arc in entries:
+        if done(ctx, arc, user_id):
+            walked += arc.length
+        else:
+            walked += min(step_of(ctx, arc, user_id) - 1, arc.length)
     active = next(
-        (arc for arc in arcs(ctx) if not done(ctx, arc, user_id) and step_of(ctx, arc, user_id) > 1),
+        (arc for arc in entries if not done(ctx, arc, user_id) and step_of(ctx, arc, user_id) > 1),
         None,
     )
+    base = f"奇缘：已完成 {completed}/{len(entries)} 条 · 章节 {walked}/{chapters}"
     if active is not None:
-        return f"奇缘：已完成 {completed}/{len(arcs(ctx))} · 进行中 {active.name}"
-    return f"奇缘：已完成 {completed}/{len(arcs(ctx))} · 尚未开启"
+        return f"{base} · 进行中 {active.name}"
+    return f"{base} · 尚未开启"

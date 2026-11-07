@@ -53,6 +53,24 @@ def _mail(ctx: Context, user_id: str, start: int, end: int) -> tuple[int, int]:
     return int(row["n"]), int(row["claimed"] or 0)
 
 
+def _arc_choices(ctx: Context, user_id: str, start: int, end: int) -> int:
+    """This week's fate-arc choices, summed from the per-day counter rows.
+
+    `counters.bump` already writes one ``stat_<metric>_day_<date>`` row per Beijing day, so
+    the week's total is a read of existing rows: no new table, no back-fill, no reward.
+    """
+    first, last = beijing_day(start), beijing_day(end - 1)
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id, progress FROM quest_progress "
+        "WHERE user_id=? AND quest_id LIKE 'stat_arc_choices_day_%'",
+        (user_id,),
+    ).fetchall()
+    return sum(
+        int(row["progress"]) for row in rows
+        if first <= row["quest_id"][len("stat_arc_choices_day_"):] <= last
+    )
+
+
 def report(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠周报 不接受参数，直接发送即可。")
@@ -66,6 +84,7 @@ def report(ctx: Context, arg: str) -> Reply:
     signins = _signins(ctx, ctx.user_id, start, end)
     expeditions = _expeditions(ctx, ctx.user_id, start, end)
     received, claimed = _mail(ctx, ctx.user_id, start, end)
+    chooser = _arc_choices(ctx, ctx.user_id, start, end)
     lines = [
         f"统计区间：{beijing_day(start)} 至 {beijing_day(end - 1)}（北京时间）。",
         f"签到：{signins} 天。",
@@ -79,6 +98,7 @@ def report(ctx: Context, arg: str) -> Reply:
         lines.append(f"分类：{detail}。")
     lines.extend((
         f"委托：本周出发 {expeditions} 次。",
+        f"奇缘：本周做出 {chooser} 次抉择。",
         f"信箱：收到 {received} 封 · 已领取 {claimed} 封。",
         "周报只读，不补发奖励；跨周后统计窗口自动切换。",
     ))

@@ -588,5 +588,423 @@
         }
       }
     }
+  },
+  {
+    "id": "cloud_ridge",
+    "name": "云岭旧约",
+    "order": 4,
+    "description": "星槎北岸之后，云岭之上还有一份没有拆开的旧约。",
+    "requires": "star_ferry",
+    "min_realm": "yuanying",
+    "chapters": [
+      {
+        "order": 1,
+        "title": "岭下茶棚",
+        "text": "云岭脚下有一座半塌的茶棚，帘子被山风吹得直响。棚里的老掌柜头也不抬，只问你一句：上山是找人，还是找回自己。",
+        "options": [
+          {
+            "id": "ask",
+            "label": "问路",
+            "text": "你向掌柜问清了上山的两条道：一条石阶，一条野径。他指完路只说，两条道最后都进同一扇门。",
+            "reward": {
+              "exp": {
+                "minimum": 170,
+                "maximum": 170
+              },
+              "stones": {
+                "minimum": 200,
+                "maximum": 200
+              },
+              "items": {
+                "spirit_food": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          {
+            "id": "self",
+            "label": "自寻",
+            "text": "你没有问路，自己挑了一条没有路标的方向。走错两次之后，你反而把这座岭的起伏记熟了。",
+            "reward": {
+              "exp": {
+                "minimum": 200,
+                "maximum": 200
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "forge_ore": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "title": "旧契重逢",
+        "text": "半山亭里坐着一名背剑的旧识，他摊开一张泛黄的契书，上面有你的名字，和一列你早已不记得的约定。",
+        "options": [
+          {
+            "id": "keep",
+            "label": "认约",
+            "text": "你接过契书，把那个名字认了下来。旧识笑着说，肯认账的人少，肯认旧账的人更少。",
+            "reward": {
+              "exp": {
+                "minimum": 200,
+                "maximum": 200
+              },
+              "stones": {
+                "minimum": 240,
+                "maximum": 240
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "leave",
+            "label": "辞约",
+            "text": "你把契书推回去。旧识也不恼，只说有些约定本来就不必兑现，能记着已经够了。",
+            "reward": {
+              "exp": {
+                "minimum": 180,
+                "maximum": 180
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "title": "岭上听风",
+        "text": "到了岭上才知道，风是从更北的地方刮来的，风里夹着别人的名字和别的山。你要留下点什么，或者带走点什么。",
+        "options": [
+          {
+            "id": "carve",
+            "label": "留字",
+            "text": "你在崖边刻下一行字，只写到此一游，不写姓名。后来的人看见，也只当是风写的。",
+            "reward": {
+              "exp": {
+                "minimum": 240,
+                "maximum": 240
+              },
+              "stones": {
+                "minimum": 300,
+                "maximum": 300
+              },
+              "items": {
+                "exp_pill": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          {
+            "id": "carry",
+            "label": "携风",
+            "text": "你什么也没刻，只把那阵风装进袖里。下岭时它还在，冷得像一句没说完的话。",
+            "reward": {
+              "exp": {
+                "minimum": 220,
+                "maximum": 220
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "text": "云岭的风从不停。你上山又下岭，旧约与旧名都留在了茶棚那一侧。",
+      "paths": [
+        {
+          "choices": [1, 1, 1],
+          "text": "你问清了路，认下了那张旧契，又在崖上留下自己的字。掌柜后来对每个上岭的人说，那年有一位客人，把整条道都走成了自己的。"
+        },
+        {
+          "choices": [1, 1, 2],
+          "text": "你问路、认约，却什么也没有留在岭上。旧识说这样也好——把风带走的人，才不会变成别人的路标。"
+        },
+        {
+          "choices": [1, 2, 1],
+          "text": "你问清了路，却辞掉了那张契，最后仍刻下一行字。留在崖上的不是名字，是一个把旧账放下的证据。"
+        },
+        {
+          "choices": [1, 2, 2],
+          "text": "你问了路、辞了约、也带走了那阵风。云岭与你两不相欠，这是你这些年来第一次听见自己呼吸的声音。"
+        },
+        {
+          "choices": [2, 1, 1],
+          "text": "你自寻上岭，认下了旧契，又把字留在崖边。掌柜说那条野径原本没人走，如今有人跟着你的脚印上来了。"
+        },
+        {
+          "choices": [2, 1, 2],
+          "text": "你自己找路上岭，认了旧约，却什么都没留。旧识把契书折好收进怀里，说这份约定从此由他一人记着。"
+        },
+        {
+          "choices": [2, 2, 1],
+          "text": "你自己寻路，辞了旧约，最后留下一行字。那行字谁也不认识，可从那以后，走野径的人都会在崖边停一停。"
+        },
+        {
+          "choices": [2, 2, 2],
+          "text": "你没有问路，没有认约，也没有留下任何东西，只把那阵北风带下了岭。走到山下时袖中仍是冷的，你已经分不清那是风还是别的什么。"
+        }
+      ],
+      "reward": {
+        "exp": {
+          "minimum": 300,
+          "maximum": 300
+        },
+        "stones": {
+          "minimum": 380,
+          "maximum": 380
+        },
+        "items": {
+          "bloodline_essence": {
+            "minimum": 1,
+            "maximum": 1
+          },
+          "forge_ore": {
+            "minimum": 2,
+            "maximum": 2
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "heaven_gate",
+    "name": "天门问道",
+    "order": 5,
+    "description": "云岭再往北，是一道没有门的门；它问的不是修为，是你打算怎么用修为。",
+    "requires": "cloud_ridge",
+    "min_realm": "huashen",
+    "chapters": [
+      {
+        "order": 1,
+        "title": "石阶三千",
+        "text": "三千级石阶从谷底盘上来，每一级都刻着一个曾经走到这里的人的名字。台阶尽头没有庙，只有一线青色的天光。",
+        "options": [
+          {
+            "id": "climb",
+            "label": "拾级",
+            "text": "你一级一级走上去，走到一半才明白：名字刻得越密的地方，路越窄。",
+            "reward": {
+              "exp": {
+                "minimum": 190,
+                "maximum": 190
+              },
+              "stones": {
+                "minimum": 220,
+                "maximum": 220
+              },
+              "items": {
+                "spirit_food": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          },
+          {
+            "id": "ride",
+            "label": "乘云",
+            "text": "你借云而上，脚下那三千个名字连成一片模糊的白。快是快了，你没有记住任何一个。",
+            "reward": {
+              "exp": {
+                "minimum": 210,
+                "maximum": 210
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "forge_ore": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 2,
+        "title": "门前闻钟",
+        "text": "青天之下悬着一口无人敲响的钟。钟身上有裂纹，钟声却还没散。你在等它响，还是等它停。",
+        "options": [
+          {
+            "id": "answer",
+            "label": "应钟",
+            "text": "你抬手敲了一下。钟声不长，却把你自己震得退了半步——原来门不是听声开的，是听心跳开的。",
+            "reward": {
+              "exp": {
+                "minimum": 220,
+                "maximum": 220
+              },
+              "stones": {
+                "minimum": 260,
+                "maximum": 260
+              },
+              "items": {}
+            }
+          },
+          {
+            "id": "wait",
+            "label": "候钟",
+            "text": "你没有敲，就坐在阶上等。等了多久不知道，只知道最后一缕天光落下来时，钟自己响了。",
+            "reward": {
+              "exp": {
+                "minimum": 200,
+                "maximum": 200
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "exp_pill": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "order": 3,
+        "title": "门开一线",
+        "text": "一线天光裂开，里面看不见宫殿，看不见仙鹤，只有一片极静的空。你踏进去，或者转身下山，都得在这一刻决定。",
+        "options": [
+          {
+            "id": "enter",
+            "label": "入门",
+            "text": "你跨过那一线。里面没有想象中的奖赏，只有一件你早已在做的事：继续走。",
+            "reward": {
+              "exp": {
+                "minimum": 260,
+                "maximum": 260
+              },
+              "stones": {
+                "minimum": 340,
+                "maximum": 340
+              },
+              "items": {
+                "exp_pill": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          },
+          {
+            "id": "turn",
+            "label": "转身",
+            "text": "你转身下山，把那一线天光留在背后。三千级石阶忽然变得很轻——你终于知道自己不是来求什么的。",
+            "reward": {
+              "exp": {
+                "minimum": 240,
+                "maximum": 240
+              },
+              "stones": {
+                "minimum": 0,
+                "maximum": 0
+              },
+              "items": {
+                "bloodline_essence": {
+                  "minimum": 2,
+                  "maximum": 2
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "finale": {
+      "text": "天门开着或者关着，都不再重要；重要的是你从哪里上来，又打算往哪里去。",
+      "paths": [
+        {
+          "choices": [1, 1, 1],
+          "text": "你一级一级走上来，敲响了那口钟，也跨过了那一线。进门之后你回头看见石阶上自己的名字——那是你亲手刻的，不是别人替你刻的。"
+        },
+        {
+          "choices": [1, 1, 2],
+          "text": "你拾级而上、敲钟应门，最后却转身下了山。钟声在背后响了一路，而你知道自己已经把该问的问完了。"
+        },
+        {
+          "choices": [1, 2, 1],
+          "text": "你一步步走上来，等钟自己响了，然后跨过那一线。你始终没有敲它，可它认得你——三千级台阶上，只有你把每一级都踩实了。"
+        },
+        {
+          "choices": [1, 2, 2],
+          "text": "你走上石阶，候到钟响，却没有进门。下山时你数着台阶，发现那些名字一个都没少。"
+        },
+        {
+          "choices": [2, 1, 1],
+          "text": "你乘云直上，敲了钟，也进了门。天门里没有人为你鼓掌——你以为走了捷径，其实只是少走了别人的路。"
+        },
+        {
+          "choices": [2, 1, 2],
+          "text": "你乘云而上、应钟而鸣，最后选择转身。风把钟声吹散时你想，快有快的好，至少你听见的是自己敲的那一声。"
+        },
+        {
+          "choices": [2, 2, 1],
+          "text": "你乘云上来，等钟自己响，再跨过那一线。进门那一刻，钟身上的裂纹和你的心跳对上了同一下。"
+        },
+        {
+          "choices": [2, 2, 2],
+          "text": "你乘云、候钟、又转身下山。整条路你只记住了云和钟声，三千个名字一个也没记住——你说这样很好，路本就是给自己走的。"
+        }
+      ],
+      "reward": {
+        "exp": {
+          "minimum": 340,
+          "maximum": 340
+        },
+        "stones": {
+          "minimum": 440,
+          "maximum": 440
+        },
+        "items": {
+          "exp_pill": {
+            "minimum": 2,
+            "maximum": 2
+          },
+          "bloodline_essence": {
+            "minimum": 1,
+            "maximum": 1
+          }
+        }
+      }
+    }
   }
 ]

@@ -10,7 +10,7 @@ from nonebot_plugin_spirit_pet.adapters.handlers import _parse
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
-from nonebot_plugin_spirit_pet.utils.time import BEIJING, beijing_week
+from nonebot_plugin_spirit_pet.utils.time import BEIJING, beijing_day, beijing_week
 
 from .support import pet, sql
 
@@ -155,3 +155,27 @@ def test_argument_and_help_parser_native(game, play):
     assert buttons <= set(page.commands)
     assert len(buttons) <= 4
     assert not buttons & {link.command for link in page.inline_commands}
+
+
+def seed_arc_choice(game, day, amount=1, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress",
+        (user, f"stat_arc_choices_day_{day}", amount),
+    )
+
+
+def test_arc_choices_are_summed_for_the_week(game, play):
+    account(game, play)
+    seed_arc_choice(game, beijing_day(WEEK_START + DAY), 3)
+    seed_arc_choice(game, beijing_day(WEEK_START + 2 * DAY), 2)
+    seed_arc_choice(game, beijing_day(WEEK_START - 1), 9)   # previous week: excluded
+    page = play("weekly_report", now=NOW)
+    assert "奇缘：本周做出 5 次抉择。" in page.text()
+
+
+def test_arc_choices_are_zero_without_any_history(game, play):
+    account(game, play)
+    page = play("weekly_report", now=NOW)
+    assert "奇缘：本周做出 0 次抉择。" in page.text()

@@ -222,5 +222,13 @@
     "metric": "encounter_choices",
     "target": 10,
     "order": 28
+  },
+  {
+    "id": "story_keeper",
+    "name": "记事之人",
+    "description": "走完五条奇缘的每一个章节。",
+    "metric": "arc_choices",
+    "target": 15,
+    "order": 29
   }
 ]

@@ -1186,6 +1186,7 @@ class Catalog:
             "resonances_enabled": 1,
             "main_quest_claims": len(self.main_quests),
             "weekly_claims": len(self.weekly_quests),
+            "arc_choices": sum(len(arc.chapters) for arc in self.arcs.values()),
             # The season ladder lives in gameplay; tests/test_contract_audit.py
             # asserts this ceiling still equals battle_pass.PREMIUM_LEVELS.
             "battle_pass_premium_claims": 6,
@@ -1207,7 +1208,7 @@ class Catalog:
             "battles_fought", "equipment_owned", "achievements_claimed", "resonances_enabled",
             "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
             "dungeon_clears",
-            "encounter_choices", "gem_cuts",
+            "encounter_choices", "gem_cuts", "arc_choices",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):
