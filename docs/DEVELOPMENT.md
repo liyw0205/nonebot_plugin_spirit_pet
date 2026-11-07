@@ -1443,6 +1443,20 @@ QQ 按钮与蓝字分离、OneBot 文本、帮助与解析、目标页无今日�
 
 阶段边界：五包均未新增 schema、未改奖励/战斗/商店公式、未部署、未发送真实 QQ；`compileall` 与 `git diff --check` 每包均通过。
 
+### 往来看板、际遇后续、复盘对比与批量雕琢（2026-11-07，已完成）
+
+这一阶段是「系统已存在但彼此不连通」的四处缺口，四包一次普通合入，均不新增 schema、复用 schema 26 既有表。
+
+**灵宠往来看板。** `foster()` 此前要求 `灵宠寄养 <UID> <编号>` 两参，`foster_row()` 定义却无人引用，寄养双方都看不见关系。现在 `灵宠寄养` 空参只读列出两个方向：我寄养出去的（主人 UID，挂「喂食」「归还」）与被别人代管的（代管 UID，挂「归还」），并给出今日赠礼数；`foster` 命令改为 `registered=False`，让 `Game.execute` 不再在处理器前调用 `context.player()`，预览分支才可达，所有写操作仍各自 `ctx.player()` 把守。链接标签均为纯中文、按钮不超过四条。新增 `tests/test_foster_board.py`。
+
+**际遇后续。** `DailyOption` 增可选 `next` 指向续篇，新增 `daily_followups.json` 四条续篇（复用既有成本/回报带）与 `DailyFollowup` 校验；`choose()` 选中带 `next` 的选项时写 `encfollow_<次日>_<编号>`，`todays()` 次日优先读该排期、否则回退日序轮换，消费后由既有 `enc_<日>` 一次选择规则保证不重复触发；忽略或拒绝都因按日作用域的行而自然无残留。新增目录校验（未知目标、触发不符、不可达、禁止续篇再链续篇）。扩展 `tests/test_daily_encounters.py` 与 `tests/test_content.py`。
+
+**战报复盘对比。** `review()` 经新增 `repo.previous_comparable_battle()` 按参与者、`kind`、`battle_key` 取最近一场更早的同类战斗，列出双方四维逐项增减与胜负变化；`kind` 为秘境/关卡且 `battle_key` 命中真实内容时补「再战」直链（`灵宠挑战 <秘境名>` 或 `灵宠挑战关卡 <关卡名>`），其余类型只对比不给链接。仍只读、参与者门控不变。扩展 `tests/test_battle_review.py`。
+
+**批量雕琢。** `cut()` 接受可选目标等级：合计 `level..target` 各级灵石与同种宝石，任一不足整笔拒绝且零写入，单事务一次把 `gemcut_` 等级写到目标值并按级数 `counters.bump`；不填目标等级仍按单级雕琢。目标等级须大于当前等级且不超过上限。扩展 `tests/test_socket_cut.py`。
+
+聚焦验收：P1 `155 passed`、P2 `232 passed`、P3 `92 passed`、P4 `221 passed`，合并回归 `401 passed`；`compileall` 与 `git diff --check` 通过。首轮 develop CI `42318056567` 因批量雕琢帮助标签含方括号被 QQ 原生按钮渲染拒绝（`test_player_experience` 三项），修正提交 `8562c2c` 把「目标等级」提示移入描述、标签回归纯中文后 develop CI `42318663967` 全绿（3778 项，3.10/3.13/install-smoke 全 success）。功能提交 `c66a121` 与修正 `8562c2c` 已推送 develop。未部署、未发送真实 QQ；计划卡仅本地保留、不提交。教训：QQ 原生帮助按钮标签受 `[\u4e00-\u9fffA-Za-z0-9 /+\-]+` 约束，可选参数提示只能写进描述，不能写进标签。
+
 ### 开发阶段流程
 
 1. 读取 [开发路线](ROADMAP.md#当前唯一进度) 的当前唯一进度，选取下一有限任务；先核对工作区已有改动和相同状态的验证记录。
