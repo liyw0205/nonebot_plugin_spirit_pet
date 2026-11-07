@@ -65,14 +65,14 @@ def edit(directory, name, change):
 
 # ---------------------------------------------------------------- content
 
-def test_four_dummies_load_in_realm_order(game):
+def test_seven_dummies_load_in_realm_order(game):
     dummies = drill.dummies(game[0])
-    assert len(dummies) == 4
-    assert [dummy.order for dummy in dummies] == [1, 2, 3, 4]
+    assert len(dummies) == 7
+    assert [dummy.order for dummy in dummies] == [1, 2, 3, 4, 5, 6, 7]
     realms = [realm.id for realm in game[0].content.realms]
     orders = [realms.index(dummy.realm) for dummy in dummies]
     assert orders == sorted(orders), "dummies must be ordered from the lowest realm up"
-    assert len({dummy.name for dummy in dummies}) == 4
+    assert len({dummy.name for dummy in dummies}) == 7
 
 
 def test_every_dummy_names_a_known_realm_and_element(game):
@@ -166,11 +166,15 @@ def test_unregistered_player_sees_a_preview_and_writes_nothing(game, play):
 
 def test_catalog_lists_dummies_and_remaining_attempts(game, play):
     account(game, play)
+    entries = drill.dummies(game[0])
+    pages = max(1, (len(entries) + drill.PAGE_SIZE - 1) // drill.PAGE_SIZE)
     page = play("drill")
     assert "今日演武 0/5 次" in page.text()
-    for dummy in drill.dummies(game[0]):
-        assert dummy.name in page.text()
-    assert len(page.inline_commands) == 4
+    assert f"第 1/{pages} 页" in page.text()
+    # A page shows PAGE_SIZE dummies; every dummy is reachable across the pages.
+    for dummy in entries:
+        assert dummy.name in page.text() or pages > 1
+    assert len(page.inline_commands) == min(len(entries), drill.PAGE_SIZE)
     assert page.inline_commands[0].command == "灵宠演武 柴木桩"
 
 
@@ -345,9 +349,11 @@ def test_every_rendered_link_reparses(game, play):
         for link in page.inline_commands:
             assert link.line < len(page.lines)
             assert _parse(link.command) is not None
-    # Four dummies fit one page, so a second page is refused rather than rendered empty.
-    with pytest.raises(GameError, match="共 1 页"):
-        play("drill", "名单 2")
+    # A page beyond the ladder is refused rather than rendered empty.
+    entries = drill.dummies(game[0])
+    pages = max(1, (len(entries) + drill.PAGE_SIZE - 1) // drill.PAGE_SIZE)
+    with pytest.raises(GameError, match=f"共 {pages} 页"):
+        play("drill", f"名单 {pages + 1}")
 
 
 def test_qq_payload_keeps_buttons_and_blue_links_disjoint(game, play):

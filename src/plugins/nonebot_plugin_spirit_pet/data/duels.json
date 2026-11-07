@@ -58,5 +58,29 @@
       "stones": {"minimum": 360, "maximum": 440},
       "items": {"forge_ore": {"minimum": 3, "maximum": 3}, "bloodline_essence": {"minimum": 1, "maximum": 1}}
     }
+  },
+  {
+    "id": "qingming",
+    "name": "青冥剑主",
+    "description": "化神境青冥护法，四维锚定秘境太虚剑魄，出手又快又准，只守不攻会被压在回合上限前。",
+    "realm": "huashen",
+    "stats": {"hp": 8600, "attack": 800, "defense": 300, "speed": 880},
+    "reward": {
+      "exp": {"minimum": 560, "maximum": 640},
+      "stones": {"minimum": 480, "maximum": 580},
+      "items": {"forge_ore": {"minimum": 3, "maximum": 4}, "bloodline_essence": {"minimum": 2, "maximum": 2}}
+    }
+  },
+  {
+    "id": "jiuxiao",
+    "name": "九霄劫主",
+    "description": "渡劫境九霄护法，四维锚定秘境九霄劫灵，攻守皆臻极处，是本作斗法的最后一位对手。",
+    "realm": "dujie",
+    "stats": {"hp": 15000, "attack": 1250, "defense": 480, "speed": 1450},
+    "reward": {
+      "exp": {"minimum": 760, "maximum": 860},
+      "stones": {"minimum": 620, "maximum": 740},
+      "items": {"forge_ore": {"minimum": 4, "maximum": 5}, "bloodline_essence": {"minimum": 2, "maximum": 3}, "exp_pill": {"minimum": 1, "maximum": 2}}
+    }
   }
 ]

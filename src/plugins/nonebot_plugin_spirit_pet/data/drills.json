@@ -38,5 +38,35 @@
     "elements": ["fire"],
     "primary_element": "fire",
     "order": 4
+  },
+  {
+    "id": "frost_post",
+    "name": "霜纹桩",
+    "description": "元婴境的霜纹桩四维直接取自秘境霜渊君主，是检验减伤与续航的一关。",
+    "realm": "yuanying",
+    "stats": {"hp": 4500, "attack": 450, "defense": 240, "speed": 260},
+    "elements": ["ice"],
+    "primary_element": "ice",
+    "order": 5
+  },
+  {
+    "id": "void_post",
+    "name": "太虚桩",
+    "description": "化神境的太虚桩按秘境太虚剑魄打造，出手极快，速度不足会被压制。",
+    "realm": "huashen",
+    "stats": {"hp": 7400, "attack": 800, "defense": 450, "speed": 560},
+    "elements": ["metal", "wind"],
+    "primary_element": "metal",
+    "order": 6
+  },
+  {
+    "id": "tribulation_post",
+    "name": "劫纹桩",
+    "description": "渡劫境的劫纹桩照九霄劫灵铸成，四维俱为当前最高，是演武场的最后一关。",
+    "realm": "dujie",
+    "stats": {"hp": 12500, "attack": 1300, "defense": 700, "speed": 1000},
+    "elements": ["thunder", "wind"],
+    "primary_element": "thunder",
+    "order": 7
   }
 ]

@@ -72,8 +72,10 @@ def stub(hp=0, enemy_hp=0, winner=-1, rounds=1):
 
 def test_content_ladder_is_ordered_and_valid(game):
     entries = ladder(game)
-    assert len(entries) == 5
-    assert [entry.realm for entry in entries] == ["qiling", "ningqi", "zhuji", "jindan", "yuanying"]
+    assert len(entries) == 7
+    assert [entry.realm for entry in entries] == [
+        "qiling", "ningqi", "zhuji", "jindan", "yuanying", "huashen", "dujie",
+    ]
     assert all(entry.stats.hp > 0 and entry.reward.items for entry in entries)
     rule = game[0].content.rules.duel
     assert rule.energy == 3 and rule.exchanges == 12
@@ -311,7 +313,8 @@ def test_help_objectives_and_parse_contract(game, play):
     guide = play("help", "秘境与关卡")
     assert "灵宠斗法" in guide.text() and "认输" in guide.text()
     objectives = play("objectives")
-    assert "斗法：本周已胜 0/5 位护法 · 未开局" in objectives.text()
+    total = len(duel.opponents(game[0]))
+    assert f"斗法：本周已胜 0/{total} 位护法 · 未开局" in objectives.text()
     assert handlers._parse("灵宠斗法") == ("duel", "")
     assert handlers._parse("灵宠斗法 抢攻") == ("duel", "抢攻")
 
