@@ -893,7 +893,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 奇缘定义
 
-`arcs.json` 是奇缘对象数组，由 `domain/arc_content.py` 校验。每条奇缘定义 `id`、`name`、`order`、`description`、`requires`（前置奇缘 id 或 null）、`min_realm`、`chapters` 与 `finale`；每章含 `order`、`title`、`text` 与**恰好两个** `options`（`id`、`label`、`text`、`reward`），终章含 `text` 与 `reward`。
+`arcs.json` 是奇缘对象数组，由 `domain/arc_content.py` 校验。每条奇缘定义 `id`、`name`、`order`、`description`、`requires`（前置奇缘 id 或 null）、`min_realm`、`chapters` 与 `finale`；每章含 `order`、`title`、`text` 与**恰好两个** `options`（`id`、`label`、`text`、`reward`），终章含 `text`、`reward` 与可选的 `paths`。
 
 ```json
 {
@@ -914,11 +914,18 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
       ]
     }
   ],
-  "finale": {"text": "雪停时，你把那盏灯留在山门。", "reward": {"exp": {"minimum": 150, "maximum": 150}, "stones": {"minimum": 200, "maximum": 200}, "items": {}}}
+  "finale": {
+    "text": "雪停时，你把那盏灯留在山门。",
+    "reward": {"exp": {"minimum": 150, "maximum": 150}, "stones": {"minimum": 200, "maximum": 200}, "items": {}},
+    "paths": [
+      {"choices": [1, 1], "text": "你扶过他，也借过灯；此后山道总有第二串脚印。"},
+      {"choices": [2, 2], "text": "你旁观、独行，山门只剩一盏灯和一双冻硬的鞋。"}
+    ]
+  }
 }
 ```
 
-校验规则：章序号从 1 连续、每章两个选项且选项 id 不重复、`requires` 必须指向另一条真实奇缘且不能指向自己、境界与全部奖励物品必须存在。进度存 `quest_progress` 的 `arc_<id>_step`、`arc_<id>_pick_<章>`、`arc_<id>_done`，不新增表列；选项记录为 1-based 序号而不是 id，因为 `progress` 只接受整数。
+校验规则：章序号从 1 连续、每章两个选项且选项 id 不重复、`requires` 必须指向另一条真实奇缘且不能指向自己、境界与全部奖励物品必须存在。`finale.paths` 可选，缺省为空数组（向后兼容，旧文件无需改动）：每条 `choices` 必须与章数等长、每项取值 1-2，且同一奇缘内不能出现重复路径；路径数上限 16（三章恰好覆盖 2³=8 种组合）。三条已发行奇缘各自补齐全部 8 条路径文案。进度存 `quest_progress` 的 `arc_<id>_step`、`arc_<id>_pick_<章>`、`arc_<id>_done`，不新增表列；选项记录为 1-based 序号而不是 id，因为 `progress` 只接受整数。终章结算时按已记录的 `pick` 序列匹配 `paths`，无匹配则回落到 `finale.text`。
 
 ## 守关定义
 

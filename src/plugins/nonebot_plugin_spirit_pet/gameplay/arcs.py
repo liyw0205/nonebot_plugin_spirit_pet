@@ -14,6 +14,9 @@ from ..domain.models import GameError, InlineCommand, Reply
 STEP = "arc_"
 PICK = "_pick_"
 DONE = "_done"
+# Accepted in place of a chapter option: reading the current chapter again.
+# "继续" is the keyword older replies advertised, so it stays compatible.
+CONTINUE = frozenset({"继续", "续读"})
 
 
 def arcs(ctx: Context) -> list[Arc]:
@@ -50,6 +53,34 @@ def pick_of(ctx: Context, arc: Arc, chapter: int, user_id: str | None = None) ->
 
 def _realm_index(ctx: Context, realm_id: str) -> int:
     return next(index for index, realm in enumerate(ctx.content.realms) if realm.id == realm_id)
+
+
+def _pick_index(ctx: Context, arc: Arc, chapter: int, user_id: str | None = None) -> int | None:
+    """The recorded 1-based option index, or None when absent/out of range."""
+    value = pick_of(ctx, arc, chapter, user_id)
+    if 1 <= value <= len(arc.chapters[chapter - 1].options):
+        return value
+    return None
+
+
+def _recall(ctx: Context, arc: Arc, upto: int, user_id: str | None = None) -> str | None:
+    """Earlier recorded choices as one line; None when no valid pick exists yet."""
+    parts = []
+    for chapter in range(1, upto):
+        index = _pick_index(ctx, arc, chapter, user_id)
+        if index is not None:
+            parts.append(f"第{chapter}章 {arc.chapters[chapter - 1].options[index - 1].label}")
+    return "前情：" + " · ".join(parts) if parts else None
+
+
+def _ending(ctx: Context, arc: Arc, user_id: str | None = None) -> str:
+    """The authored ending for the recorded path, else the default finale text."""
+    picks = [_pick_index(ctx, arc, chapter, user_id) for chapter in range(1, arc.length + 1)]
+    if all(index is not None for index in picks):
+        for ending in arc.finale.paths:
+            if list(ending.choices) == picks:
+                return ending.text
+    return arc.finale.text
 
 
 def unlock_reason(ctx: Context, arc: Arc, user_id: str | None = None) -> str | None:
@@ -122,6 +153,9 @@ def detail(ctx: Context, arc: Arc) -> Reply:
         raise GameError(f"{arc.name}已完成，无法重走。")
     chapter = arc.chapters[current - 1]
     lines = [f"{arc.name} · 第 {current}/{arc.length} 章", chapter.title, chapter.text]
+    recall = _recall(ctx, arc, current)
+    if recall:
+        lines.append(recall)
     links = []
     for option in chapter.options:
         lines.append(f"{option.label}：{option.text} · 奖励 {_reward_text(ctx, option.reward)}")
@@ -165,20 +199,29 @@ def choose(ctx: Context, arc: Arc, text: str) -> Reply:
     if option is None:
         raise GameError(f"{arc.name}第 {current} 章没有该选项：{text}。")
 
-    lines = [f"{arc.name} · 第 {current} 章 · {chapter.title}", option.text]
+    lines = [f"{arc.name} · 第 {current} 章 · {chapter.title}"]
+    recall = _recall(ctx, arc, current)
+    if recall:
+        lines.append(recall)
+    lines.append(option.text)
     _pay(ctx, option.reward, lines)
     _set(ctx, f"{STEP}{arc.id}{PICK}{current}", chapter.options.index(option) + 1)
     _set(ctx, f"{STEP}{arc.id}_step", current + 1)
 
     if current >= arc.length:
         _set(ctx, f"{STEP}{arc.id}{DONE}", 1)
-        lines.append(f"【{arc.name} · 终章】{arc.finale.text}")
+        lines.append(f"【{arc.name} · 终章】{_ending(ctx, arc)}")
         _pay(ctx, arc.finale.reward, lines)
         return Reply(f"{arc.name} · 完", tuple(lines), ("灵宠奇缘", "灵宠目标", "我的灵宠"))
 
     following = arc.chapters[current]
     lines.append(f"下一章：{following.title}（灵宠奇缘 {arc.name} 继续）。")
-    return Reply(f"{arc.name} · 第 {current} 章", tuple(lines), ("灵宠奇缘", "灵宠目标"))
+    return Reply(
+        f"{arc.name} · 第 {current} 章",
+        tuple(lines),
+        ("灵宠奇缘", "灵宠目标"),
+        (InlineCommand(len(lines) - 1, "继续", f"灵宠奇缘 {arc.name} 继续"),),
+    )
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
@@ -190,7 +233,11 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         raise GameError("未找到该奇缘，先发送 灵宠奇缘 查看列表。")
     if len(parts) == 1:
         return detail(ctx, arc)
-    return choose(ctx, arc, " ".join(parts[1:]))
+    text = " ".join(parts[1:])
+    if text in CONTINUE:
+        # Read-only: reopens the current chapter, never pays a reward or advances a step.
+        return detail(ctx, arc)
+    return choose(ctx, arc, text)
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

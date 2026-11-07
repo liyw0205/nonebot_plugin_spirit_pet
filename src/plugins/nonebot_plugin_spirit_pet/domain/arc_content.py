@@ -22,8 +22,21 @@ class ArcChapter(Definition):
 
 
 class ArcFinale(Definition):
+    """Default finale plus optional per-path endings keyed by the recorded picks."""
+
     text: str
     reward: Reward
+    paths: list["ArcEnding"] = Field(default_factory=list, max_length=16)
+
+
+class ArcEnding(Definition):
+    """One authored ending; ``choices`` is the 1-based option index per chapter."""
+
+    choices: list[Annotated[int, Field(ge=1, le=2)]]
+    text: str
+
+
+ArcFinale.model_rebuild()
 
 
 class Arc(Definition):
@@ -49,6 +62,14 @@ class Arc(Definition):
                 raise ValueError(f"arc {self.id} chapter {chapter.order} has duplicate options")
         if self.requires is not None and self.requires == self.id:
             raise ValueError(f"arc {self.id} cannot require itself")
+        seen = set()
+        for ending in self.finale.paths:
+            if len(ending.choices) != len(self.chapters):
+                raise ValueError(f"arc {self.id} ending must choose one option per chapter")
+            key = tuple(ending.choices)
+            if key in seen:
+                raise ValueError(f"arc {self.id} has duplicate ending {key}")
+            seen.add(key)
         return self
 
     @property
