@@ -5,9 +5,16 @@ page is stable within a day and rotates with the next one. An option always
 takes something (stones or items) before it pays out, and the choice is written
 once as ``enc_<day>`` with the 1-based option index, which also makes a replay
 return the cached reply instead of paying twice.
+
+An option may name a follow-up encounter. Choosing it schedules that follow-up
+for the NEXT Beijing day as ``encfollow_<day>_<id>`` (unclaimed). ``todays``
+prefers an active scheduled follow-up over the day rotation; resolving the
+follow-up claims its schedule row so it can never fire twice. Ignoring a
+follow-up leaves nothing behind: the schedule key is day-scoped, so a past day's
+row is never surfaced again.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
@@ -16,6 +23,7 @@ from . import counters
 from .rewards import grant
 
 PREFIX = "enc_"
+FOLLOW_PREFIX = "encfollow_"
 
 
 def _seed(user_id: str) -> int:
@@ -26,12 +34,54 @@ def _day_ordinal(now: int) -> int:
     return datetime.fromtimestamp(now, BEIJING).date().toordinal()
 
 
+def _tomorrow(now: int) -> str:
+    day = datetime.fromtimestamp(now, BEIJING).date() + timedelta(days=1)
+    return day.isoformat()
+
+
+def _follow_key(day: str, follow_id: str) -> str:
+    return f"{FOLLOW_PREFIX}{day}_{follow_id}"
+
+
+def scheduled(ctx: Context, user_id: str | None = None):
+    """The follow-up assigned to today, or None.
+
+    Returns ``(followup, quest_id)``. The row is day-scoped (the key embeds the
+    scheduled day), so it matches ``todays`` on exactly one day and can never
+    fire twice; ``claimed`` only records whether the player already resolved it,
+    which the ordinary ``enc_<day>`` one-choice marker enforces. A row for a past
+    day is never read, so ignoring a follow-up leaves no residue.
+    """
+    owner = user_id or ctx.user_id
+    today = beijing_day(ctx.now)
+    prefix = f"{FOLLOW_PREFIX}{today}_"
+    row = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? "
+        "AND substr(quest_id, 1, ?)=? ORDER BY quest_id LIMIT 1",
+        (owner, len(prefix), prefix),
+    ).fetchone()
+    if row is None:
+        return None
+    follow_id = row["quest_id"][len(prefix):]
+    follow = ctx.content.daily_followups.get(follow_id)
+    if follow is None:  # content retired: the stale row is simply never rendered
+        return None
+    return follow, row["quest_id"]
+
+
 def todays(ctx: Context, user_id: str | None = None):
-    """The encounter this player meets today, or None when content is empty."""
+    """The encounter this player meets today, or None when content is empty.
+
+    A scheduled follow-up takes precedence over the deterministic day rotation;
+    otherwise the day-ordinal draw is unchanged.
+    """
+    owner = user_id or ctx.user_id
+    pending = scheduled(ctx, owner)
+    if pending is not None:
+        return pending[0]
     entries = [ctx.content.daily_encounters[key] for key in sorted(ctx.content.daily_encounters)]
     if not entries:
         return None
-    owner = user_id or ctx.user_id
     return entries[(_day_ordinal(ctx.now) + _seed(owner)) % len(entries)]
 
 
@@ -109,15 +159,21 @@ def page(ctx: Context, arg: str) -> Reply:
     encounter = todays(ctx)
     if encounter is None:
         return Reply("灵宠际遇", ("今日没有际遇。",), ("我的灵宠",))
+    followup = scheduled(ctx) is not None
     taken = chosen(ctx)
     if taken is not None:
-        return Reply("灵宠际遇", (
+        lines = [
             f"{encounter.name} · 今日已了。",
             taken.text,
             _reward_text(ctx, taken) and f"所得：{_reward_text(ctx, taken)}。",
-            "明日的路会通向别处。",
-        ), ("灵宠际遇", "我的灵宠", "灵宠目标"))
-    lines = [f"{encounter.name}", encounter.description, "今日可选："]
+        ]
+        if followup:
+            lines.append("这一程承接昨日的选择，明日的路会通向别处。")
+        else:
+            lines.append("明日的路会通向别处。")
+        return Reply("灵宠际遇", tuple(lines), ("灵宠际遇", "我的灵宠", "灵宠目标"))
+    intro = "承接昨日的抉择：" if followup else ""
+    lines = [f"{intro}{encounter.name}", encounter.description, "今日可选："]
     links = []
     for option in encounter.options:
         lines.append(
@@ -159,13 +215,32 @@ def choose(ctx: Context, arg: str) -> Reply:
         ctx.repo.consume_item(player.user_id, item_id, amount)
     gained = _pay_out(ctx, option, player.user_id)
     index = encounter.options.index(option) + 1
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
-        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
-        (player.user_id, _key(ctx.now), index),
-    )
+    with ctx.repo.conn:
+        ctx.repo.conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+            " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
+            (player.user_id, _key(ctx.now), index),
+        )
+        # Resolving a scheduled follow-up consumes it, so it can never fire twice.
+        pending = scheduled(ctx)
+        if pending is not None and pending[0].id == encounter.id:
+            ctx.repo.conn.execute(
+                "UPDATE quest_progress SET claimed=1 WHERE user_id=? AND quest_id=?",
+                (player.user_id, pending[1]),
+            )
+        # An option may open a follow-up for the next day (a decision that carries on).
+        if option.next is not None:
+            ctx.repo.conn.execute(
+                "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)"
+                " ON CONFLICT(user_id, quest_id) DO NOTHING",
+                (player.user_id, _follow_key(_tomorrow(ctx.now), option.next)),
+            )
     counters.bump(ctx, "encounter_choices")
     lines = [f"{encounter.name} · {option.label}", option.text, *gained]
+    if option.next is not None:
+        follow = ctx.content.daily_followups.get(option.next)
+        if follow is not None:
+            lines.append(f"此择留待明日：{follow.name} 会接上今日的路。")
     return Reply("灵宠际遇", tuple(lines), ("灵宠际遇", "我的灵宠", "灵宠目标"))
 
 

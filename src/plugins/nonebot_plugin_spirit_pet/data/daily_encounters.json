@@ -11,6 +11,7 @@
         "cost": {
           "stones": 60
         },
+        "next": "quarry_debt",
         "reward": {
           "stones": {
             "minimum": 0,
@@ -62,6 +63,7 @@
         "cost": {
           "stones": 40
         },
+        "next": "spring_echo",
         "reward": {
           "stones": {
             "minimum": 0,
@@ -113,6 +115,7 @@
         "cost": {
           "stones": 120
         },
+        "next": "stranger_return",
         "reward": {
           "stones": {
             "minimum": 0,
@@ -266,6 +269,7 @@
         "cost": {
           "stones": 150
         },
+        "next": "stele_secret",
         "reward": {
           "stones": {
             "minimum": 0,

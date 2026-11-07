@@ -26,6 +26,9 @@ class DailyOption(Definition):
     text: str
     cost: DailyCost
     reward: Reward
+    # An id in `daily_followups.json`: picking this option schedules that
+    # encounter for the next Beijing day. None keeps the ordinary one-day story.
+    next: Identifier | None = None
 
     @model_validator(mode="after")
     def require_reward(self):
@@ -46,3 +49,15 @@ class DailyEncounter(Definition):
         if len({option.id for option in self.options}) != len(self.options):
             raise ValueError("daily encounter option ids must be unique")
         return self
+
+
+class DailyFollowup(DailyEncounter):
+    """An encounter unlocked by a prior day's choice, not by the day rotation.
+
+    ``trigger`` names the ordinary ``daily_encounters`` entry whose option points
+    here, so the catalog can prove every follow-up is reachable from content.
+    Follow-up options may themselves carry ``next`` for a short chain, but the
+    shipped four stay one-shot to keep the loop bounded.
+    """
+
+    trigger: Identifier

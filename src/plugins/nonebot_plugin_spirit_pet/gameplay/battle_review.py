@@ -138,6 +138,74 @@ def _affinity_action(ctx: Context) -> tuple[str, str] | None:
     return None
 
 
+def _outcome_of(row, side: int) -> str:
+    if row["winner_side"] == -1:
+        return "平局"
+    return "胜利" if row["winner_side"] == side else "败北"
+
+
+def _delta_text(current: dict[str, int], previous: dict[str, int]) -> str:
+    parts = []
+    for key, label in STAT_LABELS.items():
+        diff = current[key] - previous[key]
+        parts.append(f"{label} {diff:+d}")
+    return " ".join(parts)
+
+
+def _rematch_command(ctx: Context, row) -> str | None:
+    """A real challenge command only for kinds/keys that map to shipped content.
+
+    ``pve`` dungeons and ``pve_stage`` chapters are replayable by name; other
+    battle keys (ambush, world boss, tower, …) have no single owning command, so
+    no link is offered rather than guessing one.
+    """
+    key = row["battle_key"]
+    if row["kind"] == "pve":
+        dungeon = ctx.content.dungeons.get(key)
+        if dungeon is None:
+            return None
+        verb = "灵宠组队挑战" if dungeon.team else "灵宠挑战"
+        return f"{verb} {dungeon.name}"
+    if row["kind"] == "pve_stage":
+        stage = ctx.content.stages.get(key)
+        if stage is None:
+            return None
+        return f"灵宠挑战关卡 {stage.name}"
+    return None
+
+
+def _comparison(ctx: Context, row, mine: list[dict], theirs: list[dict], side: int):
+    """Return extra lines and links for the previous comparable battle, if any.
+
+    Read-only: it only reads another immutable snapshot. Participant gating is
+    inherited from ``battle_report``; the lookup is scoped to this participant.
+    """
+    previous = ctx.repo.previous_comparable_battle(
+        ctx.user_id, before_played_at=row["played_at"], before_battle_id=row["battle_id"],
+        kind=row["kind"], battle_key=row["battle_key"],
+    )
+    if previous is None:
+        return (), ()
+    prev_snapshot = json.loads(previous["snapshot"])
+    prev_side = int(previous["side"])
+    prev_mine = _team(prev_snapshot, prev_side)
+    prev_theirs = _team(prev_snapshot, _other_side(prev_snapshot, prev_side))
+    outcome = _outcome_of(row, side)
+    prev_outcome = _outcome_of(previous, prev_side)
+    lines = [
+        f"对比上一场同类战斗（战报 #{previous['battle_id']}）：",
+        f"  我方四维变化 {_delta_text(_totals(mine), _totals(prev_mine))}",
+        f"  对方四维变化 {_delta_text(_totals(theirs), _totals(prev_theirs))}",
+        f"  结果 {prev_outcome} → {outcome}",
+    ]
+    links = []
+    command = _rematch_command(ctx, row)
+    if command is not None:
+        lines.append("还想再试一次？")
+        links.append(InlineCommand(len(lines) - 1, "再战", command))
+    return tuple(lines), tuple(links)
+
+
 def review(ctx: Context, row) -> Reply:
     snapshot = json.loads(row["snapshot"])
     side = int(row["side"])
@@ -159,6 +227,14 @@ def review(ctx: Context, row) -> Reply:
     )
     lines.append(f"我方阵容：灵术 {own_skills} 门 · 装备 {own_gear} 件 · 强化合计 +{own_level}")
 
+    comparison_lines, comparison_links = _comparison(ctx, row, mine, theirs, side)
+    comparison_start = len(lines)
+    lines.extend(comparison_lines)
+    links = [
+        InlineCommand(comparison_start + link.line, link.label, link.command)
+        for link in comparison_links
+    ]
+
     actions = [
         action for action in (
             _enhancement_action(ctx),
@@ -168,7 +244,6 @@ def review(ctx: Context, row) -> Reply:
             _affinity_action(ctx),
         ) if action is not None
     ][:MAX_ACTIONS]
-    links = []
     if actions:
         lines.append("下一步：")
         for text, command in actions:

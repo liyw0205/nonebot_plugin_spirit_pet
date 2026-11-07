@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from nonebot_plugin_spirit_pet.adapters.handlers import _parse
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import sql
@@ -11,15 +12,15 @@ from .support import sql
 NOW = 1_800_000_000
 
 
-def seed_record(store, user="u1", winner=1, snapshot=None):
+def seed_record(store, user="u1", winner=1, snapshot=None, *, kind="pve", battle_key="forest", played=NOW, operation=None):
     sql(
         store,
         "INSERT INTO battle_records(operation_id, initiator_id, kind, battle_key, title,"
         " winner_side, rounds, played_at, reply, snapshot, battle_log)"
-        " VALUES (?, ?, 'pve', 'forest', '青岚林', ?, 3, ?, '战报', ?, '[]')",
+        " VALUES (?, ?, ?, ?, '青岚林', ?, 3, ?, '战报', ?, '[]')",
         (
-            f"record-{user}-{winner}", user, winner, NOW,
-            json.dumps(snapshot or default_snapshot(), ensure_ascii=False),
+            operation or f"record-{user}-{winner}-{played}-{battle_key}", user, kind, battle_key,
+            winner, played, json.dumps(snapshot or default_snapshot(), ensure_ascii=False),
         ),
     )
     battle_id = sql(store, "SELECT MAX(battle_id) AS id FROM battle_records")[0]["id"]
@@ -46,6 +47,14 @@ def default_snapshot(affinity=40):
     return {"version": 1, "teams": [
         {"side": 0, "members": [mine]},
         {"side": 1, "members": [theirs]},
+    ]}
+
+
+def stats_snapshot(mine_stats, theirs_stats):
+    """A minimal snapshot with explicit four-stat totals for delta assertions."""
+    return {"version": 1, "teams": [
+        {"side": 0, "members": [{"pet_name": "青鸾", "stats": mine_stats, "skills": [], "equipment": []}]},
+        {"side": 1, "members": [{"pet_name": "影狼", "stats": theirs_stats, "skills": [], "equipment": []}]},
     ]}
 
 
@@ -123,3 +132,91 @@ def test_low_affinity_is_called_out(game, play):
     battle_id = seed_record(game[1], snapshot=default_snapshot(affinity=40))
     reply = play("battle_reports", f"复盘 {battle_id}", now=NOW)
     assert "心契护佑" in reply.text()
+
+
+# ------------------------------------------------------------- comparison
+def test_the_first_battle_of_a_kind_has_no_comparison(game, play):
+    play("adopt", "青鸾", now=NOW)
+    battle_id = seed_record(game[1])
+    reply = play("battle_reports", f"复盘 {battle_id}", now=NOW)
+    assert "对比上一场" not in reply.text()
+    assert not any(link.label == "再战" for link in reply.inline_commands)
+
+
+def test_a_previous_comparable_battle_shows_exact_deltas_and_outcome(game, play):
+    play("adopt", "青鸾", now=NOW)
+    older = stats_snapshot(
+        {"hp": 100, "attack": 20, "defense": 10, "speed": 15},
+        {"hp": 120, "attack": 22, "defense": 12, "speed": 14},
+    )
+    newer = stats_snapshot(
+        {"hp": 140, "attack": 30, "defense": 8, "speed": 15},
+        {"hp": 100, "attack": 22, "defense": 18, "speed": 10},
+    )
+    first_id = seed_record(game[1], winner=1, snapshot=older, played=NOW - 100, operation="older")
+    second_id = seed_record(game[1], winner=0, snapshot=newer, played=NOW, operation="newer")
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    text = reply.text()
+    assert f"对比上一场同类战斗（战报 #{first_id}）" in text
+    # mine: +40 / +10 / −2 / +0 ; theirs: −20 / +0 / +6 / −4
+    assert "我方四维变化 气血 +40 攻击 +10 防御 -2 速度 +0" in text
+    assert "对方四维变化 气血 -20 攻击 +0 防御 +6 速度 -4" in text
+    assert "结果 败北 → 胜利" in text
+
+
+def test_the_rematch_link_points_at_a_real_dungeon_command(game, play):
+    play("adopt", "青鸾", now=NOW)
+    seed_record(game[1], winner=1, played=NOW - 100, operation="older")
+    second_id = seed_record(game[1], winner=1, played=NOW, operation="newer")
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    rematch = [link for link in reply.inline_commands if link.label == "再战"]
+    assert len(rematch) == 1
+    assert rematch[0].command == "灵宠挑战 青岚林"
+    assert reply.lines[rematch[0].line] == "还想再试一次？"
+    assert _parse(rematch[0].command) == ("challenge", "青岚林")
+
+
+def test_a_kind_without_an_owning_command_gets_no_rematch_link(game, play):
+    play("adopt", "青鸾", now=NOW)
+    # spar has no dungeon/stage owning command; comparison still renders.
+    seed_record(game[1], winner=1, played=NOW - 100, operation="older", kind="spar", battle_key="")
+    second_id = seed_record(game[1], winner=1, played=NOW, operation="newer", kind="spar", battle_key="")
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    assert "对比上一场" in reply.text()
+    assert not any(link.label == "再战" for link in reply.inline_commands)
+
+
+def test_a_stage_battle_links_its_stage_challenge_command(game, play):
+    play("adopt", "青鸾", now=NOW)
+    seed_record(game[1], winner=1, played=NOW - 100, operation="older", kind="pve_stage", battle_key="stage_01")
+    second_id = seed_record(game[1], winner=1, played=NOW, operation="newer", kind="pve_stage", battle_key="stage_01")
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    rematch = [link for link in reply.inline_commands if link.label == "再战"]
+    assert len(rematch) == 1
+    assert rematch[0].command == "灵宠挑战关卡 青木试锋"
+
+
+def test_comparison_ignores_other_players_kinds_and_keys(game, play):
+    play("adopt", "青鸾", now=NOW)
+    play("adopt", "玄狐", user="u2", now=NOW)
+    # Different participant, different kind, different key, and a battle AFTER this one.
+    seed_record(game[1], winner=1, played=NOW - 100, operation="other-user", user="u2")
+    seed_record(game[1], winner=1, played=NOW - 100, operation="other-kind", kind="spar", battle_key="")
+    seed_record(game[1], winner=1, played=NOW - 100, operation="other-key", battle_key="moon")
+    second_id = seed_record(game[1], winner=1, played=NOW, operation="newer")
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    # No earlier row shares (u1, pve, forest), so no comparison.
+    assert "对比上一场" not in reply.text()
+
+
+def test_the_comparison_is_read_only_and_participant_gated(game, play):
+    play("adopt", "青鸾", now=NOW)
+    play("adopt", "玄狐", user="u2", now=NOW)
+    seed_record(game[1], winner=1, played=NOW - 100, operation="older")
+    second_id = seed_record(game[1], winner=1, played=NOW, operation="newer")
+    before = snapshot_tables(game[1])
+    reply = play("battle_reports", f"复盘 {second_id}", now=NOW)
+    assert "对比上一场" in reply.text()
+    assert snapshot_tables(game[1]) == before
+    with pytest.raises(GameError, match="战报不存在"):
+        play("battle_reports", f"复盘 {second_id}", user="u2", now=NOW)

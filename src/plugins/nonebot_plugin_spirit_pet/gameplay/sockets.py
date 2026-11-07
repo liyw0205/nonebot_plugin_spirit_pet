@@ -125,11 +125,19 @@ def _link(ctx: Context, pet, arg: str) -> Reply:
 
 
 def cut(ctx: Context, arg: str) -> Reply:
-    if not arg.strip():
-        raise GameError("格式：灵宠镶嵌 雕琢 <槽位>。")
+    """Refine a socketed gem one level, or straight to an optional target level.
+
+    A target level is settled atomically: every level from the current one up to
+    the target is priced from the cut ladder, both stones and gems are checked
+    before anything is written, and the whole batch lands in one transaction, so
+    a shortfall leaves the slot, stones and gem inventory untouched.
+    """
+    parts = arg.split()
+    if not parts or len(parts) > 2:
+        raise GameError("格式：灵宠镶嵌 雕琢 <槽位> [目标等级]。")
     player = ctx.player()
     pet = ctx.pet()
-    slot = _slot(ctx, arg.strip())
+    slot = _slot(ctx, parts[0])
     gem = socketed(ctx, pet.pet_id, slot)
     if gem is None:
         raise GameError(f"{SLOT_NAMES[slot]}槽位没有宝石，无法雕琢。")
@@ -137,32 +145,44 @@ def cut(ctx: Context, arg: str) -> Reply:
     level = cut_level(ctx, pet.pet_id, slot)
     if level >= rule.max_level:
         raise GameError(f"{SLOT_NAMES[slot]}已雕琢到 +{level}，无法再提升。")
-    stones = rule.stones[level]
-    if player.stones < stones or _owned(ctx, gem.item_id) < rule.gem_cost:
+    target = level + 1
+    if len(parts) == 2:
+        if not parts[1].isdecimal() or not 1 <= int(parts[1]) <= rule.max_level:
+            raise GameError(f"目标等级须为 1-{rule.max_level} 的整数。")
+        target = int(parts[1])
+        if target <= level:
+            raise GameError(f"{SLOT_NAMES[slot]}当前 +{level}，目标等级须更高。")
+
+    steps = target - level
+    stones = sum(rule.stones[step] for step in range(level, target))
+    gem_cost = rule.gem_cost * steps
+    owned_gems = _owned(ctx, gem.item_id)
+    if player.stones < stones or owned_gems < gem_cost:
+        span = f"（+{level}→+{target}，共 {steps} 级）" if steps > 1 else ""
         raise GameError(
-            f"雕琢需要 {stones} 灵石与{gem.name} {rule.gem_cost} 颗；"
-            f"当前灵石 {player.stones}、{gem.name} {_owned(ctx, gem.item_id)} 颗。"
+            f"雕琢需要 {stones} 灵石与{gem.name} {gem_cost} 颗{span}；"
+            f"当前灵石 {player.stones}、{gem.name} {owned_gems} 颗。"
         )
     with ctx.repo.conn:
         player.stones -= stones
-        ctx.repo.consume_item(player.user_id, gem.item_id, rule.gem_cost)
+        ctx.repo.consume_item(player.user_id, gem.item_id, gem_cost)
         ctx.repo.conn.execute(
             "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
             " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
-            (player.user_id, f"{CUT_PREFIX}{pet.pet_id}_{slot}", level + 1),
+            (player.user_id, f"{CUT_PREFIX}{pet.pet_id}_{slot}", target),
         )
-    counters.bump(ctx, "gem_cuts")
+    counters.bump(ctx, "gem_cuts", steps)
     note_prep_change(ctx, pet)
-    total = int((gem.rate + rule.rate_step * (level + 1)) * 100)
+    total = int((gem.rate + rule.rate_step * target) * 100)
     return Reply("宝石雕琢", (
-        f"{pet.name}的{SLOT_NAMES[slot]}雕琢至 +{level + 1}，{STAT_NAMES[gem.stat]} +{total}%。",
-        f"消耗 {stones} 灵石与{gem.name} {rule.gem_cost} 颗；雕琢属于槽位，换宝石不会清零。",
+        f"{pet.name}的{SLOT_NAMES[slot]}雕琢至 +{target}，{STAT_NAMES[gem.stat]} +{total}%。",
+        f"消耗 {stones} 灵石与{gem.name} {gem_cost} 颗；雕琢属于槽位，换宝石不会清零。",
     ), ("灵宠镶嵌", "灵宠装备", "灵宠背包"))
 
 
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠镶嵌 [<槽位> <宝石> | 卸下 <槽位> | 雕琢 <槽位>]。")
+        raise GameError("格式：灵宠镶嵌 [<槽位> <宝石> | 卸下 <槽位> | 雕琢 <槽位> [目标等级]]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠镶嵌",

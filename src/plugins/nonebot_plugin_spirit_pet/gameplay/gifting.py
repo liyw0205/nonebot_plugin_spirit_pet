@@ -85,6 +85,58 @@ def foster_row(ctx: Context, pet_id: int):
     ).fetchone()
 
 
+def board(ctx: Context) -> Reply:
+    """Read-only board of every open handoff: fosters in both directions."""
+    player = ctx.repo.player(ctx.user_id)
+    if player is None:
+        return Reply(
+            "灵宠寄养",
+            (
+                "尚未结契，先完成领养，再寄养或代管伙伴。",
+                "结契后可以把闲置伙伴交给好友代管，归属与养成都不变。",
+            ),
+            ("灵宠领养", "灵宠好友", "灵宠帮助"),
+        )
+    caretaking = ctx.repo.conn.execute(
+        "SELECT p.pet_id, p.name, p.user_id, i.id + 9999 AS owner_uid"
+        " FROM quest_progress f"
+        " JOIN pets p ON f.quest_id = 'foster_' || p.pet_id AND f.user_id = p.user_id"
+        " LEFT JOIN player_identity i ON i.user_id = p.user_id"
+        " WHERE f.progress = ? AND f.claimed = 1 ORDER BY p.pet_id",
+        (player.uid,),
+    ).fetchall()
+    fostered = [
+        (pet, row["progress"])
+        for pet in ctx.repo.owned_pets(ctx.user_id)
+        if (row := foster_row(ctx, pet.pet_id)) is not None
+    ]
+    gifts = gift_log_count(ctx, _today(ctx))
+    lines = [
+        f"代管中 {len(caretaking)} 只 · 我的伙伴寄养中 {len(fostered)} 只 ·"
+        f" 今日赠礼 {gifts}/{GIFTS_PER_DAY}",
+    ]
+    links: list[InlineCommand] = []
+    for row in caretaking:
+        lines.append(f"代管中：{row['name']}（#{row['pet_id']}）· 主人 UID {row['owner_uid']}")
+        lines.append("  喂食消耗你的灵粮，归还随时可做。")
+        return_index = len(lines) - 2
+        links.append(InlineCommand(return_index, "喂食", f"灵宠寄养喂食 {row['pet_id']}"))
+        links.append(InlineCommand(return_index, "归还", f"灵宠归还 {row['pet_id']}"))
+    for pet, uid in fostered:
+        lines.append(f"寄养中：{pet.name}（#{pet.pet_id}）· 代管人 UID {uid}")
+        lines.append("  归属仍在你名下，随时可以取回。")
+        links.append(InlineCommand(len(lines) - 2, "归还", f"灵宠归还 {pet.pet_id}"))
+    if not caretaking and not fostered:
+        lines.append("当前没有寄养往来：没有你在代管的伙伴，也没有你的伙伴在别人那里。")
+    lines.append("灵宠寄养 <UID> <宠物编号> 可把闲置伙伴交给好友、论剑或同队见过的人。")
+    return Reply(
+        "灵宠寄养",
+        tuple(lines),
+        ("灵宠寄养", "灵宠好友", "灵宠列表"),
+        tuple(links),
+    )
+
+
 def _fostered_by(ctx: Context, pet_id: int) -> str | None:
     row = ctx.repo.conn.execute(
         "SELECT p.user_id AS owner_id, f.progress AS caretaker_uid FROM quest_progress f "
@@ -144,6 +196,8 @@ def gift(ctx: Context, arg: str) -> Reply:
 
 def foster(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
+    if not parts:
+        return board(ctx)
     if len(parts) != 2:
         raise GameError("格式：灵宠寄养 <UID> <宠物编号>。")
     uid_text, pet_text = parts

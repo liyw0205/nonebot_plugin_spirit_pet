@@ -208,3 +208,31 @@ def test_gauntlets_reject_an_unknown_round_enemy(content_dir):
     edit(content_dir, "gauntlets.json", lambda rows: rows[0]["rounds"][0].update({"enemy": "unknown"}))
     with pytest.raises(ValueError, match="unknown enemy"):
         Catalog.load(content_dir)
+
+
+def test_daily_followups_reject_an_unknown_target(content_dir):
+    edit(content_dir, "daily_encounters.json", lambda rows: rows[0]["options"][0].update({"next": "ghost_followup"}))
+    with pytest.raises(ValueError, match="unknown follow-up"):
+        Catalog.load(content_dir)
+
+
+def test_daily_followups_reject_a_mismatched_trigger(content_dir):
+    edit(content_dir, "daily_followups.json", lambda rows: rows[0].update({"trigger": "spring"}))
+    with pytest.raises(ValueError, match="must be triggered by rockslide"):
+        Catalog.load(content_dir)
+
+
+def test_daily_followups_reject_an_unreachable_followup(content_dir):
+    def drop_trigger(rows):
+        for row in rows:
+            for option in row["options"]:
+                option.pop("next", None)
+    edit(content_dir, "daily_encounters.json", drop_trigger)
+    with pytest.raises(ValueError, match="unreachable"):
+        Catalog.load(content_dir)
+
+
+def test_daily_followups_reject_a_chained_followup(content_dir):
+    edit(content_dir, "daily_followups.json", lambda rows: rows[0]["options"][0].update({"next": "spring_echo"}))
+    with pytest.raises(ValueError, match="must not chain"):
+        Catalog.load(content_dir)

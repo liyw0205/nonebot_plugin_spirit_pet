@@ -159,3 +159,137 @@ def test_the_choice_writes_no_battle_record(game, play):
 def test_alias_parses():
     assert _parse("灵宠际遇") == ("encounters", "")
     assert _parse("灵宠际遇 搬石") == ("encounters", "搬石")
+
+
+# ------------------------------------------------------------- follow-ups
+# Day 0 (NOW) draws `herd`. Day +3 draws `rockslide`, whose 搬石 option
+# schedules `quarry_debt` for day +4. That keeps every assertion below on a
+# real, shipped trigger without depending on a random rotation.
+
+TRIGGER_DAY = NOW + 3 * DAY
+FOLLOW_DAY = TRIGGER_DAY + DAY
+AFTER_DAY = FOLLOW_DAY + DAY
+
+
+def trigger_option(game):
+    encounter = todays(game, now=TRIGGER_DAY)
+    assert encounter.id == "rockslide", encounter.id
+    return next(option for option in encounter.options if option.next)
+
+
+def affordable(game, option):
+    sql(game[1], "UPDATE players SET stones=100000")
+    for item_id, amount in option.cost.items.items():
+        sql(
+            game[1],
+            "INSERT INTO inventory(user_id, item_id, quantity) VALUES ('u1', ?, ?)"
+            " ON CONFLICT(user_id, item_id) DO UPDATE SET quantity=quantity+excluded.quantity",
+            (item_id, amount),
+        )
+
+
+def follow_rows(game):
+    return sql(
+        game[1],
+        "SELECT quest_id, claimed FROM quest_progress WHERE quest_id LIKE 'encfollow_%'",
+    )
+
+
+def test_a_trigger_choice_schedules_the_next_days_followup(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    reply = play("encounters", option.label, now=TRIGGER_DAY)
+    assert "留待明日" in reply.text()
+    rows = follow_rows(game)
+    assert len(rows) == 1
+    assert rows[0]["quest_id"] == f"encfollow_{beijing_day(FOLLOW_DAY)}_{option.next}"
+    assert rows[0]["claimed"] == 0
+
+
+def test_the_followup_is_todays_encounter_on_the_next_day(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    play("encounters", option.label, now=TRIGGER_DAY)
+    follow = todays(game, now=FOLLOW_DAY)
+    assert follow.id == option.next
+    assert follow.trigger == "rockslide"
+    page = play("encounters", now=FOLLOW_DAY)
+    assert "承接昨日" in page.text()
+    assert follow.name in page.text()
+
+
+def test_a_followup_never_fires_twice(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    play("encounters", option.label, now=TRIGGER_DAY)
+    # Resolve it on its day; that claims the schedule row.
+    follow = todays(game, now=FOLLOW_DAY)
+    resolve = next(o for o in follow.options if o.cost.stones)
+    affordable(game, resolve)
+    play("encounters", resolve.label, now=FOLLOW_DAY)
+    assert follow_rows(game)[0]["claimed"] == 1
+    # The day after, the rotation is back and no follow-up is surfaced.
+    assert todays(game, now=AFTER_DAY).id == "stele"
+    assert "承接昨日" not in play("encounters", now=AFTER_DAY).text()
+
+
+def test_ignoring_a_followup_leaves_no_residue(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    play("encounters", option.label, now=TRIGGER_DAY)
+    # Never open 灵宠际遇 on FOLLOW_DAY at all. On the day after, the rotation
+    # resumes with no follow-up banner and the dormant row never reappears.
+    assert todays(game, now=AFTER_DAY).id == "stele"
+    page = play("encounters", now=AFTER_DAY)
+    assert "承接昨日" not in page.text()
+    assert "采石赊账" not in page.text()
+
+
+def test_the_one_choice_rule_holds_on_a_followup(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    play("encounters", option.label, now=TRIGGER_DAY)
+    follow = todays(game, now=FOLLOW_DAY)
+    first, second = follow.options[0], follow.options[1]
+    affordable(game, first)
+    affordable(game, second)
+    play("encounters", first.label, now=FOLLOW_DAY)
+    with pytest.raises(GameError, match="今日已了"):
+        play("encounters", second.label, now=FOLLOW_DAY)
+    # The 今日已了 page still describes the follow-up that was actually chosen.
+    page = play("encounters", now=FOLLOW_DAY)
+    assert follow.name in page.text() and "承接昨日" in page.text()
+
+
+def test_a_refused_trigger_does_not_schedule(game, play):
+    account(play)
+    option = trigger_option(game)
+    sql(game[1], "UPDATE players SET stones=0")  # 搬石 needs 60 stones
+    with pytest.raises(GameError, match="灵石不足"):
+        play("encounters", option.label, now=TRIGGER_DAY)
+    assert follow_rows(game) == []
+    assert todays(game, now=FOLLOW_DAY).id == "spring"  # ordinary rotation
+
+
+def test_the_followup_page_is_read_only(game, play):
+    account(play)
+    option = trigger_option(game)
+    affordable(game, option)
+    play("encounters", option.label, now=TRIGGER_DAY)
+    before = snapshot(game)
+    play("encounters", now=FOLLOW_DAY)
+    play("encounters", now=FOLLOW_DAY)
+    assert snapshot(game) == before
+
+
+def test_an_unregistered_player_sees_no_followup(game, play):
+    # A follow-up only exists after a trigger choice; an unregistered caller
+    # always gets the read-only preview, never a scheduled encounter.
+    page = play("encounters", user="u9", now=FOLLOW_DAY)
+    assert "尚未结契" in page.text()
+    assert follow_rows(game) == []

@@ -280,6 +280,25 @@ class Repository:
             "WHERE b.battle_id=? AND p.user_id=?", (battle_id, user_id),
         ).fetchone()
 
+    def previous_comparable_battle(
+        self, user_id: str, *, before_played_at: int, before_battle_id: int,
+        kind: str, battle_key: str,
+    ) -> sqlite3.Row | None:
+        """The most recent earlier battle of this same player, kind and key.
+
+        Ordering mirrors ``battle_history`` (played_at, battle_id), so the row is
+        the one immediately before ``before_*`` in the player's timeline. Used
+        by the read-only review comparison; no writes.
+        """
+        return self.conn.execute(
+            "SELECT b.*, p.side, p.permission FROM battle_records b "
+            "JOIN battle_participants p ON p.battle_id=b.battle_id "
+            "WHERE p.user_id=? AND b.kind=? AND b.battle_key=? "
+            "AND (b.played_at < ? OR (b.played_at = ? AND b.battle_id < ?)) "
+            "ORDER BY b.played_at DESC, b.battle_id DESC LIMIT 1",
+            (user_id, kind, battle_key, before_played_at, before_played_at, before_battle_id),
+        ).fetchone()
+
     def battle_participants(self, battle_id: int) -> list[sqlite3.Row]:
         return self.conn.execute(
             "SELECT user_id, side, permission FROM battle_participants "

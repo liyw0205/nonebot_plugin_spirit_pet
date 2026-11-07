@@ -62,7 +62,7 @@ from ..domain.resonance_content import Resonance
 from ..domain.journey_content import Journey
 from ..domain.season_mission_content import SeasonMission
 from ..domain.daily_assignment_content import DailyAssignment
-from ..domain.daily_encounter_content import DailyEncounter
+from ..domain.daily_encounter_content import DailyEncounter, DailyFollowup
 from ..domain.codex_content import CodexReward
 from ..domain.crop_content import Crop
 from ..domain.stage_star_content import StageStarReward
@@ -136,6 +136,7 @@ class Catalog:
     season_missions: dict[str, SeasonMission]
     daily_assignments: dict[str, DailyAssignment]
     daily_encounters: dict[str, DailyEncounter]
+    daily_followups: dict[str, DailyFollowup]
     codex_rewards: dict[str, CodexReward]
     crops: dict[str, Crop]
     stage_star_rewards: dict[int, StageStarReward]
@@ -219,6 +220,7 @@ class Catalog:
             season_missions=_index(directory / "season_missions.json", SeasonMission),
             daily_assignments=_index(directory / "daily_assignments.json", DailyAssignment),
             daily_encounters=_index(directory / "daily_encounters.json", DailyEncounter),
+            daily_followups=_index(directory / "daily_followups.json", DailyFollowup),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
             crops=_index(directory / "crops.json", Crop),
             gear_words=_index(directory / "gear_words.json", GearWord),
@@ -313,13 +315,15 @@ class Catalog:
             *(mission.reward for mission in self.season_missions.values()),
             *(assignment.reward for assignment in self.daily_assignments.values()),
             *(option.reward for encounter in self.daily_encounters.values() for option in encounter.options),
+            *(option.reward for follow in self.daily_followups.values() for option in follow.options),
             *(quest.reward for quest in self.weekly_quests.values()),
             self.rules.daily_featured.first, self.rules.daily_featured.third,
         ):
             self._require(reward.items, self.items, "reward items")
-        for encounter in self.daily_encounters.values():
+        for encounter in (*self.daily_encounters.values(), *self.daily_followups.values()):
             for option in encounter.options:
                 self._require(option.cost.items, self.items, "daily encounter costs")
+        self._validate_daily_followups()
         route_encounters = [
             encounter_id
             for route in self.exploration_routes.values()
@@ -448,6 +452,35 @@ class Catalog:
         self._validate_achievements()
         self._validate_breeding()
         self._validate_titles()
+
+    def _validate_daily_followups(self) -> None:
+        """Every scheduled follow-up must be reachable from a real trigger choice.
+
+        An option's ``next`` names a follow-up id; the follow-up's ``trigger``
+        must name the source encounter that owns that option, and no follow-up
+        may chain to another follow-up (the shipped loop stays one-shot).
+        """
+        for encounter in self.daily_encounters.values():
+            for option in encounter.options:
+                if option.next is None:
+                    continue
+                follow = self.daily_followups.get(option.next)
+                if follow is None:
+                    raise ValueError(f"daily encounter {encounter.id} points at an unknown follow-up {option.next}")
+                if follow.trigger != encounter.id:
+                    raise ValueError(
+                        f"follow-up {option.next} must be triggered by {encounter.id}, not {follow.trigger}"
+                    )
+        triggered = {option.next for e in self.daily_encounters.values() for option in e.options if option.next}
+        unreachable = set(self.daily_followups) - triggered
+        if unreachable:
+            raise ValueError(f"daily follow-ups are unreachable from any choice: {sorted(unreachable)}")
+        for follow in self.daily_followups.values():
+            if follow.trigger not in self.daily_encounters:
+                raise ValueError(f"follow-up {follow.id} names an unknown trigger {follow.trigger}")
+            for option in follow.options:
+                if option.next is not None:
+                    raise ValueError(f"follow-up {follow.id} must not chain to another follow-up")
 
     def _validate_main_quests(self) -> None:
         quests = sorted(self.main_quests.values(), key=lambda quest: quest.order)

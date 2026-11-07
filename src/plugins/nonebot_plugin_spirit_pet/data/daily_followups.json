@@ -1,0 +1,210 @@
+[
+  {
+    "id": "quarry_debt",
+    "name": "采石赊账",
+    "description": "昨日帮忙搬石的采石人寻上门，说工钱还差一笔。",
+    "trigger": "rockslide",
+    "options": [
+      {
+        "id": "settle",
+        "label": "结清",
+        "text": "你把尾款付了，采石人把余下的好矿石都留给了你。",
+        "cost": {
+          "stones": 70
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "forge_ore": {
+              "minimum": 2,
+              "maximum": 2
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "haggle",
+        "label": "议价",
+        "text": "你与他磨了半日价，用随身灵粮抵了差额。",
+        "cost": {
+          "items": {
+            "spirit_food": 2
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 90,
+            "maximum": 90
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "spring_echo",
+    "name": "灵泉回响",
+    "description": "昨日汲过的灵泉今日泛起微光，水面又浮出伙伴的影子。",
+    "trigger": "spring",
+    "options": [
+      {
+        "id": "scoop",
+        "label": "再汲",
+        "text": "你再灌一囊泉水，泉底翻出几粒饱满的灵粮。",
+        "cost": {
+          "stones": 50
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "spirit_food": {
+              "minimum": 4,
+              "maximum": 4
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "offer",
+        "label": "投石",
+        "text": "你投一枚矿石入泉作礼，水面回赠一袋灵石。",
+        "cost": {
+          "items": {
+            "forge_ore": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 110,
+            "maximum": 110
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "stranger_return",
+    "name": "夜客重来",
+    "description": "昨夜叩门的人又站在门外，这回手里捧着那只小瓶。",
+    "trigger": "night_knock",
+    "options": [
+      {
+        "id": "welcome",
+        "label": "迎入",
+        "text": "你请他进屋，他把瓶中血脉精华分了你一半。",
+        "cost": {
+          "stones": 130
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "decline",
+        "label": "谢绝",
+        "text": "你隔着门婉拒，天亮时门槛下又多了一袋灵石。",
+        "cost": {
+          "items": {
+            "forge_ore": 1
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 160,
+            "maximum": 160
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "stele_secret",
+    "name": "碑底密文",
+    "description": "拓片晾干后，碑座背面显出昨日没看见的一行小字。",
+    "trigger": "stele",
+    "options": [
+      {
+        "id": "decipher",
+        "label": "破译",
+        "text": "你按密文撬开碑座夹层，里头躺着一枚血脉精华。",
+        "cost": {
+          "stones": 140
+        },
+        "reward": {
+          "stones": {
+            "minimum": 0,
+            "maximum": 0
+          },
+          "items": {
+            "bloodline_essence": {
+              "minimum": 1,
+              "maximum": 1
+            }
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      },
+      {
+        "id": "sell",
+        "label": "售字",
+        "text": "你把密文抄给行商，换回一笔比昨日更厚的灵石。",
+        "cost": {
+          "items": {
+            "spirit_food": 3
+          }
+        },
+        "reward": {
+          "stones": {
+            "minimum": 300,
+            "maximum": 300
+          },
+          "exp": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    ]
+  }
+]

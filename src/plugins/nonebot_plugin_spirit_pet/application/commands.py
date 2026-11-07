@@ -174,7 +174,7 @@ ACTIONS = {
     "gear_word_reforge": Command(gear_words.word_reforge, True),
     "bond_levels": Command(bond_levels.catalog, True, registered=False),
     "gift": Command(gifting.gift, True),
-    "foster": Command(gifting.foster, True),
+    "foster": Command(gifting.foster, True, registered=False),
     "foster_feed": Command(gifting.foster_feed, True),
     "foster_return": Command(gifting.foster_return, True),
     "team_arena": Command(team_arena.catalog, True, registered=False),

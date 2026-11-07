@@ -20,6 +20,8 @@
 | dungeons.json | 秘境准入境界、敌人列表、精力消耗、奖励、是否组队、一次性首通奖励 |
 | quests.json | 每日任务的事件、目标次数、奖励 |
 | daily_assignments.json | 今日课题的指标、目标值与一次性奖励，按自然日轮换三项 |
+| daily_encounters.json | 每日路边际遇的名字、描述、2-3 个带成本/回报的选项，以及可引出次日续篇的 `next` |
+| daily_followups.json | 由普通际遇选项引出的次日续篇，形状同际遇并带 `trigger` 回指来源际遇 |
 | codex_rewards.json | 每个种族的一份一次性图鉴收集奖励，按稀有度递增 |
 | expeditions.json | 离线委托的名称、描述、境界门槛、精力成本与奖励范围，不含时间或玩家状态 |
 | arena.json | 论剑赛季的积分规则、准入门槛、场次限额、奖励资格与固定奖励档位；六档由青云 0 分到归元 1450 分 |
