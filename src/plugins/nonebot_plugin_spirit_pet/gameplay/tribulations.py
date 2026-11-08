@@ -10,12 +10,14 @@ week index, so every player sees the same three contracts and they rotate next w
 """
 
 import math
+import re
 
 from ..application.context import Context
 from ..domain.content import Dungeon, Stats
 from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.tribulation_content import Tribulation, TribulationModifier
-from ..utils.time import beijing_week
+from ..utils.pagination import paginate
+from ..utils.time import beijing_day, beijing_week
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
@@ -24,6 +26,10 @@ from .quests import advance
 from .rewards import grant
 
 SLOT_KEY = "trib_"
+HISTORY_HEAD = "战历"
+HISTORY_PAGE_SIZE = 6
+# `trib_<week start>_<slot|all>`; the slot is a 1-based integer.
+WEEK_MARKER = re.compile(r"^trib_([0-9]+)_([0-9]+|all)$")
 
 
 def config(ctx: Context) -> Tribulation:
@@ -72,6 +78,79 @@ def all_cleared(ctx: Context, user_id: str | None = None) -> bool:
 
 def cleared_count(ctx: Context, user_id: str | None = None) -> int:
     return sum(1 for slot, _, _ in contracts(ctx) if cleared(ctx, slot, user_id))
+
+
+def weeks_cleared(ctx: Context, user_id: str | None = None) -> list[tuple[int, int, bool]]:
+    """Every recorded tribulation week as ``(week start, slots cleared, sweep paid)``.
+
+    The slot rows and the `_all` marker are written once per week and never cleaned,
+    while only the current week is ever read, so a past week was unreachable. This
+    groups exactly those rows, newest week first.
+    """
+    owner = user_id or ctx.user_id
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (owner, f"{SLOT_KEY}%"),
+    ).fetchall()
+    weeks: dict[int, set[int]] = {}
+    sweeps: set[int] = set()
+    for row in rows:
+        key = str(row["quest_id"])
+        match = WEEK_MARKER.match(key)
+        if match is None:
+            continue
+        start, what = int(match.group(1)), match.group(2)
+        if what == "all":
+            sweeps.add(start)
+            weeks.setdefault(start, set())
+            continue
+        if what.isdigit():
+            weeks.setdefault(start, set()).add(int(what))
+    return sorted(
+        ((start, len(slots), start in sweeps) for start, slots in weeks.items()),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past tribulation weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "劫境战历",
+            (
+                "尚未结契，先完成领养，才能留下劫境战绩。",
+                "战历按周回顾你清掉了几份契约，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_cleared(ctx)
+    if not records:
+        return Reply(
+            "劫境战历",
+            (
+                "还没有劫境记录，先发送 灵宠劫境 挑战 1 接下本周第一份契约。",
+                "每清一份契约会在本周留下一笔凭证，战历按周汇总。",
+            ),
+            ("灵宠劫境", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "劫境战历", "灵宠劫境 战历", HISTORY_PAGE_SIZE)
+    slots = config(ctx).slots
+    lines = [
+        f"共 {len(records)} 周有记录 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, count, sweep in page.entries:
+        lines.append(
+            f"{beijing_day(start)} 起那一周 · 已清 {count}/{slots} 份契约"
+            + (" · 已全清" if sweep else "")
+        )
+    lines.append("战历只读：不重打、不补发奖励，也不改变本周进度。")
+    return Reply(
+        "劫境战历",
+        tuple(lines),
+        (*page.navigation, "灵宠劫境", "灵宠目标")[:4],
+    )
 
 
 def energy_cost(ctx: Context, modifier: TribulationModifier) -> int:
@@ -230,9 +309,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
         return page(ctx, "")
+    if parts[0] == HISTORY_HEAD:
+        if len(parts) > 2:
+            raise GameError("格式：灵宠劫境 战历 [页码]。")
+        return history(ctx, parts[1] if len(parts) == 2 else "")
     if parts[0] == "挑战":
         return challenge(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠劫境 [挑战 <1-3>]。")
+    raise GameError("格式：灵宠劫境 [战历|挑战 <1-3>]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

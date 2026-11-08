@@ -116,6 +116,35 @@ def _week_grades(ctx: Context, user_id: str, start: int) -> tuple[int, int]:
     return sum(1 for value in grades if value > 0), sum(1 for value in grades if value >= 2)
 
 
+def _forbidden_depths(ctx: Context, user_id: str, start: int) -> int:
+    """Forbidden depths cleared this week (the `_all` bonus marker is not a depth)."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS n FROM quest_progress WHERE user_id=? AND quest_id GLOB ?"
+        " AND quest_id NOT GLOB ?",
+        (user_id, f"forbidden_{start}_*", f"forbidden_{start}_all"),
+    ).fetchone()
+    return int(row["n"])
+
+
+def _tribulation_slots(ctx: Context, user_id: str, start: int) -> int:
+    """Tribulation contracts cleared this week (the `_all` sweep marker is not a slot)."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS n FROM quest_progress WHERE user_id=? AND quest_id GLOB ?"
+        " AND quest_id NOT GLOB ?",
+        (user_id, f"trib_{start}_*", f"trib_{start}_all"),
+    ).fetchone()
+    return int(row["n"])
+
+
+def _codex_week_slots(ctx: Context, user_id: str, start: int) -> int:
+    """Weekly codex trials cleared this week (`codex_week_<week>_<slot>` rows)."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS n FROM quest_progress WHERE user_id=? AND quest_id GLOB ?",
+        (user_id, f"codex_week_{start}_*"),
+    ).fetchone()
+    return int(row["n"])
+
+
 def _gauntlet_rounds(ctx: Context, user_id: str, start: int) -> int:
     """Round markers cleared this week across every shipped ladder.
 
@@ -154,6 +183,9 @@ def report(ctx: Context, arg: str) -> Reply:
     trials = _glob_count(ctx, ctx.user_id, f"team_trial_{start}_*")
     gauntlets = _gauntlet_rounds(ctx, ctx.user_id, start)
     escorts, escorts_full = _week_grades(ctx, ctx.user_id, start)
+    forbidden_depths = _forbidden_depths(ctx, ctx.user_id, start)
+    tribulation_slots = _tribulation_slots(ctx, ctx.user_id, start)
+    codex_slots = _codex_week_slots(ctx, ctx.user_id, start)
     lines = [
         f"统计区间：{beijing_day(start)} 至 {beijing_day(end - 1)}（北京时间）。",
         f"签到：{signins} 天。",
@@ -172,6 +204,9 @@ def report(ctx: Context, arg: str) -> Reply:
         f"团队试炼：本周通关 {trials} 场。",
         f"擂台：本周通过 {gauntlets} 关。",
         f"护送：本周通关 {escorts} 条 · 满评 {escorts_full} 条。",
+        f"禁地：本周通关 {forbidden_depths} 层。",
+        f"劫境：本周清掉 {tribulation_slots} 份契约。",
+        f"图鉴试炼：本周通关 {codex_slots} 场。",
         f"奇缘：本周做出 {chooser} 次抉择。",
         f"信箱：收到 {received} 封 · 已领取 {claimed} 封。",
         "周报只读，不补发奖励；跨周后统计窗口自动切换。",

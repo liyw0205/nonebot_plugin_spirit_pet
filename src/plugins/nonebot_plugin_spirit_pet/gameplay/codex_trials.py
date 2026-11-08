@@ -16,7 +16,7 @@ from ..domain.content import Enemy, Species, Stats
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.pagination import paginate
-from ..utils.time import beijing_week
+from ..utils.time import beijing_day, beijing_week
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
@@ -28,6 +28,8 @@ MILESTONE_KEY = "codex_trial_milestone_"
 WEEK_KEY = "codex_week_"
 WEEK_ALL_KEY = "codex_week_all_"
 PAGE_SIZE = 9
+HISTORY_HEAD = "战历"
+HISTORY_PAGE_SIZE = 6
 
 
 def trial(ctx: Context) -> CodexTrial:
@@ -327,6 +329,82 @@ def weekly_cleared(ctx: Context, user_id: str | None = None) -> set[int]:
     return done
 
 
+def weeks_run(ctx: Context, user_id: str | None = None) -> list[tuple[int, int, bool]]:
+    """Every recorded weekly-trial week as ``(week start, slots cleared, bonus paid)``.
+
+    The per-slot rows and the ``codex_week_all_<week>`` marker are written once per
+    week and never cleaned, while only the current week is ever read, so a past week
+    was unreachable. This groups exactly those rows, newest week first.
+    """
+    owner = user_id or ctx.user_id
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (owner, f"{WEEK_KEY}%"),
+    ).fetchall()
+    weeks: dict[int, set[int]] = {}
+    bonuses: set[int] = set()
+    for row in rows:
+        key = str(row["quest_id"])
+        # `<all_prefix><week>` is prefix-first, `<week_key><week>_<slot>` is week-first.
+        if key.startswith(WEEK_ALL_KEY):
+            tail = key[len(WEEK_ALL_KEY):]
+            if tail.isdecimal():
+                bonuses.add(int(tail))
+                weeks.setdefault(int(tail), set())
+            continue
+        tail = key[len(WEEK_KEY):]
+        start_text, _, what = tail.partition("_")
+        if not start_text.isdecimal():
+            continue
+        if what.isdecimal():
+            weeks.setdefault(int(start_text), set()).add(int(what))
+    return sorted(
+        ((start, len(slots), start in bonuses) for start, slots in weeks.items()),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past weekly-trial weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "图鉴试炼战历",
+            (
+                "尚未结契，先完成领养，才能留下试炼战绩。",
+                "战历按周回顾你通关了几场每周试炼，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_run(ctx)
+    if not records:
+        return Reply(
+            "图鉴试炼战历",
+            (
+                "还没有每周试炼记录，先发送 灵宠图鉴试炼 每周 查看本周题目。",
+                "每通关一场会在本周留下一笔凭证，战历按周汇总。",
+            ),
+            ("灵宠图鉴试炼 每周", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "图鉴试炼战历", "灵宠图鉴试炼 战历", HISTORY_PAGE_SIZE)
+    slots = len(weekly_slots(ctx))
+    lines = [
+        f"共 {len(records)} 周有记录 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, count, bonus in page.entries:
+        lines.append(
+            f"{beijing_day(start)} 起那一周 · 通关 {count}/{slots} 场"
+            + (" · 周奖已领" if bonus else "")
+        )
+    lines.append("战历只读：不重打、不补发奖励，也不改变本周进度。")
+    return Reply(
+        "图鉴试炼战历",
+        tuple(lines),
+        (*page.navigation, "灵宠图鉴试炼 每周", "灵宠目标")[:4],
+    )
+
+
 def weekly_page(ctx: Context) -> Reply:
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
@@ -483,6 +561,10 @@ def weekly_trial(ctx: Context, arg: str) -> Reply:
 
 def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
+    if parts and parts[0] == HISTORY_HEAD:
+        if len(parts) > 2:
+            raise GameError("格式：灵宠图鉴试炼 战历 [页码]。")
+        return history(ctx, parts[1] if len(parts) == 2 else "")
     if parts and parts[0] == "挑战":
         return challenge(ctx, " ".join(parts[1:]))
     if parts and parts[0] == "每周":

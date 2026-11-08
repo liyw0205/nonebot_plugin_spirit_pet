@@ -269,3 +269,40 @@ def test_the_three_rows_exclude_the_previous_week(game, play):
     assert "团队试炼：本周通关 0 场。" in page.text()
     assert "擂台：本周通过 0 关。" in page.text()
     assert "护送：本周通关 0 条 · 满评 0 条。" in page.text()
+
+
+def seed_marker(game, key, progress=1, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, key, progress),
+    )
+
+
+def test_forbidden_tribulation_and_codex_rows_summarise_the_week(game, play):
+    account(game, play)
+    seed_marker(game, f"forbidden_{WEEK_START}_ember_crypt_1")
+    seed_marker(game, f"forbidden_{WEEK_START}_ember_crypt_2")
+    seed_marker(game, f"forbidden_{WEEK_START}_all")          # bonus marker, not a depth
+    seed_marker(game, f"trib_{WEEK_START}_1")
+    seed_marker(game, f"trib_{WEEK_START}_all")               # sweep marker, not a slot
+    seed_marker(game, f"codex_week_{WEEK_START}_1")
+    seed_marker(game, f"codex_week_{WEEK_START}_2")
+    seed_marker(game, f"codex_week_all_{WEEK_START}")         # weekly bonus marker
+    page = play("weekly_report", now=NOW)
+    assert "禁地：本周通关 2 层。" in page.text()
+    assert "劫境：本周清掉 1 份契约。" in page.text()
+    assert "图鉴试炼：本周通关 2 场。" in page.text()
+
+
+def test_the_three_new_rows_exclude_the_previous_week(game, play):
+    account(game, play)
+    last = WEEK_START - 7 * DAY
+    seed_marker(game, f"forbidden_{last}_ember_crypt_1")
+    seed_marker(game, f"trib_{last}_1")
+    seed_marker(game, f"codex_week_{last}_1")
+    page = play("weekly_report", now=NOW)
+    assert "禁地：本周通关 0 层。" in page.text()
+    assert "劫境：本周清掉 0 份契约。" in page.text()
+    assert "图鉴试炼：本周通关 0 场。" in page.text()

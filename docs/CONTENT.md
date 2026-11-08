@@ -163,7 +163,7 @@
 
 ## 禁地定义
 
-`forbidden.json` 是禁地对象数组，由 `domain/forbidden_content.py` 严格校验，当前三处禁地按北京时间自然周轮换开放。每处禁地定义 `id`、`name`、`description`、`restriction`、`bonus` 与 `depths`，不接受额外字段。
+`forbidden.json` 是禁地对象数组，由 `domain/forbidden_content.py` 严格校验，当前三处禁地按北京时间自然周轮换开放。进度凭证 `forbidden_<周>_<层id>`／`_all` 永久保留，因此 `灵宠禁地 战历` 能按周回顾历史；层被撤下后按 id 标注。每处禁地定义 `id`、`name`、`description`、`restriction`、`bonus` 与 `depths`，不接受额外字段。
 
 ```json
 {
@@ -868,7 +868,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 劫境定义
 
-`tribulations.json` 是劫境配置数组（当前一条 `tribulation`），由 `domain/tribulation_content.py` 校验。配置定义 `id`、`name`、`description`、`energy`（1-100）、`slots`（1-5）、`bonus`（三份全清奖励）与 `modifiers`（至少 3 个，id 唯一）。
+`tribulations.json` 是劫境配置数组（当前一条 `tribulation`），由 `domain/tribulation_content.py` 校验。进度凭证 `trib_<周>_<契约序号>`／`_all` 永久保留，因此 `灵宠劫境 战历` 能按周回顾历史。配置定义 `id`、`name`、`description`、`energy`（1-100）、`slots`（1-5）、`bonus`（三份全清奖励）与 `modifiers`（至少 3 个，id 唯一）。
 
 ```json
 {
@@ -952,7 +952,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 图鉴试炼定义
 
-`codex_trials.json` 是试炼配置数组（当前只有一条 `codex`），由 `domain/codex_trial_content.py` 校验。配置定义 `id`、`name`、`boost`（1.0-5.0）、`energy`（1-100）、`reward`（修为/灵石区间加物品）与 `milestones`（通关数量唯一递增、物品存在）。种族列表来自 `pets.json`，不在此文件重复。
+`codex_trials.json` 是试炼配置数组（当前只有一条 `codex`），由 `domain/codex_trial_content.py` 校验。每周轮换进度凭证 `codex_week_<周>_<场次>` 与 `codex_week_all_<周>` 永久保留，因此 `灵宠图鉴试炼 战历` 能按周回顾历史。配置定义 `id`、`name`、`boost`（1.0-5.0）、`energy`（1-100）、`reward`（修为/灵石区间加物品）与 `milestones`（通关数量唯一递增、物品存在）。种族列表来自 `pets.json`，不在此文件重复。
 
 ```json
 {

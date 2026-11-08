@@ -387,3 +387,80 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     }
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def seed_clear(game, week, depth_id, user="u1", rounds=5):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"forbidden_{week}_{depth_id}", rounds),
+    )
+
+
+def week_start(now=NOW):
+    from nonebot_plugin_spirit_pet.utils.time import beijing_week
+
+    return beijing_week(now)[0]
+
+
+def test_history_lists_weeks_newest_first_with_names_and_bonus(game, play):
+    play("adopt", "青鸾")
+    this, last = week_start(), week_start() - WEEK
+    seed_clear(game, this, "ember_crypt_1")
+    seed_clear(game, this, "ember_crypt_2")
+    seed_clear(game, this, "all")
+    seed_clear(game, last, "ember_crypt_1")
+    page = play("forbidden", "战历")
+    assert page.title == "禁地战历"
+    assert "共 2 周有记录" in page.text()
+    from nonebot_plugin_spirit_pet.utils.time import beijing_day
+
+    assert f"{beijing_day(this)} 起那一周 · 通关 2 层 · 已全清" in page.text()
+    assert f"{beijing_day(last)} 起那一周 · 通关 1 层" in page.text()
+    assert "已全清" in page.text()
+
+
+def test_history_names_a_retired_depth(game, play):
+    play("adopt", "青鸾")
+    seed_clear(game, week_start(), "retired_depth")
+    page = play("forbidden", "战历")
+    assert "retired_depth（已下线）" in page.text()
+
+
+def test_history_is_empty_before_any_clear(game, play):
+    play("adopt", "青鸾")
+    page = play("forbidden", "战历")
+    assert "还没有禁地记录" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_without_a_pet_is_read_only(game, play):
+    page = play("forbidden", "战历", user="ghost")
+    assert "尚未结契" in page.text()
+
+
+def test_history_never_writes(game, play):
+    play("adopt", "青鸾")
+    seed_clear(game, week_start(), "ember_crypt_1")
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    play("forbidden", "战历")
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+
+
+def test_history_pages_and_refuses_beyond_the_end(game, play):
+    play("adopt", "青鸾")
+    this = week_start()
+    total = 7   # HISTORY_PAGE_SIZE is 6
+    for index in range(total):
+        seed_clear(game, this - index * WEEK, "ember_crypt_1")
+    first = play("forbidden", "战历")
+    assert f"共 {total} 周有记录 · 第 1/2 页" in first.text()
+    assert "第 2/2 页" in play("forbidden", "战历 2").text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("forbidden", "战历 3")
+    with pytest.raises(GameError, match="格式"):
+        play("forbidden", "战历 1 多")

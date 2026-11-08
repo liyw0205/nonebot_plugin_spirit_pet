@@ -301,3 +301,75 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     }
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def seed_slot(game, week, slot, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 1)"
+        " ON CONFLICT(user_id, quest_id) DO NOTHING",
+        (user, f"trib_{week}_{slot}"),
+    )
+
+
+def week_of(now=NOW):
+    from nonebot_plugin_spirit_pet.utils.time import beijing_week
+
+    return beijing_week(now)[0]
+
+
+def test_history_lists_weeks_newest_first_with_sweep(game, play):
+    play("adopt", "青鸾")
+    this, last = week_of(), week_of() - WEEK
+    for slot in (1, 2, 3):
+        seed_slot(game, this, slot)
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 1, 1)",
+        (f"trib_{this}_all",),
+    )
+    seed_slot(game, last, 1)
+    page = play("tribulations", "战历")
+    assert page.title == "劫境战历"
+    assert "共 2 周有记录" in page.text()
+    from nonebot_plugin_spirit_pet.utils.time import beijing_day
+
+    slots = config(game).slots
+    assert f"{beijing_day(this)} 起那一周 · 已清 3/{slots} 份契约 · 已全清" in page.text()
+    assert f"{beijing_day(last)} 起那一周 · 已清 1/{slots} 份契约" in page.text()
+
+
+def test_history_is_empty_before_any_clear(game, play):
+    play("adopt", "青鸾")
+    page = play("tribulations", "战历")
+    assert "还没有劫境记录" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_without_a_pet_is_read_only(game, play):
+    page = play("tribulations", "战历", user="ghost")
+    assert "尚未结契" in page.text()
+
+
+def test_history_never_writes(game, play):
+    play("adopt", "青鸾")
+    seed_slot(game, week_of(), 1)
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    play("tribulations", "战历")
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+
+
+def test_history_pages_and_refuses_beyond_the_end(game, play):
+    play("adopt", "青鸾")
+    this = week_of()
+    total = 7
+    for index in range(total):
+        seed_slot(game, this - index * WEEK, 1)
+    first = play("tribulations", "战历")
+    assert f"共 {total} 周有记录 · 第 1/2 页" in first.text()
+    assert "第 2/2 页" in play("tribulations", "战历 2").text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("tribulations", "战历 3")

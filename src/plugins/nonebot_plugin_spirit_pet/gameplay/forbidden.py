@@ -10,11 +10,13 @@ start, so the same week always shows the same zone and the next week shifts.
 """
 
 import json
+import re
 
 from ..application.context import Context
 from ..domain.forbidden_content import ForbiddenDepth, ForbiddenZone
 from ..domain.models import GameError, InlineCommand, Reply
-from ..utils.time import beijing_week
+from ..utils.pagination import paginate
+from ..utils.time import beijing_day, beijing_week
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
@@ -25,6 +27,10 @@ from .rewards import grant
 PREFIX = "forbidden_"
 BONUS = "all"
 WEEK = 7 * 86400
+HISTORY_HEAD = "战历"
+HISTORY_PAGE_SIZE = 6
+# `forbidden_<week start>_<depth id|all>`; depth ids carry no underscore.
+WEEK_MARKER = re.compile(r"^forbidden_([0-9]+)_(.+)$")
 
 RESTRICTIONS = {
     "solo": ("独行", "只允许一只灵宠出战"),
@@ -176,7 +182,93 @@ def _detail(ctx: Context, zone: ForbiddenZone, depth: ForbiddenDepth, player) ->
     ), tuple(commands))
 
 
+def weeks_cleared(ctx: Context, user_id: str | None = None) -> list[tuple[int, int, bool]]:
+    """Every recorded forbidden-zone week as ``(week start, depths cleared, bonus)``.
+
+    The per-depth rows and the `_all` marker are written once per week and never
+    cleaned, and only the current week is ever read, so a past week was unreachable.
+    This groups exactly those rows, newest week first.
+    """
+    owner = user_id or ctx.user_id
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (owner, f"{PREFIX}%"),
+    ).fetchall()
+    weeks: dict[int, set[str]] = {}
+    bonuses: set[int] = set()
+    for row in rows:
+        key = str(row["quest_id"])
+        match = WEEK_MARKER.match(key)
+        if match is None:
+            continue
+        start, depth_id = int(match.group(1)), match.group(2)
+        if depth_id == BONUS:
+            bonuses.add(start)
+            weeks.setdefault(start, set())
+            continue
+        weeks.setdefault(start, set()).add(depth_id)
+    return sorted(
+        ((start, len(depths), start in bonuses) for start, depths in weeks.items()),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+
+
+def _depth_names(ctx: Context, start: int, user_id: str) -> list[str]:
+    cleared = _cleared(ctx, start, user_id)
+    known = {depth.id: depth.name for zone in zones(ctx) for depth in zone.depths}
+    names = [depth_name for depth_id, depth_name in known.items() if depth_id in cleared]
+    retired = sorted(depth_id for depth_id in cleared if depth_id not in known)
+    return names + [f"{depth_id}（已下线）" for depth_id in retired]
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past forbidden-zone weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "禁地战历",
+            (
+                "尚未结契，先完成领养，才能留下禁地战绩。",
+                "战历按周回顾你通关了哪些层，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_cleared(ctx)
+    if not records:
+        return Reply(
+            "禁地战历",
+            (
+                "还没有禁地记录，先发送 灵宠禁地 挑战本周禁地。",
+                "每通关一层会在本周留下一笔凭证，战历按周汇总。",
+            ),
+            ("灵宠禁地", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "禁地战历", "灵宠禁地 战历", HISTORY_PAGE_SIZE)
+    lines = [
+        f"共 {len(records)} 周有记录 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, count, bonus in page.entries:
+        names = _depth_names(ctx, start, ctx.user_id)
+        lines.append(
+            f"{beijing_day(start)} 起那一周 · 通关 {count} 层"
+            + (" · 已全清" if bonus else "")
+        )
+        lines.append("   " + ("、".join(names) if names else "无记录"))
+    lines.append("战历只读：不重打、不补发奖励，也不改变本周进度。")
+    return Reply(
+        "禁地战历",
+        tuple(lines),
+        (*page.navigation, "灵宠禁地", "灵宠目标")[:4],
+    )
+
+
 def catalog(ctx: Context, arg: str) -> Reply:
+    if arg.strip().split()[0:1] == [HISTORY_HEAD]:
+        parts = arg.split()
+        if len(parts) > 2:
+            raise GameError("格式：灵宠禁地 战历 [页码]。")
+        return history(ctx, parts[1] if len(parts) == 2 else "")
     zone = zone_for(ctx)
     player = ctx.repo.player(ctx.user_id)
     if arg.strip():
