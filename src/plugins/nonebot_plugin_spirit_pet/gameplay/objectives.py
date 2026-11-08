@@ -148,6 +148,33 @@ def _main_quest_line(ctx: Context, user_id: str) -> str:
     return f"主线：下一步 {current.name} · {state}（{value}/{current.target}）"
 
 
+def _endgame_line(ctx: Context, user_id: str) -> str:
+    """One read-only roll-up of the six weekly endgame systems' cumulative record."""
+    from .achievements import ENDGAME_MARKERS, _metric as metric_value
+
+    # One representative metric per shipped system, so the count is "systems with
+    # at least one recorded clear", not "achievements unlocked".
+    systems = (
+        ("斗法", "duel_wins"),
+        ("擂台", "gauntlet_rounds"),
+        ("护送", "escort_full"),
+        ("团队试炼", "team_trial_clears"),
+        ("禁地", "forbidden_depths"),
+        ("劫境", "tribulation_slots"),
+    )
+    played = [name for name, metric_id in systems if metric_value(ctx, user_id, metric_id) > 0]
+    claims = sum(
+        1 for entry in ctx.content.achievements.values()
+        if entry.metric in ENDGAME_MARKERS and metric_value(ctx, user_id, entry.metric) >= entry.target
+    )
+    total = sum(1 for entry in ctx.content.achievements.values() if entry.metric in ENDGAME_MARKERS)
+    return (
+        f"终局记录：{len(played)}/{len(systems)} 个周常体系有通关记录"
+        f" · 终局成就 {claims}/{total} 项达标"
+        + (f"（{'、'.join(played)}）" if played else "")
+    )
+
+
 def _achievement_line(ctx: Context, user_id: str) -> str:
     claims = {
         row["achievement_id"] for row in ctx.repo.conn.execute(
@@ -541,6 +568,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_weekly_line(ctx, player.user_id), "灵宠周常"),
         (_main_quest_line(ctx, player.user_id), "灵宠主线"),
         (_achievement_line(ctx, player.user_id), "灵宠成就"),
+        (_endgame_line(ctx, player.user_id), "灵宠成就"),
         (_title_line(ctx, player.user_id), "灵宠称号"),
         (_first_clear_line(ctx, player.user_id), "灵宠秘境首通"),
         (_free_summon_line(ctx, player.user_id), "灵宠每周召唤"),

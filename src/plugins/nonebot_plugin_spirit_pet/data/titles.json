@@ -230,5 +230,13 @@
     "metric": "arc_choices",
     "target": 15,
     "order": 29
+  },
+  {
+    "id": "fellowship_veteran",
+    "name": "同阵共济",
+    "description": "累计通过 15 次团队试炼。",
+    "metric": "team_trial_clears",
+    "target": 15,
+    "order": 30
   }
 ]

@@ -63,7 +63,7 @@ SHARED_HELP_ENTRIES = {
 }
 
 DOCUMENTED_COUNTS = {
-    "achievements": 88, "titles": 29, "dungeons": 20, "stages": 16, "tower": 16,
+    "achievements": 102, "titles": 30, "dungeons": 20, "stages": 16, "tower": 16,
     "adventures": 21, "expeditions": 21, "pets": 27, "lineages": 54, "skills": 24,
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 10,

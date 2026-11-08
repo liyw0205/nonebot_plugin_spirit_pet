@@ -14,6 +14,8 @@ AchievementMetric = Literal[
     "dungeon_clears",
     "hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears", "pets_released",
     "encounter_choices", "gem_cuts", "arc_choices",
+    "duel_wins", "gauntlet_rounds", "escort_full", "team_trial_clears",
+    "forbidden_depths", "tribulation_slots", "codex_week_clears",
 ]
 
 

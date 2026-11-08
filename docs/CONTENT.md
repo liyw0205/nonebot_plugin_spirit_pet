@@ -552,7 +552,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 杂交、炼丹、契约、强化通关与归灵没有可派生的存档状态，因此各自维护一个单调计数器：`quest_progress` 的 `stat_<指标名>` 行（`progress` 即累计次数）。`gameplay/counters.bump()` 只在成功路径调用，`value()` 供 `achievements._metric` 读取，`pets_released` 则直接由 `released_<伙伴编号>` 标记行派生，不需要计数器。
 
-对应指标写进 `domain/achievement_content.py` 的 `AchievementMetric` 白名单（`hybrid_brews`、`alchemy_brews`、`contracts_met`、`hard_clears`、`pets_released`），因此成就、称号、主线与日常四类内容都能引用；这些指标**没有上限**（可以无限累积），所以不进入 `_metric_ceilings()`，内容侧可以把目标定得较高。
+对应指标写进 `domain/achievement_content.py` 的 `AchievementMetric` 白名单（`hybrid_brews`、`alchemy_brews`、`contracts_met`、`hard_clears`、`pets_released`，以及六个周常体系的 `duel_wins`、`gauntlet_rounds`、`escort_full`、`team_trial_clears`、`forbidden_depths`、`tribulation_slots`、`codex_week_clears`），因此成就、称号、主线与日常四类内容都能引用；这些指标**没有上限**（可以无限累积），所以不进入 `_metric_ceilings()`，内容侧可以把目标定得较高。周常体系的七个指标额外由 `gameplay/achievements.py` 的 `ENDGAME_MARKERS` 表声明“统计哪个前缀、排除哪个全清标记”，`_metric` 按该表直接统计 `quest_progress` 的既有周凭证；护送只统计满评（`progress>=2`）。
 
 ## 难度定义
 

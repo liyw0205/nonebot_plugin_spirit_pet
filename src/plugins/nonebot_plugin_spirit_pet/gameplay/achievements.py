@@ -14,6 +14,19 @@ from .equipment_set_rewards import SET_REWARDS, claim_id
 COLLECTION_PAGE_SIZE = 9
 ACHIEVEMENT_PAGE_SIZE = 5
 
+# Metrics derived from the permanent per-week markers the six weekly endgame
+# systems already write. `(include GLOB, bonus-marker GLOB to exclude)`; counting
+# the rows means no second counter can drift from the ledger the 战历 pages read.
+ENDGAME_MARKERS: dict[str, tuple[str, str | None]] = {
+    "duel_wins": ("duel_week_*", None),
+    "gauntlet_rounds": ("gauntlet_*", "*_all"),
+    "escort_full": ("escort_*", None),
+    "team_trial_clears": ("team_trial_*", None),
+    "forbidden_depths": ("forbidden_*", "*_all"),
+    "tribulation_slots": ("trib_*", "*_all"),
+    "codex_week_clears": ("codex_week_*", "codex_week_all_*"),
+}
+
 
 def collection(ctx: Context, arg: str) -> Reply:
     page = quantity(arg or "1", 999)
@@ -227,6 +240,18 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
             f"AND quest_id IN ({placeholders})",
             (user_id, *credentials),
         )
+    elif metric in ENDGAME_MARKERS:
+        # The six weekly endgame systems already leave permanent per-week markers;
+        # count them instead of adding a second counter that could drift.
+        pattern, exclude = ENDGAME_MARKERS[metric]
+        query = "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND quest_id GLOB ?"
+        params: tuple = (user_id, pattern)
+        if exclude is not None:
+            query += " AND quest_id NOT GLOB ?"
+            params = (user_id, pattern, exclude)
+        if metric == "escort_full":
+            # Escort grades are stored as 1 (partial) / 2 (full) in `progress`.
+            query += " AND progress>=2"
     else:
         raise ValueError(f"unknown achievement metric: {metric}")
     return int(conn.execute(query, params).fetchone()[0])

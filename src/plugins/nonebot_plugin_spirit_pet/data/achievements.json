@@ -87,5 +87,19 @@
   {"id":"encounter_first","name":"路遇有缘","description":"完成第一次灵宠际遇。","metric":"encounter_choices","target":1,"reward":{"stones":180,"items":{"spirit_food":2}}},
   {"id":"gemcut_first","name":"琢玉成器","description":"第一次雕琢已镶嵌的宝石。","metric":"gem_cuts","target":1,"reward":{"stones":220,"items":{"forge_ore":1}}},
   {"id":"arc_first_step","name":"初入奇缘","description":"在灵宠奇缘里做出第一个抉择。","metric":"arc_choices","target":1,"reward":{"stones":200,"items":{"spirit_food":2}}},
-  {"id":"arc_all_paths","name":"奇缘尽览","description":"走完五条奇缘的每一个章节。","metric":"arc_choices","target":15,"reward":{"stones":900,"items":{"bloodline_essence":2,"exp_pill":2}}}
+  {"id":"arc_all_paths","name":"奇缘尽览","description":"走完五条奇缘的每一个章节。","metric":"arc_choices","target":15,"reward":{"stones":900,"items":{"bloodline_essence":2,"exp_pill":2}}},
+  {"id":"duel_first","name":"斗法初胜","description":"第一次在斗法中击败护法。","metric":"duel_wins","target":1,"reward":{"stones":220,"items":{"forge_ore":1}}},
+  {"id":"duel_ten","name":"斗法十胜","description":"累计在斗法中击败 10 位护法。","metric":"duel_wins","target":10,"reward":{"stones":700,"items":{"bloodline_essence":2}}},
+  {"id":"gauntlet_first","name":"擂台初捷","description":"第一次在擂台上通过一关。","metric":"gauntlet_rounds","target":1,"reward":{"stones":220,"items":{"forge_ore":1}}},
+  {"id":"gauntlet_twentyfive","name":"擂台二十五关","description":"累计在擂台上通过 25 关。","metric":"gauntlet_rounds","target":25,"reward":{"stones":760,"items":{"bloodline_essence":2}}},
+  {"id":"escort_full_first","name":"护送满评","description":"第一次把护送目标完整送到终点并拿到满评。","metric":"escort_full","target":1,"reward":{"stones":240,"items":{"spirit_food":2}}},
+  {"id":"escort_full_ten","name":"护送十满","description":"累计拿到 10 次护送满评。","metric":"escort_full","target":10,"reward":{"stones":760,"items":{"bloodline_essence":2}}},
+  {"id":"team_trial_first","name":"同阵初捷","description":"第一次与队伍通过团队试炼。","metric":"team_trial_clears","target":1,"reward":{"stones":240,"items":{"forge_ore":2}}},
+  {"id":"team_trial_ten","name":"同阵十胜","description":"累计通过 10 次团队试炼。","metric":"team_trial_clears","target":10,"reward":{"stones":800,"items":{"bloodline_essence":2}}},
+  {"id":"forbidden_first","name":"禁地初探","description":"第一次通关一处禁地层。","metric":"forbidden_depths","target":1,"reward":{"stones":220,"items":{"forge_ore":1}}},
+  {"id":"forbidden_twenty","name":"禁地二十层","description":"累计通关 20 次禁地层。","metric":"forbidden_depths","target":20,"reward":{"stones":780,"items":{"bloodline_essence":2}}},
+  {"id":"tribulation_first","name":"劫境初渡","description":"第一次清掉一份劫境契约。","metric":"tribulation_slots","target":1,"reward":{"stones":240,"items":{"forge_ore":2}}},
+  {"id":"tribulation_twenty","name":"劫境二十契","description":"累计清掉 20 份劫境契约。","metric":"tribulation_slots","target":20,"reward":{"stones":800,"items":{"bloodline_essence":2}}},
+  {"id":"codex_week_first","name":"周试初通","description":"第一次通过每周图鉴试炼。","metric":"codex_week_clears","target":1,"reward":{"stones":220,"items":{"spirit_food":2}}},
+  {"id":"codex_week_fifteen","name":"周试十五场","description":"累计通过 15 场每周图鉴试炼。","metric":"codex_week_clears","target":15,"reward":{"stones":760,"items":{"exp_pill":2}}}
 ]
