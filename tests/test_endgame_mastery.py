@@ -155,7 +155,11 @@ def test_the_new_achievements_reward_only_shipped_items(game):
 def test_the_fellowship_title_uses_an_endgame_metric(game):
     title = next(t for t in game[0].content.titles.values() if t.id == "fellowship_veteran")
     assert title.metric in achievements.ENDGAME_MARKERS
-    assert title.order == max(t.order for t in game[0].content.titles.values())
+    # It closes the endgame title batch; later stages may append further titles.
+    endgame_titles = [
+        t for t in game[0].content.titles.values() if t.metric in achievements.ENDGAME_MARKERS
+    ]
+    assert title.order == max(t.order for t in endgame_titles)
 
 
 # ---------------------------------------------------------------- claim path
