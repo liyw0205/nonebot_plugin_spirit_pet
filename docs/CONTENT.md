@@ -272,7 +272,7 @@
 
 ## 斗法定义
 
-`duels.json` 是斗法护法数组，由 `domain/duel_content.py` 校验：每项声明 `id`、`name`、`description`、`realm`（已有境界 id）、`stats`（四维）与 `reward`（`exp`/`stones` 区间加可选物品）；奖励必须至少发灵石或修为之一。`Catalog._validate_duels` 要求表非空、境界存在、奖励物品都在 `items.json` 里。
+`duels.json` 是斗法护法数组，由 `domain/duel_content.py` 校验：每项声明 `id`、`name`、`description`、`realm`（已有境界 id）、`stats`（四维）与 `reward`（`exp`/`stones` 区间加可选物品）；奖励必须至少发灵石或修为之一。`Catalog._validate_duels` 要求表非空、境界存在、奖励物品都在 `items.json` 里。当前七位护法覆盖启灵至渡劫七个境界，四维沿用既有递增带并对齐同境界秘境敌手的量级。
 
 ```json
 {
@@ -411,7 +411,7 @@ gear<伙伴编号>_<套号>_<部位>_<强化等级>_<物品id>
 
 `Catalog._validate_drills` 要求表非空、`realm` 引用现有境界、每个 `elements` 引用现有元素、`order` 与名称都唯一。重名同时会被 `_index` 的通用去重拦下，因此 `_validate_drills` 里的重名判断只是对绕过加载器的调用方的兜底。
 
-四座木人桩的四维**直接锚定同境界既有秘境敌手**（`wood_guard`、`moon_wolf`、`thunder_dragon`、`ember_wraith`），不引入新的平衡带：演武的意义是让玩家在不花资源的前提下预演真实内容，若木人桩比真实敌手更强或更弱，这个预演就会误导配装。
+七座木人桩的四维**直接锚定同境界既有秘境敌手**（启灵 `wood_guard`、凝气 `moon_wolf`、筑基 `thunder_dragon`、金丹 `ember_wraith`、元婴 `frost_monarch`、化神 `void_blade`、渡劫 `tribulation_avatar`），不引入新的平衡带：演武的意义是让玩家在不花资源的前提下预演真实内容，若木人桩比真实敌手更强或更弱，这个预演就会误导配装。
 
 ```json
 {

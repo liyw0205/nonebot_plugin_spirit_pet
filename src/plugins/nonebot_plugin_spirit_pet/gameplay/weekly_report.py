@@ -71,6 +71,33 @@ def _arc_choices(ctx: Context, user_id: str, start: int, end: int) -> int:
     )
 
 
+def _duel_wins(ctx: Context, user_id: str, start: int) -> int:
+    """Guardians beaten this week: the `duel_week_<week start>_<id>` markers."""
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS n FROM quest_progress "
+        "WHERE user_id=? AND quest_id GLOB ? AND claimed=1",
+        (user_id, f"duel_week_{start}_*"),
+    ).fetchone()
+    return int(row["n"])
+
+
+def _drill_attempts(ctx: Context, user_id: str, start: int, end: int) -> int:
+    """Drill attempts this week, summed from the per-day `drill_<day>` rows."""
+    first, last = beijing_day(start), beijing_day(end - 1)
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id, progress FROM quest_progress "
+        "WHERE user_id=? AND quest_id LIKE 'drill_%'",
+        (user_id,),
+    ).fetchall()
+    total = 0
+    for row in rows:
+        day = row["quest_id"][len("drill_"):]
+        # The day suffix is an ISO date (YYYY-MM-DD); compare it as text, in range.
+        if first <= day <= last:
+            total += int(row["progress"])
+    return total
+
+
 def report(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠周报 不接受参数，直接发送即可。")
@@ -85,6 +112,8 @@ def report(ctx: Context, arg: str) -> Reply:
     expeditions = _expeditions(ctx, ctx.user_id, start, end)
     received, claimed = _mail(ctx, ctx.user_id, start, end)
     chooser = _arc_choices(ctx, ctx.user_id, start, end)
+    duels = _duel_wins(ctx, ctx.user_id, start)
+    drills = _drill_attempts(ctx, ctx.user_id, start, end)
     lines = [
         f"统计区间：{beijing_day(start)} 至 {beijing_day(end - 1)}（北京时间）。",
         f"签到：{signins} 天。",
@@ -98,6 +127,8 @@ def report(ctx: Context, arg: str) -> Reply:
         lines.append(f"分类：{detail}。")
     lines.extend((
         f"委托：本周出发 {expeditions} 次。",
+        f"斗法：本周胜 {duels} 位护法。",
+        f"演武：本周出手 {drills} 次。",
         f"奇缘：本周做出 {chooser} 次抉择。",
         f"信箱：收到 {received} 封 · 已领取 {claimed} 封。",
         "周报只读，不补发奖励；跨周后统计窗口自动切换。",

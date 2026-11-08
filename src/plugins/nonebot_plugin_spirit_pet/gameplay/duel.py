@@ -16,12 +16,15 @@ record and advance no daily/weekly counters: a bout is several exchanges, so a
 single record would either misreport it or collide on ``battle_records``.
 """
 
+import re
+
 from ..application.context import Context
 from ..domain.content import Range, Reward
 from ..domain.duel_content import DuelOpponent
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
-from ..utils.time import beijing_week
+from ..utils.pagination import paginate
+from ..utils.time import beijing_day, beijing_week
 from .combat import Fighter, fight
 from .loadout import combatant
 from .rewards import grant
@@ -33,6 +36,10 @@ ENEMY_HP_KEY = "duel_enemy_hp"
 WEEK_PREFIX = "duel_week_"
 STATE_KEYS = (TARGET_KEY, ROUND_KEY, HP_KEY, ENEMY_HP_KEY)
 MAX_RATE = 2.5
+# `duel_week_<week start epoch>_<opponent id>`; opponent ids carry no underscore.
+WEEK_MARKER = re.compile(r"^duel_week_([0-9]+)_(.+)$")
+HISTORY_PAGE_SIZE = 6
+HISTORY = frozenset({"战历", "战绩"})
 
 
 def opponents(ctx: Context) -> list[DuelOpponent]:
@@ -114,6 +121,82 @@ def weekly_wins(ctx: Context, user_id: str | None = None) -> int:
     prefix = f"{WEEK_PREFIX}{_week_start(ctx)}_"
     known = {opponent.id for opponent in opponents(ctx)}
     return sum(1 for row in rows if str(row["quest_id"])[len(prefix):] in known)
+
+
+def weeks_won(ctx: Context, user_id: str | None = None) -> list[tuple[int, int]]:
+    """Every recorded duel week as ``(week start, distinct guardians beaten)``.
+
+    The markers `duel_week_<week start>_<opponent id>` are written once per week and
+    never cleaned, and until now only the current week was ever read, so an older
+    win was unreachable. This groups exactly those rows: newest week first, and
+    guardians that later left the shipped content still count under their id.
+    """
+    owner = user_id or ctx.user_id
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id GLOB ? AND claimed=1",
+        (owner, f"{WEEK_PREFIX}*"),
+    ).fetchall()
+    weeks: dict[int, set[str]] = {}
+    for row in rows:
+        match = WEEK_MARKER.match(str(row["quest_id"]))
+        if match is None:
+            continue
+        weeks.setdefault(int(match.group(1)), set()).add(match.group(2))
+    return [(start, len(ids)) for start, ids in sorted(weeks.items(), reverse=True)]
+
+
+def _beaten_in_week(ctx: Context, user_id: str, start: int) -> list[str]:
+    """Names of the guardians beaten in one recorded week, in ladder order."""
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id GLOB ? AND claimed=1",
+        (user_id, f"{WEEK_PREFIX}{start}_*"),
+    ).fetchall()
+    prefix = f"{WEEK_PREFIX}{start}_"
+    beaten = {str(row["quest_id"])[len(prefix):] for row in rows}
+    ordered = [entry.name for entry in opponents(ctx) if entry.id in beaten]
+    # A win recorded against content that has since been removed is still a win.
+    retired = sorted(beaten - {entry.id for entry in opponents(ctx)})
+    return ordered + [f"{entry_id}（已下线）" for entry_id in retired]
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past duel weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "斗法战历",
+            (
+                "尚未结契，先完成领养，才能留下斗法战绩。",
+                "战历按周回顾你胜过哪些护法，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_won(ctx)
+    if not records:
+        return Reply(
+            "斗法战历",
+            (
+                "还没有胜过任何护法，先发送 灵宠斗法 挑一位试试。",
+                "每胜一位护法会在本周留下一笔记录，战历按周汇总。",
+            ),
+            ("灵宠斗法", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "斗法战历", "灵宠斗法 战历", HISTORY_PAGE_SIZE)
+    lines = [
+        f"共 {len(records)} 周有胜绩 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, count in page.entries:
+        names = _beaten_in_week(ctx, ctx.user_id, start)
+        lines.append(
+            f"{beijing_day(start)} 起那一周 · 胜 {count}/{len(opponents(ctx))} 位护法"
+        )
+        lines.append("   " + ("、".join(names) if names else "无记录"))
+    lines.append("战历只读：不重打、不补发奖励，也不改变本周进度。")
+    return Reply(
+        "斗法战历",
+        tuple(lines),
+        (*page.navigation, "灵宠斗法", "灵宠目标")[:4],
+    )
 
 
 def _stance(ctx: Context, value: str):
@@ -351,6 +434,8 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if not parts:
         return page(ctx, "")
     head = parts[0]
+    if head in HISTORY:
+        return history(ctx, " ".join(parts[1:]))
     if len(parts) > 1 and head == "认输":
         return forfeit(ctx, " ".join(parts[1:]))
     if len(parts) == 1 and head == "认输":
@@ -380,6 +465,6 @@ def objective_line(ctx: Context, user_id: str) -> str:
 
 
 __all__ = [
-    "claimed", "dispatch", "exchange", "forfeit", "objective_line", "opponents", "page",
-    "start", "state", "weekly_wins",
+    "claimed", "dispatch", "exchange", "forfeit", "history", "objective_line", "opponents",
+    "page", "start", "state", "weekly_wins", "weeks_won",
 ]

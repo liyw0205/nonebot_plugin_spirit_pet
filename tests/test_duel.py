@@ -16,7 +16,7 @@ from nonebot_plugin_spirit_pet.domain.content import DuelRule, DuelStance, Rules
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay import duel
 from nonebot_plugin_spirit_pet.storage.database import Store
-from nonebot_plugin_spirit_pet.utils.time import beijing_week
+from nonebot_plugin_spirit_pet.utils.time import beijing_day, beijing_week
 
 from .support import items, pet, player, sql
 
@@ -317,6 +317,8 @@ def test_help_objectives_and_parse_contract(game, play):
     assert f"斗法：本周已胜 0/{total} 位护法 · 未开局" in objectives.text()
     assert handlers._parse("灵宠斗法") == ("duel", "")
     assert handlers._parse("灵宠斗法 抢攻") == ("duel", "抢攻")
+    assert handlers._parse("灵宠斗法 战历") == ("duel", "战历")
+    assert handlers._parse("灵宠斗法 战历 2") == ("duel", "战历 2")
 
 
 def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
@@ -334,6 +336,124 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     }
     assert buttons == set(page.commands)
     assert len(buttons) <= 4
+    markdown = message["markdown"][0].data["markdown"]
+    text = markdown.content if hasattr(markdown, "content") else markdown["content"]
+    linked = {
+        parse_qs(urlparse(url).query)["command"][0]
+        for url in re.findall(r"\]\((mqqapi://[^)]+)\)", text)
+    }
+    assert linked == {f"/{link.command}" for link in page.inline_commands}
+    assert not linked & buttons
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def seed_week_marker(game, week_start, opponent_id, user="u1", claimed=1):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 0, ?)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET claimed=excluded.claimed",
+        (user, f"duel_week_{week_start}_{opponent_id}", claimed),
+    )
+
+
+def test_history_lists_past_weeks_newest_first(game, play):
+    play("adopt", "青鸾")
+    this = beijing_week(NOW)[0]
+    last = this - WEEK
+    seed_week_marker(game, last, "songfeng")
+    seed_week_marker(game, last, "shiquan")
+    seed_week_marker(game, this, "chixia")
+    page = play("duel", "战历")
+    assert "斗法战历" in page.title
+    assert "共 2 周有胜绩" in page.text()
+    weeks = [line for line in page.lines if "起那一周" in line]
+    # Newest week first: this week's row precedes last week's row.
+    assert len(weeks) == 2
+    assert weeks[0] == f"{beijing_day(this)} 起那一周 · 胜 1/7 位护法"
+    assert weeks[1] == f"{beijing_day(last)} 起那一周 · 胜 2/7 位护法"
+    assert "赤霞子" in page.text() and "松风道人" in page.text() and "石泉客" in page.text()
+
+
+def test_history_is_empty_before_any_win(game, play):
+    play("adopt", "青鸾")
+    page = play("duel", "战历")
+    assert "还没有胜过任何护法" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_without_a_pet_is_read_only(game, play):
+    page = play("duel", "战历", user="ghost")
+    assert "尚未结契" in page.text()
+    assert page.inline_commands[0].command == "灵宠领养 "
+
+
+def test_history_never_writes_and_never_starts_a_bout(game, play):
+    play("adopt", "青鸾")
+    seed_week_marker(game, beijing_week(NOW)[0], "songfeng")
+    before = sql(game[1], "SELECT user_id, quest_id, progress, claimed FROM quest_progress ORDER BY quest_id")
+    stones = player(game[1])["stones"]
+    play("duel", "战历")
+    after = sql(game[1], "SELECT user_id, quest_id, progress, claimed FROM quest_progress ORDER BY quest_id")
+    assert after == before
+    assert player(game[1])["stones"] == stones
+    # No bout was started: the four bout-state rows are absent.
+    assert state_rows(game) == []
+
+
+def test_history_pages_and_refuses_a_page_beyond_the_end(game, play):
+    play("adopt", "青鸾")
+    this = beijing_week(NOW)[0]
+    total_weeks = duel.HISTORY_PAGE_SIZE + 2
+    for index in range(total_weeks):
+        seed_week_marker(game, this - index * WEEK, "songfeng", claimed=1)
+    first = play("duel", "战历")
+    assert f"共 {total_weeks} 周有胜绩 · 第 1/2 页" in first.text()
+    second = play("duel", "战历 2")
+    assert "第 2/2 页" in second.text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("duel", "战历 3")
+
+
+def test_history_keeps_a_win_against_removed_content(game, play):
+    play("adopt", "青鸾")
+    seed_week_marker(game, beijing_week(NOW)[0], "retired_guard")
+    page = play("duel", "战历")
+    assert "retired_guard（已下线）" in page.text()
+
+
+def test_history_reaches_via_the_alias_and_only_current_week_counts_in_wins(game, play):
+    play("adopt", "青鸾")
+    seed_week_marker(game, beijing_week(NOW)[0] - WEEK, "songfeng")
+    # A previous week's win must not be reported as this week's progress.
+    page = play("duel")
+    assert "本周已胜 0/7 位护法" in page.text()
+    history = play("duel", "战绩")
+    assert "共 1 周有胜绩" in history.text()
+    assert "胜 1/7 位护法" in history.text()
+
+
+def test_history_ladder_total_tracks_the_shipped_content(game, play):
+    play("adopt", "青鸾")
+    this = beijing_week(NOW)[0]
+    for opponent in ladder(game):
+        seed_week_marker(game, this, opponent.id)
+    page = play("duel", "战历")
+    assert f"胜 {len(ladder(game))}/{len(ladder(game))} 位护法" in page.text()
+
+
+def test_history_payload_keeps_buttons_and_links_disjoint(game, play):
+    play("adopt", "青鸾")
+    seed_week_marker(game, beijing_week(NOW)[0], "songfeng")
+    page = play("duel", "战历")
+    _, message = _qq_segments(page, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in message["keyboard"]
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    assert buttons == set(page.commands)
     markdown = message["markdown"][0].data["markdown"]
     text = markdown.content if hasattr(markdown, "content") else markdown["content"]
     linked = {

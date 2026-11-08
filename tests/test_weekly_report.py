@@ -179,3 +179,41 @@ def test_arc_choices_are_zero_without_any_history(game, play):
     account(game, play)
     page = play("weekly_report", now=NOW)
     assert "奇缘：本周做出 0 次抉择。" in page.text()
+
+
+def seed_duel_marker(game, week_start, opponent_id, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 0, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET claimed=1",
+        (user, f"duel_week_{week_start}_{opponent_id}"),
+    )
+
+
+def seed_drill_day(game, day, amount, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"drill_{day}", amount),
+    )
+
+
+def test_duel_and_drill_rows_summarise_the_week(game, play):
+    account(game, play)
+    seed_duel_marker(game, WEEK_START, "songfeng")
+    seed_duel_marker(game, WEEK_START, "shiquan")
+    seed_duel_marker(game, WEEK_START - 7 * DAY, "chixia")   # previous week: excluded
+    seed_drill_day(game, beijing_day(WEEK_START + DAY), 3)
+    seed_drill_day(game, beijing_day(WEEK_START + 2 * DAY), 2)
+    seed_drill_day(game, beijing_day(WEEK_START - DAY), 9)   # previous week: excluded
+    page = play("weekly_report", now=NOW)
+    assert "斗法：本周胜 2 位护法。" in page.text()
+    assert "演武：本周出手 5 次。" in page.text()
+
+
+def test_duel_and_drill_rows_are_zero_without_history(game, play):
+    account(game, play)
+    page = play("weekly_report", now=NOW)
+    assert "斗法：本周胜 0 位护法。" in page.text()
+    assert "演武：本周出手 0 次。" in page.text()
