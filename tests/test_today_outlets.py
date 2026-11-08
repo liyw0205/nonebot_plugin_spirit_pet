@@ -53,13 +53,13 @@ def test_shop_outlet_disappears_once_the_stock_is_gone(game, play):
 def test_cave_outlet_counts_the_remaining_actions(game, play):
     account(play)
     facilities = cave.facilities(context(game))
-    assert "洞府还剩 3 次行动" in collect(game)[1]
+    assert "洞府还剩 5 次行动" in collect(game)[1]
     sql(
         game[1],
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 1, 1)",
         (f"cave_{facilities[0].id}_day_{beijing_day(NOW)}",),
     )
-    assert "洞府还剩 2 次行动" in collect(game)[1]
+    assert "洞府还剩 4 次行动" in collect(game)[1]
     for facility in facilities:
         sql(
             game[1],

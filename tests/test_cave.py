@@ -62,9 +62,11 @@ def level_rows(game, user="u1"):
     )
 
 
-def test_content_defines_three_facilities_with_five_levels(game):
+def test_content_defines_five_facilities_with_five_levels(game):
     entries = facilities(game)
-    assert [facility.id for facility in entries] == ["alchemy", "pen", "spring"]
+    assert [facility.id for facility in entries] == [
+        "alchemy", "herb_garden", "pen", "spirit_field", "spring",
+    ]
     assert {facility.effect for facility in entries} == {"energy", "affinity", "item"}
     for facility in entries:
         assert facility.max_level == 5
@@ -77,6 +79,8 @@ def test_content_defines_three_facilities_with_five_levels(game):
     assert by_id["spring"].item is None and by_id["spring"].yields[0] == 30
     assert by_id["pen"].yields == [3, 5, 7, 9, 12]
     assert by_id["alchemy"].item == "exp_pill" and by_id["alchemy"].yields == [1, 1, 2, 2, 3]
+    assert by_id["herb_garden"].item == "seed_blood_herb"
+    assert by_id["spirit_field"].item == "seed_spirit_rice" and by_id["spirit_field"].yields == [1, 2, 2, 3, 4]
     assert all(
         item in game[0].content.items
         for facility in entries for step in facility.upgrades for item in step.items
@@ -94,8 +98,9 @@ def test_page_lists_levels_effects_and_upgrade_cost(game, play):
     grant_stones(game, 5000)
     give(game, "spirit_food", 10)
     page = play("cave")
-    assert "洞府总览：3/15 级" in page.text()
-    assert "今日剩余 3 次设施行动" in page.text()
+    assert "洞府总览：5/25 级" in page.text()
+    assert "繁荣 5/25（1 档）" in page.text()
+    assert "今日剩余 5 次设施行动" in page.text()
     assert "灵泉 · Lv1 · 为一只伙伴恢复 30 精力 · 今日可用" in page.text()
     assert "兽栏 · Lv1 · 为一只伙伴增加 3 亲密 · 今日可用" in page.text()
     assert "丹房 · Lv1 · 获得 蕴灵丹 ×1 · 今日可用" in page.text()
@@ -123,7 +128,7 @@ def test_upgrade_spends_exactly_and_raises_the_level(game, play):
     assert level_rows(game) == [{"quest_id": "cave_spring_level", "progress": 2}]
     page = play("cave")
     assert "灵泉 · Lv2 · 为一只伙伴恢复 45 精力" in page.text()
-    assert "洞府总览：4/15 级" in page.text()
+    assert "洞府总览：6/25 级" in page.text()
 
 
 def test_upgrade_at_the_cap_is_refused(game, play):
@@ -251,7 +256,7 @@ def test_levels_survive_a_restart(game, play):
     restarted = Game(reopened, game[0].config, game[0].rng, content=game[0].content)
     page = restarted.execute("u1", "cave", "", "restart-cave", NOW)
     assert "灵泉 · Lv2 · 为一只伙伴恢复 45 精力" in page.text()
-    assert "洞府总览：4/15 级" in page.text()
+    assert "洞府总览：6/25 级" in page.text()
 
 
 def test_help_objectives_and_parse_contract(game, play):
@@ -259,7 +264,7 @@ def test_help_objectives_and_parse_contract(game, play):
     guide = play("help", "成长")
     assert "灵宠洞府" in guide.text() and "灵宠洞府 升级" in guide.text()
     objectives = play("objectives")
-    assert "洞府：总 3/15 级 · 今日剩余 3 次设施行动" in objectives.text()
+    assert "洞府：繁荣 5/25（1 档） · 今日可供奉 · 剩余 5 次设施行动" in objectives.text()
     assert handlers._parse("灵宠洞府") == ("cave", "")
     assert handlers._parse("灵宠洞府 升级 灵泉") == ("cave", "升级 灵泉")
 

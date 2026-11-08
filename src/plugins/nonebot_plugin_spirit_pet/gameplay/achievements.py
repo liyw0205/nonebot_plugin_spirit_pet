@@ -198,6 +198,7 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     elif metric in (
         "hybrid_brews", "alchemy_brews", "contracts_met", "hard_clears",
         "encounter_choices", "gem_cuts", "arc_choices",
+        "farm_harvests", "banquets_held", "cave_offerings",
     ):
         # Systems that leave no other trace bump a monotonic counter instead.
         from .counters import value as counter_value

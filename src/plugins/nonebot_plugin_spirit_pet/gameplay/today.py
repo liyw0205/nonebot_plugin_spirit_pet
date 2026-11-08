@@ -18,6 +18,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from . import (
     affinity_milestone_rewards,
+    banquet,
     bounty,
     cave,
     checkin_rewards,
@@ -146,8 +147,21 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
 
     if cave.remaining(ctx, owner):
         pending.append(_entry(
-            TODO, f"洞府还剩 {cave.remaining(ctx, owner)} 次行动", "灵泉、兽栏与丹房每日各一次", "灵宠洞府",
+            TODO, f"洞府还剩 {cave.remaining(ctx, owner)} 次行动", "五处设施每日各一次", "灵宠洞府",
         ))
+    if not cave.offered_today(ctx, owner):
+        claimable.append(_entry(
+            CLAIM, f"洞府供奉可领（{cave.tier(ctx, owner)} 档）", "每日一次，按繁荣档位发放", "灵宠洞府 供奉",
+        ))
+    if not banquet.held(ctx, owner):
+        if banquet.ready(ctx, owner):
+            claimable.append(_entry(
+                CLAIM, "本周家宴可开席", "宴请全体伙伴并领取周奖励", "灵宠家宴 开席",
+            ))
+        else:
+            pending.append(_entry(
+                TODO, "本周家宴未开席", "厨艺、灵粮、灵石与灶火齐备后可开席", "灵宠家宴",
+            ))
 
     sect = sects.current(ctx, owner)
     if sect is not None:

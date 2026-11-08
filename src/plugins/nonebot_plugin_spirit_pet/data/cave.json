@@ -38,5 +38,33 @@
       {"stones": 1500, "items": {"forge_ore": 6}},
       {"stones": 3000, "items": {"forge_ore": 8}}
     ]
+  },
+  {
+    "id": "herb_garden",
+    "name": "药圃",
+    "description": "洞府阴处的药圃，每日采一次灵血草种，炼丹与灵田都用得上。",
+    "effect": "item",
+    "item": "seed_blood_herb",
+    "yields": [1, 1, 2, 2, 3],
+    "upgrades": [
+      {"stones": 300, "items": {"forge_ore": 2}},
+      {"stones": 700, "items": {"forge_ore": 4}},
+      {"stones": 1500, "items": {"forge_ore": 6}},
+      {"stones": 3000, "items": {"forge_ore": 8}}
+    ]
+  },
+  {
+    "id": "spirit_field",
+    "name": "灵圃",
+    "description": "引灵泉灌溉的小圃，每日收一次灵稻种，补上灵田的种子缺口。",
+    "effect": "item",
+    "item": "seed_spirit_rice",
+    "yields": [1, 2, 2, 3, 4],
+    "upgrades": [
+      {"stones": 300, "items": {"spirit_food": 2}},
+      {"stones": 700, "items": {"spirit_food": 4}},
+      {"stones": 1500, "items": {"spirit_food": 6}},
+      {"stones": 3000, "items": {"spirit_food": 8}}
+    ]
   }
 ]

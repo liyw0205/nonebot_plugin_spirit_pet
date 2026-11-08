@@ -2,6 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
 from . import adventure_collection_rewards, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
+from . import banquet, farm_progress
 from . import codex
 from . import stage_stars
 from .arena import tier_rewards as arena_tier_rewards
@@ -74,6 +75,8 @@ HUB_PAGES = (
     "灵宠亲密赏",
     "灵宠境界赏",
     "灵宠际遇",
+    "灵宠农事",
+    "灵宠家宴",
 )
 
 
@@ -521,7 +524,9 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_dungeon_line(ctx, player.user_id), "灵宠今日秘境"),
         (forbidden.objective_line(ctx, player.user_id), "灵宠禁地"),
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
+        (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
+        (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
         (corridor.objective_line(ctx, player.user_id), "灵宠回廊"),
         (sects.objective_line(ctx, player.user_id), "灵宠师门"),
         (codex_trials.objective_line(ctx, player.user_id), "灵宠图鉴试炼"),

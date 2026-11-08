@@ -58,5 +58,35 @@
     "stones": 120,
     "ingredients": {"spirit_food": 4, "forge_ore": 2, "bloodline_essence": 2},
     "effects": {"energy": 25, "exp": 25, "affinity": 15}
+  },
+  {
+    "id": "moon_cake",
+    "name": "月华饼",
+    "description": "以蕴灵穗与灵米揉成，月华入馅，收进乾坤袋慢慢吃。",
+    "level": 6,
+    "heat": 2,
+    "stones": 50,
+    "ingredients": {"spirit_food": 2, "seed_aura_ear": 1},
+    "item": "meal_moon"
+  },
+  {
+    "id": "cave_banquet",
+    "name": "洞天家宴",
+    "description": "洞府自种的灵稻与灵血草同席，全队伙伴都有座位。",
+    "level": 6,
+    "heat": 3,
+    "stones": 150,
+    "ingredients": {"spirit_food": 3, "seed_spirit_rice": 1, "bloodline_essence": 1},
+    "effects": {"energy": 30, "exp": 35, "affinity": 20}
+  },
+  {
+    "id": "jade_banquet",
+    "name": "琼华仙宴",
+    "description": "琼华入馔的顶席，厨艺到了才有这一桌。",
+    "level": 7,
+    "heat": 4,
+    "stones": 260,
+    "ingredients": {"spirit_food": 4, "seed_aura_ear": 1, "forge_ore": 2, "bloodline_essence": 2},
+    "effects": {"energy": 40, "exp": 50, "affinity": 25}
   }
 ]

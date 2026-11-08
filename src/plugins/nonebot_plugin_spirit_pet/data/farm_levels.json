@@ -1,0 +1,7 @@
+[
+  {"level": 1, "harvests": 0},
+  {"level": 2, "harvests": 6, "stones": 250, "items": {"spirit_food": 2}},
+  {"level": 3, "harvests": 16, "stones": 500, "items": {"forge_ore": 2}},
+  {"level": 4, "harvests": 30, "stones": 900, "items": {"bloodline_essence": 1}},
+  {"level": 5, "harvests": 50, "stones": 1500, "items": {"exp_pill": 1}}
+]

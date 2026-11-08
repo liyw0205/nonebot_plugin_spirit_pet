@@ -101,5 +101,10 @@
   {"id":"tribulation_first","name":"劫境初渡","description":"第一次清掉一份劫境契约。","metric":"tribulation_slots","target":1,"reward":{"stones":240,"items":{"forge_ore":2}}},
   {"id":"tribulation_twenty","name":"劫境二十契","description":"累计清掉 20 份劫境契约。","metric":"tribulation_slots","target":20,"reward":{"stones":800,"items":{"bloodline_essence":2}}},
   {"id":"codex_week_first","name":"周试初通","description":"第一次通过每周图鉴试炼。","metric":"codex_week_clears","target":1,"reward":{"stones":220,"items":{"spirit_food":2}}},
-  {"id":"codex_week_fifteen","name":"周试十五场","description":"累计通过 15 场每周图鉴试炼。","metric":"codex_week_clears","target":15,"reward":{"stones":760,"items":{"exp_pill":2}}}
+  {"id":"codex_week_fifteen","name":"周试十五场","description":"累计通过 15 场每周图鉴试炼。","metric":"codex_week_clears","target":15,"reward":{"stones":760,"items":{"exp_pill":2}}},
+  {"id":"farm_first","name":"初耕","description":"第一次收获灵田作物。","metric":"farm_harvests","target":1,"reward":{"stones":100,"items":{"spirit_food":1}}},
+  {"id":"farm_forty","name":"百谷归仓","description":"累计收获 40 次灵田作物。","metric":"farm_harvests","target":40,"reward":{"stones":600,"items":{"forge_ore":2}}},
+  {"id":"banquet_first","name":"一宴成名","description":"第一次摆下家宴。","metric":"banquets_held","target":1,"reward":{"stones":200,"items":{"spirit_food":2}}},
+  {"id":"cave_offering_first","name":"洞府香火","description":"第一次在洞府供奉。","metric":"cave_offerings","target":1,"reward":{"stones":120,"items":{"spirit_food":1}}},
+  {"id":"cave_offering_fifteen","name":"香火不断","description":"累计在洞府供奉 15 次。","metric":"cave_offerings","target":15,"reward":{"stones":800,"items":{"bloodline_essence":2}}}
 ]

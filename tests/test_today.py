@@ -186,16 +186,18 @@ def test_the_page_badges_each_entry(game, play):
     play("adopt", "青鸾")
     text = play("today").text()
     assert "[可领] 每周免费十连可领" in text
-    assert "[待做] 演武还剩" in text
+    assert "[待做] 今日还没签到" in text
+    # 演武 may sit past the first page now that the home loop adds two entries.
+    assert any("演武还剩" in label for label in labels(today.collect(context(game))[1]))
 
 
 def test_an_over_range_page_is_refused_without_writing(game, play):
     play("adopt", "青鸾")
     claimable, pending = today.collect(context(game))
-    assert len(claimable) + len(pending) <= today.PAGE_SIZE, "this fixture fits one page"
+    pages = max(1, (len(claimable) + len(pending) + today.PAGE_SIZE - 1) // today.PAGE_SIZE)
     before = snapshot(game)
-    with pytest.raises(GameError, match="今日待办共 1 页"):
-        play("today", "2")
+    with pytest.raises(GameError, match=f"今日待办共 {pages} 页"):
+        play("today", str(pages + 1))
     assert snapshot(game) == before
 
 

@@ -1,0 +1,7 @@
+[
+  {"tier": 1, "stones": 40},
+  {"tier": 2, "stones": 80, "items": {"spirit_food": 1}},
+  {"tier": 3, "stones": 140, "items": {"spirit_food": 2, "forge_ore": 1}},
+  {"tier": 4, "stones": 220, "items": {"forge_ore": 2, "bloodline_essence": 1}},
+  {"tier": 5, "stones": 320, "items": {"exp_pill": 1, "bloodline_essence": 1}}
+]

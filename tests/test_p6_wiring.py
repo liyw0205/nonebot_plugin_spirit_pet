@@ -120,7 +120,7 @@ def test_the_title_tracks_the_counter(game, play):
     grant(game, {"spirit_food": 3})
     sql(game[1], "UPDATE players SET stones=5000")
     play("encounters", item_option(game).label, now=NOW)
-    page = last_page(len(game[0].content.titles), titles.TITLE_PAGE_SIZE)
+    page = page_of(game[0].content.titles.values(), "路遥知心", titles.TITLE_PAGE_SIZE)
     reply = play("titles", str(page), now=NOW)
     line = next(text for text in reply.lines if "路遥知心" in text)
     assert "1/10" in line

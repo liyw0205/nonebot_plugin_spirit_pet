@@ -92,10 +92,10 @@ def low_energy(game, value=10, user="u1"):
     )
 
 
-def test_content_defines_six_dishes_with_two_output_shapes(game):
+def test_content_defines_nine_dishes_with_two_output_shapes(game):
     dishes = list(game[0].content.cuisine.values())
-    assert len(dishes) == 6
-    assert sorted({dish.level for dish in dishes}) == [1, 2, 3, 4, 5]
+    assert len(dishes) == 9
+    assert sorted({dish.level for dish in dishes}) == [1, 2, 3, 4, 5, 6, 7]
     for dish in dishes:
         assert 1 <= dish.heat <= 5
         assert dish.stones > 0 or dish.ingredients
@@ -122,7 +122,7 @@ def test_unregistered_page_is_read_only(game, play):
 def test_page_lists_states_and_links_only_cookable_rows(game, play):
     play("adopt", "青鸾")
     page = play("cuisine")
-    assert "厨艺 1 级 · 已掌握 0/6 道 · 今日灶火 6/6" in page.text()
+    assert "厨艺 1 级 · 已掌握 0/9 道 · 今日灶火 6/6" in page.text()
     assert "灵米粥 · 1 级 · 灶火 1 · 单膳" in page.text()
     assert "可烹饪" in page.text()
     assert "百草羹 · 2 级" in page.text() and "未解锁（需厨艺 2 级）" in page.text()
@@ -149,7 +149,7 @@ def test_cook_single_meal_adds_items_and_spends_heat(game, play):
     assert heat_row(game) == 2
     assert dish_rows(game) == [{"quest_id": "cuisine_dish_rice_porridge", "progress": 2}]
     page = play("cuisine")
-    assert "厨艺 2 级 · 已掌握 1/6 道 · 今日灶火 4/6" in page.text()
+    assert "厨艺 2 级 · 已掌握 1/9 道 · 今日灶火 4/6" in page.text()
 
 
 def test_cooking_the_same_dish_again_does_not_raise_the_level(game, play):
@@ -158,7 +158,7 @@ def test_cooking_the_same_dish_again_does_not_raise_the_level(game, play):
     play("cuisine_cook", "灵米粥")
     second = play("cuisine_cook", "灵米粥")
     assert "厨艺提升" not in second.text()
-    assert "厨艺 2 级 · 已掌握 1/6 道" in second.text()
+    assert "厨艺 2 级 · 已掌握 1/9 道" in second.text()
     assert dish_rows(game)[0]["progress"] == 2
 
 
@@ -303,7 +303,7 @@ def test_state_persists_across_restart(game, play):
     reopened.initialize()
     restarted = Game(reopened, game[0].config, game[0].rng, content=game[0].content)
     page = restarted.execute("u1", "cuisine", "", "restart-cuisine", NOW)
-    assert "厨艺 2 级 · 已掌握 1/6 道 · 今日灶火 5/6" in page.text()
+    assert "厨艺 2 级 · 已掌握 1/9 道 · 今日灶火 5/6" in page.text()
 
 
 def test_help_objectives_and_parse_contract(game, play):
@@ -316,7 +316,7 @@ def test_help_objectives_and_parse_contract(game, play):
     add_items(game, {"spirit_food": 6})
     play("cuisine_cook", "灵米粥")
     hub = play("objectives")
-    assert "灵膳：灶火 5/6 · 已掌握 1/6 道 · 厨艺 2 级" in hub.text()
+    assert "灵膳：灶火 5/6 · 已掌握 1/9 道 · 厨艺 2 级" in hub.text()
     link = next(link for link in hub.inline_commands if link.command == "灵宠膳房")
     assert hub.lines[link.line].startswith("灵膳：")
 

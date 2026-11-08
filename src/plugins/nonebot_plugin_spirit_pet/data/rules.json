@@ -96,7 +96,24 @@
   },
   "cuisine": {
     "daily_heat": 6,
-    "max_level": 5
+    "max_level": 7
+  },
+  "banquet": {
+    "min_level": 5,
+    "stones": 200,
+    "spirit_food": 4,
+    "heat": 3,
+    "energy": 25,
+    "exp": 30,
+    "affinity": 15,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 400, "maximum": 400},
+      "items": {
+        "forge_ore": {"minimum": 2, "maximum": 2},
+        "bloodline_essence": {"minimum": 1, "maximum": 1}
+      }
+    }
   },
   "sect": {
     "daily_contribution": 10,

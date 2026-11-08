@@ -31,6 +31,8 @@ from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
 from ..domain.race_prize_content import RacePrize
+from ..domain.farm_level_content import FarmLevel
+from ..domain.cave_offering_content import CaveOffering
 from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
 from ..domain.escort_content import EscortMission
@@ -160,6 +162,8 @@ class Catalog:
     moods: dict[str, MoodLevel]
     races: dict[str, RaceTrack]
     race_prizes: dict[int, RacePrize]
+    farm_levels: dict[int, FarmLevel]
+    cave_offerings: dict[int, CaveOffering]
     gauntlets: dict[str, Gauntlet]
     sigils: dict[str, Sigil]
     escorts: dict[str, EscortMission]
@@ -244,6 +248,8 @@ class Catalog:
             moods=_index(directory / "moods.json", MoodLevel, "id"),
             races=_index(directory / "races.json", RaceTrack),
             race_prizes=_index(directory / "race_prizes.json", RacePrize, "rank"),
+            farm_levels=_index(directory / "farm_levels.json", FarmLevel, "level"),
+            cave_offerings=_index(directory / "cave_offerings.json", CaveOffering, "tier"),
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
             sigils=_index(directory / "sigils.json", Sigil),
             escorts=_index(directory / "escorts.json", EscortMission),
@@ -452,6 +458,8 @@ class Catalog:
         self._validate_achievements()
         self._validate_breeding()
         self._validate_titles()
+        self._validate_farm_levels()
+        self._validate_cave_offerings()
 
     def _validate_daily_followups(self) -> None:
         """Every scheduled follow-up must be reachable from a real trigger choice.
@@ -813,6 +821,29 @@ class Catalog:
                 raise ValueError(f"mood {level.id} has no rate in rules.mood.rates")
             if abs(rule.rates[level.id] - level.rate) > 1e-9:
                 raise ValueError(f"mood {level.id} rate disagrees with rules.mood.rates")
+
+    def _validate_farm_levels(self) -> None:
+        levels = sorted(self.farm_levels)
+        if levels != list(range(1, len(levels) + 1)):
+            raise ValueError("farm levels must be contiguous from 1")
+        if not levels or self.farm_levels[1].harvests != 0:
+            raise ValueError("farm level 1 must start at zero harvests")
+        previous = -1
+        for level in levels:
+            entry = self.farm_levels[level]
+            if entry.harvests <= previous:
+                raise ValueError("farm level harvest thresholds must strictly increase")
+            previous = entry.harvests
+            self._require(entry.items, self.items, f"farm level {level} reward items")
+
+    def _validate_cave_offerings(self) -> None:
+        tiers = sorted(self.cave_offerings)
+        if tiers != list(range(1, len(tiers) + 1)):
+            raise ValueError("cave offering tiers must be contiguous from 1")
+        for tier in tiers:
+            self._require(
+                self.cave_offerings[tier].items, self.items, f"cave offering tier {tier} items",
+            )
 
     def _validate_races(self):
         if not self.races:
@@ -1209,6 +1240,7 @@ class Catalog:
             "journey_claims", "echo_claims", "first_clear_claims", "equipment_set_claims",
             "dungeon_clears",
             "encounter_choices", "gem_cuts", "arc_choices",
+            "farm_harvests", "banquets_held", "cave_offerings",
         }
         present = {achievement.metric for achievement in self.achievements.values()}
         if not required.issubset(present):

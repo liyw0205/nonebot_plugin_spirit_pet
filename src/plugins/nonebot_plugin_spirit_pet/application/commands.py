@@ -81,6 +81,7 @@ from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_stats, stage_stats, talent_reforge, weekly_report, world_boss
+from ..gameplay import banquet, farm_progress
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -224,6 +225,7 @@ ACTIONS = {
     "forbidden_challenge": Command(forbidden.challenge, True),
     "cuisine": Command(cuisine.entry, True, registered=False),
     "cuisine_cook": Command(cuisine.cook, True),
+    "banquet": Command(banquet.dispatch, True, registered=False),
     "cave": Command(cave.dispatch, True, registered=False),
     "corridor": Command(corridor.dispatch, True, registered=False),
     "sect": Command(sects.dispatch, True, registered=False),
@@ -287,6 +289,7 @@ ACTIONS = {
     "farm_renew": Command(farming.renew, True),
     "farm_upgrade": Command(farming.upgrade, True),
     "farm_water": Command(farming.water_entry, True, registered=False),
+    "farm_progress": Command(farm_progress.dispatch, True, registered=False),
     "play_game": Command(play_games.play_game, True, registered=False),
     "pet_outing": Command(pet_outing.go_out, True),
     "pet_outing_board": Command(pet_outing.catalog, True, registered=False),
@@ -406,6 +409,8 @@ COMMANDS = {
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
+    "灵宠家宴": "banquet",
+    "灵宠农事": "farm_progress",
     "灵宠洞府": "cave",
     "灵宠回廊": "corridor",
     "灵宠师门": "sect",

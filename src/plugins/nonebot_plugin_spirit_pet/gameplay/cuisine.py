@@ -113,6 +113,27 @@ def _state(ctx: Context, dish: CuisineDish, count: int = 1) -> str:
     return "可烹饪"
 
 
+def spend_heat(ctx: Context, amount: int) -> None:
+    """Record heat spent today; callers validate the remaining heat first."""
+    if amount <= 0:
+        raise ValueError("heat spend must be positive")
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=progress+excluded.progress",
+        (ctx.user_id, f"{HEAT_PREFIX}{beijing_day(ctx.now)}", amount),
+    )
+
+
+def owned_item(ctx: Context, user_id: str, item_id: str) -> int:
+    """Public bag lookup so the banquet module reuses one counting rule."""
+    return _owned(ctx, user_id, item_id)
+
+
+def eligible_pets(ctx: Context) -> list:
+    """Owned, non-archived pets that are not out on an expedition."""
+    return _eligible(ctx)
+
+
 def page(ctx: Context) -> Reply:
     if ctx.repo.player(ctx.user_id) is None:
         return Reply("灵宠膳房", (

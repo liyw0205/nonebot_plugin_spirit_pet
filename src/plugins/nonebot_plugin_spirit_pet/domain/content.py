@@ -260,6 +260,25 @@ class CuisineRule(Definition):
     max_level: Annotated[int, Field(ge=1, le=10)] = 5
 
 
+class BanquetRule(Definition):
+    """The weekly household banquet: one occasion per natural week."""
+
+    min_level: Annotated[int, Field(ge=1, le=10)]
+    stones: NonNegative
+    spirit_food: Positive
+    heat: Annotated[int, Field(ge=1, le=20)]
+    energy: NonNegative
+    exp: NonNegative
+    affinity: NonNegative
+    reward: Reward
+
+    @model_validator(mode="after")
+    def require_effect(self):
+        if not (self.energy or self.exp or self.affinity):
+            raise ValueError("a banquet must serve something")
+        return self
+
+
 class SupportRule(Definition):
     slots: Annotated[int, Field(ge=1, le=3)]
     rate: Annotated[float, Field(gt=0, le=0.5)]
@@ -540,6 +559,7 @@ class Rules(Definition):
     recycle_percent: Annotated[int, Field(gt=0, lt=100)]
     farm_water: FarmWaterRule
     cuisine: CuisineRule
+    banquet: BanquetRule
     sect: SectRule
     temper: TemperRule
     support: SupportRule

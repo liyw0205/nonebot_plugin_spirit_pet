@@ -2,10 +2,14 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from ..utils.time import beijing_day
-from . import battle_pass
+from . import battle_pass, counters
 
-PLOT_COUNT = 4
-OPEN_COST = (200, 500, 1200, 2500)
+PLOT_COUNT = 6
+OPEN_COST = (200, 500, 1200, 2500, 4000, 6000)
+# Plots beyond the original four open only after the farm itself has grown:
+# plot 5 needs 农事 level 2, plot 6 needs level 3. Content stays data-driven;
+# this mapping only says which rung each plot belongs to.
+PLOT_LEVEL = {5: 2, 6: 3}
 RENEW_COST = 80
 RENEW_FRACTION = 10  # percent of remaining time cut, once per growth
 TIER_COST = (800, 2000)  # per-plot upgrade levels 1 and 2
@@ -113,6 +117,31 @@ def roll_seed_drop(ctx: Context, realm_id: str, path: str) -> str | None:
     if seed_id is None:
         return None
     return seed_id if ctx.rng.randint(1, 100) <= SEED_DROP_CHANCE[path] else None
+
+
+def harvests(ctx: Context, user_id: str | None = None) -> int:
+    """Lifetime harvests; the only input to the 农事 ladder."""
+    return counters.value(ctx, "farm_harvests", user_id)
+
+
+def level_entry(ctx: Context, user_id: str | None = None):
+    """The highest 农事 rung the harvest count has reached."""
+    total = harvests(ctx, user_id)
+    entry = ctx.content.farm_levels[1]
+    for level in sorted(ctx.content.farm_levels):
+        candidate = ctx.content.farm_levels[level]
+        if candidate.harvests <= total:
+            entry = candidate
+    return entry
+
+
+def level(ctx: Context, user_id: str | None = None) -> int:
+    return level_entry(ctx, user_id).level
+
+
+def plot_requirement(plot: int) -> int:
+    """The 农事 level a plot needs before it can be opened."""
+    return PLOT_LEVEL.get(plot, 1)
 
 
 def _plot_arg(ctx: Context, arg: str) -> int:
@@ -251,11 +280,18 @@ def catalog(ctx: Context, arg: str) -> Reply:
             "尚未结契，先完成领养，再开垦自己的灵田。",
         ), ("灵宠帮助",), (InlineCommand(1, "开始领养", "灵宠领养 "),))
 
-    lines = []
+    lines = [
+        f"农事 {level(ctx)} 级 · 累计收获 {harvests(ctx)} 次"
+        f" · 换种可得轮作加成 +{ctx.content.rules.farm_rotation.rate_percent}%。"
+    ]
     links = []
     for plot in range(1, PLOT_COUNT + 1):
         opened, crop_row, _ = _plot_state(ctx, plot)
         if not opened:
+            required = plot_requirement(plot)
+            if level(ctx) < required:
+                lines.append(f"田位 {plot} · 需农事 {required} 级解锁（当前 {level(ctx)} 级）")
+                continue
             cost = OPEN_COST[plot - 1]
             lines.append(f"田位 {plot} · 待开垦（{cost} 灵石）")
             links.append(InlineCommand(len(lines) - 1, "开垦灵田", f"灵宠开垦 {plot}"))
@@ -302,6 +338,12 @@ def open_plot(ctx: Context, arg: str) -> Reply:
     opened, _, _ = _plot_state(ctx, plot)
     if opened:
         raise GameError(f"田位 {plot} 已经开垦。")
+    required = plot_requirement(plot)
+    if level(ctx) < required:
+        raise GameError(
+            f"田位 {plot} 需要农事 {required} 级才能开垦，当前 {level(ctx)} 级；"
+            f"累计收获 {harvests(ctx)} 次可提升农事等级。"
+        )
     cost = OPEN_COST[plot - 1]
     player = ctx.player()
     if player.stones < cost:
@@ -407,6 +449,7 @@ def harvest(ctx: Context, arg: str) -> Reply:
     gained = _grant_reward(ctx, crop, multiplier)
     bonus = f"轮作加成 +{ctx.content.rules.farm_rotation.rate_percent}%" if multiplier > 1 else ""
     _remember_crop(ctx, plot, crop)
+    counters.bump(ctx, "farm_harvests")
     battle_pass.add_experience(ctx, "farm_harvest")
     if replant is not None:
         _sow(ctx, plot, replant)

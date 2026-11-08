@@ -63,18 +63,20 @@ SHARED_HELP_ENTRIES = {
 }
 
 DOCUMENTED_COUNTS = {
-    "achievements": 102, "titles": 30, "dungeons": 20, "stages": 16, "tower": 16,
+    "achievements": 107, "titles": 31, "dungeons": 20, "stages": 16, "tower": 16,
     "adventures": 21, "expeditions": 21, "pets": 27, "lineages": 54, "skills": 24,
     "resonances": 21, "weekly_quests": 12, "daily_assignments": 12,
     "season_missions": 10, "journey": 16, "main_quests": 16, "crops": 10,
     "equipment": 14, "equipment_sets": 4, "enemies": 23, "shop_rotation": 9,
-    "forbidden": 3, "cuisine": 6, "team_trials": 5, "cave": 3, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 5, "combos": 6, "attunements": 8, "contracts": 3, "hybrids": 2, "alchemy": 4, "bounties": 5, "sect_exchange": 5, "intents": 3, "gems": 4, "difficulties": 3, "formations": 3, "escorts": 5, "sigils": 8, "gauntlets": 2, "races": 3, "moods": 4, "specializations": 4, "achievement_shop": 6, "tribulations": 1, "duels": 7, "commissions": 10,
+    "forbidden": 3, "cuisine": 9, "team_trials": 5, "cave": 5, "corridor": 1, "sects": 4, "codex_trials": 1, "survival": 1, "arcs": 5, "combos": 6, "attunements": 8, "contracts": 3, "hybrids": 2, "alchemy": 4, "bounties": 5, "sect_exchange": 5, "intents": 3, "gems": 4, "difficulties": 3, "formations": 3, "escorts": 5, "sigils": 8, "gauntlets": 2, "races": 3, "moods": 4, "specializations": 4, "achievement_shop": 6, "tribulations": 1, "duels": 7, "commissions": 10,
     "race_prizes": 3,
     "daily_followups": 4,
     "merchant_exchange": 5,
     "collection_rank_rewards": 3,
     "share_rank_rewards": 3,
     "share_rewards": 3,
+    "farm_levels": 5,
+    "cave_offerings": 5,
 }
 
 

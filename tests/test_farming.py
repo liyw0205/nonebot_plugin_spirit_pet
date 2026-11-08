@@ -191,7 +191,7 @@ def test_objectives_hub_and_help_contract(game, play):
     from nonebot_plugin_spirit_pet.gameplay.help import _HELP_SECTIONS
 
     growth = _HELP_SECTIONS["血脉与道具"]
-    assert ("灵宠灵田", "灵宠灵田", "查看灵田状态，开垦、播种与收获。") in growth
+    assert ("灵宠灵田", "灵宠灵田", "查看灵田状态、农事等级与开垦、播种与收获。") in growth
     assert ("灵宠收获 田位 补种种子名", "灵宠收获 ", "收获产出；带上种子名可原地补种。") in growth
 
 

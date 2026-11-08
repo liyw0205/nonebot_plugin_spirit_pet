@@ -238,5 +238,13 @@
     "metric": "team_trial_clears",
     "target": 15,
     "order": 30
+  },
+  {
+    "id": "farm_steward",
+    "name": "田园主人",
+    "description": "累计收获 20 次灵田作物。",
+    "metric": "farm_harvests",
+    "target": 20,
+    "order": 31
   }
 ]

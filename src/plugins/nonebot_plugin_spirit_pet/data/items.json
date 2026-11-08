@@ -464,5 +464,12 @@
     "name": "生灵髓",
     "description": "镶嵌材料：嵌入槽位后按基础气血提升。",
     "kind": "material", "price": 160
+  },
+  {
+    "id": "meal_moon",
+    "name": "月华饼",
+    "description": "月华入馅的酥饼，精力 +30，修为 +55，亲密 +25。",
+    "kind": "consumable",
+    "effects": {"energy": 30, "exp": 55, "affinity": 25}
   }
 ]
