@@ -1,0 +1,326 @@
+[
+  {
+    "id": "jian_edge",
+    "sect": "jian_ge",
+    "order": 1,
+    "name": "试剑石",
+    "description": "在险境中磨一剑：今日于挑战或绝境难度通关一次。",
+    "metric": "hard_clears",
+    "period": "day",
+    "target": 1,
+    "contribution": 10,
+    "reward": {
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "jian_oath",
+    "sect": "jian_ge",
+    "order": 2,
+    "name": "立剑约",
+    "description": "带约束赢一场秘境：今日达成一份秘境契约。",
+    "metric": "contracts_met",
+    "period": "day",
+    "target": 1,
+    "contribution": 10,
+    "reward": {
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "jian_watch",
+    "sect": "jian_ge",
+    "order": 3,
+    "name": "守夜",
+    "description": "替师门值守一夜：今日完成一次洞府供奉。",
+    "metric": "cave_offerings",
+    "period": "day",
+    "target": 1,
+    "contribution": 8,
+    "reward": {
+      "stones": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "xuan_sit",
+    "sect": "xuan_men",
+    "order": 1,
+    "name": "澄心坐忘",
+    "description": "于师门静室坐忘一炷香：今日完成一次修行。",
+    "metric": "sect_practice",
+    "period": "day",
+    "target": 1,
+    "contribution": 8,
+    "reward": {
+      "stones": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "xuan_field",
+    "sect": "xuan_men",
+    "order": 2,
+    "name": "观稼",
+    "description": "体察生养之理：今日收获三次灵田作物。",
+    "metric": "farm_harvests",
+    "period": "day",
+    "target": 3,
+    "contribution": 12,
+    "reward": {
+      "stones": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "xuan_offer",
+    "sect": "xuan_men",
+    "order": 3,
+    "name": "奉香",
+    "description": "替同门续一炷香：今日完成一次洞府供奉。",
+    "metric": "cave_offerings",
+    "period": "day",
+    "target": 1,
+    "contribution": 8,
+    "reward": {
+      "stones": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "dan_fire",
+    "sect": "dan_ding",
+    "order": 1,
+    "name": "看火",
+    "description": "替师门守一炉丹火：今日炼成一炉丹药。",
+    "metric": "alchemy_brews",
+    "period": "day",
+    "target": 1,
+    "contribution": 10,
+    "reward": {
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "dan_gem",
+    "sect": "dan_ding",
+    "order": 2,
+    "name": "琢玉",
+    "description": "替师门打磨宝器：今日雕琢一次宝石槽位。",
+    "metric": "gem_cuts",
+    "period": "day",
+    "target": 1,
+    "contribution": 10,
+    "reward": {
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "gem_swift": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "dan_feast",
+    "sect": "dan_ding",
+    "order": 3,
+    "name": "待客",
+    "description": "为师门摆一席：本周办一次家宴。",
+    "metric": "banquets_held",
+    "period": "week",
+    "target": 1,
+    "contribution": 12,
+    "reward": {
+      "stones": {
+        "minimum": 120,
+        "maximum": 120
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "yu_breed",
+    "sect": "yu_shou",
+    "order": 1,
+    "name": "配种",
+    "description": "为新种试配：今日完成一次种子杂交。",
+    "metric": "hybrid_brews",
+    "period": "day",
+    "target": 1,
+    "contribution": 10,
+    "reward": {
+      "stones": {
+        "minimum": 80,
+        "maximum": 80
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "yu_graze",
+    "sect": "yu_shou",
+    "order": 2,
+    "name": "牧野",
+    "description": "带兽群出牧：今日收获三次灵田作物。",
+    "metric": "farm_harvests",
+    "period": "day",
+    "target": 3,
+    "contribution": 12,
+    "reward": {
+      "stones": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "items": {
+        "seed_spirit_rice": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "yu_road",
+    "sect": "yu_shou",
+    "order": 3,
+    "name": "随行",
+    "description": "随同门下山历练：今日完成一次际遇抉择。",
+    "metric": "encounter_choices",
+    "period": "day",
+    "target": 1,
+    "contribution": 8,
+    "reward": {
+      "stones": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "items": {
+        "seed_blood_herb": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  }
+]

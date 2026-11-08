@@ -8,7 +8,7 @@ cache short-circuits the command.
 """
 
 from ..application.context import Context
-from ..utils.time import beijing_day
+from ..utils.time import beijing_day, beijing_week
 
 PREFIX = "stat_"
 
@@ -50,3 +50,24 @@ def value(ctx: Context, metric: str, user_id: str | None = None) -> int:
         (user_id or ctx.user_id, key(metric)),
     ).fetchone()
     return int(row["progress"]) if row else 0
+
+
+def week_value(ctx: Context, metric: str, user_id: str | None = None) -> int:
+    """Work done on this metric since the Beijing week started.
+
+    Reads the same per-day rows `bump` writes, so a weekly goal never needs a
+    second storage shape; the ISO date inside the key is enough to window it.
+    """
+    start = beijing_week(ctx.now)[0]
+    first, last = beijing_day(start), beijing_day(start + 6 * 86_400)
+    prefix = f"{PREFIX}{metric}_day_"
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (user_id or ctx.user_id, f"{prefix}%"),
+    ).fetchall()
+    total = 0
+    for row in rows:
+        day = row["quest_id"][len(prefix):]
+        if first <= day <= last:
+            total += int(row["progress"])
+    return total

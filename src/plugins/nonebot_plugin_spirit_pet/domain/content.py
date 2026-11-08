@@ -412,11 +412,21 @@ class SocketCutRule(Definition):
         return self
 
 
+class SectWeeklyTier(Definition):
+    """One 师门周俸 rung: weekly contribution earned pays a fixed reward once."""
+
+    tier: int = Field(ge=1, le=6)
+    contribution: Positive
+    reward: Reward
+
+
 class SectRule(Definition):
     daily_contribution: Positive
     practice_energy: Positive
     practice_exp: Positive
     switch_stones: NonNegative
+    mission_offers: int = Field(ge=1, le=4)
+    weekly_tiers: list[SectWeeklyTier] = Field(min_length=1, max_length=6)
 
 
 class DuelStance(Definition):

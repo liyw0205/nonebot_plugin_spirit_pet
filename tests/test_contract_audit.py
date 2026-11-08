@@ -77,6 +77,8 @@ DOCUMENTED_COUNTS = {
     "share_rewards": 3,
     "farm_levels": 5,
     "cave_offerings": 5,
+    "sect_missions": 12,
+    "sect_trials": 4,
 }
 
 

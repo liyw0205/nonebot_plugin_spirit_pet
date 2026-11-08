@@ -21,6 +21,8 @@ from ..domain.team_trial_content import TeamTrial
 from ..domain.cave_content import CaveFacility
 from ..domain.corridor_content import Corridor
 from ..domain.sect_content import Sect
+from ..domain.sect_mission_content import SectMission
+from ..domain.sect_trial_content import SectTrial
 from ..domain.codex_trial_content import CodexTrial
 from ..domain.survival_content import SurvivalTrial
 from ..domain.arc_content import Arc
@@ -152,6 +154,8 @@ class Catalog:
     cave: dict[str, CaveFacility]
     corridor: dict[str, Corridor]
     sects: dict[str, Sect]
+    sect_missions: dict[str, SectMission]
+    sect_trials: dict[str, SectTrial]
     codex_trials: dict[str, CodexTrial]
     survival: dict[str, SurvivalTrial]
     arcs: dict[str, Arc]
@@ -238,6 +242,8 @@ class Catalog:
             cave=_index(directory / "cave.json", CaveFacility),
             corridor=_index(directory / "corridor.json", Corridor),
             sects=_index(directory / "sects.json", Sect),
+            sect_missions=_index(directory / "sect_missions.json", SectMission),
+            sect_trials=_index(directory / "sect_trials.json", SectTrial),
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
             survival=_index(directory / "survival.json", SurvivalTrial),
             arcs=_index(directory / "arcs.json", Arc),
@@ -460,6 +466,7 @@ class Catalog:
         self._validate_titles()
         self._validate_farm_levels()
         self._validate_cave_offerings()
+        self._validate_sect_content()
 
     def _validate_daily_followups(self) -> None:
         """Every scheduled follow-up must be reachable from a real trigger choice.
@@ -821,6 +828,55 @@ class Catalog:
                 raise ValueError(f"mood {level.id} has no rate in rules.mood.rates")
             if abs(rule.rates[level.id] - level.rate) > 1e-9:
                 raise ValueError(f"mood {level.id} rate disagrees with rules.mood.rates")
+
+    def _validate_sect_content(self) -> None:
+        """Sect missions, weekly pay tiers and the weekly trial must be playable.
+
+        A mission whose sect does not exist, whose reward names a missing item,
+        or that leaves a sect with fewer tasks than the daily board asks for is
+        content that cannot be completed — reject it at load time.
+        """
+        offers = self.rules.sect.mission_offers
+        per_sect: dict[str, list] = {}
+        for mission in self.sect_missions.values():
+            if mission.sect not in self.sects:
+                raise ValueError(f"sect mission {mission.id} names an unknown sect {mission.sect}")
+            per_sect.setdefault(mission.sect, []).append(mission)
+            self._require(mission.reward.items, self.items, f"sect mission {mission.id} reward items")
+        for sect_id in self.sects:
+            missions = sorted(per_sect.get(sect_id, []), key=lambda entry: entry.order)
+            if len(missions) < offers:
+                raise ValueError(
+                    f"sect {sect_id} needs at least {offers} missions, has {len(missions)}"
+                )
+            orders = [mission.order for mission in missions]
+            if orders != list(range(1, len(orders) + 1)):
+                raise ValueError(f"sect {sect_id} mission orders must be contiguous from 1")
+
+        tiers = sorted(self.rules.sect.weekly_tiers, key=lambda entry: entry.tier)
+        if [tier.tier for tier in tiers] != list(range(1, len(tiers) + 1)):
+            raise ValueError("sect weekly tiers must be contiguous from 1")
+        previous = 0
+        for tier in tiers:
+            if tier.contribution <= previous:
+                raise ValueError("sect weekly tier contribution must strictly increase")
+            previous = tier.contribution
+            if tier.reward.stones.maximum == 0 and not tier.reward.items:
+                raise ValueError(f"sect weekly tier {tier.tier} must pay something")
+            self._require(tier.reward.items, self.items, f"sect weekly tier {tier.tier} items")
+
+        trial_sects = set()
+        for trial in self.sect_trials.values():
+            if trial.sect not in self.sects:
+                raise ValueError(f"sect trial {trial.id} names an unknown sect {trial.sect}")
+            if trial.sect in trial_sects:
+                raise ValueError(f"sect {trial.sect} has more than one trial")
+            trial_sects.add(trial.sect)
+            if trial.enemy not in self.enemies:
+                raise ValueError(f"sect trial {trial.id} names an unknown enemy {trial.enemy}")
+            if trial.min_realm not in {realm.id for realm in self.realms}:
+                raise ValueError(f"sect trial {trial.id} names an unknown realm {trial.min_realm}")
+            self._require(trial.reward.items, self.items, f"sect trial {trial.id} reward items")
 
     def _validate_farm_levels(self) -> None:
         levels = sorted(self.farm_levels)

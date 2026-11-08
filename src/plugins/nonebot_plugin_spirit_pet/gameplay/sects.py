@@ -12,17 +12,25 @@ The passive is derived, never stored: ``passive`` reports the current rank's rat
 and ``loadout.combatant`` applies it to that owner's pets.
 """
 
+from datetime import date
+
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.sect_content import Sect, SectRank
 from ..utils.arguments import named
-from ..utils.time import beijing_day
+from ..utils.time import beijing_day, beijing_week
+from . import counters
+from .rewards import grant
 
 MEMBER = "sect_member_"
 CURRENT = "sect_current_"
 CONTRIB = "sect_contrib_"
 DAY = "sect_day_"
 CLAIM = "sect_claim_"
+MISSION = "sect_mission_"
+MISSION_WEEK = "sect_mission_week_"
+WEEK_CONTRIB = "sect_week_contrib_"
+WEEKLY_CLAIM = "sect_weekly_"
 
 
 def sects(ctx: Context) -> list[Sect]:
@@ -165,6 +173,24 @@ def page(ctx: Context, arg: str) -> Reply:
     lines.append(f"转投他派：{ctx.content.rules.sect.switch_stones} 灵石，各派贡献分别保留。")
     others = "、".join(sect.name for sect in sects(ctx) if sect.id != member.id)
     lines.append(f"其他门派：{others}（灵宠师门 拜入 <门派>）。")
+    offers = todays_missions(ctx, member)
+    done = sum(1 for mission in offers if mission_claimed(ctx, mission))
+    lines.append(f"师门任务：今日 {done}/{len(offers)} 已交差（灵宠师门 任务）。")
+    links.append(InlineCommand(len(lines) - 1, "查看任务", "灵宠师门 任务"))
+    pending_tiers = weekly_claimable(ctx)
+    lines.append(
+        f"本周贡献 {week_contribution(ctx)}"
+        + (f" · 周俸可领 {len(pending_tiers)} 档" if pending_tiers else "")
+        + "（灵宠师门 周俸）。"
+    )
+    links.append(InlineCommand(len(lines) - 1, "查看周俸", "灵宠师门 周俸"))
+    from . import sect_trial
+
+    trial = sect_trial.trial_for(ctx, member)
+    if trial is not None:
+        state = "本周已过" if sect_trial.cleared(ctx, trial) else "本周未过"
+        lines.append(f"师门试炼：{trial.name} · {state}（灵宠师门 试炼）。")
+        links.append(InlineCommand(len(lines) - 1, "查看试炼", "灵宠师门 试炼"))
     return Reply("灵宠师门", tuple(lines), ("灵宠师门", "我的灵宠", "灵宠目标"), tuple(links))
 
 
@@ -218,7 +244,13 @@ def practice(ctx: Context, arg: str) -> Reply:
     pet.exp += rules.practice_exp
     points = contribution(ctx, sect) + rules.daily_contribution
     _set(ctx, f"{CONTRIB}{sect.id}", points)
+    _set(
+        ctx,
+        f"{WEEK_CONTRIB}{beijing_week(ctx.now)[0]}",
+        week_contribution(ctx) + rules.daily_contribution,
+    )
     _set(ctx, f"{DAY}{beijing_day(ctx.now)}", 1)
+    counters.bump(ctx, "sect_practice")
     ctx.repo.invalidate_ready(ctx.user_id)
 
     entry = rank_of(ctx, sect)
@@ -256,6 +288,232 @@ def claim(ctx: Context, arg: str) -> Reply:
     return Reply("灵宠师门", tuple(lines), ("灵宠师门", "灵宠目标", "我的灵宠"))
 
 
+def day_ordinal(now: int) -> int:
+    return date.fromisoformat(beijing_day(now)).toordinal()
+
+
+def mission_pool(ctx: Context, sect: Sect):
+    """This sect's missions in authored order."""
+    return sorted(
+        (mission for mission in ctx.content.sect_missions.values() if mission.sect == sect.id),
+        key=lambda mission: mission.order,
+    )
+
+
+def todays_missions(ctx: Context, sect: Sect):
+    """The day's board: a stable window over the sect pool, rotating daily."""
+    pool = mission_pool(ctx, sect)
+    if not pool:
+        return []
+    count = min(ctx.content.rules.sect.mission_offers, len(pool))
+    start = day_ordinal(ctx.now) % len(pool)
+    return [pool[(start + index) % len(pool)] for index in range(count)]
+
+
+def mission_key(now: int, mission) -> str:
+    if mission.period == "week":
+        return f"{MISSION_WEEK}{beijing_week(now)[0]}_{mission.id}"
+    return f"{MISSION}{beijing_day(now)}_{mission.id}"
+
+
+def mission_value(ctx: Context, mission, user_id: str | None = None) -> int:
+    if mission.period == "week":
+        return counters.week_value(ctx, mission.metric, user_id)
+    return counters.today_value(ctx, mission.metric, user_id)
+
+
+def mission_claimed(ctx: Context, mission, user_id: str | None = None) -> bool:
+    row = ctx.repo.conn.execute(
+        "SELECT claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, mission_key(ctx.now, mission)),
+    ).fetchone()
+    return bool(row and row["claimed"])
+
+
+def week_contribution(ctx: Context, user_id: str | None = None) -> int:
+    return _progress(ctx, f"{WEEK_CONTRIB}{beijing_week(ctx.now)[0]}", user_id)
+
+
+def weekly_tiers(ctx: Context):
+    return sorted(ctx.content.rules.sect.weekly_tiers, key=lambda tier: tier.tier)
+
+
+def weekly_claimed(ctx: Context, tier, user_id: str | None = None) -> bool:
+    row = ctx.repo.conn.execute(
+        "SELECT claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, f"{WEEKLY_CLAIM}{beijing_week(ctx.now)[0]}_{tier.tier}"),
+    ).fetchone()
+    return bool(row and row["claimed"])
+
+
+def weekly_claimable(ctx: Context, user_id: str | None = None) -> list:
+    earned = week_contribution(ctx, user_id)
+    return [
+        tier for tier in weekly_tiers(ctx)
+        if earned >= tier.contribution and not weekly_claimed(ctx, tier, user_id)
+    ]
+
+
+def _reward_text(ctx: Context, reward) -> str:
+    parts = [f"灵石 {reward.stones.minimum}"] if reward.stones.minimum else []
+    parts.extend(
+        f"{ctx.content.items[item_id].name} {bounds.minimum}"
+        for item_id, bounds in reward.items.items()
+    )
+    return " · ".join(parts) if parts else "无奖励"
+
+
+def _mission_state(ctx: Context, mission) -> str:
+    if mission_claimed(ctx, mission):
+        return "已交差"
+    value = mission_value(ctx, mission)
+    return "可交差" if value >= mission.target else f"{value}/{mission.target}"
+
+
+def missions_page(ctx: Context) -> Reply:
+    sect = current(ctx)
+    if ctx.repo.player(ctx.user_id) is None:
+        raise GameError("尚未结契，先完成领养，才能替师门做事。")
+    if sect is None:
+        raise GameError("尚未拜入师门，先发送 灵宠师门 拜入 <门派>。")
+    offers = todays_missions(ctx, sect)
+    done = sum(1 for mission in offers if mission_claimed(ctx, mission))
+    earned = week_contribution(ctx)
+    following = next(
+        (tier for tier in weekly_tiers(ctx) if earned < tier.contribution), None,
+    )
+    lines = [
+        f"{sect.name}今日任务：{done}/{len(offers)} 已交差（每日轮换，按北京时间 00:00 刷新）。",
+        (
+            f"本周贡献：{earned} · 距下一档周俸还需 {following.contribution - earned}。"
+            if following is not None
+            else f"本周贡献：{earned} · 已够最高档周俸。"
+        ),
+    ]
+    links = []
+    for index, mission in enumerate(offers, 1):
+        state = _mission_state(ctx, mission)
+        lines.append(
+            f"{index}. {mission.name} · {mission.description} · 贡献 +{mission.contribution}"
+            f" · 奖励 {_reward_text(ctx, mission.reward)} · {state}"
+        )
+        if state == "可交差":
+            links.append(InlineCommand(len(lines) - 1, "交差", f"灵宠师门 交差 {mission.name}"))
+    lines.append("交差不消耗精力，也不占当日修行次数；跨日或跨周未交差即失效。")
+    pending = weekly_claimable(ctx)
+    if pending:
+        lines.append(f"周俸可领：{[tier.tier for tier in pending]} 档。")
+        links.append(InlineCommand(len(lines) - 1, "领取周俸", "灵宠师门 领俸"))
+    return Reply("灵宠师门 · 任务", tuple(lines), ("灵宠师门", "灵宠师门 任务", "灵宠目标"), tuple(links))
+
+
+def _offer(ctx: Context, offers: list, value: str):
+    if value.isdigit():
+        index = int(value)
+        if 1 <= index <= len(offers):
+            return offers[index - 1]
+        raise GameError(f"今日只有 {len(offers)} 份师门任务，序号超出范围。")
+    for mission in offers:
+        if value in (mission.id, mission.name):
+            return mission
+    if any(value in (mission.id, mission.name) for mission in ctx.content.sect_missions.values()):
+        raise GameError(f"{value}今天没有轮到，明天再来看看。")
+    raise GameError("未找到该师门任务，请检查名称或序号。")
+
+
+def submit(ctx: Context, arg: str) -> Reply:
+    value = arg.strip()
+    if not value:
+        raise GameError("格式：灵宠师门 交差 <任务名|序号>。")
+    player = ctx.player()
+    sect = current(ctx)
+    if sect is None:
+        raise GameError("尚未拜入师门，先发送 灵宠师门 拜入 <门派>。")
+    offers = todays_missions(ctx, sect)
+    mission = _offer(ctx, offers, value)
+    if mission_claimed(ctx, mission):
+        raise GameError(f"今日的{mission.name}已经交过差了，明天再来。")
+    progress = mission_value(ctx, mission)
+    if progress < mission.target:
+        window = "本周" if mission.period == "week" else "今日"
+        raise GameError(
+            f"{mission.name}尚未完成：{window}进度 {progress}/{mission.target}。"
+        )
+    result = grant(ctx, mission.reward)
+    total = contribution(ctx, sect) + mission.contribution
+    _set(ctx, f"{CONTRIB}{sect.id}", total)
+    _set(ctx, f"{WEEK_CONTRIB}{beijing_week(ctx.now)[0]}", week_contribution(ctx) + mission.contribution)
+    _set(ctx, mission_key(ctx.now, mission), progress)
+    lines = [
+        f"{mission.name}已交差：{'，'.join(result)}。",
+        f"门派贡献 +{mission.contribution}（{total}，{rank_of(ctx, sect).rank} 阶）。",
+        f"本周贡献 {week_contribution(ctx)}。",
+    ]
+    pending = weekly_claimable(ctx)
+    if pending:
+        lines.append(f"周俸已可领取：{[tier.tier for tier in pending]} 档，发送 灵宠师门 领俸。")
+    return Reply("灵宠师门 · 交差", tuple(lines), ("灵宠师门", "灵宠师门 周俸", "灵宠目标"))
+
+
+def weekly_page(ctx: Context) -> Reply:
+    sect = current(ctx)
+    if ctx.repo.player(ctx.user_id) is None:
+        raise GameError("尚未结契，先完成领养，才能查看师门周俸。")
+    if sect is None:
+        raise GameError("尚未拜入师门，先发送 灵宠师门 拜入 <门派>。")
+    earned = week_contribution(ctx)
+    lines = [
+        f"{sect.name}本周贡献：{earned}（自然周，周一 00:00 北京时间重置）。",
+        "周俸按本周贡献逐档发放，每档每周只发一次；未达档位不发，过期不补。",
+    ]
+    links = []
+    for tier in weekly_tiers(ctx):
+        state = "已领取" if weekly_claimed(ctx, tier) else (
+            "可领取" if earned >= tier.contribution else f"未达（{earned}/{tier.contribution}）"
+        )
+        lines.append(f"{tier.tier} 档 · 贡献 {tier.contribution} · {_reward_text(ctx, tier.reward)} · {state}")
+        if state == "可领取":
+            links.append(InlineCommand(len(lines) - 1, "领取", f"灵宠师门 领俸 {tier.tier}"))
+    pending = weekly_claimable(ctx)
+    if len(pending) > 1:
+        lines.append(f"可一次领取 {len(pending)} 档。")
+        links.append(InlineCommand(len(lines) - 1, "全部领取", "灵宠师门 领俸"))
+    return Reply("灵宠师门 · 周俸", tuple(lines), ("灵宠师门", "灵宠师门 任务", "灵宠目标"), tuple(links))
+
+
+def claim_weekly(ctx: Context, arg: str) -> Reply:
+    value = arg.strip()
+    player = ctx.player()
+    sect = current(ctx)
+    if sect is None:
+        raise GameError("尚未拜入师门，先发送 灵宠师门 拜入 <门派>。")
+    earned = week_contribution(ctx)
+    tiers = weekly_tiers(ctx)
+    if value and value != "全部":
+        if not value.isdigit():
+            raise GameError("格式：灵宠师门 领俸 [档位|全部]。")
+        chosen = [tier for tier in tiers if tier.tier == int(value)]
+        if not chosen:
+            raise GameError(f"周俸只有 {len(tiers)} 档。")
+        if weekly_claimed(ctx, chosen[0]):
+            raise GameError(f"{chosen[0].tier} 档周俸本周已经领取。")
+        if earned < chosen[0].contribution:
+            raise GameError(
+                f"{chosen[0].tier} 档周俸需要本周贡献 {chosen[0].contribution}，当前 {earned}。"
+            )
+        pending = chosen
+    else:
+        pending = weekly_claimable(ctx)
+        if not pending:
+            raise GameError("暂无可领的师门周俸；先完成门派任务积累本周贡献。")
+    lines = []
+    for tier in pending:
+        lines.append(f"{tier.tier} 档：" + "，".join(grant(ctx, tier.reward)) + "。")
+        _set(ctx, f"{WEEKLY_CLAIM}{beijing_week(ctx.now)[0]}_{tier.tier}", 1)
+    lines.append(f"本周贡献 {earned}，已领 {len(pending)} 档。")
+    return Reply("灵宠师门 · 周俸", tuple(lines), ("灵宠师门", "灵宠师门 周俸", "灵宠目标"))
+
+
 def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
@@ -266,7 +524,18 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return practice(ctx, " ".join(parts[1:]))
     if parts[0] == "领赏":
         return claim(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠师门 [拜入|修行|领赏] [门派]。")
+    if parts[0] == "任务":
+        return missions_page(ctx)
+    if parts[0] == "交差":
+        return submit(ctx, " ".join(parts[1:]))
+    if parts[0] == "周俸":
+        return weekly_page(ctx)
+    if parts[0] == "领俸":
+        return claim_weekly(ctx, " ".join(parts[1:]))
+    if parts[0] == "试炼":
+        from . import sect_trial
+        return sect_trial.dispatch(ctx, " ".join(parts[1:]))
+    raise GameError("格式：灵宠师门 [拜入|修行|领赏|任务|交差|周俸|领俸|试炼] [目标]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
@@ -274,4 +543,18 @@ def objective_line(ctx: Context, user_id: str) -> str:
     if sect is None:
         return "师门：尚未拜入"
     entry = rank_of(ctx, sect, user_id)
-    return f"师门：{sect.name} {entry.rank} 阶 · {_progress_text(sect, entry, contribution(ctx, sect, user_id))}"
+    offers = todays_missions(ctx, sect)
+    done = sum(1 for mission in offers if mission_claimed(ctx, mission, user_id))
+    pending = weekly_claimable(ctx, user_id)
+    extra = f" · 任务 {done}/{len(offers)}"
+    if pending:
+        extra += f" · 周俸可领 {len(pending)} 档"
+    from . import sect_trial
+
+    trial = sect_trial.trial_for(ctx, sect)
+    if trial is not None and not sect_trial.cleared(ctx, trial, user_id):
+        extra += " · 试炼未过"
+    return (
+        f"师门：{sect.name} {entry.rank} 阶"
+        f" · {_progress_text(sect, entry, contribution(ctx, sect, user_id))}{extra}"
+    )

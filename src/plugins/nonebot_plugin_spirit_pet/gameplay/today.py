@@ -173,6 +173,23 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             claimable.append(_entry(
                 CLAIM, f"{sect.name}有阶位奖励可领", "贡献达标后逐阶领取", "灵宠师门",
             ))
+        offers = sects.todays_missions(ctx, sect)
+        done = sum(1 for mission in offers if sects.mission_claimed(ctx, mission, owner))
+        if done < len(offers):
+            pending.append(_entry(
+                TODO, f"{sect.name}任务 {done}/{len(offers)}", "完成后交差换贡献与奖励", "灵宠师门 任务",
+            ))
+        if sects.weekly_claimable(ctx, owner):
+            claimable.append(_entry(
+                CLAIM, "师门周俸可领", "按本周贡献逐档领取", "灵宠师门 周俸",
+            ))
+        from . import sect_trial
+
+        trial = sect_trial.trial_for(ctx, sect)
+        if trial is not None and not sect_trial.cleared(ctx, trial, owner):
+            pending.append(_entry(
+                TODO, f"{sect.name}试炼本周未过", f"{trial.name}，每周一次", "灵宠师门 试炼",
+            ))
 
     if race.remaining_today(ctx, owner):
         pending.append(_entry(

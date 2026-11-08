@@ -1,0 +1,126 @@
+[
+  {
+    "id": "jian_ge_trial",
+    "sect": "jian_ge",
+    "name": "剑心试炼",
+    "description": "剑阁以快剑问心：敌手是旧日同门留下的剑意，只认更快的一方。",
+    "enemy": "void_blade",
+    "min_realm": "ningqi",
+    "min_rank": 2,
+    "energy": 30,
+    "contribution": 25,
+    "reward": {
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "xuan_men_trial",
+    "sect": "xuan_men",
+    "name": "守一试炼",
+    "description": "玄门重根基：先在长战中站住，才谈得上抱元守一。",
+    "enemy": "ancient_guard",
+    "min_realm": "ningqi",
+    "min_rank": 2,
+    "energy": 28,
+    "contribution": 25,
+    "reward": {
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 3,
+          "maximum": 3
+        },
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "dan_ding_trial",
+    "sect": "dan_ding",
+    "name": "丹火试炼",
+    "description": "丹鼎门以炉火炼骨：撑过丹火反噬的人，护体自然更稳。",
+    "enemy": "ember_wraith",
+    "min_realm": "ningqi",
+    "min_rank": 2,
+    "energy": 28,
+    "contribution": 25,
+    "reward": {
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "forge_ore": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "yu_shou_trial",
+    "sect": "yu_shou",
+    "name": "御兽试炼",
+    "description": "御兽宗与兽同场：要在对手之前先动，才算驭得住。",
+    "enemy": "moon_wolf",
+    "min_realm": "ningqi",
+    "min_rank": 2,
+    "energy": 28,
+    "contribution": 25,
+    "reward": {
+      "stones": {
+        "minimum": 300,
+        "maximum": 300
+      },
+      "items": {
+        "spirit_food": {
+          "minimum": 2,
+          "maximum": 2
+        },
+        "seed_aura_ear": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  }
+]
