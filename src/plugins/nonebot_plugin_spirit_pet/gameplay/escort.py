@@ -10,12 +10,15 @@ State is one ``quest_progress`` row per mission per week whose ``progress`` is t
 the difference, so clearing early never costs the player anything.
 """
 
+import re
+
 from ..application.context import Context
 from ..domain.content import Stats
 from ..domain.escort_content import EscortMission
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
-from ..utils.time import beijing_week
+from ..utils.pagination import paginate
+from ..utils.time import beijing_day, beijing_week
 from .battle_records import capture_snapshot, record_battle
 from .combat import Fighter, enemy_fighter, fight
 from .loadout import combatant
@@ -27,6 +30,10 @@ KEY = "escort_"
 PARTIAL = 1
 FULL = 2
 CLEAN_RATIO = 0.5
+HISTORY = frozenset({"战历", "战绩"})
+HISTORY_PAGE_SIZE = 6
+# `escort_<week start>_<mission id>`; mission ids carry no underscore.
+WEEK_MARKER = re.compile(r"^escort_([0-9]+)_(.+)$")
 
 
 def missions(ctx: Context):
@@ -55,6 +62,69 @@ def grade(ctx: Context, mission_id: str, user_id: str | None = None) -> int:
 
 def cleared_count(ctx: Context, user_id: str | None = None) -> int:
     return sum(1 for mission_ in missions(ctx) if grade(ctx, mission_.id, user_id) > 0)
+
+
+def weeks_run(ctx: Context, user_id: str | None = None) -> list[tuple[int, int, int]]:
+    """Every recorded escort week as ``(week start, missions cleared, full clears)``.
+
+    The per-mission grade rows are permanent and only the current week is read, so a
+    past week was unreachable. This groups exactly those rows, newest week first; a
+    mission that has left the shipped content still counts by its row.
+    """
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND quest_id GLOB ?",
+        (user_id or ctx.user_id, f"{KEY}*"),
+    ).fetchall()
+    weeks: dict[int, list[int]] = {}
+    for row in rows:
+        match = WEEK_MARKER.match(str(row["quest_id"]))
+        if match is None:
+            continue
+        weeks.setdefault(int(match.group(1)), []).append(int(row["progress"]))
+    return sorted(
+        (
+            (start, sum(1 for value in grades if value > 0), sum(1 for value in grades if value >= FULL))
+            for start, grades in weeks.items()
+        ),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past escort weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "护送战历",
+            (
+                "尚未结契，先完成领养，才能留下护送记录。",
+                "战历按周回顾通关与满评次数，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_run(ctx)
+    if not records:
+        return Reply(
+            "护送战历",
+            (
+                "还没有护送记录，先发送 灵宠护送 出发一次。",
+                "每次通关会在本周留下一条评价，战历按周汇总。",
+            ),
+            ("灵宠护送", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "护送战历", "灵宠护送 战历", HISTORY_PAGE_SIZE)
+    lines = [
+        f"共 {len(records)} 周有记录 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, cleared, full in page.entries:
+        lines.append(f"{beijing_day(start)} 起那一周 · 通关 {cleared} 条 · 满评 {full} 条")
+    lines.append("战历只读：不重跑、不补发奖励，也不改变本周评价。")
+    return Reply(
+        "护送战历",
+        tuple(lines),
+        (*page.navigation, "灵宠护送", "灵宠目标")[:4],
+    )
 
 
 def _grade_text(value: int) -> str:
@@ -231,9 +301,12 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
         return page(ctx, "")
-    if parts[0] == "出发":
+    head = parts[0]
+    if head in HISTORY:
+        return history(ctx, " ".join(parts[1:]))
+    if head == "出发":
         return start(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠护送 [出发 <任务>]。")
+    raise GameError("格式：灵宠护送 [战历|出发 <任务>]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

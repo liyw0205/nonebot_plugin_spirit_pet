@@ -56,11 +56,15 @@ def scripted(plan, seen=None):
     return fake
 
 
-def test_content_declares_three_graded_missions(game):
+def test_content_declares_the_graded_missions(game):
     rows = missions(game)
-    assert [row.id for row in rows] == ["medicine_run", "frost_escort", "dragon_road"]
-    assert [row.energy for row in rows] == [15, 18, 22]
-    assert [len(row.waves) for row in rows] == [2, 2, 3]
+    assert [row.id for row in rows] == [
+        "medicine_run", "frost_escort", "dragon_road", "frost_caravan", "heaven_relay",
+    ]
+    # Energy is the ordering key, so it must stay strictly increasing.
+    energies = [row.energy for row in rows]
+    assert energies == sorted(energies) and len(set(energies)) == len(energies)
+    assert [len(row.waves) for row in rows] == [2, 2, 3, 2, 3]
     content = game[0].content
     for row in rows:
         assert all(enemy in content.enemies for wave in row.waves for enemy in wave)
@@ -250,7 +254,7 @@ def test_objective_help_and_parse(game, play, monkeypatch):
     assert "护送：本周尚未出发" in play("objectives").text()
     monkeypatch.setattr(escort, "fight", scripted([(0, 10), (0, 10)]))
     play("escort", f"出发 {first.name}", op="obj")
-    assert "护送：本周已通关 1/3" in play("objectives").text()
+    assert f"护送：本周已通关 1/{len(missions(game))}" in play("objectives").text()
     assert "灵宠护送" in play("help", "秘境与关卡").text()
     assert handlers._parse("灵宠护送") == ("escort", "")
     assert handlers._parse("灵宠护送 出发 药囊运送") == ("escort", "出发 药囊运送")
@@ -275,7 +279,7 @@ def test_state_survives_a_restart(game, play, monkeypatch):
     monkeypatch.setattr(escort, "fight", scripted([(0, 10), (0, 10)]))
     play("escort", f"出发 {first.name}", op="persist")
     assert "满评" in play("escort").text()
-    assert "护送：本周已通关 1/3" in play("objectives").text()
+    assert f"护送：本周已通关 1/{len(missions(game))}" in play("objectives").text()
 
 
 def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
@@ -298,3 +302,77 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
     assert len(page.commands) <= 4
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def week_start(now=NOW):
+    from nonebot_plugin_spirit_pet.utils.time import beijing_week
+
+    return beijing_week(now)[0]
+
+
+def seed_grade(game, week, mission_id, value, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"escort_{week}_{mission_id}", value),
+    )
+
+
+def test_history_summarises_each_week_newest_first(game, play):
+    ready(game, play)
+    this, last = week_start(), week_start() - WEEK
+    seed_grade(game, this, "medicine_run", 2)
+    seed_grade(game, this, "frost_escort", 1)
+    seed_grade(game, last, "dragon_road", 2)
+    page = play("escort", "战历")
+    assert page.title == "护送战历"
+    assert "共 2 周有记录" in page.text()
+    from nonebot_plugin_spirit_pet.utils.time import beijing_day
+
+    assert f"{beijing_day(this)} 起那一周 · 通关 2 条 · 满评 1 条" in page.text()
+    assert f"{beijing_day(last)} 起那一周 · 通关 1 条 · 满评 1 条" in page.text()
+
+
+def test_history_is_empty_before_any_run(game, play):
+    ready(game, play)
+    page = play("escort", "战历")
+    assert "还没有护送记录" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_without_a_pet_is_read_only(game, play):
+    page = play("escort", "战历", user="ghost")
+    assert "尚未结契" in page.text()
+
+
+def test_history_never_writes(game, play):
+    ready(game, play)
+    seed_grade(game, week_start(), "medicine_run", 2)
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    play("escort", "战历")
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+
+
+def test_history_pages_and_refuses_beyond_the_end(game, play):
+    ready(game, play)
+    this = week_start()
+    total = escort.HISTORY_PAGE_SIZE + 1
+    for index in range(total):
+        seed_grade(game, this - index * WEEK, "medicine_run", 2)
+    first = play("escort", "战历")
+    assert f"共 {total} 周有记录 · 第 1/2 页" in first.text()
+    assert "第 2/2 页" in play("escort", "战历 2").text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("escort", "战历 3")
+
+
+def test_history_counts_a_retired_mission_row(game, play):
+    ready(game, play)
+    seed_grade(game, week_start(), "retired_mission", 2)
+    page = play("escort", "战历")
+    assert "共 1 周有记录" in page.text()
+    assert "通关 1 条 · 满评 1 条" in page.text()

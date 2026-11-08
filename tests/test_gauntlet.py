@@ -36,6 +36,20 @@ def markers(game, user="u1", now=NOW):
     return sorted(row["quest_id"] for row in rows)
 
 
+
+def ctx_for(game, user="u1", now=NOW):
+    from nonebot_plugin_spirit_pet.application.context import Context
+    from nonebot_plugin_spirit_pet.storage.repository import Repository
+
+    return Context(Repository(game[1].connect()), game[0].content, game[0].config, game[0].rng, user, now, "gauntlet-ctx")
+
+
+def week_start(game, now=NOW):
+    from nonebot_plugin_spirit_pet.utils.time import beijing_week
+
+    return beijing_week(now)[0]
+
+
 def ready(game, play, *, energy=100):
     play("adopt", "青鸾")
     sql(game[1], "UPDATE pets SET energy=?, energy_updated=? WHERE user_id='u1'", (energy, NOW))
@@ -101,7 +115,7 @@ def test_page_lists_every_round_rewards_and_bonus(game, play):
         enemy = game[0].content.enemies[round_.enemy]
         assert f"{number}. {enemy.name}" in page.text()
         assert "未通关" in page.text()
-    assert "五关全清奖励" in page.text()
+    assert "全清奖励" in page.text()
     assert [link.command for link in page.inline_commands] == ["灵宠擂台 挑战"]
 
 
@@ -282,3 +296,131 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
     assert len(page.commands) <= 4
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def seed_week(game, round_number, now=NOW, ladder_id=None, user="u1"):
+    """Write one round marker the way the module names it."""
+    from nonebot_plugin_spirit_pet.utils.time import beijing_week
+
+    prefix = "gauntlet_" if ladder_id is None else f"gauntlet_{ladder_id}_"
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 1)"
+        " ON CONFLICT(user_id, quest_id) DO NOTHING",
+        (user, f"{prefix}{beijing_week(now)[0]}_{round_number}"),
+    )
+
+
+def test_history_lists_past_weeks_newest_first(game, play):
+    ready(game, play)
+    this = week_start(game)
+    last = this - WEEK
+    seed_week(game, 1)
+    seed_week(game, 2)
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+        (f"gauntlet_{last}_1",),
+    )
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+        (f"gauntlet_{last}_2",),
+    )
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+        (f"gauntlet_{last}_3",),
+    )
+    page = play("gauntlet", "战历")
+    assert page.title == "擂台战历"
+    assert "共 2 条周记录" in page.text()
+    from nonebot_plugin_spirit_pet.utils.time import beijing_day
+
+    assert f"{beijing_day(this)} 起那一周 · 灵宠擂台 · 通过 2 关" in page.text()
+    assert f"{beijing_day(last)} 起那一周 · 灵宠擂台 · 通过 3 关" in page.text()
+
+
+def test_history_shows_both_ladders_and_a_retired_one(game, play):
+    ready(game, play)
+    seed_week(game, 1)
+    seed_week(game, 1, ladder_id="high_gauntlet")
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+        (f"gauntlet_old_ladder_{week_start(game)}_1",),
+    )
+    page = play("gauntlet", "战历")
+    assert "灵宠擂台 · 通过 1 关" in page.text()
+    assert "问天擂台 · 通过 1 关" in page.text()
+    assert "old_ladder（已下线） · 通过 0 关" in page.text()
+
+
+def test_history_is_empty_before_any_run(game, play):
+    ready(game, play)
+    page = play("gauntlet", "战历")
+    assert "还没有擂台记录" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_without_a_pet_is_read_only(game, play):
+    page = play("gauntlet", "战历", user="ghost")
+    assert "尚未结契" in page.text()
+    assert page.inline_commands[0].command == "灵宠领养 "
+
+
+def test_history_never_writes(game, play):
+    ready(game, play)
+    seed_week(game, 1)
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    stones = player(game[1])["stones"]
+    play("gauntlet", "战历")
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+    assert player(game[1])["stones"] == stones
+
+
+def test_history_pages_and_refuses_beyond_the_end(game, play):
+    ready(game, play)
+    this = week_start(game)
+    total = gauntlet.HISTORY_PAGE_SIZE + 1
+    for index in range(total):
+        sql(
+            game[1],
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+            (f"gauntlet_{this - index * WEEK}_1",),
+        )
+    first = play("gauntlet", "战历")
+    assert f"共 {total} 条周记录 · 第 1/2 页" in first.text()
+    assert "第 2/2 页" in play("gauntlet", "战历 2").text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("gauntlet", "战历 3")
+
+
+def test_the_second_ladder_is_independent_and_named(game, play):
+    ready(game, play)
+    high = gauntlet.ladder(ctx_for(game), "high_gauntlet")
+    assert high.id != gauntlet.config(ctx_for(game)).id
+    assert len(gauntlet.ladders(ctx_for(game))) == 2
+    page = play("gauntlet", "名单")
+    assert page.title == "擂台名单"
+    assert high.name in page.text()
+    assert f"灵宠擂台 挑战 {high.id}" in {link.command for link in page.inline_commands}
+
+
+def test_challenging_the_second_ladder_marks_only_its_own_keys(game, play, monkeypatch):
+    ready(game, play)
+    high = gauntlet.ladder(ctx_for(game), "high_gauntlet")
+    monkeypatch.setattr(gauntlet, "fight", scripted([0] * len(high.rounds)))
+    reply = play("gauntlet", f"挑战 {high.id}", op="high-run")
+    assert reply.title == "擂台全清"
+    week = week_start(game)
+    keys = {row["quest_id"] for row in sql(game[1], "SELECT quest_id FROM quest_progress")}
+    assert f"gauntlet_high_gauntlet_{week}_all" in keys
+    # The default ladder's keys stay untouched.
+    assert not any(key.startswith(f"gauntlet_{week}_") for key in keys)
+    # And the default ladder still reads as untouched.
+    assert gauntlet.deepest(ctx_for(game)) == 0
+    assert gauntlet.deepest(ctx_for(game), None, high.id) == len(high.rounds)

@@ -666,7 +666,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 护送定义
 
-`escorts.json` 是护送任务数组，由 `domain/escort_content.py` 校验：每项声明 `id`、`name`、`description`、`energy`（1-100）、`npc`（`name` 与四维，气血/速度 ≥ 1）、`waves`（1-5 波，每波 1-3 个敌手 id）与 `rewards`（`full` 与 `partial` 两档 `Reward`）。`EscortRewards` 强制满评奖励不低于部分奖励（灵石与修为两档），`Catalog._validate_escorts` 校验敌手与奖励物品都存在。
+`escorts.json` 是护送任务数组（当前五条，两条高境界任务把波次推到元婴至渡劫敌手），由 `domain/escort_content.py` 校验：每项声明 `id`、`name`、`description`、`energy`（1-100）、`npc`（`name` 与四维，气血/速度 ≥ 1）、`waves`（1-5 波，每波 1-3 个敌手 id）与 `rewards`（`full` 与 `partial` 两档 `Reward`）。`EscortRewards` 强制满评奖励不低于部分奖励（灵石与修为两档），`Catalog._validate_escorts` 校验敌手与奖励物品都存在。
 
 ```json
 {"id": "medicine_run", "name": "药囊运送", "energy": 15,
@@ -694,7 +694,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 擂台定义
 
-`gauntlets.json` 是擂台数组（当前一条 `gauntlet`），由 `domain/gauntlet_content.py` 校验：`energy` 1-100、`bonus` 全清奖励、`rounds` 1-10 关，每关声明 `enemy`、四项 `*_scale`（0.1-10）与 `reward`。`Catalog._validate_gauntlets` 进一步要求敌手存在于 `enemies.json`、全清与逐关奖励物品都存在。
+`gauntlets.json` 是擂台数组（当前两条：`gauntlet` 与元婴起的 `high_gauntlet`，各自独立计周发奖），由 `domain/gauntlet_content.py` 校验：`energy` 1-100、`bonus` 全清奖励、`rounds` 1-10 关，每关声明 `enemy`、四项 `*_scale`（0.1-10）与 `reward`。`Catalog._validate_gauntlets` 进一步要求敌手存在于 `enemies.json`、全清与逐关奖励物品都存在。
 
 ```json
 {"id": "gauntlet", "name": "灵宠擂台", "energy": 15, "bonus": {...},
@@ -977,7 +977,7 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 团队试炼定义
 
-`team_trials.json` 是团队试炼对象数组，由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
+`team_trials.json` 是团队试炼对象数组（当前五条，覆盖凝气至渡劫，按周轮换），由 `domain/team_trial_content.py` 校验。每条试炼定义 `id`、`name`、`description`、`min_realm`、`enemies`（1-5 个已有敌人）、`energy`（1-100）、`round_limit`（3-30）与 `reward`（修为/灵石区间加物品），奖励物品必须存在于 `items.json`。
 
 ```json
 {

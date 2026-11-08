@@ -36,5 +36,43 @@
         "reward": {"exp": {"minimum": 220, "maximum": 220}, "stones": {"minimum": 320, "maximum": 320}, "items": {"exp_pill": {"minimum": 1, "maximum": 1}}}
       }
     ]
+  },
+  {
+    "id": "high_gauntlet",
+    "name": "问天擂台",
+    "description": "元婴之上的五关连战：霜渊至九霄，血量照旧跨关延续，止步即结算。",
+    "energy": 18,
+    "bonus": {
+      "exp": {"minimum": 520, "maximum": 520},
+      "stones": {"minimum": 1000, "maximum": 1000},
+      "items": {"bloodline_essence": {"minimum": 3, "maximum": 3}}
+    },
+    "rounds": [
+      {
+        "enemy": "frost_monarch",
+        "hp_scale": 1.0, "attack_scale": 1.0, "defense_scale": 1.0, "speed_scale": 1.0,
+        "reward": {"exp": {"minimum": 260, "maximum": 260}, "stones": {"minimum": 340, "maximum": 340}, "items": {}}
+      },
+      {
+        "enemy": "wood_colossus",
+        "hp_scale": 1.1, "attack_scale": 1.1, "defense_scale": 1.05, "speed_scale": 1.0,
+        "reward": {"exp": {"minimum": 300, "maximum": 300}, "stones": {"minimum": 400, "maximum": 400}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}
+      },
+      {
+        "enemy": "void_blade",
+        "hp_scale": 1.2, "attack_scale": 1.2, "defense_scale": 1.1, "speed_scale": 1.1,
+        "reward": {"exp": {"minimum": 360, "maximum": 360}, "stones": {"minimum": 480, "maximum": 480}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}
+      },
+      {
+        "enemy": "nether_emperor",
+        "hp_scale": 1.35, "attack_scale": 1.3, "defense_scale": 1.2, "speed_scale": 1.15,
+        "reward": {"exp": {"minimum": 420, "maximum": 420}, "stones": {"minimum": 560, "maximum": 560}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}
+      },
+      {
+        "enemy": "tribulation_avatar",
+        "hp_scale": 1.5, "attack_scale": 1.4, "defense_scale": 1.3, "speed_scale": 1.25,
+        "reward": {"exp": {"minimum": 500, "maximum": 500}, "stones": {"minimum": 680, "maximum": 680}, "items": {"exp_pill": {"minimum": 2, "maximum": 2}}}
+      }
+    ]
   }
 ]

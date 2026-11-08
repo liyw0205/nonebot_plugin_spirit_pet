@@ -34,5 +34,29 @@
       "full": {"exp": {"minimum": 240, "maximum": 240}, "stones": {"minimum": 380, "maximum": 380}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}},
       "partial": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 190, "maximum": 190}, "items": {}}
     }
+  },
+  {
+    "id": "frost_caravan",
+    "name": "霜渊信使",
+    "description": "把密信送过霜渊，第一波就是霜渊君主亲自拦路。",
+    "energy": 26,
+    "npc": {"name": "霜渊密信", "hp": 980, "attack": 34, "defense": 26, "speed": 24},
+    "waves": [["frost_monarch"], ["wood_colossus", "jade_warden"]],
+    "rewards": {
+      "full": {"exp": {"minimum": 360, "maximum": 360}, "stones": {"minimum": 520, "maximum": 520}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}},
+      "partial": {"exp": {"minimum": 180, "maximum": 180}, "stones": {"minimum": 260, "maximum": 260}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}
+    }
+  },
+  {
+    "id": "heaven_relay",
+    "name": "叩关传灯",
+    "description": "穿过幽冥与太虚两道关隘，把灯送到天门之前。",
+    "energy": 28,
+    "npc": {"name": "天门灯", "hp": 1250, "attack": 40, "defense": 30, "speed": 28},
+    "waves": [["void_blade"], ["nether_emperor"], ["tribulation_avatar"]],
+    "rewards": {
+      "full": {"exp": {"minimum": 480, "maximum": 480}, "stones": {"minimum": 660, "maximum": 660}, "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}, "exp_pill": {"minimum": 1, "maximum": 1}}},
+      "partial": {"exp": {"minimum": 240, "maximum": 240}, "stones": {"minimum": 330, "maximum": 330}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}
+    }
   }
 ]

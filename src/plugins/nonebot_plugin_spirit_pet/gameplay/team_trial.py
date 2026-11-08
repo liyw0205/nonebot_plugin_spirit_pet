@@ -8,7 +8,8 @@ rounds), so no schema change is needed and the ledger rotates with the week.
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.team_trial_content import TeamTrial
-from ..utils.time import beijing_week
+from ..utils.pagination import paginate
+from ..utils.time import beijing_day, beijing_week
 from . import battle_pass
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
@@ -21,6 +22,8 @@ from .teams.party import _ready_ids
 
 PREFIX = "team_trial_"
 WEEK = 7 * 86400
+HISTORY = frozenset({"战历", "战绩"})
+HISTORY_PAGE_SIZE = 6
 
 
 def trials(ctx: Context) -> list[TeamTrial]:
@@ -51,6 +54,67 @@ def best(ctx: Context, user_id: str, start: int, trial_id: str) -> int | None:
         (user_id, _key(start, trial_id)),
     ).fetchone()
     return None if row is None else int(row["progress"])
+
+
+def weeks_cleared(ctx: Context, user_id: str | None = None) -> list[tuple[int, str, int]]:
+    """Every recorded team-trial week as ``(week start, trial id, best rounds)``.
+
+    The per-week `team_trial_<week>_<trial id>` rows are kept forever and only the
+    current week is read, so a past clear was unreachable. This groups exactly those
+    rows, newest week first; a trial that has left the rotation is still reported by
+    its id instead of silently disappearing.
+    """
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND quest_id GLOB ?",
+        (user_id or ctx.user_id, f"{PREFIX}*"),
+    ).fetchall()
+    known = {trial.id for trial in trials(ctx)}
+    records: list[tuple[int, str, int]] = []
+    for row in rows:
+        rest = str(row["quest_id"])[len(PREFIX):]
+        start_text, _, trial_id = rest.partition("_")
+        if not start_text.isdigit() or not trial_id:
+            continue
+        if trial_id not in known:
+            trial_id = f"{trial_id}（已下线）"
+        records.append((int(start_text), trial_id, int(row["progress"])))
+    return sorted(records, key=lambda item: (item[0], item[1]), reverse=True)
+
+
+def history(ctx: Context, arg: str) -> Reply:
+    """Read-only record of past team-trial weeks; pays nothing, writes nothing."""
+    if ctx.repo.player(ctx.user_id) is None:
+        return Reply(
+            "试炼战历",
+            (
+                "尚未结契，先完成领养，才能留下试炼战绩。",
+                "战历按周回顾你在团队试炼里的最佳回合，只读，不补发奖励。",
+            ),
+            ("灵宠帮助",),
+            (InlineCommand(0, "开始领养", "灵宠领养 "),),
+        )
+    records = weeks_cleared(ctx)
+    if not records:
+        return Reply(
+            "试炼战历",
+            (
+                "还没有团队试炼记录，先组队并发送 灵宠团队试炼 挑战。",
+                "每次通关会在本周留下一笔回合记录，战历按周汇总。",
+            ),
+            ("灵宠团队试炼", "灵宠目标", "我的灵宠"),
+        )
+    page = paginate(records, arg, "试炼战历", "灵宠团队试炼 战历", HISTORY_PAGE_SIZE)
+    lines = [
+        f"共 {len(records)} 条周记录 · 第 {page.number}/{page.total} 页（新的在前）。",
+    ]
+    for start, trial_id, rounds in page.entries:
+        lines.append(f"{beijing_day(start)} 起那一周 · {trial_id} · 最佳 {rounds} 回合")
+    lines.append("战历只读：不重打、不补发奖励，也不改变本周进度。")
+    return Reply(
+        "试炼战历",
+        tuple(lines),
+        (*page.navigation, "灵宠团队试炼", "灵宠目标")[:4],
+    )
 
 
 def _members(ctx: Context, team_id: int, leader_id: str):
@@ -253,8 +317,12 @@ def challenge(ctx: Context, arg: str) -> Reply:
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
-    """Page by default; ``挑战`` runs the weekly battle."""
-    if arg.strip() == "挑战":
+    """Page by default; ``挑战`` runs the weekly battle, ``战历 [页码]`` reads the past."""
+    parts = arg.split()
+    head = parts[0] if parts else ""
+    if head in HISTORY:
+        return history(ctx, " ".join(parts[1:]))
+    if head == "挑战":
         return challenge(ctx, arg)
     return page(ctx, arg)
 

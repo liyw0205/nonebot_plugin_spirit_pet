@@ -217,3 +217,55 @@ def test_duel_and_drill_rows_are_zero_without_history(game, play):
     page = play("weekly_report", now=NOW)
     assert "斗法：本周胜 0 位护法。" in page.text()
     assert "演武：本周出手 0 次。" in page.text()
+
+
+def seed_team_trial(game, week_start, trial_id, rounds=6, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"team_trial_{week_start}_{trial_id}", rounds),
+    )
+
+
+def seed_gauntlet_round(game, key, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 1)"
+        " ON CONFLICT(user_id, quest_id) DO NOTHING",
+        (user, key),
+    )
+
+
+def seed_escort_grade(game, week_start, mission_id, grade, user="u1"):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"escort_{week_start}_{mission_id}", grade),
+    )
+
+
+def test_team_trial_gauntlet_and_escort_rows_summarise_the_week(game, play):
+    account(game, play)
+    seed_team_trial(game, WEEK_START, "thunder_raid")
+    seed_gauntlet_round(game, f"gauntlet_{WEEK_START}_1")          # default ladder
+    seed_gauntlet_round(game, f"gauntlet_high_gauntlet_{WEEK_START}_1")   # second ladder
+    seed_gauntlet_round(game, f"gauntlet_{WEEK_START}_all")       # full-clear marker, not a round
+    seed_escort_grade(game, WEEK_START, "medicine_run", 2)
+    seed_escort_grade(game, WEEK_START, "frost_escort", 1)
+    page = play("weekly_report", now=NOW)
+    assert "团队试炼：本周通关 1 场。" in page.text()
+    assert "擂台：本周通过 2 关。" in page.text()
+    assert "护送：本周通关 2 条 · 满评 1 条。" in page.text()
+
+
+def test_the_three_rows_exclude_the_previous_week(game, play):
+    account(game, play)
+    seed_team_trial(game, WEEK_START - 7 * DAY, "thunder_raid")
+    seed_gauntlet_round(game, f"gauntlet_{WEEK_START - 7 * DAY}_1")
+    seed_escort_grade(game, WEEK_START - 7 * DAY, "medicine_run", 2)
+    page = play("weekly_report", now=NOW)
+    assert "团队试炼：本周通关 0 场。" in page.text()
+    assert "擂台：本周通过 0 关。" in page.text()
+    assert "护送：本周通关 0 条 · 满评 0 条。" in page.text()

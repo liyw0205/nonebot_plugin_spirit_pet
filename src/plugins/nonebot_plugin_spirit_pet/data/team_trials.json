@@ -43,5 +43,40 @@
         "bloodline_essence": {"minimum": 1, "maximum": 1}
       }
     }
+  },
+  {
+    "id": "frost_siege",
+    "name": "霜渊围城",
+    "description": "霜渊君主与古木法相结成死阵，元婴队伍须在寒潮封死前破开缺口。",
+    "min_realm": "yuanying",
+    "enemies": ["frost_monarch", "wood_colossus"],
+    "energy": 32,
+    "round_limit": 10,
+    "reward": {
+      "exp": {"minimum": 420, "maximum": 500},
+      "stones": {"minimum": 460, "maximum": 560},
+      "items": {
+        "forge_ore": {"minimum": 3, "maximum": 4},
+        "bloodline_essence": {"minimum": 1, "maximum": 2}
+      }
+    }
+  },
+  {
+    "id": "heaven_assault",
+    "name": "冲霄叩关",
+    "description": "九霄劫灵与天门守望同镇云关，是团队试炼的最后一题。",
+    "min_realm": "dujie",
+    "enemies": ["tribulation_avatar", "sky_gate_guard"],
+    "energy": 35,
+    "round_limit": 10,
+    "reward": {
+      "exp": {"minimum": 600, "maximum": 700},
+      "stones": {"minimum": 620, "maximum": 760},
+      "items": {
+        "forge_ore": {"minimum": 4, "maximum": 5},
+        "bloodline_essence": {"minimum": 2, "maximum": 2},
+        "exp_pill": {"minimum": 1, "maximum": 2}
+      }
+    }
   }
 ]

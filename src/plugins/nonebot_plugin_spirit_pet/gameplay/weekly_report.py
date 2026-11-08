@@ -98,6 +98,43 @@ def _drill_attempts(ctx: Context, user_id: str, start: int, end: int) -> int:
     return total
 
 
+def _glob_count(ctx: Context, user_id: str, pattern: str) -> int:
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) AS n FROM quest_progress WHERE user_id=? AND quest_id GLOB ?",
+        (user_id, pattern),
+    ).fetchone()
+    return int(row["n"])
+
+
+def _week_grades(ctx: Context, user_id: str, start: int) -> tuple[int, int]:
+    """This week's escort clears and full clears, from the `escort_<week>_<mission>` rows."""
+    rows = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id GLOB ?",
+        (user_id, f"escort_{start}_*"),
+    ).fetchall()
+    grades = [int(row["progress"]) for row in rows]
+    return sum(1 for value in grades if value > 0), sum(1 for value in grades if value >= 2)
+
+
+def _gauntlet_rounds(ctx: Context, user_id: str, start: int) -> int:
+    """Round markers cleared this week across every shipped ladder.
+
+    Keys are `gauntlet_<week>_<round>` for the shipped ladder and
+    `gauntlet_<ladder>_<week>_<round>` for the others, so the week segment is found
+    by scanning rather than by one glob; the `_all` markers are not rounds.
+    """
+    rows = ctx.repo.conn.execute(
+        "SELECT quest_id FROM quest_progress WHERE user_id=? AND quest_id GLOB 'gauntlet_*'",
+        (user_id,),
+    ).fetchall()
+    total = 0
+    for row in rows:
+        parts = str(row["quest_id"]).split("_")
+        if len(parts) >= 3 and parts[-2] == str(start) and parts[-1].isdigit():
+            total += 1
+    return total
+
+
 def report(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠周报 不接受参数，直接发送即可。")
@@ -114,6 +151,9 @@ def report(ctx: Context, arg: str) -> Reply:
     chooser = _arc_choices(ctx, ctx.user_id, start, end)
     duels = _duel_wins(ctx, ctx.user_id, start)
     drills = _drill_attempts(ctx, ctx.user_id, start, end)
+    trials = _glob_count(ctx, ctx.user_id, f"team_trial_{start}_*")
+    gauntlets = _gauntlet_rounds(ctx, ctx.user_id, start)
+    escorts, escorts_full = _week_grades(ctx, ctx.user_id, start)
     lines = [
         f"统计区间：{beijing_day(start)} 至 {beijing_day(end - 1)}（北京时间）。",
         f"签到：{signins} 天。",
@@ -129,6 +169,9 @@ def report(ctx: Context, arg: str) -> Reply:
         f"委托：本周出发 {expeditions} 次。",
         f"斗法：本周胜 {duels} 位护法。",
         f"演武：本周出手 {drills} 次。",
+        f"团队试炼：本周通关 {trials} 场。",
+        f"擂台：本周通过 {gauntlets} 关。",
+        f"护送：本周通关 {escorts} 条 · 满评 {escorts_full} 条。",
         f"奇缘：本周做出 {chooser} 次抉择。",
         f"信箱：收到 {received} 封 · 已领取 {claimed} 封。",
         "周报只读，不补发奖励；跨周后统计窗口自动切换。",

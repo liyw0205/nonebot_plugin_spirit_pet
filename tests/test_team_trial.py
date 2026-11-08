@@ -82,11 +82,16 @@ def marker(game, user, trial_id, now=NOW):
     )
 
 
-def test_content_defines_three_trials_with_limits(game):
+def test_content_defines_the_trial_rotation_with_limits(game):
     entries = trials(game)
-    assert [trial.id for trial in entries] == ["hall_break", "thunder_raid", "tide_hunt"]
-    assert [trial.round_limit for trial in entries] == [8, 10, 8]
-    assert {trial.min_realm for trial in entries} == {"ningqi", "zhuji", "jindan"}
+    assert [trial.id for trial in entries] == [
+        "frost_siege", "hall_break", "heaven_assault", "thunder_raid", "tide_hunt",
+    ]
+    assert {trial.min_realm for trial in entries} == {
+        "ningqi", "zhuji", "jindan", "yuanying", "dujie",
+    }
+    # The hard trials use the same round limit band as the rest of the rotation.
+    assert all(trial.round_limit in (8, 10) for trial in entries)
     for trial in entries:
         assert trial.enemies and all(key in game[0].content.enemies for key in trial.enemies)
         assert all(item in game[0].content.items for item in trial.reward.items)
@@ -305,3 +310,72 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     }
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
+
+
+# ---------------------------------------------------------------- history (战历)
+
+def seed_clear(game, week, trial_id, rounds=6, user=USERS[0]):
+    sql(
+        game[1],
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
+        (user, f"team_trial_{week}_{trial_id}", rounds),
+    )
+
+
+def test_history_lists_recorded_weeks_newest_first(game, play):
+    create_players(play, 1)
+    this, last = week_start_of(NOW), week_start_of(NOW) - WEEK
+    seed_clear(game, this, "thunder_raid")
+    seed_clear(game, last, "tide_hunt", rounds=7)
+    page = play("team_trial", "战历", user=USERS[0])
+    assert page.title == "试炼战历"
+    assert "共 2 条周记录" in page.text()
+    from nonebot_plugin_spirit_pet.utils.time import beijing_day
+
+    assert f"{beijing_day(this)} 起那一周 · thunder_raid · 最佳 6 回合" in page.text()
+    assert f"{beijing_day(last)} 起那一周 · tide_hunt · 最佳 7 回合" in page.text()
+
+
+def test_history_names_a_retired_trial(game, play):
+    create_players(play, 1)
+    seed_clear(game, week_start_of(NOW), "old_trial")
+    page = play("team_trial", "战历", user=USERS[0])
+    assert "old_trial（已下线） · 最佳 6 回合" in page.text()
+
+
+def test_history_is_empty_without_records(game, play):
+    create_players(play, 1)
+    page = play("team_trial", "战历", user=USERS[0])
+    assert "还没有团队试炼记录" in page.text()
+    assert page.inline_commands == ()
+
+
+def test_history_for_an_unregistered_user_hits_the_registered_guard(game, play):
+    # 灵宠团队试炼 is a registered command, so the game layer refuses an
+    # unregistered user before any handler runs; there is no read-only path here
+    # (unlike the read-only pages), which this pins so the behavior is deliberate.
+    with pytest.raises(GameError, match="还没有灵宠伙伴"):
+        play("team_trial", "战历", user="ghost")
+
+
+def test_history_never_writes(game, play):
+    create_players(play, 1)
+    seed_clear(game, week_start_of(NOW), "thunder_raid")
+    before = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    play("team_trial", "战历", user=USERS[0])
+    after = sql(game[1], "SELECT user_id, quest_id, progress FROM quest_progress ORDER BY quest_id")
+    assert after == before
+
+
+def test_history_pages_and_refuses_beyond_the_end(game, play):
+    create_players(play, 1)
+    this = week_start_of(NOW)
+    total = team_trial.HISTORY_PAGE_SIZE + 1
+    for index in range(total):
+        seed_clear(game, this - index * WEEK, "thunder_raid")
+    first = play("team_trial", "战历", user=USERS[0])
+    assert f"共 {total} 条周记录 · 第 1/2 页" in first.text()
+    assert "第 2/2 页" in play("team_trial", "战历 2", user=USERS[0]).text()
+    with pytest.raises(GameError, match="共 2 页"):
+        play("team_trial", "战历 3", user=USERS[0])
