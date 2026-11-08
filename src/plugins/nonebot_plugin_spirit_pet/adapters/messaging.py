@@ -10,6 +10,43 @@ from ..domain.models import Reply
 from ..gameplay.help import help_link
 
 
+def _table_rows(lines) -> frozenset[int]:
+    """Indices of `lines` that belong to a GitHub-style markdown table.
+
+    A run starts with a row of cells and is confirmed by a separator line of
+    dashes; both must start and end with a pipe, which ordinary game text never
+    does. Only confirmed runs are returned, so a stray line containing a pipe
+    still goes through the normal escaping.
+    """
+    indices: set[int] = set()
+    index = 0
+    total = len(lines)
+    while index < total:
+        line = lines[index].strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            index += 1
+            continue
+        separator = lines[index + 1].strip() if index + 1 < total else ""
+        cells = [cell.strip() for cell in separator.strip("|").split("|")]
+        if not (separator.startswith("|") and separator.endswith("|")) or not cells:
+            index += 1
+            continue
+        if not all(cell and set(cell) <= {"-", ":"} and "-" in cell for cell in cells):
+            index += 1
+            continue
+        indices.add(index)
+        indices.add(index + 1)
+        cursor = index + 2
+        while cursor < total:
+            following = lines[cursor].strip()
+            if not (following.startswith("|") and following.endswith("|")):
+                break
+            indices.add(cursor)
+            cursor += 1
+        index = cursor
+    return frozenset(indices)
+
+
 _SECTION_HEADINGS = frozenset({
     "总览", "概况", "成长", "状态", "战斗", "进阶", "下一步",
 })
@@ -142,6 +179,10 @@ def _qq_segments(reply: Reply, config: Config, *, allow_keyboard: bool = True) -
     def escape(value: str) -> str:
         return re.sub(r"([\\`*_{}\[\]()#+.!|>-])", r"\\\1", value)
 
+    # A markdown table must reach the platform with its pipes intact, so table
+    # runs bypass `escape` (utils/table.py escapes pipes inside cells instead).
+    table_rows = _table_rows(reply.lines)
+
     is_help = reply.title == "灵宠仙途" or reply.title.startswith("帮助 ·")
     body = []
     use_links = qq_mode == "native" and config.spirit_pet_qq_blue_links
@@ -160,6 +201,10 @@ def _qq_segments(reply: Reply, config: Config, *, allow_keyboard: bool = True) -
         return " · ".join(rendered)
 
     for source_index, line in enumerate(reply.lines):
+        if source_index in table_rows:
+            # Table structure is already escaped cell-by-cell; pass it through.
+            body.append(line)
+            continue
         contextual = contextual_actions(source_index)
         if line in _SECTION_HEADINGS:
             if body and body[-1] != "":

@@ -17,8 +17,26 @@ def keyboard_commands(reply):
     ]
 
 
-def day_line(reply, day):
-    return next(line for line in reply.lines if line.startswith(f"1月{day}日 · "))
+def day_cell(reply, day):
+    """The table cell for one day of the displayed month.
+
+    Cells are `<day><state>`: 签 signed, 今 today, 漏 missed, bare day = future.
+    A day only matches on its full leading number, so 1 never matches 15.
+    """
+    for line in reply.lines:
+        if not line.startswith("|"):
+            continue
+        for entry in line.strip("|").split("|"):
+            text = entry.strip()
+            head = text[: len(str(day))]
+            rest = text[len(head):]
+            if head.isdigit() and int(head) == day and not rest[:1].isdigit():
+                return text
+    raise AssertionError(f"day {day} is not in the table: {reply.lines}")
+
+
+def table_rows(reply):
+    return [line for line in reply.lines if line.startswith("|")]
 
 
 def test_current_month_marks_signed_future_and_missed_days(game, play):
@@ -28,10 +46,25 @@ def test_current_month_marks_signed_future_and_missed_days(game, play):
     assert page.title == "签到月历 2027-01"
     assert "当前连续 1 天 · 历史最佳 1 天。" in page.lines[0]
     assert "本月已签 1/31 天" in page.lines[1]
-    assert day_line(page, 15) == "1月15日 · 已签到"
-    assert day_line(page, 14) == "1月14日 · 未签"
-    assert day_line(page, 16) == "1月16日 · 未到"
+    # The month is drawn as a Monday-to-Sunday table, not one line per day.
+    assert table_rows(page)[0] == "| 一 | 二 | 三 | 四 | 五 | 六 | 日 |"
+    assert table_rows(page)[1] == "| --- | --- | --- | --- | --- | --- | --- |"
+    assert all(len(row.strip("|").split("|")) == 7 for row in table_rows(page))
+    assert "图例：签 已签到 · 今 今日 · 漏 漏签 · 空 未到" in page.lines
+    assert day_cell(page, 15) == "15签"
+    assert day_cell(page, 14) == "14漏"
+    assert day_cell(page, 16) == "16"
     assert page.commands[0] == "灵宠签到奖励"
+
+
+def test_a_past_unsigned_day_reads_as_missed_not_future(game, play):
+    play("adopt", "青鸾", now=NOW)
+    page = play("checkin_calendar", now=NOW + 1)
+    # Nothing signed this month: today is marked 今, earlier days 漏, later bare.
+    assert day_cell(page, 15) == "15今"
+    assert day_cell(page, 1) == "1漏"
+    assert day_cell(page, 31) == "31"
+
 
 
 def test_history_month_and_navigation_commands(game, play):
@@ -44,10 +77,9 @@ def test_history_month_and_navigation_commands(game, play):
         )
     past = play("checkin_calendar", "2026-12", now=NOW + 1)
     assert past.title == "签到月历 2026-12"
-    december = [line for line in past.lines if line.startswith("12月")]
-    assert "12月30日 · 已签到" in december
-    assert "12月31日 · 已签到" in december
-    assert "12月29日 · 未签" in december
+    assert day_cell(past, 30) == "30签"
+    assert day_cell(past, 31) == "31签"
+    assert day_cell(past, 29) == "29漏"
     assert "本月已签 2/31 天" in past.lines[1]
     # Past months navigate back to the current month; no forward month exists.
     assert past.commands[0] == "灵宠签到月历 2027-01"
@@ -78,8 +110,8 @@ def test_legacy_account_shows_only_its_last_sign_day(game, play):
     with sql.connect() as conn:
         conn.execute("UPDATE players SET sign_day='2026-11-20' WHERE user_id='u1'")
     page = play("checkin_calendar", "2026-11", now=NOW + 1)
-    assert "11月20日 · 已签到" in page.lines
-    assert "11月19日 · 未签" in page.lines
+    assert day_cell(page, 20) == "20签"
+    assert day_cell(page, 19) == "19漏"
     assert "本月已签 1/30 天" in page.lines[1]
 
 

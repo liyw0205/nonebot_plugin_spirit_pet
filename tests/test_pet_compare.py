@@ -39,6 +39,17 @@ def state(store):
     }
 
 
+def row_for(page, label):
+    """The table row whose first cell is `label`."""
+    for line in page.lines:
+        if not line.startswith("|"):
+            continue
+        first = line.strip("|").split("|")[0].strip()
+        if first == label:
+            return [cell.strip() for cell in line.strip("|").split("|")]
+    raise AssertionError(f"no {label} row in {page.lines}")
+
+
 def test_compare_shows_both_pets_and_all_sections(game, play):
     account(game, play)
     add_pet(game, play)
@@ -46,14 +57,16 @@ def test_compare_shows_both_pets_and_all_sections(game, play):
     page = play("pet_compare", f"{first} {second}", now=NOW)
     assert page.title == "灵宠对比"
     assert f"{first}" in page.lines[0] and f"{second}" in page.lines[0]
-    assert any(line.startswith("气血 ") for line in page.lines)
-    assert any(line.startswith("攻击 ") for line in page.lines)
-    assert any(line.startswith("防御 ") for line in page.lines)
-    assert any(line.startswith("速度 ") for line in page.lines)
-    assert any(line.startswith("技能：") for line in page.lines)
-    assert any(line.startswith("装备：") for line in page.lines)
-    assert any(line.startswith("羁绊：") for line in page.lines)
-    assert any(line.startswith("专精：") for line in page.lines)
+    # The comparison is a table: 项目 / each pet / delta.
+    assert f"| 项目 | 青鸾 | 木灵 | 差值 |" in page.lines
+    assert "| --- | --- | --- | --- |" in page.lines
+    for label in ("气血", "攻击", "防御", "速度", "技能", "装备", "羁绊", "心境", "专精"):
+        cells = row_for(page, label)
+        assert len(cells) == 4, label
+        assert cells[1] and cells[2], label
+    # Stat rows carry a signed delta; qualitative rows do not.
+    assert row_for(page, "气血")[3] in {"+0", "0"}
+    assert row_for(page, "专精")[3] == "—"
 
 
 def test_same_pet_is_rejected(game, play):

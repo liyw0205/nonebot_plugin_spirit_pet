@@ -2,6 +2,7 @@
 
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
+from ..utils.table import table
 from .bond_levels import current_level as bond_level
 from .equipment import loadout
 from .loadout import combatant
@@ -91,16 +92,18 @@ def compare(ctx: Context, arg: str) -> Reply:
     a, b = left["stats"], right["stats"]
     lines = [
         f"{first.name}（{first.pet_id}） vs {second.name}（{second.pet_id}）",
-        f"气血 {a.hp} vs {b.hp}（{_delta(a.hp, b.hp)}）",
-        f"攻击 {a.attack} vs {b.attack}（{_delta(a.attack, b.attack)}）",
-        f"防御 {a.defense} vs {b.defense}（{_delta(a.defense, b.defense)}）",
-        f"速度 {a.speed} vs {b.speed}（{_delta(a.speed, b.speed)}）",
-        f"技能：{left['skills']} vs {right['skills']}",
-        f"装备：{left['gear']} vs {right['gear']}",
-        f"羁绊：Lv{left['bond']} vs Lv{right['bond']} · "
-        f"心境：{left['mood'].name} {left['mood_value']} vs "
-        f"{right['mood'].name} {right['mood_value']}",
-        f"专精：{left['specialization']} vs {right['specialization']}",
+        *table(("项目", first.name, second.name, "差值"), (
+            ("气血", a.hp, b.hp, _delta(a.hp, b.hp)),
+            ("攻击", a.attack, b.attack, _delta(a.attack, b.attack)),
+            ("防御", a.defense, b.defense, _delta(a.defense, b.defense)),
+            ("速度", a.speed, b.speed, _delta(a.speed, b.speed)),
+            ("技能", left["skills"], right["skills"], "—"),
+            ("装备", left["gear"], right["gear"], "—"),
+            ("羁绊", f"Lv{left['bond']}", f"Lv{right['bond']}", "—"),
+            ("心境", f"{left['mood'].name} {left['mood_value']}",
+                     f"{right['mood'].name} {right['mood_value']}", "—"),
+            ("专精", left["specialization"], right["specialization"], "—"),
+        )),
     ]
     return Reply("灵宠对比", tuple(lines), ("灵宠列表", "灵宠装备", "我的灵宠"))
 
