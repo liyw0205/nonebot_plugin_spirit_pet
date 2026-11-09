@@ -566,7 +566,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (merchant.objective_line(ctx, player.user_id), "灵宠商会"),
         (merchant_contract.objective_line(ctx, player.user_id), "灵宠商会 大单"),
         (market.objective_line(ctx, player.user_id), "灵宠集市"),
-        (market_standing.objective_line(ctx, player.user_id), "灵宠商路"),
+        (market_standing.objective_line(ctx, player.user_id), "灵宠集市 掌柜"),
         (mailbox.objective_line(ctx, player.user_id), "灵宠信箱"),
         (friends.objective_line(ctx, player.user_id), "灵宠好友"),
         (shares.objective_line(ctx, player.user_id), "灵宠分享"),
