@@ -459,7 +459,9 @@ def test_spar_fights_with_full_lineups_and_charges_neither_side(game, play):
     assert sql(game[1], "SELECT user_id, last_pvp, last_pve, stones FROM players ORDER BY user_id") == players_before
     assert not sql(game[1], "SELECT * FROM pvp_results")
     assert not sql(game[1], "SELECT * FROM season_entries")
-    assert not sql(game[1], "SELECT * FROM quest_progress")
+    # 切磋 now writes its weekly goal rows; nothing else may appear here.
+    goal_rows = sql(game[1], "SELECT user_id, quest_id FROM quest_progress")
+    assert goal_rows and all(row["quest_id"].startswith("spar_wk_") for row in goal_rows)
 
     # 双方整份阵容都真的上场出招，上面的“零消耗/零熟练度”不是因为没打。
     log = json.loads(sql(game[1], "SELECT battle_log FROM battle_records")[0]["battle_log"])
