@@ -21,6 +21,14 @@ PREFIX = "sigil_"
 SLOTS = 2
 STAT_LABELS = {"hp": "气血", "attack": "攻击", "defense": "防御", "speed": "速度"}
 KIND_LABELS = {"achievements": "成就领取", "collection": "收集种族", "bond": "羁绊等级", "realm": "境界"}
+RANK_PREFIX = "sigil_rank_"
+RANKS = 3
+RANK_STEP_PERCENT = 20
+# 精炼到 N 阶的代价（灵石, 材料）——1 阶是解锁即可用的初始状态。
+REFINE_COSTS = {
+    2: (400, {"forge_ore": 2}),
+    3: (1200, {"bloodline_essence": 2}),
+}
 
 
 def equipped(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[int, str]:
@@ -63,9 +71,26 @@ def unlocked(ctx: Context, sigil, pet, user_id: str | None = None) -> bool:
     return _progress(ctx, sigil.requires.kind, pet, user_id) >= sigil.requires.value
 
 
-def bonus_text(ctx: Context, sigil) -> str:
+def rank(ctx: Context, sigil_id: str, user_id: str | None = None) -> int:
+    """Refinement rank of one sigil (1..RANKS); ranks are account-wide."""
+    row = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (user_id or ctx.user_id, f"{RANK_PREFIX}{sigil_id}"),
+    ).fetchone()
+    if row is None:
+        return 1
+    return max(1, min(RANKS, int(row["progress"])))
+
+
+def scaled(value: int, level: int) -> int:
+    """Base bonus grown by 20% of itself per refinement step."""
+    return value + value * (level - 1) * RANK_STEP_PERCENT // 100
+
+
+def bonus_text(ctx: Context, sigil, level: int | None = None) -> str:
+    level = rank(ctx, sigil.id) if level is None else level
     return "、".join(
-        f"{STAT_LABELS[key]} +{value}"
+        f"{STAT_LABELS[key]} +{scaled(value, level)}"
         for key, value in sigil.bonuses.model_dump().items() if value
     )
 
@@ -73,14 +98,15 @@ def bonus_text(ctx: Context, sigil) -> str:
 def total_bonus(ctx: Context, pet_id: int, user_id: str | None = None) -> dict[str, int]:
     totals = {"hp": 0, "attack": 0, "defense": 0, "speed": 0}
     for sigil_id in equipped(ctx, pet_id, user_id).values():
+        level = rank(ctx, sigil_id, user_id)
         for key, value in ctx.content.sigils[sigil_id].bonuses.model_dump().items():
-            totals[key] += value
+            totals[key] += scaled(value, level)
     return totals
 
 
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
-        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览|伙伴 <名字|编号>]。")
+        raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|精炼 <符印>|总览|伙伴 <名字|编号>]。")
     if ctx.repo.player(ctx.user_id) is None:
         return Reply(
             "灵宠符印",
@@ -115,15 +141,22 @@ def _detail(ctx: Context, pet) -> Reply:
             state = "可装备"
         else:
             state = f"未解锁（{requirement_text(ctx, sigil, pet)}）"
+        level = rank(ctx, sigil.id)
+        rank_text = f"精炼 {level}/{RANKS}"
         lines.append(
-            f"{sigil.name} · {bonus_text(ctx, sigil)} · 需要 {requirement_text(ctx, sigil, pet)} · {state}"
+            f"{sigil.name} · {bonus_text(ctx, sigil)} · {rank_text}"
+            f" · 需要 {requirement_text(ctx, sigil, pet)} · {state}"
         )
         row = len(lines) - 1
         if owned:
             links.append(InlineCommand(row, "卸下", f"灵宠符印 卸下 {sigil.name}{suffix}"))
         elif state == "可装备" and len(filled) < SLOTS:
             links.append(InlineCommand(row, "装备", f"灵宠符印 装备 {sigil.name}{suffix}"))
-    lines.append("格式：灵宠符印 装备 <符印> / 灵宠符印 卸下 <符印>；为后备伙伴操作时在末尾加 伙伴 <名字|编号>。")
+        if level < RANKS and state != "未解锁" and not state.startswith("未解锁"):
+            links.append(InlineCommand(
+                row, f"精炼至{level + 1}阶", f"灵宠符印 精炼 {sigil.name}{suffix}",
+            ))
+    lines.append("格式：灵宠符印 装备 <符印> / 卸下 <符印> / 精炼 <符印>；为后备伙伴操作时在末尾加 伙伴 <名字|编号>。")
     return Reply("灵宠符印", tuple(lines), ("灵宠符印", "我的灵宠", "灵宠技能"), tuple(links))
 
 
@@ -219,6 +252,64 @@ def unequip(ctx: Context, arg: str) -> Reply:
     ), ("灵宠符印", "我的灵宠"))
 
 
+def _owned(ctx: Context, item_id: str) -> int:
+    row = ctx.repo.conn.execute(
+        "SELECT quantity FROM inventory WHERE user_id=? AND item_id=?",
+        (ctx.user_id, item_id),
+    ).fetchone()
+    return int(row["quantity"]) if row else 0
+
+
+def _cost_text(ctx: Context, level: int) -> str:
+    stones, items = REFINE_COSTS[level]
+    parts = [f"灵石 {stones}"]
+    parts.extend(
+        f"{ctx.content.items[item_id].name} {amount}" for item_id, amount in items.items()
+    )
+    return "，".join(parts)
+
+
+def refine(ctx: Context, arg: str) -> Reply:
+    """Spend stones and materials to raise one sigil's rank, one step at a time."""
+    body, who = split_selector(arg)
+    if not body.strip():
+        raise GameError("格式：灵宠符印 精炼 <符印> [伙伴 名字|编号]。")
+    pet = named_pet(ctx, who, "精炼符印") if who else ctx.pet()
+    sigil = named(ctx.content.sigils, body)
+    if not unlocked(ctx, sigil, pet):
+        raise GameError(f"{sigil.name}尚未解锁：需要 {requirement_text(ctx, sigil, pet)}。")
+    level = rank(ctx, sigil.id)
+    if level >= RANKS:
+        raise GameError(f"{sigil.name}已精炼到 {RANKS} 阶，无法再提升。")
+    target = level + 1
+    stones, items = REFINE_COSTS[target]
+    player = ctx.player()
+    if player.stones < stones:
+        raise GameError(
+            f"灵石不足：精炼到 {target} 阶需要 {stones}，当前 {player.stones}。"
+        )
+    missing = [
+        f"{ctx.content.items[item_id].name} {_owned(ctx, item_id)}/{amount}"
+        for item_id, amount in items.items()
+        if _owned(ctx, item_id) < amount
+    ]
+    if missing:
+        raise GameError(f"材料不足：{'、'.join(missing)}。")
+    player.stones -= stones
+    for item_id, amount in items.items():
+        ctx.repo.consume_item(ctx.user_id, item_id, amount)
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
+        (ctx.user_id, f"{RANK_PREFIX}{sigil.id}", target),
+    )
+    note_prep_change(ctx, pet)
+    return Reply("符印精炼", (
+        f"{sigil.name}精炼到 {target} 阶：{bonus_text(ctx, sigil)}。",
+        f"花费 {_cost_text(ctx, target)}。加成对装备它的伙伴生效。",
+    ), ("灵宠符印", "我的灵宠", "灵宠背包"))
+
+
 def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if not parts:
@@ -229,11 +320,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return unequip(ctx, " ".join(parts[1:]))
     if parts[0] == "总览":
         return overview(ctx, " ".join(parts[1:]))
+    if parts[0] == "精炼":
+        return refine(ctx, " ".join(parts[1:]))
     body, who = split_selector(arg)
     if not body and who:
         ctx.player()
         return _detail(ctx, named_pet(ctx, who, "查看符印"))
-    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|总览|伙伴 <名字|编号>]。")
+    raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|精炼 <符印>|总览|伙伴 <名字|编号>]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

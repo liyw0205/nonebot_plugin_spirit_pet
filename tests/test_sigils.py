@@ -108,18 +108,18 @@ def test_page_lists_sigils_with_requirements_and_state(game, play):
     play("adopt", "青鸾")
     page = play("sigils")
     assert "青鸾：符印槽 0/2 · 空。" in page.text()
-    assert "初光符 · 气血 +40 · 需要 成就领取 0/1 · 未解锁" in page.text()
-    assert "疾行符 · 速度 +18 · 需要 成就领取 0/5 · 未解锁" in page.text()
+    assert "初光符 · 气血 +40 · 精炼 1/3 · 需要 成就领取 0/1 · 未解锁" in page.text()
+    assert "疾行符 · 速度 +18 · 精炼 1/3 · 需要 成就领取 0/5 · 未解锁" in page.text()
     assert page.inline_commands == ()
 
 
 def test_an_achievement_sigil_unlocks_at_its_threshold(game, play):
     play("adopt", "青鸾")
     seed_claims(game, 4)
-    assert "疾行符 · 速度 +18 · 需要 成就领取 4/5 · 未解锁" in play("sigils").text()
+    assert "疾行符 · 速度 +18 · 精炼 1/3 · 需要 成就领取 4/5 · 未解锁" in play("sigils").text()
     seed_claims(game, 1, offset=4)
     page = play("sigils")
-    assert "疾行符 · 速度 +18 · 需要 成就领取 5/5 · 可装备" in page.text()
+    assert "疾行符 · 速度 +18 · 精炼 1/3 · 需要 成就领取 5/5 · 可装备" in page.text()
     assert "灵宠符印 装备 疾行符" in [link.command for link in page.inline_commands]
 
 
