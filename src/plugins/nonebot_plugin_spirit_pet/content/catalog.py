@@ -54,6 +54,7 @@ from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
+from ..domain.play_game_content import PlayGame
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -188,6 +189,7 @@ class Catalog:
     merchant_exchange: dict[str, MerchantOffer]
     merchant_contracts: dict[str, MerchantContract]
     merchant_standings: dict[str, MerchantStanding]
+    play_games: dict[str, PlayGame]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -278,6 +280,7 @@ class Catalog:
             merchant_exchange=_index(directory / "merchant_exchange.json", MerchantOffer),
             merchant_contracts=_index(directory / "merchant_contracts.json", MerchantContract),
             merchant_standings=_index(directory / "merchant_standings.json", MerchantStanding),
+            play_games=_index(directory / "play_games.json", PlayGame),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -423,6 +426,7 @@ class Catalog:
         self._validate_merchant_exchange()
         self._validate_merchant_contracts()
         self._validate_merchant_standings()
+        self._validate_play_games()
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
@@ -1120,6 +1124,21 @@ class Catalog:
         smallest_fee = min(stall.fee_percent for stall in self.market.stalls)
         if rebate > smallest_fee:
             raise ValueError("merchant standing tax rebate must not exceed the smallest stall fee")
+
+    def _validate_play_games(self) -> None:
+        """Three mini-games must each test a different attribute and pay out."""
+        if not self.play_games:
+            raise ValueError("play games must not be empty")
+        seen_stats: set[str] = set()
+        for game in self.play_games.values():
+            if game.stat in seen_stats:
+                raise ValueError(f"play game stat {game.stat} must not repeat")
+            seen_stats.add(game.stat)
+            self._require(game.great_items, self.items, f"play game {game.id} great reward")
+            for milestone in game.milestones:
+                self._require(
+                    milestone.items, self.items, f"play game {game.id} milestone reward",
+                )
 
     def _validate_merchant_contracts(self) -> None:
         """A contract must be completable and its risk must match its reward."""

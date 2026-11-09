@@ -1,0 +1,41 @@
+[
+  {
+    "id": "hide_food",
+    "name": "藏食寻宝",
+    "description": "你藏起一捧灵粮，让伙伴靠嗅觉在草丛里找回来。",
+    "stat": "speed",
+    "great_bonus": 0,
+    "great_items": {"spirit_food": 1},
+    "milestones": [
+      {"at": 5, "stones": 80, "items": {"spirit_food": 1}},
+      {"at": 15, "stones": 180, "items": {"forge_ore": 1}},
+      {"at": 30, "stones": 320, "items": {"exp_pill": 1}}
+    ]
+  },
+  {
+    "id": "aura_resonance",
+    "name": "灵息共振",
+    "description": "与伙伴对坐，让两股灵息一呼一吸地合上拍子。",
+    "stat": "attack",
+    "great_bonus": 1,
+    "great_items": {},
+    "milestones": [
+      {"at": 5, "stones": 90, "items": {"spirit_food": 1}},
+      {"at": 15, "stones": 200, "items": {"forge_ore": 2}},
+      {"at": 30, "stones": 360, "items": {"bloodline_essence": 1}}
+    ]
+  },
+  {
+    "id": "reaction",
+    "name": "反应试炼",
+    "description": "抛起一枚灵果，看伙伴能不能在半空把它衔住。",
+    "stat": "defense",
+    "great_bonus": 1,
+    "great_items": {"spirit_food": 1},
+    "milestones": [
+      {"at": 5, "stones": 70, "items": {"forge_ore": 1}},
+      {"at": 15, "stones": 160, "items": {"spirit_food": 3}},
+      {"at": 30, "stones": 300, "items": {"exp_pill": 1}}
+    ]
+  }
+]

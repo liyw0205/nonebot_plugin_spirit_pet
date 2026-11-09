@@ -81,6 +81,7 @@ DOCUMENTED_COUNTS = {
     "sect_trials": 4,
     "merchant_contracts": 4,
     "merchant_standings": 5,
+    "play_games": 3,
 }
 
 

@@ -32,6 +32,7 @@ from . import (
     mailbox,
     market_standing,
     merchant,
+    play_games,
     race,
     realm_milestone_rewards,
     research,
@@ -151,6 +152,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         names = "、".join(e.name for e in standing_claimable)
         claimable.append(_entry(
             CLAIM, f"商路品阶可领：{names}", "累计成交已达里程碑，领取一次性奖励", "灵宠集市 掌柜",
+        ))
+
+    gaming_claimable = play_games.claimable(ctx, owner)
+    if gaming_claimable:
+        names = "、".join(f"{game.name} {milestone.at} 局" for game, milestone in gaming_claimable)
+        claimable.append(_entry(
+            CLAIM, f"嬉戏精通可领：{names}", "小游戏累计局数已达里程碑", "灵宠嬉戏 记录",
         ))
 
     dungeon = daily_dungeon.featured_dungeon(ctx.content, ctx.now)

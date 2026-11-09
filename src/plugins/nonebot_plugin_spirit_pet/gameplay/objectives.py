@@ -48,6 +48,7 @@ from . import merchant
 from . import merchant_contract
 from . import market
 from . import market_standing
+from . import play_games
 from . import mailbox
 from . import friends
 from . import shares
@@ -526,6 +527,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_dungeon_line(ctx, player.user_id), "灵宠今日秘境"),
         (forbidden.objective_line(ctx, player.user_id), "灵宠禁地"),
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
+        (play_games.objective_line(ctx, player.user_id), "灵宠嬉戏 记录"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
