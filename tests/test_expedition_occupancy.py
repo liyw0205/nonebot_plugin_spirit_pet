@@ -113,7 +113,19 @@ def test_busy_defender_mirror_can_fight_without_mutating_resources_or_occupation
         ]
     assert after["expeditions"] == before["expeditions"]
     if mode == "spar":
+        # 切磋 also feeds the weekly spar goals; those rows are the only change.
+        goal_rows = [
+            row for row in after["quest_progress"] if row["quest_id"].startswith("spar_wk_")
+        ]
+        after = {
+            **after,
+            "quest_progress": [
+                row for row in after["quest_progress"]
+                if not row["quest_id"].startswith("spar_wk_")
+            ],
+        }
         assert after == before
+        assert any(row["quest_id"].startswith("spar_wk_battles_") for row in goal_rows)
     else:
         assert len(after["pvp_results"]) == 1
         assert after["pvp_results"][0]["target_pet_id"] == defender_pet_id
