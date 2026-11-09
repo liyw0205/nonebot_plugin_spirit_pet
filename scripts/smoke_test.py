@@ -65,10 +65,17 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
     def items(user):
         return {row["item_id"]: row["quantity"] for row in read("SELECT * FROM inventory WHERE user_id=?", (str(user),))}
 
-    def resource_state():
+    def resource_state(ignore_spar_goals=False):
         tables = ("players", "pets", "inventory", "learned_skills", "team_members", "quest_progress",
                   "pvp_results", "season_entries")
-        return {table: read(f"SELECT * FROM {table} ORDER BY rowid") for table in tables}
+        state = {table: read(f"SELECT * FROM {table} ORDER BY rowid") for table in tables}
+        if ignore_spar_goals:
+            # 切磋 legitimately writes spar_wk_* goal rows; everything else must not move.
+            state["quest_progress"] = [
+                row for row in state["quest_progress"]
+                if not row["quest_id"].startswith("spar_wk_")
+            ]
+        return state
 
     def mastery_points(row):
         return row["proficiency"] + sum(
@@ -225,17 +232,18 @@ def run_multi_pet_chain(database, exchange, plugin_package, now=1_800_000_000):
             assert exchange(users[0], 168, f"灵宠论剑 {uid(users[3])}", "论剑结算") == ranked_reply
             assert resource_state() == ranked_state
 
-            spar_before = resource_state()
+            spar_before = resource_state(ignore_spar_goals=True)
             spar_skills = mastery()
             spar_reply = exchange(users[0], 169, f"灵宠切磋 {uid(users[3])}", "切磋结算")
-            assert resource_state() == spar_before
+            assert resource_state(ignore_spar_goals=True) == spar_before
+            assert read("SELECT quest_id FROM quest_progress WHERE quest_id LIKE 'spar_wk_battles_%' ORDER BY rowid")
             spar = last_record("spar")
             check_snapshot(spar, [[(users[0], pet_id) for pet_id in rosters[users[0]]],
                                  [(users[3], pet_id) for pet_id in rosters[users[3]]]], spar_skills)
             assert all(battles[-1].skill_uses[side].get(pet_id, {}).get("spirit_wave", 0) > 0
                        for side, user in enumerate((users[0], users[3])) for pet_id in rosters[user])
             assert exchange(users[0], 169, f"灵宠切磋 {uid(users[3])}", "切磋结算") == spar_reply
-            assert resource_state() == spar_before
+            assert resource_state(ignore_spar_goals=True) == spar_before
             exchange(users[0], 170, "灵宠战报", "三灵队长1、三灵队长2、三灵队长3")
             exchange(users[1], 171, f"灵宠战报 查看 {team['battle_id']}", "上古灵殿")
             exchange(users[3], 172, f"灵宠战报 查看 {ranked['battle_id']}", "战报")
