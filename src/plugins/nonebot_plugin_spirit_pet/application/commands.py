@@ -80,7 +80,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_goals, spar_stats, stage_stats, talent_reforge, weekly_report, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, pet_outing, play_games, rank_rewards, reforge, skill_overview, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
 from ..gameplay import banquet, farm_progress
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
@@ -265,6 +265,7 @@ ACTIONS = {
     "market": Command(market.dispatch, True, registered=False),
     "mail": Command(mailbox.dispatch, True, registered=False),
     "friends": Command(friends.dispatch, True, registered=False),
+    "visits": Command(visits.dispatch, True, registered=False),
     "race_board": Command(race.board, True, registered=False),
     "transfer": Command(transfer.dispatch, True, registered=False),
     "team_trial": Command(team_trial.dispatch, True),
@@ -424,7 +425,7 @@ COMMANDS = {
     "灵宠商会": "merchant",
     "灵宠集市": "market",
     "灵宠信箱": "mail",
-    "灵宠好友": "friends",
+    "灵宠好友": "friends", "灵宠串门": "visits",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",
     "灵宠守关": "survival",
