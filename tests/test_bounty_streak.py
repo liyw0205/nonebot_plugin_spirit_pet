@@ -8,6 +8,8 @@ from nonebot_plugin_spirit_pet.gameplay import bounty
 from nonebot_plugin_spirit_pet.storage.repository import Repository
 from nonebot_plugin_spirit_pet.utils.time import beijing_day
 
+from datetime import datetime, timedelta, timezone
+
 from .support import items, player, sql
 
 NOW = 1_800_000_000
@@ -104,3 +106,78 @@ def test_objective_line_reports_streak(game, play):
     clear_day(game, play, NOW)
     line = bounty.objective_line(ctx_of(game, NOW + 1), "u1")
     assert "连击 1 天" in line
+
+
+CST = timezone(timedelta(hours=8))
+
+
+def late_night(now=NOW):
+    """23:59 Beijing time on the day containing ``now``."""
+    day = datetime.fromtimestamp(now, CST).date()
+    return int(datetime(day.year, day.month, day.day, 23, 59, tzinfo=CST).timestamp())
+
+
+def bounty_snapshot(store):
+    return (
+        sql(store, "SELECT user_id, stones FROM players ORDER BY user_id"),
+        sql(store, "SELECT user_id, item_id, quantity FROM inventory ORDER BY user_id, item_id"),
+        sql(
+            store,
+            "SELECT user_id, quest_id, progress, claimed FROM quest_progress"
+            " ORDER BY user_id, quest_id",
+        ),
+    )
+
+
+def test_midnight_boundary_counts_as_two_consecutive_days(game, play):
+    """23:59 then 00:01 is two days, not a 24h delta."""
+    play("adopt", "青鸾", now=NOW, op="mid-adopt")
+    first = late_night(NOW)
+    clear_day(game, play, first)
+    assert bounty.streak(ctx_of(game, first)) == 1
+    clear_day(game, play, first + 120)
+    assert bounty.streak(ctx_of(game, first + 120)) == 2
+
+
+def test_partial_clear_does_not_advance_the_streak(game, play):
+    play("adopt", "青鸾", now=NOW, op="partial-adopt")
+    seed_progress(game, NOW)
+    offered = bounty.todays(ctx_of(game, NOW))
+    play("bounty", f"领取 {offered[0].name}", now=NOW, op="partial-1")
+    play("bounty", f"领取 {offered[1].name}", now=NOW + 1, op="partial-2")
+    assert bounty.streak(ctx_of(game, NOW)) == 0
+    assert sql(game[1], "SELECT quest_id FROM quest_progress WHERE quest_id='bounty_streak_day'") == []
+    play("bounty", f"领取 {offered[2].name}", now=NOW + 2, op="partial-3")
+    assert bounty.streak(ctx_of(game, NOW + 3)) == 1
+
+
+def test_duplicate_claim_keeps_the_streak_at_one(game, play):
+    play("adopt", "青鸾", now=NOW, op="dup-adopt")
+    clear_day(game, play, NOW)
+    first = bounty.todays(ctx_of(game, NOW))[0]
+    with pytest.raises(GameError, match="今日已领取"):
+        play("bounty", f"领取 {first.name}", now=NOW + 1, op="dup-new-op")
+    assert bounty.streak(ctx_of(game, NOW + 1)) == 1
+
+
+def test_replayed_claim_returns_cached_reply_and_keeps_streak(game, play):
+    play("adopt", "青鸾", now=NOW, op="replay-adopt")
+    seed_progress(game, NOW)
+    target = bounty.todays(ctx_of(game, NOW))[0]
+    first = play("bounty", f"领取 {target.name}", now=NOW, op="replay-claim")
+    again = play("bounty", f"领取 {target.name}", now=NOW + 1, op="replay-claim")
+    assert again == first
+    assert bounty.streak(ctx_of(game, NOW + 2)) == 0
+
+
+def test_milestone_refusals_are_transaction_safe(game, play):
+    play("adopt", "青鸾", now=NOW, op="safe-adopt")
+    clear_day(game, play, NOW)  # streak 1, below every tier
+    before = bounty_snapshot(game[1])
+    with pytest.raises(GameError, match="尚未达成"):
+        play("bounty", "连击领奖 3", now=NOW + 1, op="safe-below")
+    with pytest.raises(GameError, match="档位可选"):
+        play("bounty", "连击领奖 5", now=NOW + 2, op="safe-tier")
+    with pytest.raises(GameError, match="格式"):
+        play("bounty", "连击领奖", now=NOW + 3, op="safe-format")
+    assert bounty_snapshot(game[1]) == before
