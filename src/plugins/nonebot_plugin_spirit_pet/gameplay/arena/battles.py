@@ -118,6 +118,9 @@ def spar_fight(ctx: Context, *, attacker: str, defender: str, title: str, tail: 
         f" · {battle.rounds} 回合", *battle.lines, result, tail,
     ), ("灵宠战报", "我的灵宠", "灵宠论剑榜"))
     record_battle(ctx, kind="spar", battle_key="", battle=battle, capture=capture, reply=reply)
+    from ..spar_goals import record as record_spar_goal
+
+    record_spar_goal(ctx, attacker, defender, battle.winner)
     return reply
 
 

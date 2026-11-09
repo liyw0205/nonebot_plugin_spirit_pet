@@ -35,6 +35,7 @@ from . import (
     play_games,
     pet_outing,
     fishing,
+    spar_goals,
     race,
     realm_milestone_rewards,
     research,
@@ -154,6 +155,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         names = "、".join(e.name for e in standing_claimable)
         claimable.append(_entry(
             CLAIM, f"商路品阶可领：{names}", "累计成交已达里程碑，领取一次性奖励", "灵宠集市 掌柜",
+        ))
+
+    spar_ready = spar_goals.claimable(ctx, owner)
+    if spar_ready:
+        names = "、".join(goal[1] for goal in spar_ready)
+        claimable.append(_entry(
+            CLAIM, f"切磋目标可领：{names}", "本周切磋目标已达成", "灵宠切磋目标",
         ))
 
     casts_left = fishing.left_today(ctx, owner)

@@ -85,7 +85,15 @@ def test_spar_is_immediate_and_does_not_even_recover_or_mutate_energy(game, play
     before = state(game[1])
     reply = play("spar", uid(1), user="private-0", now=NOW)
     assert reply.title == "切磋结算"
-    assert state(game[1]) == before
+    after = state(game[1])
+    # 切磋 now also feeds the weekly spar goals: those rows are the only change.
+    goal_rows = [row for row in after["quest_progress"] if row["quest_id"].startswith("spar_wk_")]
+    after["quest_progress"] = [
+        row for row in after["quest_progress"] if not row["quest_id"].startswith("spar_wk_")
+    ]
+    assert after == before
+    battles = [row for row in goal_rows if row["quest_id"].startswith("spar_wk_battles_")]
+    assert len(battles) == 2 and all(row["progress"] == 1 for row in battles)
     assert "private-" not in reply.text()
 
 
