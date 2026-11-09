@@ -1,0 +1,41 @@
+[
+  {
+    "id": "creek",
+    "name": "溪口",
+    "description": "山脚浅溪，水流不急，新手也能坐得住。",
+    "realm": 0,
+    "energy": 8,
+    "catches": [
+      {"item": "spirit_food", "weight": 50, "minimum": 1, "maximum": 2},
+      {"item": "forge_ore", "weight": 30, "minimum": 1, "maximum": 1},
+      {"item": "seed_spirit_rice", "weight": 15, "minimum": 1, "maximum": 1},
+      {"item": "exp_pill", "weight": 5, "minimum": 1, "maximum": 1}
+    ]
+  },
+  {
+    "id": "deep_pool",
+    "name": "深潭",
+    "description": "潭水泛着冷光，资深钓客才敢把线放到底。",
+    "realm": 2,
+    "energy": 14,
+    "catches": [
+      {"item": "forge_ore", "weight": 40, "minimum": 1, "maximum": 2},
+      {"item": "seed_blood_herb", "weight": 30, "minimum": 1, "maximum": 1},
+      {"item": "spirit_food", "weight": 20, "minimum": 2, "maximum": 3},
+      {"item": "bloodline_essence", "weight": 10, "minimum": 1, "maximum": 1}
+    ]
+  },
+  {
+    "id": "abyss",
+    "name": "灵渊",
+    "description": "地脉尽头的暗渊，传闻水底沉着前朝修士的遗物。",
+    "realm": 4,
+    "energy": 20,
+    "catches": [
+      {"item": "bloodline_essence", "weight": 40, "minimum": 1, "maximum": 2},
+      {"item": "exp_pill", "weight": 25, "minimum": 1, "maximum": 1},
+      {"item": "seed_blood_herb", "weight": 20, "minimum": 1, "maximum": 1},
+      {"item": "energy_pill", "weight": 15, "minimum": 1, "maximum": 1}
+    ]
+  }
+]

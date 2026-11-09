@@ -34,6 +34,7 @@ from . import (
     merchant,
     play_games,
     pet_outing,
+    fishing,
     race,
     realm_milestone_rewards,
     research,
@@ -153,6 +154,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         names = "、".join(e.name for e in standing_claimable)
         claimable.append(_entry(
             CLAIM, f"商路品阶可领：{names}", "累计成交已达里程碑，领取一次性奖励", "灵宠集市 掌柜",
+        ))
+
+    casts_left = fishing.left_today(ctx, owner)
+    if casts_left:
+        pending.append(_entry(
+            TODO, f"垂钓还剩 {casts_left} 竿", "三处水系每日三竿，鱼获集齐另有奖励",
+            "灵宠垂钓",
         ))
 
     outing_left = pet_outing.remaining_today(ctx, owner)

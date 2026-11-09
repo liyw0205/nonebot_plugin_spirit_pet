@@ -83,6 +83,7 @@ DOCUMENTED_COUNTS = {
     "merchant_standings": 5,
     "play_games": 3,
     "outing_scenes": 8,
+    "fishing_spots": 3,
 }
 
 

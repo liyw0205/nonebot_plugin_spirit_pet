@@ -50,6 +50,7 @@ from . import market
 from . import market_standing
 from . import play_games
 from . import pet_outing
+from . import fishing
 from . import mailbox
 from . import friends
 from . import shares
@@ -530,6 +531,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
         (play_games.objective_line(ctx, player.user_id), "灵宠嬉戏 记录"),
         (pet_outing.objective_line(ctx, player.user_id), "灵宠游历赏"),
+        (fishing.objective_line(ctx, player.user_id), "灵宠垂钓"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
