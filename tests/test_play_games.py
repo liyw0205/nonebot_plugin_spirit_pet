@@ -1,8 +1,11 @@
 import pytest
 
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
+from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay import pet_outing
+from nonebot_plugin_spirit_pet.storage.repository import Repository
 
 from .support import items, pet, player, sql
 
@@ -228,6 +231,113 @@ def test_outing_board_pagination(game, play):
     assert page.title == "灵宠游历赏 1/1"
     with pytest.raises(GameError, match="共 1 页"):
         play("pet_outing_board", "2", now=NOW)
+
+
+class GreatRandom:
+    """Rolls 100 on the grade check, the lowest value everywhere else."""
+
+    def __init__(self, scene_index=0):
+        self.scene_index = scene_index
+
+    def randint(self, start, stop):
+        if (start, stop) == (1, 100):
+            return 100
+        if start == 0:
+            return self.scene_index
+        return start
+
+    def random(self):
+        return 0.0
+
+
+def great_outing(game, user="u1", now=NOW, scene_index=0):
+    """Run one real outing inside a committed transaction with a max roll."""
+    ctx = Context(
+        Repository(game[1].connect()),
+        game[0].content,
+        game[0].config,
+        GreatRandom(scene_index),
+        user,
+        now,
+        f"outing-{user}-{now}",
+    )
+    reply = pet_outing.go_out(ctx, "")
+    ctx.repo.save()
+    ctx.repo.conn.commit()
+    return reply
+
+
+def test_outing_scenes_are_content_driven(game, play):
+    play("adopt", "青鸾", now=NOW)
+    scenes = game[0].content.outings
+    assert len(scenes) == 8
+    assert {"attack", "defense", "speed"} <= {scene.stat for scene in scenes.values()}
+    result = play("pet_outing", now=NOW, op="out-content")
+    assert result.title == "灵宠出游"
+    assert any(scene.name in result.text() for scene in scenes.values())
+
+
+def test_outing_fail_reward_unchanged_and_no_sight(game, play):
+    play("adopt", "青鸾", now=NOW)
+    before = player(game[1])["stones"]
+    play("pet_outing", now=NOW, op="out-fail")
+    assert player(game[1])["stones"] == before + 20
+    assert sql(game[1], "SELECT quest_id FROM quest_progress WHERE quest_id LIKE 'outing_sight_%'") == []
+
+
+def test_outing_great_roll_pays_half_again_and_records_sight(game, play):
+    play("adopt", "青鸾", now=NOW)
+    pet_id = pet(game[1])["pet_id"]
+    before = player(game[1])["stones"]
+    result = great_outing(game)
+    assert "精彩" in result.text()
+    assert player(game[1])["stones"] == before + 30  # 20 base, x1.5 on 精彩
+    assert items(game[1])["spirit_food"] == 4  # 3 starter + 1 scene drop
+    sights = sql(
+        game[1],
+        "SELECT quest_id FROM quest_progress WHERE quest_id LIKE 'outing_sight_%'",
+    )
+    assert [row["quest_id"] for row in sights] == [f"outing_sight_{pet_id}_brook"]
+
+
+def test_sight_tier_pays_once_and_repeats_do_not(game, play):
+    play("adopt", "青鸾", now=NOW)
+    before = player(game[1])["stones"]
+    for index in range(4):
+        great_outing(game, now=NOW + index * DAY, scene_index=index)
+    tiers = sql(
+        game[1],
+        "SELECT quest_id, progress, claimed FROM quest_progress"
+        " WHERE quest_id LIKE 'outing_sight_tier_%'",
+    )
+    assert len(tiers) == 1 and tiers[0]["claimed"] == 1
+    first_four = list(game[0].content.outings.values())[:4]
+    earned = sum(
+        scene.stones.minimum + scene.stones.minimum // 2 for scene in first_four
+    )
+    assert player(game[1])["stones"] == before + earned + 100
+    # Revisiting a已知 scene adds no sight row and pays no second tier.
+    stones = player(game[1])["stones"]
+    result = great_outing(game, now=NOW + 5 * DAY, scene_index=0)
+    assert "见闻录记下" not in result.text()
+    assert player(game[1])["stones"] == stones + 30
+
+
+def test_sight_board_and_objectives(game, play):
+    play("adopt", "青鸾", now=NOW)
+    great_outing(game)
+    board = play("pet_outing_board", now=NOW + 1)
+    assert "见闻 1/8" in board.text()
+    objectives = play("objectives", now=NOW + 2)
+    assert any(line.startswith("出游：") for line in objectives.lines)
+
+
+def test_today_lists_remaining_outings(game, play):
+    play("adopt", "青鸾", now=NOW)
+    today = play("today", now=NOW)
+    assert "出游还剩 1 只" in today.text()
+    play("pet_outing", now=NOW + 1, op="out-today")
+    assert "出游还剩 1 只" not in play("today", now=NOW + 2).text()
 
 
 def test_native_keyboard_clean_and_parse(game, play):

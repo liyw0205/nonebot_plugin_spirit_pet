@@ -1,12 +1,23 @@
 from ..application.context import Context
 from ..domain.content import Range, Reward
 from ..domain.models import GameError, InlineCommand, Reply
+from ..domain.outing_content import OutingScene
 from ..utils.arguments import quantity
 from ..utils.time import beijing_day
+from .combat import pet_stats
 from .rewards import grant
 
 PAGE_SIZE = 5
 VALUE_PER_OUTING = 5
+GRADE_GREAT = 90
+GRADE_PLAIN = 50
+SIGHT_PREFIX = "outing_sight_"
+SIGHT_TIER_PREFIX = "outing_sight_tier_"
+# (distinct 见闻, 灵石, 物品) — paid automatically the first time the count is met.
+SIGHT_TIERS = (
+    (4, 100, {"spirit_food": 2}),
+    (8, 300, {"bloodline_essence": 1}),
+)
 MILESTONES = (
     (10, "初出茅庐", 50, {"spirit_food": 1}),
     (30, "小有游历", 120, {"forge_ore": 1}),
@@ -19,11 +30,89 @@ DAY_PREFIX = "outing_day_"
 VALUE_PREFIX = "outing_value_"
 MILESTONE_PREFIX = "outing_milestone_"
 
-SCENES = (
-    "{name}在溪边追了一下午蝴蝶，回来时爪子还沾着水汽。",
-    "{name}跟着你翻过山坡，远处的灵田在夕阳下发亮。",
-    "{name}在林子里发现一窝灵果，兴冲冲地叼回来一颗。",
-)
+
+
+def scenes(ctx: Context) -> list[OutingScene]:
+    return list(ctx.content.outings.values())
+
+
+def sight_count(ctx: Context, pet_id: int) -> int:
+    row = ctx.repo.conn.execute(
+        "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
+        (ctx.user_id, f"{SIGHT_PREFIX}{pet_id}_%"),
+    ).fetchone()
+    return int(row[0]) if row else 0
+
+
+def _sight_known(ctx: Context, pet_id: int, scene_id: str) -> bool:
+    row = ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (ctx.user_id, f"{SIGHT_PREFIX}{pet_id}_{scene_id}"),
+    ).fetchone()
+    return row is not None
+
+
+def _record_sight(ctx: Context, pet_id: int, scene: OutingScene) -> bool:
+    """Record one sight; return True only the first time it is seen."""
+    if _sight_known(ctx, pet_id, scene.id):
+        return False
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)"
+        " ON CONFLICT(user_id, quest_id) DO NOTHING",
+        (ctx.user_id, f"{SIGHT_PREFIX}{pet_id}_{scene.id}"),
+    )
+    return True
+
+
+def _sight_tier_claimed(ctx: Context, pet_id: int, tier: int) -> bool:
+    row = ctx.repo.conn.execute(
+        "SELECT claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
+        (ctx.user_id, f"{SIGHT_TIER_PREFIX}{pet_id}_{tier}"),
+    ).fetchone()
+    return bool(row and row["claimed"])
+
+
+def _pay_sight_tiers(ctx: Context, pet_id: int, count: int) -> list[str]:
+    """Pay each collection tier once, the moment the count is reached."""
+    lines: list[str] = []
+    for tier, stones, items in SIGHT_TIERS:
+        if count < tier or _sight_tier_claimed(ctx, pet_id, tier):
+            continue
+        reward = Reward(
+            exp=Range(minimum=0, maximum=0),
+            stones=Range(minimum=stones, maximum=stones),
+            items={
+                item_id: Range(minimum=amount, maximum=amount)
+                for item_id, amount in items.items()
+            },
+        )
+        lines.append(f"见闻 {tier} 种达成：")
+        lines.extend(grant(ctx, reward, ctx.user_id))
+        ctx.repo.conn.execute(
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"
+            " ON CONFLICT(user_id, quest_id) DO UPDATE SET claimed=1",
+            (ctx.user_id, f"{SIGHT_TIER_PREFIX}{pet_id}_{tier}", count),
+        )
+    return lines
+
+
+def _grade(ctx: Context, pet, scene: OutingScene, value: int) -> int:
+    stats = pet_stats(pet, ctx.content)
+    score = ctx.rng.randint(1, 100) + getattr(stats, scene.stat) // 8 + value // 20
+    if score >= GRADE_GREAT:
+        return 3
+    if score >= GRADE_PLAIN:
+        return 2
+    return 1
+
+
+def remaining_today(ctx: Context, user_id: str) -> int:
+    """Owned companions that have not gone out yet today."""
+    day = beijing_day(ctx.now)
+    return sum(
+        1 for pet in ctx.repo.owned_pets(user_id)
+        if _day_row(ctx, day, pet.pet_id) is None
+    )
 
 
 def _pet_by_number(ctx: Context, number: int):
@@ -86,15 +175,33 @@ def go_out(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{pet.name}今天已经出游过了，明日再来。")
     ctx.require_idle_pet(pet)
 
-    scene = SCENES[ctx.rng.randint(0, len(SCENES) - 1)].format(name=pet.name)
-    lines = [scene]
-    outing_reward = Reward(
+    value = _value(ctx, pet.pet_id)
+    scene = scenes(ctx)[ctx.rng.randint(0, len(scenes(ctx)) - 1)]
+    grade = _grade(ctx, pet, scene, value)
+    lines = [scene.text.format(name=pet.name)]
+
+    base = ctx.rng.randint(scene.stones.minimum, scene.stones.maximum)
+    stones = base + base // 2 if grade == 3 else base
+    reward = Reward(
         exp=Range(minimum=0, maximum=0),
-        stones=Range(minimum=20, maximum=60),
-        items={"spirit_food": Range(minimum=0, maximum=1)},
+        stones=Range(minimum=stones, maximum=stones),
+        items={},
     )
-    lines.extend(grant(ctx, outing_reward))
-    total = _value(ctx, pet.pet_id) + VALUE_PER_OUTING
+    lines.extend(grant(ctx, reward))
+    grade_note = {3: "精彩", 2: "寻常", 1: "平平"}[grade]
+    lines.append(f"（{scene.name}·{grade_note}，{scene.stat} 检定）")
+
+    drops = 0
+    if scene.item is not None and (grade == 3 or (grade == 2 and ctx.rng.random() < 0.5)):
+        drops = 1
+        ctx.repo.add_item(ctx.user_id, scene.item, drops)
+        lines.append(f"{ctx.content.items[scene.item].name} +{drops}")
+
+    if grade >= 2 and _record_sight(ctx, pet.pet_id, scene):
+        lines.append(f"见闻录记下「{scene.sight}」（{sight_count(ctx, pet.pet_id)}/{len(scenes(ctx))}）。")
+        lines.extend(_pay_sight_tiers(ctx, pet.pet_id, sight_count(ctx, pet.pet_id)))
+
+    total = value + VALUE_PER_OUTING
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 0) "
         "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
@@ -129,11 +236,13 @@ def catalog(ctx: Context, arg: str) -> Reply:
     lines, links = [], []
     for pet in selected:
         total = _value(ctx, pet.pet_id)
+        sights = sight_count(ctx, pet.pet_id)
+        seen = f" · 见闻 {sights}/{len(scenes(ctx))}"
         if _milestone_claimed(ctx, pet.pet_id, MILESTONES[-1][0]):
             state = "游历大家（全部完成）"
         else:
             state = f"游历值 {total}"
-        lines.append(f"{pet.name}（编号 {pet.pet_id}）· {state}")
+        lines.append(f"{pet.name}（编号 {pet.pet_id}）· {state}{seen}")
         for milestone in MILESTONES:
             threshold, name, _, _ = milestone
             if total >= threshold and not _milestone_claimed(ctx, pet.pet_id, threshold):
@@ -147,6 +256,15 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 def _total_pages(ctx: Context) -> int:
     return max(1, (len(ctx.repo.owned_pets(ctx.user_id)) + PAGE_SIZE - 1) // PAGE_SIZE)
+
+
+def objective_line(ctx: Context, user_id: str) -> str:
+    """One read-only roll-up of today's outings and the 见闻 collection."""
+    day = beijing_day(ctx.now)
+    pets = ctx.repo.owned_pets(user_id)
+    out = sum(1 for pet in pets if _day_row(ctx, day, pet.pet_id) is not None)
+    sights = sum(sight_count(ctx, pet.pet_id) for pet in pets)
+    return f"出游：今日 {out}/{len(pets)} 只 · 见闻 {sights}/{len(scenes(ctx)) * len(pets)} 条"
 
 
 def claim(ctx: Context, arg: str) -> Reply:

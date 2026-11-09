@@ -33,6 +33,7 @@ from . import (
     market_standing,
     merchant,
     play_games,
+    pet_outing,
     race,
     realm_milestone_rewards,
     research,
@@ -152,6 +153,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         names = "、".join(e.name for e in standing_claimable)
         claimable.append(_entry(
             CLAIM, f"商路品阶可领：{names}", "累计成交已达里程碑，领取一次性奖励", "灵宠集市 掌柜",
+        ))
+
+    outing_left = pet_outing.remaining_today(ctx, owner)
+    if outing_left:
+        pending.append(_entry(
+            TODO, f"出游还剩 {outing_left} 只", "每只灵宠每天可出游一次，累计游历值与见闻",
+            "灵宠出游",
         ))
 
     gaming_claimable = play_games.claimable(ctx, owner)

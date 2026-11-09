@@ -55,6 +55,7 @@ from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
+from ..domain.outing_content import OutingScene
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -190,6 +191,7 @@ class Catalog:
     merchant_contracts: dict[str, MerchantContract]
     merchant_standings: dict[str, MerchantStanding]
     play_games: dict[str, PlayGame]
+    outings: dict[str, OutingScene]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -281,6 +283,7 @@ class Catalog:
             merchant_contracts=_index(directory / "merchant_contracts.json", MerchantContract),
             merchant_standings=_index(directory / "merchant_standings.json", MerchantStanding),
             play_games=_index(directory / "play_games.json", PlayGame),
+            outings=_index(directory / "outing_scenes.json", OutingScene),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -427,6 +430,7 @@ class Catalog:
         self._validate_merchant_contracts()
         self._validate_merchant_standings()
         self._validate_play_games()
+        self._validate_outing_scenes()
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
@@ -1139,6 +1143,18 @@ class Catalog:
                 self._require(
                     milestone.items, self.items, f"play game {game.id} milestone reward",
                 )
+
+    def _validate_outing_scenes(self) -> None:
+        """Every outing must be reachable content with a real item and label."""
+        if not self.outings:
+            raise ValueError("outing scenes must not be empty")
+        sights = set()
+        for scene in self.outings.values():
+            if scene.sight in sights:
+                raise ValueError(f"outing sight {scene.sight} must not repeat")
+            sights.add(scene.sight)
+            if scene.item is not None:
+                self._require((scene.item,), self.items, f"outing scene {scene.id} item")
 
     def _validate_merchant_contracts(self) -> None:
         """A contract must be completable and its risk must match its reward."""

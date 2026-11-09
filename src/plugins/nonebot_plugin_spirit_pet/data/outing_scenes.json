@@ -1,0 +1,71 @@
+[
+  {
+    "id": "brook",
+    "name": "溪畔",
+    "text": "{name}在溪边追了一下午蝴蝶，回来时爪子还沾着水汽。",
+    "stat": "speed",
+    "stones": {"minimum": 20, "maximum": 60},
+    "item": "spirit_food",
+    "sight": "溪畔蝶影"
+  },
+  {
+    "id": "ridge",
+    "name": "山脊",
+    "text": "{name}跟着你翻过山脊，在风口站了很久，鬃毛被吹得乱糟糟。",
+    "stat": "attack",
+    "stones": {"minimum": 24, "maximum": 64},
+    "item": "forge_ore",
+    "sight": "风口长啸"
+  },
+  {
+    "id": "grove",
+    "name": "灵木林",
+    "text": "{name}在林子里绕了三圈，最后从一丛灵木后探出头来。",
+    "stat": "defense",
+    "stones": {"minimum": 22, "maximum": 58},
+    "item": "spirit_food",
+    "sight": "灵木低语"
+  },
+  {
+    "id": "market",
+    "name": "集市口",
+    "text": "{name}挤进集市的人流，被一位卖灵果的老修士摸了好一会儿头。",
+    "stat": "speed",
+    "stones": {"minimum": 30, "maximum": 70},
+    "sight": "市井烟火"
+  },
+  {
+    "id": "ruins",
+    "name": "旧观遗址",
+    "text": "{name}在断墙间嗅来嗅去，最后对着一块残碑坐下不动。",
+    "stat": "attack",
+    "stones": {"minimum": 26, "maximum": 66},
+    "item": "forge_ore",
+    "sight": "残碑旧字"
+  },
+  {
+    "id": "hill",
+    "name": "望云坡",
+    "text": "{name}趴在坡顶看云，尾巴一下一下敲着地面。",
+    "stat": "defense",
+    "stones": {"minimum": 20, "maximum": 56},
+    "sight": "云影过坡"
+  },
+  {
+    "id": "cave",
+    "name": "浅山洞",
+    "text": "{name}钻进浅山洞，出来时头上顶着一小簇会发光的苔。",
+    "stat": "attack",
+    "stones": {"minimum": 28, "maximum": 68},
+    "item": "spirit_food",
+    "sight": "洞中萤苔"
+  },
+  {
+    "id": "meadow",
+    "name": "灵草甸",
+    "text": "{name}在草甸上滚了两圈，沾了一身细碎的花籽。",
+    "stat": "speed",
+    "stones": {"minimum": 20, "maximum": 54},
+    "sight": "草甸花籽"
+  }
+]
