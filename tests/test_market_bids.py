@@ -189,7 +189,7 @@ def test_bid_slots_cap_the_open_orders(game, play):
     for index in range(rule.bid_slots):
         assert bid(play, "锻灵矿", 1, 10).title == "求购已挂出"
     before = snapshot(game)
-    with pytest.raises(GameError, match=f"同时最多挂 {rule.bid_slots} 条求购"):
+    with pytest.raises(GameError, match=f"求购位已满（基础 {rule.bid_slots}，含特权共 {rule.bid_slots}）"):
         bid(play, "锻灵矿", 1, 10)
     assert snapshot(game) == before
     # cancelling one frees a slot

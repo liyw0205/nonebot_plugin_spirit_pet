@@ -47,6 +47,7 @@ from . import intent
 from . import merchant
 from . import merchant_contract
 from . import market
+from . import market_standing
 from . import mailbox
 from . import friends
 from . import shares
@@ -565,6 +566,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (merchant.objective_line(ctx, player.user_id), "灵宠商会"),
         (merchant_contract.objective_line(ctx, player.user_id), "灵宠商会 大单"),
         (market.objective_line(ctx, player.user_id), "灵宠集市"),
+        (market_standing.objective_line(ctx, player.user_id), "灵宠商路"),
         (mailbox.objective_line(ctx, player.user_id), "灵宠信箱"),
         (friends.objective_line(ctx, player.user_id), "灵宠好友"),
         (shares.objective_line(ctx, player.user_id), "灵宠分享"),

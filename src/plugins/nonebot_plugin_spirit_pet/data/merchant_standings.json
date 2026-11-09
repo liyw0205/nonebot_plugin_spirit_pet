@@ -1,0 +1,62 @@
+[
+  {
+    "id": "standing_apprentice",
+    "name": "学徒掌柜",
+    "min_trades": 1,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 100, "maximum": 100},
+      "items": {}
+    },
+    "perk": null,
+    "perk_text": "从第一笔成交开始，商路初开。"
+  },
+  {
+    "id": "standing_trader",
+    "name": "常设摊主",
+    "min_trades": 10,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 200, "maximum": 200},
+      "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+    },
+    "perk": "bid_slot",
+    "perk_text": "求购位 +1（在求购位上限之上再 +1）。"
+  },
+  {
+    "id": "standing_master",
+    "name": "老字号掌柜",
+    "min_trades": 30,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 400, "maximum": 400},
+      "items": {"spirit_food": {"minimum": 2, "maximum": 2}}
+    },
+    "perk": "listing_slot",
+    "perk_text": "陈列位 +1（在摊位等级之上再 +1）。"
+  },
+  {
+    "id": "standing_director",
+    "name": "一方商董",
+    "min_trades": 60,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 700, "maximum": 700},
+      "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+    },
+    "perk": "tax_rebate",
+    "perk_text": "成交税 -1%。"
+  },
+  {
+    "id": "standing_executive",
+    "name": "商会执事",
+    "min_trades": 100,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 1200, "maximum": 1200},
+      "items": {"exp_pill": {"minimum": 1, "maximum": 1}}
+    },
+    "perk": "tax_rebate",
+    "perk_text": "成交税再 -1%（共 -2%）。"
+  }
+]

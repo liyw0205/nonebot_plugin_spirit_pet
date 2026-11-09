@@ -53,6 +53,7 @@ from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.merchant_contract_content import MerchantContract
+from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -186,6 +187,7 @@ class Catalog:
     commissions: dict[str, Commission]
     merchant_exchange: dict[str, MerchantOffer]
     merchant_contracts: dict[str, MerchantContract]
+    merchant_standings: dict[str, MerchantStanding]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -275,6 +277,7 @@ class Catalog:
             commissions=_index(directory / "commissions.json", Commission),
             merchant_exchange=_index(directory / "merchant_exchange.json", MerchantOffer),
             merchant_contracts=_index(directory / "merchant_contracts.json", MerchantContract),
+            merchant_standings=_index(directory / "merchant_standings.json", MerchantStanding),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -419,6 +422,7 @@ class Catalog:
         self._validate_commissions()
         self._validate_merchant_exchange()
         self._validate_merchant_contracts()
+        self._validate_merchant_standings()
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
@@ -1091,6 +1095,31 @@ class Catalog:
                 )
         if not any(entry.min_rep == 0 for entry in self.commissions.values()):
             raise ValueError("at least one commission must be open to a new merchant")
+
+    def _validate_merchant_standings(self) -> None:
+        """Standings must be a strictly rising ladder with consistent perks."""
+        if not self.merchant_standings:
+            raise ValueError("merchant standings must not be empty")
+        ordered = sorted(self.merchant_standings.values(), key=lambda entry: entry.min_trades)
+        if ordered[0].min_trades < 1:
+            raise ValueError("the first merchant standing needs at least one trade")
+        for lower, higher in zip(ordered, ordered[1:]):
+            if higher.min_trades <= lower.min_trades:
+                raise ValueError("merchant standing thresholds must strictly increase")
+        seen_unique: set[str] = set()
+        rebate = 0
+        for standing in ordered:
+            self._require(standing.reward.items, self.items, f"merchant standing {standing.id} reward")
+            if standing.perk is not None:
+                if standing.perk in ("bid_slot", "listing_slot"):
+                    if standing.perk in seen_unique:
+                        raise ValueError(f"merchant standing perk {standing.perk} must not repeat")
+                    seen_unique.add(standing.perk)
+                if standing.perk == "tax_rebate":
+                    rebate += standing.rebate
+        smallest_fee = min(stall.fee_percent for stall in self.market.stalls)
+        if rebate > smallest_fee:
+            raise ValueError("merchant standing tax rebate must not exceed the smallest stall fee")
 
     def _validate_merchant_contracts(self) -> None:
         """A contract must be completable and its risk must match its reward."""

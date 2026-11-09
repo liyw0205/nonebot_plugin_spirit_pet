@@ -30,6 +30,7 @@ from . import (
     expeditions,
     free_summon,
     mailbox,
+    market_standing,
     merchant,
     race,
     realm_milestone_rewards,
@@ -143,6 +144,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     if shop_left:
         pending.append(_entry(
             TODO, f"今日特供剩 {len(shop_left)} 件", "折扣限购，明日 00:00 换一批", "灵宠特供",
+        ))
+
+    standing_claimable = market_standing.claimable_list(ctx, owner)
+    if standing_claimable:
+        names = "、".join(e.name for e in standing_claimable)
+        claimable.append(_entry(
+            CLAIM, f"商路品阶可领：{names}", "累计成交已达里程碑，领取一次性奖励", "灵宠集市 掌柜",
         ))
 
     dungeon = daily_dungeon.featured_dungeon(ctx.content, ctx.now)

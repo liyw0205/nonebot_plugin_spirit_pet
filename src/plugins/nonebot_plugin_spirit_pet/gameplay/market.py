@@ -24,6 +24,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from ..utils.pagination import paginate
 from ..utils.time import beijing_day
+from . import market_standing
 
 STALL_KEY = "market_stall"
 PAGE_SIZE = 5
@@ -172,7 +173,8 @@ def page(ctx: Context, arg: str = "") -> Reply:
     current = tier(ctx)
     lines = [
         f"灵石：{player.stones} · 在售 {len(rows)} 件 · "
-        f"我的摊位：{current.name}（{len(active_listings(ctx))}/{current.slots}）",
+        f"我的摊位：{current.name}（{len(active_listings(ctx))}/"
+        f"{market_standing.listing_slots(ctx, ctx.user_id)}）",
     ]
     links = []
     for row, item in page_data.entries:
@@ -203,9 +205,10 @@ def mine(ctx: Context, arg: str = "") -> Reply:
     player = ctx.player()
     current = tier(ctx)
     listings = active_listings(ctx)
+    slots = market_standing.listing_slots(ctx, ctx.user_id)
     lines = [
-        f"摊位：{current.name} · 陈列 {len(listings)}/{current.slots}"
-        f" · 成交税 {current.fee_percent}% · 灵石 {player.stones}",
+        f"摊位：{current.name} · 陈列 {len(listings)}/{slots}"
+        f" · 成交税 {market_standing.fee_percent(ctx, ctx.user_id)}% · 灵石 {player.stones}",
     ]
     links = []
     upcoming = next_tier(ctx)
@@ -299,8 +302,9 @@ def list_item(ctx: Context, arg: str) -> Reply:
     price = _price(ctx, price_text)
     sweep(ctx)
     current = tier(ctx)
-    if len(active_listings(ctx)) >= current.slots:
-        raise GameError(f"{current.name}只有 {current.slots} 个陈列位，先下架一件或升级摊位。")
+    if len(active_listings(ctx)) >= market_standing.listing_slots(ctx, ctx.user_id):
+        effective = market_standing.listing_slots(ctx, ctx.user_id)
+        raise GameError(f"陈列位已满（{current.name}基础 {current.slots}，含特权共 {effective}），先下架一件或升级摊位。")
     held = owned(ctx, item.id)
     if held < amount:
         raise GameError(f"{item.name}不足：持有 {held}，需要 {amount}。")
@@ -319,7 +323,8 @@ def list_item(ctx: Context, arg: str) -> Reply:
         (
             f"#{listing_id} {item.name} ×{amount} · 单价 {price} · 总价 {price * amount} 灵石。",
             f"{market.listing_days} 天后未售出会自动退回背包；成交税按摊位等级从卖家所得中扣除。",
-            f"当前摊位：{current.name} · 陈列 {len(active_listings(ctx))}/{current.slots}。",
+            f"当前摊位：{current.name} · 陈列 {len(active_listings(ctx))}/"
+            f"{market_standing.listing_slots(ctx, ctx.user_id)}。",
         ),
         ("灵宠集市", "灵宠集市 我的", "灵宠背包"),
     )
@@ -353,7 +358,7 @@ def buy(ctx: Context, arg: str) -> Reply:
     )
     if closed.rowcount != 1:
         raise GameError("这件物品刚刚被别人买走了。")
-    fee = total * tier(ctx, row["seller_id"]).fee_percent // 100
+    fee = total * market_standing.fee_percent(ctx, row["seller_id"]) // 100
     net = total - fee
     buyer.stones -= total
     seller.stones += net
@@ -463,9 +468,16 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         from . import market_trends
 
         return market_trends.dispatch(ctx, rest)
+    if head == "掌柜":
+        return market_standing.hub(ctx, rest)
+    if head == "掌柜领奖":
+        return market_standing.claim(ctx, rest)
+    if head == "掌柜记录":
+        return market_standing.history(ctx, rest)
     raise GameError(
         "格式：灵宠集市 [页码|上架 物品 数量 单价|购买 编号|下架 编号|我的|记录|升级|"
-        "求购 [物品 数量 单价]|应单 编号|撤单 编号|求购记录|行情 [物品|页码]]。"
+        "求购 [物品 数量 单价]|应单 编号|撤单 编号|求购记录|行情 [物品|页码]|"
+        "掌柜|掌柜领奖 品阶名|掌柜记录]。"
     )
 
 
@@ -548,9 +560,10 @@ def place_bid(ctx: Context, arg: str) -> Reply:
     amount = _bid_quantity(ctx, amount_text)
     price = _price(ctx, price_text)
     sweep(ctx)
-    if len(active_bids(ctx)) >= market.bid_slots:
+    if len(active_bids(ctx)) >= market_standing.bid_slots(ctx, ctx.user_id):
+        effective = market_standing.bid_slots(ctx, ctx.user_id)
         raise GameError(
-            f"同时最多挂 {market.bid_slots} 条求购，先撤一条或等它成交。"
+            f"求购位已满（基础 {market.bid_slots}，含特权共 {effective}），先撤一条或等它成交。"
         )
     escrow = amount * price
     if player.stones < escrow:
@@ -568,7 +581,8 @@ def place_bid(ctx: Context, arg: str) -> Reply:
         (
             f"#{bid_id} 收 {item.name} ×{amount} · 单价 {price} · 已托管 {escrow} 灵石。",
             f"其他修士可用 灵宠集市 应单 {bid_id} 交货收款，{market.bid_days} 天后未成交自动退回。",
-            f"余 {player.stones} 灵石 · 求购 {len(active_bids(ctx))}/{market.bid_slots}。",
+            f"余 {player.stones} 灵石 · 求购 {len(active_bids(ctx))}/"
+            f"{market_standing.bid_slots(ctx, ctx.user_id)}。",
         ),
         ("灵宠集市 求购", "灵宠集市 我的", "灵宠背包"),
     )
@@ -606,7 +620,7 @@ def fill_bid(ctx: Context, arg: str) -> Reply:
     ctx.repo.consume_item(ctx.user_id, item.id, row["quantity"])
     ctx.repo.add_item(row["buyer_id"], item.id, row["quantity"])
     gross = int(row["escrow"])
-    fee = gross * tier(ctx).fee_percent // 100
+    fee = gross * market_standing.fee_percent(ctx, ctx.user_id) // 100
     net = gross - fee
     ctx.player().stones += net
     ctx.repo.conn.execute(
@@ -673,7 +687,8 @@ def bid_page(ctx: Context, arg: str = "") -> Reply:
     page_data = paginate(entries, arg, "灵宠集市 求购", "灵宠集市 求购", BID_PAGE_SIZE)
     lines = [
         f"灵石：{player.stones} · 在等货的求购 {len(rows)} 条"
-        f" · 我挂出 {len(active_bids(ctx))}/{market.bid_slots}。",
+        f" · 我挂出 {len(active_bids(ctx))}/"
+        f"{market_standing.bid_slots(ctx, ctx.user_id)}。",
     ]
     links = []
     for row, item in page_data.entries:
@@ -743,4 +758,7 @@ def objective_line(ctx: Context, user_id: str) -> str:
         (user_id,),
     ).fetchone()[0])
     open_bids = len(active_bids(ctx, user_id))
-    return f"集市：{current.name} · 在售 {used}/{current.slots} · 求购 {open_bids}/{rule(ctx).bid_slots}"
+    return (
+        f"集市：{current.name} · 在售 {used}/{market_standing.listing_slots(ctx, user_id)}"
+        f" · 求购 {open_bids}/{market_standing.bid_slots(ctx, user_id)}"
+    )
