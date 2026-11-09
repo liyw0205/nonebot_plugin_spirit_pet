@@ -114,6 +114,28 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             CLAIM, f"商会 {len(open_orders)} 单可交付", "材料已备齐，交付即得灵石与声望", "灵宠商会",
         ))
 
+    from . import merchant_contract
+
+    running = merchant_contract.active(ctx, owner)
+    if running is not None:
+        index = merchant_contract.stage_index(ctx, owner)
+        stage = running.stages[index - 1] if 1 <= index <= len(running.stages) else None
+        owned = (
+            stage is not None
+            and all(
+                merchant_contract._owned(ctx, item_id, owner) >= amount
+                for item_id, amount in stage.items.items()
+            )
+        )
+        if owned:
+            claimable.append(_entry(
+                CLAIM, f"大单第 {index} 段可交货", f"{running.name}，交齐有额外奖励", "灵宠商会 交货",
+            ))
+        else:
+            pending.append(_entry(
+                TODO, f"大单第 {index} 段待交货", f"{running.name}，期限 {running.days} 天", "灵宠商会 大单",
+            ))
+
     shop_left = [
         offer for offer in daily_shop.offers(ctx)
         if daily_shop.bought(ctx, offer) < offer.stock

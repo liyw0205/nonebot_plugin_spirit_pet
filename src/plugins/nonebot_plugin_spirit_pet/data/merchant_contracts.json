@@ -1,0 +1,183 @@
+[
+  {
+    "id": "grain_run",
+    "name": "粮道大单",
+    "description": "替商会跑一趟粮道：三日之内分三次交货，路上损耗自负。",
+    "min_rep": 0,
+    "days": 5,
+    "deposit": 120,
+    "rep": 8,
+    "stages": [
+      {
+        "items": {
+          "spirit_food": 6
+        },
+        "stones": 180
+      },
+      {
+        "items": {
+          "seed_spirit_rice": 2
+        },
+        "stones": 260
+      },
+      {
+        "items": {
+          "spirit_food": 8
+        },
+        "stones": 360
+      }
+    ],
+    "bonus": {
+      "stones": {
+        "minimum": 500,
+        "maximum": 500
+      },
+      "items": {
+        "forge_ore": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "ore_line",
+    "name": "矿脉大单",
+    "description": "矿脉新开，商会要吃下头三批矿石；中途断货就要赔上定金。",
+    "min_rep": 20,
+    "days": 6,
+    "deposit": 260,
+    "rep": 12,
+    "stages": [
+      {
+        "items": {
+          "forge_ore": 4
+        },
+        "stones": 320
+      },
+      {
+        "items": {
+          "forge_ore": 6
+        },
+        "stones": 480
+      },
+      {
+        "items": {
+          "gem_swift": 1
+        },
+        "stones": 620
+      }
+    ],
+    "bonus": {
+      "stones": {
+        "minimum": 800,
+        "maximum": 800
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "elixir_run",
+    "name": "丹材大单",
+    "description": "丹鼎门托商会收一批丹材，三批货要按次序送到，早了晚了都不收。",
+    "min_rep": 40,
+    "days": 7,
+    "deposit": 380,
+    "rep": 15,
+    "stages": [
+      {
+        "items": {
+          "seed_blood_herb": 3
+        },
+        "stones": 420
+      },
+      {
+        "items": {
+          "seed_aura_ear": 2
+        },
+        "stones": 560
+      },
+      {
+        "items": {
+          "exp_pill": 2
+        },
+        "stones": 760
+      }
+    ],
+    "bonus": {
+      "stones": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "items": {
+        "exp_pill": {
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  },
+  {
+    "id": "blood_line",
+    "name": "血脉大单",
+    "description": "高门大户要的珍材，定金最重、赔付也最高；接得下才算商会自己人。",
+    "min_rep": 60,
+    "days": 7,
+    "deposit": 600,
+    "rep": 20,
+    "stages": [
+      {
+        "items": {
+          "bloodline_essence": 2
+        },
+        "stones": 700
+      },
+      {
+        "items": {
+          "bloodline_essence": 3
+        },
+        "stones": 900
+      },
+      {
+        "items": {
+          "exp_pill": 3,
+          "seed_ancient_root": 1
+        },
+        "stones": 1100
+      }
+    ],
+    "bonus": {
+      "stones": {
+        "minimum": 1500,
+        "maximum": 1500
+      },
+      "items": {
+        "bloodline_essence": {
+          "minimum": 2,
+          "maximum": 2
+        }
+      },
+      "exp": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    }
+  }
+]

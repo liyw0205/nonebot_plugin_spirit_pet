@@ -242,7 +242,10 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if parts[0] == "兑换":
         from . import merchant_exchange
         return merchant_exchange.dispatch(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠商会 [交付 <委托名|序号> | 兑换 [名称|序号]]。")
+    if parts[0] in {"大单", "接单", "交货", "弃单", "记录"}:
+        from . import merchant_contract
+        return merchant_contract.dispatch(ctx, arg)
+    raise GameError("格式：灵宠商会 [交付 <委托名|序号> | 兑换 [名称|序号] | 大单]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

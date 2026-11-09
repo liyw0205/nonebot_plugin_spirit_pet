@@ -52,6 +52,7 @@ from ..domain.duel_content import DuelOpponent
 from ..domain.drill_content import DrillDummy
 from ..domain.commission_content import Commission
 from ..domain.merchant_exchange_content import MerchantOffer
+from ..domain.merchant_contract_content import MerchantContract
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -184,6 +185,7 @@ class Catalog:
     duels: dict[str, DuelOpponent]
     commissions: dict[str, Commission]
     merchant_exchange: dict[str, MerchantOffer]
+    merchant_contracts: dict[str, MerchantContract]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -272,6 +274,7 @@ class Catalog:
             duels=_index(directory / "duels.json", DuelOpponent),
             commissions=_index(directory / "commissions.json", Commission),
             merchant_exchange=_index(directory / "merchant_exchange.json", MerchantOffer),
+            merchant_contracts=_index(directory / "merchant_contracts.json", MerchantContract),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -415,6 +418,7 @@ class Catalog:
         self._validate_drills()
         self._validate_commissions()
         self._validate_merchant_exchange()
+        self._validate_merchant_contracts()
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
@@ -1087,6 +1091,25 @@ class Catalog:
                 )
         if not any(entry.min_rep == 0 for entry in self.commissions.values()):
             raise ValueError("at least one commission must be open to a new merchant")
+
+    def _validate_merchant_contracts(self) -> None:
+        """A contract must be completable and its risk must match its reward."""
+        if not self.merchant_contracts:
+            raise ValueError("merchant contracts must not be empty")
+        for contract in self.merchant_contracts.values():
+            for stage in contract.stages:
+                self._require(stage.items, self.items, f"merchant contract {contract.id} stage items")
+            self._require(contract.bonus.items, self.items, f"merchant contract {contract.id} bonus items")
+            if contract.deposit > contract.payout:
+                raise ValueError(
+                    f"merchant contract {contract.id} deposit exceeds its total payout"
+                )
+        ordered = sorted(self.merchant_contracts.values(), key=lambda entry: entry.min_rep)
+        for lower, higher in zip(ordered, ordered[1:]):
+            if higher.payout < lower.payout:
+                raise ValueError("merchant contract payout must not fall as the reputation gate rises")
+        if ordered[0].min_rep != 0:
+            raise ValueError("at least one merchant contract must be open at zero reputation")
 
     def _validate_merchant_exchange(self):
         """Reputation exchange must reference real consumables/materials."""
