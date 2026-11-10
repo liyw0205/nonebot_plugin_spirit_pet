@@ -14,6 +14,8 @@ from nonebot_plugin_spirit_pet.application.game import Game
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.storage.repository import Repository
+from nonebot_plugin_spirit_pet.storage.database import SCHEMA_PATH
+from nonebot_plugin_spirit_pet.storage.registration import legacy_schema26
 
 from .support import items, pet, sql
 from .test_fishing_choices import DAY, NOW, Roll, account, snapshot
@@ -166,9 +168,18 @@ def test_old_collections_continue_without_repaying_or_inventing_history(game, pl
     # Make a genuine isolated schema-26 copy and take it through startup migration.
     legacy = game[1].__class__(tmp_path / "legacy-fishing.db")
     with closing(game[1].connect()) as source, closing(legacy.connect()) as target:
-        source.backup(target)
-        target.execute("DROP TABLE fishing_casts")
+        target.executescript(legacy_schema26(SCHEMA_PATH.read_text(encoding="utf-8")))
+        target.execute("PRAGMA foreign_keys=OFF")
+        target.execute("BEGIN")
+        for row in target.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():
+            table = row[0]
+            columns = [entry[1] for entry in target.execute(f'PRAGMA table_info("{table}")')]
+            names = ",".join(f'"{name}"' for name in columns)
+            target.executemany(f'INSERT INTO "{table}" ({names}) VALUES ({",".join("?" for _ in columns)})',
+                               source.execute(f'SELECT {names} FROM "{table}"').fetchall())
         target.execute("PRAGMA user_version=26")
+        target.commit()
+        target.execute("PRAGMA foreign_keys=ON")
     before = snapshot(legacy, cache=False)
     legacy.initialize()
     service = Game(legacy, game[0].config, game[0].rng, game[0].content)
