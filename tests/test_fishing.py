@@ -75,7 +75,9 @@ def test_page_lists_spots_and_gates(game, play):
     assert "溪口 · 需 不限 · 精力 8 · 鱼获 0/4 · 可垂钓" in text
     assert "深潭 · 需 筑基" in text and "未解锁" in text
     assert "鱼获 0/12" in text
-    assert [link.command for link in page.inline_commands] == ["灵宠垂钓 溪口"]
+    assert [link.command for link in page.inline_commands] == [
+        "灵宠垂钓 详情 溪口", "灵宠垂钓 溪口", "灵宠垂钓 详情 深潭", "灵宠垂钓 详情 灵渊",
+    ]
 
 
 def test_first_cast_pays_first_table_row(game, play):

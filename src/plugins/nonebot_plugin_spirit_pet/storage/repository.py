@@ -3,7 +3,7 @@ import re
 import sqlite3
 from dataclasses import asdict
 
-from ..domain.models import GameError
+from ..domain.models import GameError, Reply
 from ..domain.state import ASCENDED_PREFIX, Pet, Player
 
 
@@ -239,6 +239,26 @@ class Repository:
         if row["initiator_id"] != user_id:
             raise GameError("operation ID reused by a different user")
         return json.loads(row["reply"])
+
+    def fishing_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id, reply FROM fishing_casts WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def record_fishing_cast(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.conn.execute(
+            "INSERT INTO fishing_casts(operation_id,user_id,created_at,snapshot,reply)"
+            " VALUES (?,?,?,?,?)",
+            (operation_id, user_id, created_at, json.dumps(snapshot, ensure_ascii=False),
+             json.dumps(asdict(reply), ensure_ascii=False)),
+        )
 
     def battle_history(
         self, user_id: str, *, limit: int = 5, offset: int = 0, kind: str | None = None,

@@ -1257,3 +1257,13 @@ schema 25 新增单表 `battle_shares`：`share_id` 主键并限定长度 6-24�
 `灵宠切磋战绩` 同样没有独立内容文件：它从 `battle_records` 的 `kind='spar'` 行派生，用对侧 `battle_participants` 识别对手，并以 `player_identity.id + 9999` 展示 UID；列表按对手聚合，详情只读取本人参与的战报，不新增表、列或内容 JSON。
 
 `灵宠切磋榜` 也没有独立内容文件：它按 `utils.time.beijing_week()` 的本周起止过滤 `battle_records` 的 `spar` 行，按参与者聚合胜/负/平/场次，展示前十；周榜随自然周自动换窗，不写 `quest_progress`、不发奖励，也不改切磋结算。
+
+## 垂钓择饵与鱼篓
+
+`fishing_spots.json` 为三处水域，`FishingSpot` 校验非空描述、至少三个不重复鱼获、正整数权重与数量区间、精力 1-100；目录校验物品引用。`fishing_baits.json` 为三种饵料（3 项），`FishingBait` 声明 id/name/description、`cost_item`、`cost_quantity`（1-10）、`favored_items`（非空且不重复）与 `multiplier`（2-5，实配 3）。名称唯一，`plain`/素饵保留；费用物品与偏向鱼获必须存在。素饵没有内容行，不收额外费用。
+
+实际权重仅将水域表内命中 `favored_items` 的条目乘以 multiplier，其他权重和数量区间保持原值；没有任何匹配鱼获的饵料不可在该水域使用。详情以同一个权重函数显示精确比值与近似百分比。饵料不新增物品或奖励，使用既有灵粮/锻灵矿。
+
+schema 27 新增 `fishing_casts`：自增 `cast_id`、唯一 `operation_id`、玩家外键、时间、`snapshot` 与 `reply` JSON；索引按本人/cast_id 倒序读取五条。snapshot 保存当时伙伴/水域/饵料/费用/物品名称、id、数量、精力与权重，reply 保存包括蓝字的原结算。通用缓存清除后仍先验证永久记录的操作归属并返回原回复。鱼获、每日竿数和集齐凭证沿用 quest_progress，不从旧数据伪造逐竿历史。
+
+26→27 沿用冻结结构校验、一致备份、单事务建表/索引与版本更新，校验完整性和外键；失败保持 26。`legacy_schema26` 剥离鱼篓，25 及更早的重建继续逐级剥离，UID/注册顺序不变。所有测试使用隔离库，不接触运行存档。

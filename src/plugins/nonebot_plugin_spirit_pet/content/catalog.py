@@ -56,7 +56,7 @@ from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.outing_content import OutingScene
-from ..domain.fishing_content import FishingSpot
+from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -194,6 +194,7 @@ class Catalog:
     play_games: dict[str, PlayGame]
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
+    fishing_baits: dict[str, FishingBait]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -287,6 +288,7 @@ class Catalog:
             play_games=_index(directory / "play_games.json", PlayGame),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
+            fishing_baits=_index(directory / "fishing_baits.json", FishingBait),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -1167,6 +1169,16 @@ class Catalog:
         for spot in self.fishing_spots.values():
             for entry in spot.catches:
                 self._require((entry.item,), self.items, f"fishing spot {spot.id} catch")
+        if not self.fishing_baits:
+            raise ValueError("fishing baits must not be empty")
+        catch_items = {entry.item for spot in self.fishing_spots.values() for entry in spot.catches}
+        names = set()
+        for bait in self.fishing_baits.values():
+            if bait.name in names:
+                raise ValueError("fishing bait names must be unique")
+            names.add(bait.name)
+            self._require((bait.cost_item,), self.items, f"fishing bait {bait.id} cost")
+            self._require(bait.favored_items, catch_items, f"fishing bait {bait.id} favored catches")
 
     def _validate_merchant_contracts(self) -> None:
         """A contract must be completable and its risk must match its reward."""

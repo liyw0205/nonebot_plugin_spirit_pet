@@ -1,0 +1,17 @@
+[
+  {
+    "id": "grain", "name": "谷香饵", "description": "以灵粮引来携种游鱼，偏向灵田种子。",
+    "cost_item": "spirit_food", "cost_quantity": 1,
+    "favored_items": ["seed_spirit_rice", "seed_blood_herb"], "multiplier": 3
+  },
+  {
+    "id": "mineral", "name": "晶砂饵", "description": "以锻灵矿的碎屑探寻水底灵材。",
+    "cost_item": "forge_ore", "cost_quantity": 1,
+    "favored_items": ["forge_ore", "bloodline_essence"], "multiplier": 3
+  },
+  {
+    "id": "aura", "name": "灵光饵", "description": "以双份灵粮聚拢灵息，偏向沉水丹药。",
+    "cost_item": "spirit_food", "cost_quantity": 2,
+    "favored_items": ["exp_pill", "energy_pill"], "multiplier": 3
+  }
+]

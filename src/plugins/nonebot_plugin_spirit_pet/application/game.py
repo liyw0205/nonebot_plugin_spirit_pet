@@ -38,6 +38,9 @@ class Game:
                     persistent_battle["title"], tuple(persistent_battle["lines"]),
                     tuple(persistent_battle["commands"]),
                 )
+            persistent_cast = repo.fishing_operation(operation_id, user_id)
+            if persistent_cast is not None:
+                return Reply.from_data(persistent_cast)
             context = Context(repo, self.content, self.config, self.rng, user_id, timestamp, operation_id)
             if command.registered:
                 context.player()

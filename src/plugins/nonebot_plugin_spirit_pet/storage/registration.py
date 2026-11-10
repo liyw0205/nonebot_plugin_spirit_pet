@@ -95,7 +95,7 @@ def legacy_schema21(current_schema: str) -> str:
 
 def legacy_schema25(current_schema: str) -> str:
     """Reconstruct schema 25 from the current schema: no market buy orders."""
-    schema = current_schema
+    schema = legacy_schema26(current_schema)
     for table in ("market_bids", "market_bid_sales"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for name in ("market_bid_board", "market_bid_buyer", "market_bid_sales_seller", "market_bid_sales_buyer"):
@@ -106,7 +106,33 @@ def legacy_schema25(current_schema: str) -> str:
 
 
 def validate_schema26(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 26)
+    _validate_schema(conn, legacy_schema26(current_schema), 26)
+
+
+def legacy_schema26(current_schema: str) -> str:
+    """Reconstruct schema 26 without the durable fishing ledger."""
+    schema = re.sub(r"CREATE TABLE fishing_casts \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    return re.sub(r"CREATE INDEX fishing_cast_history [^;]*;\n", "", schema, count=1)
+
+
+def validate_schema27(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 27)
+
+
+def backup_schema26(path: Path) -> Path:
+    return _backup_schema(path, 26)
+
+
+def migrate_fishing_table(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE fishing_casts \([\s\S]*?\n\);",
+        r"CREATE INDEX fishing_cast_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing fishing ledger definitions")
+        conn.execute(match.group(0))
 
 
 def migrate_bid_tables(conn: sqlite3.Connection) -> None:

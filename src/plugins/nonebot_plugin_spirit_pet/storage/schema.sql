@@ -357,3 +357,12 @@ CREATE TABLE market_bid_sales (
 );
 CREATE INDEX market_bid_sales_seller ON market_bid_sales(seller_id, sold_at DESC);
 CREATE INDEX market_bid_sales_buyer ON market_bid_sales(buyer_id, sold_at DESC);
+CREATE TABLE fishing_casts (
+    cast_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_id TEXT NOT NULL UNIQUE,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    created_at INTEGER NOT NULL CHECK(created_at >= 0),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL
+);
+CREATE INDEX fishing_cast_history ON fishing_casts(user_id, cast_id DESC);

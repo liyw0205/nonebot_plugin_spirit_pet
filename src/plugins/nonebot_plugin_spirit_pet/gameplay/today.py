@@ -167,7 +167,7 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     casts_left = fishing.left_today(ctx, owner)
     if casts_left:
         pending.append(_entry(
-            TODO, f"垂钓还剩 {casts_left} 竿", "三处水系每日三竿，鱼获集齐另有奖励",
+            TODO, f"垂钓还剩 {casts_left} 竿", "详情可择饵偏向未集鱼获，消耗与所得记入鱼篓",
             "灵宠垂钓",
         ))
 

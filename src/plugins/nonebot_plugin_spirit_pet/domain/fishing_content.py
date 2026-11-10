@@ -1,4 +1,6 @@
-from pydantic import model_validator
+from typing import Annotated
+
+from pydantic import Field, model_validator
 
 from .content import Definition, Identifier, Name, NonNegative, Positive
 
@@ -41,4 +43,26 @@ class FishingSpot(Definition):
         items = [entry.item for entry in self.catches]
         if len(set(items)) != len(items):
             raise ValueError(f"fishing spot {self.id} repeats a catch item")
+        if self.energy > 100:
+            raise ValueError(f"fishing spot {self.id} energy exceeds 100")
+        return self
+
+
+class FishingBait(Definition):
+    id: Identifier
+    name: Name
+    description: str
+    cost_item: Identifier
+    cost_quantity: Annotated[int, Field(ge=1, le=10)]
+    favored_items: list[Identifier]
+    multiplier: Annotated[int, Field(ge=2, le=5)]
+
+    @model_validator(mode="after")
+    def usable_bait(self):
+        if not self.description.strip():
+            raise ValueError(f"fishing bait {self.id} needs a description")
+        if not self.favored_items or len(set(self.favored_items)) != len(self.favored_items):
+            raise ValueError(f"fishing bait {self.id} needs distinct favored items")
+        if self.id == "plain" or self.name == "素饵":
+            raise ValueError("plain fishing bait is reserved")
         return self
