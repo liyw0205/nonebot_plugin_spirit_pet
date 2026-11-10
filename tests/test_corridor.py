@@ -110,12 +110,13 @@ def test_page_without_a_pet_is_read_only(game, play):
     assert page.commands == ("灵宠帮助",)
 
 
-def test_fresh_page_offers_only_the_entry(game, play):
+def test_fresh_page_offers_the_entry_and_optional_routes(game, play):
     play("adopt", "青鸾")
     page = play("corridor")
     assert "当前：第 1 层待战 · 已清 0 层 · 待领 灵石 0 · 修为 0" in page.text()
     assert "本周最深：0 层" in page.text()
-    assert {link.label for link in page.inline_commands} == {"挑战"}
+    assert {link.label for link in page.inline_commands} == {"挑战", "择路"}
+    assert len([link for link in page.inline_commands if link.label == "择路"]) == 3
 
 
 def test_the_page_hides_actions_the_player_cannot_take(game, play):
@@ -124,10 +125,10 @@ def test_the_page_hides_actions_the_player_cannot_take(game, play):
     set_energy(game, 5)
     page = play("corridor")
     assert "精力不足" in page.text()
-    assert page.inline_commands == ()
+    assert {link.label for link in page.inline_commands} == {"择路"}
     set_energy(game, 100)
     page = play("corridor")
-    assert {link.label for link in page.inline_commands} == {"挑战"}
+    assert {link.label for link in page.inline_commands} == {"挑战", "择路"}
     play("corridor", "挑战")
     page = play("corridor")
     assert {link.label for link in page.inline_commands} == {"挑战", "收手"}

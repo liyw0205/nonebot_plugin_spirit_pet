@@ -268,7 +268,11 @@
 
 敌人属性按 `(1 + rate) ** (层数 - 1)` 复利放大后取整，`hp/attack/speed` 至少为 1；因此不需要为回廊新增敌人数值，调平衡只改 `base_enemy` 与 `scaling`。层奖励是线性的，深度收益靠层数本身放大，里程碑只补材料，不设额外货币。
 
-运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数（没有该行表示无进行中的回廊），`corridor_best_<北京周一零点时间戳>` 存本周最深清层；战报以 `pve_stage` 类型、`corridor_<层>` 为键记录，不写 `pve_stage_progress`。收手按已清层数全额结算，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。
+可选 `paths` 定义五层一段的岔路（当前三条），每条包含唯一 `id`/`name`、`energy`（1-100）、`hp_percent`/`attack_percent`/`speed_percent`/`reward_percent`（整数 50-200，默认 100）。`common` 是常道的保留 ID，不能用作岔路。现配疾行道为精力 4、敌速度 125%；护灵道为精力 8、敌攻击 85%；寻宝道为精力 6、敌气血/攻击 120%、灵石与修为 130%。敌手倍率在逐层复利后向下取整，气血/攻击/速度至少为 1；奖励每层单独向下取整，材料不乘倍率。常道始终沿用 `energy` 与原始敌手和奖励。
+
+运行状态写在既有 `quest_progress`：`corridor_floor` 存下一层待战层数，`corridor_best_<北京周一零点时间戳>` 存本周最深清层；`corridor_path_start`/`corridor_path_id_<id>` 与各参数行冻结本段选择，换段失效，重新择路时替换快照；`corridor_pending_stones`/`corridor_pending_exp` 累计实际赢得的金额，不由后续路线重算。旧版没有这两行时按原线性规则派生，首次成功战斗转为累计值，纯查询不写入。结束一局清掉层数、路线与待领值，保留周最佳与 `corridor_receipt_<操作键 SHA256>` 永久凭证；同一择路/收手消息不能作用于新局。
+
+战报以 `pve_stage` 类型、`corridor_<层>` 为键记录真实修改后的敌手快照，不写 `pve_stage_progress`。收手全额结算累计奖励，战败或平局减半且不给里程碑，第 `max_floor` 层胜利自动按收手结算，避免越界层。路线与累计值和资源/战报在原事务内一起提交或回滚，schema 仍为 26。
 
 ## 斗法定义
 

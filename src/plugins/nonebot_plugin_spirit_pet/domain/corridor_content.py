@@ -26,6 +26,16 @@ class Scaling(Definition):
     speed: Annotated[float, Field(ge=0, le=1)] = 0
 
 
+class CorridorPath(Definition):
+    id: Identifier
+    name: Name
+    energy: Annotated[int, Field(ge=1, le=100)]
+    hp_percent: Annotated[int, Field(ge=50, le=200)] = 100
+    attack_percent: Annotated[int, Field(ge=50, le=200)] = 100
+    speed_percent: Annotated[int, Field(ge=50, le=200)] = 100
+    reward_percent: Annotated[int, Field(ge=50, le=200)] = 100
+
+
 class Corridor(Definition):
     id: Identifier
     name: Name
@@ -37,6 +47,7 @@ class Corridor(Definition):
     stones_per_floor: Linear
     exp_per_floor: Linear
     milestones: list[Milestone] = []
+    paths: list[CorridorPath] = []
 
     @model_validator(mode="after")
     def _check(self):
@@ -49,6 +60,12 @@ class Corridor(Definition):
             raise ValueError(f"corridor {self.id} milestone beyond the last floor")
         if not any(rate for rate in self.scaling.model_dump().values()):
             raise ValueError(f"corridor {self.id} does not scale any stat")
+        for field in ("id", "name"):
+            values = [getattr(path, field) for path in self.paths]
+            if len(values) != len(set(values)):
+                raise ValueError(f"corridor {self.id} paths must have unique {field}")
+        if any(path.id == "common" for path in self.paths):
+            raise ValueError("common is reserved for the unchanged corridor path")
         return self
 
     def stones_at(self, floor: int) -> int:

@@ -9,6 +9,11 @@
     "scaling": {"hp": 0.18, "attack": 0.14, "defense": 0.12, "speed": 0.10},
     "stones_per_floor": {"base": 10, "growth": 6},
     "exp_per_floor": {"base": 8, "growth": 4},
+    "paths": [
+      {"id": "swift", "name": "疾行道", "energy": 4, "speed_percent": 125},
+      {"id": "shelter", "name": "护灵道", "energy": 8, "attack_percent": 85},
+      {"id": "treasure", "name": "寻宝道", "energy": 6, "hp_percent": 120, "attack_percent": 120, "reward_percent": 130}
+    ],
     "milestones": [
       {"floor": 5, "items": {"forge_ore": 2}},
       {"floor": 10, "items": {"bloodline_essence": 2}},
