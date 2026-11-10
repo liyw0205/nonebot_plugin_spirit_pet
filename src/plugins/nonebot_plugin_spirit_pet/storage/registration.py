@@ -111,12 +111,37 @@ def validate_schema26(conn: sqlite3.Connection, current_schema: str) -> None:
 
 def legacy_schema26(current_schema: str) -> str:
     """Reconstruct schema 26 without the durable fishing ledger."""
-    schema = re.sub(r"CREATE TABLE fishing_casts \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(r"CREATE TABLE fishing_casts \([\s\S]*?\n\);\n", "", legacy_schema27(current_schema), count=1)
     return re.sub(r"CREATE INDEX fishing_cast_history [^;]*;\n", "", schema, count=1)
 
 
 def validate_schema27(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 27)
+    _validate_schema(conn, legacy_schema27(current_schema), 27)
+
+
+def legacy_schema27(current_schema: str) -> str:
+    schema = re.sub(r"CREATE TABLE duel_actions \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    return re.sub(r"CREATE INDEX duel_action_history [^;]*;\n", "", schema, count=1)
+
+
+def validate_schema28(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 28)
+
+
+def backup_schema27(path: Path) -> Path:
+    return _backup_schema(path, 27)
+
+
+def migrate_duel_table(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE duel_actions \([\s\S]*?\n\);",
+        r"CREATE INDEX duel_action_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing duel action definitions")
+        conn.execute(match.group(0))
 
 
 def backup_schema26(path: Path) -> Path:

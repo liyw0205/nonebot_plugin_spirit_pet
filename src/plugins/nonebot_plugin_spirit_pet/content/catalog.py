@@ -1066,6 +1066,8 @@ class Catalog:
                 raise ValueError(f"gem {gem.id} must consume a material item")
 
     def _validate_duels(self):
+        if not {"assault", "guard", "feint"} <= self.rules.duel.stances.keys():
+            raise ValueError("duel intents require assault, guard and feint stances")
         if not self.duels:
             raise ValueError("duels must offer at least one opponent")
         realms = [realm.id for realm in self.realms]

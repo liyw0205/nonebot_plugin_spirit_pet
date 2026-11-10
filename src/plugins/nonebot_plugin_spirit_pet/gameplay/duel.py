@@ -4,7 +4,8 @@ Every other combat mode in this plugin resolves a whole encounter inside a singl
 command. A duel persists the fight between messages instead: the player picks one
 stance per exchange, only the two health pools survive, and ``fight`` is asked for
 exactly one round with ``max_rounds=1``. State lives in the existing
-``quest_progress`` table (no schema change):
+``quest_progress`` table for compatibility, with opening metadata and durable
+action replies in ``duel_actions``:
 
 * ``duel_target`` — 1-based index into the sorted opponent list
 * ``duel_round`` — the exchange about to be fought (1-based)
@@ -28,6 +29,7 @@ from ..utils.time import beijing_day, beijing_week
 from .combat import Fighter, fight
 from .loadout import combatant
 from .rewards import grant
+from . import duel_tactics as tactics
 
 TARGET_KEY = "duel_target"
 ROUND_KEY = "duel_round"
@@ -91,12 +93,15 @@ def state(ctx: Context, user_id: str | None = None) -> dict | None:
         return None
     index = stored[TARGET_KEY]
     ladder = opponents(ctx)
-    if not 1 <= index <= len(ladder):
+    latest = ctx.repo.latest_duel_action(owner)
+    bout = latest["bout"] if latest and latest["status"] == "active" else None
+    if bout is None and not 1 <= index <= len(ladder):
         return None
     if stored[ROUND_KEY] < 1 or stored[HP_KEY] <= 0 or stored[ENEMY_HP_KEY] <= 0:
         return None
     return {
-        "opponent": ladder[index - 1],
+        "opponent": DuelOpponent.model_validate(bout["opponent"]) if bout else ladder[index - 1],
+        "bout": bout,
         "round": stored[ROUND_KEY],
         "hp": stored[HP_KEY],
         "enemy_hp": stored[ENEMY_HP_KEY],
@@ -270,34 +275,41 @@ def page(ctx: Context, arg: str) -> Reply:
             ("灵宠帮助",),
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
-    pet = ctx.pet()
+    try:
+        pet = tactics.preview_pet(ctx)
+    except GameError as error:
+        if state(ctx) is None:
+            raise
+        return Reply("灵宠斗法", (str(error), "可先认输结束当前斗法，再选择伙伴。"),
+                     ("灵宠列表", "灵宠封存库"), (InlineCommand(1, "认输", "灵宠斗法 认输"),))
+    current = state(ctx)
+    rule = tactics.rule(ctx, current)
     lines = [
         f"斗法：{rule.exchanges} 回合内分胜负，每回合精力 {rule.energy}。",
         "气血跨回合保留；选择出手会立即结算一回合。",
     ]
-    current = state(ctx)
     state_line = None
     if current is not None:
         state_line = len(lines)
         lines.append(_status_text(current))
-        lines.append(
-            f"我方 {pet.name} 气血 {current['hp']}/{combatant(ctx, pet_id=pet.pet_id, recover_energy=False).stats.hp}"
-        )
+        original = current["bout"]["pet_name"] if current["bout"] else pet.name
+        lines.append(f"我方 {original} · 本场剩余气血 {current['hp']}")
     wins = weekly_wins(ctx)
     lines.append(f"本周已胜 {wins}/{len(ladder)} 位护法。")
     links: list[InlineCommand] = []
     if current is not None:
-        if ctx.repo.active_expedition(pet.pet_id) is not None:
-            lines.append(f"{pet.name}正在外出派遣，斗法暂时无法继续。")
-            lines.append("等伙伴归来再出手，或先认输结束本场。")
+        reason = tactics.blocked(ctx, pet, current)
+        if reason:
+            lines.append(reason)
             links.append(InlineCommand(state_line, "认输", "灵宠斗法 认输"))
-            return Reply("灵宠斗法", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"), tuple(links))
+            return Reply("灵宠斗法", tuple(lines), ("灵宠列表", "灵宠行程", "灵宠斗法 回顾"), tuple(links))
+        lines.extend(tactics.preview_lines(ctx, current))
         stance_line = len(lines)
         lines.append("本回合出手：")
         for stance in rule.stances.values():
             links.append(InlineCommand(stance_line, stance.name, f"灵宠斗法 {stance.name}"))
         links.append(InlineCommand(state_line, "认输", "灵宠斗法 认输"))
-        commands = ("灵宠斗法", "灵宠战报", "我的灵宠")
+        commands = ("灵宠斗法 回顾", "灵宠斗法 战历", "我的灵宠")
         return Reply("灵宠斗法", tuple(lines), commands, tuple(links))
     for opponent in ladder:
         requirement = realm_index(ctx, opponent.realm)
@@ -306,13 +318,14 @@ def page(ctx: Context, arg: str) -> Reply:
         elif pet.realm < requirement:
             status = f"需 {ctx.content.realms[requirement].name}"
         else:
-            status = "可挑战"
+            status = tactics.blocked(ctx, pet) or "可挑战"
         lines.append(f"{opponent.name}（{ctx.content.realms[requirement].name}）· 奖励 {_reward_text(ctx, opponent.reward)} · {status}")
         if status == "可挑战":
             links.append(InlineCommand(len(lines) - 1, "挑战", f"灵宠斗法 {opponent.name}"))
+        links.append(InlineCommand(len(lines) - 1, "观招", f"灵宠斗法 详情 {opponent.name}"))
     if pet.energy < rule.energy:
         lines.append(f"{pet.name}精力不足：每回合需要 {rule.energy} 点。")
-    return Reply("灵宠斗法", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"), tuple(links))
+    return Reply("灵宠斗法", tuple(lines), ("灵宠斗法 回顾", "灵宠斗法 战历", "我的灵宠"), tuple(links))
 
 
 def _opponent(ctx: Context, value: str) -> DuelOpponent:
@@ -338,40 +351,60 @@ def start(ctx: Context, arg: str) -> Reply:
     _write(ctx, ROUND_KEY, 1)
     _write(ctx, HP_KEY, fighter.stats.hp)
     _write(ctx, ENEMY_HP_KEY, opponent.stats.hp)
+    bout = tactics.opening(ctx, pet, opponent)
     lines = [
         f"对上{opponent.name}：{opponent.description}",
         f"对方气血 {opponent.stats.hp} · 攻击 {opponent.stats.attack} · 防御 {opponent.stats.defense}"
         f" · 速度 {opponent.stats.speed}",
         f"我方 {pet.name} 气血 {fighter.stats.hp} · 攻击 {fighter.stats.attack} · 防御 {fighter.stats.defense}"
         f" · 速度 {fighter.stats.speed}",
+        f"本场由编号 {pet.pet_id} 的{pet.name}出战，换宠后需调回原伙伴才能继续。",
+        *tactics.preview_lines(ctx, {"bout": bout, "opponent": opponent, "round": 1}),
         f"第 1/{rule.exchanges} 回合，选择出手：",
     ]
     prompt = len(lines) - 1
     links = tuple(
         InlineCommand(prompt, stance.name, f"灵宠斗法 {stance.name}") for stance in rule.stances.values()
     )
-    return Reply("斗法开局", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"), links)
+    reply = Reply("斗法开局", tuple(lines), ("灵宠斗法", "灵宠斗法 回顾", "我的灵宠"), links)
+    return tactics.record(ctx, bout, "start", "active", reply, round=1)
 
 
 def exchange(ctx: Context, arg: str) -> Reply:
-    rule = ctx.content.rules.duel
-    stance = _stance(ctx, arg)
     current = state(ctx)
     if current is None:
         raise GameError("当前没有进行中的斗法，先发送 灵宠斗法 <护法名>。")
     pet = _pet(ctx)
-    if pet.energy < rule.energy:
-        raise GameError(f"{pet.name}精力不足，斗法每回合需要 {rule.energy} 点。")
+    reason = tactics.blocked(ctx, pet, current)
+    if reason:
+        raise GameError(reason)
+    rule = tactics.rule(ctx, current)
+    stance_key = next((key for key, value in rule.stances.items() if arg in (key, value.name)), None)
+    if stance_key is None:
+        raise GameError("未知出手：可用 抢攻、稳守、游斗。")
+    stance = rule.stances[stance_key]
     opponent = current["opponent"]
+    bout = current["bout"] or tactics.opening(ctx, pet, opponent, legacy=True)
+    current["bout"] = bout
     player = _player_fighter(ctx, pet, current["hp"])
     enemy = _enemy_fighter(opponent, current["enemy_hp"])
-    _applied(player, stance.dealt, stance.taken)
+    move = tactics.intent(current)
+    outcome, dealt, taken = tactics.response(move, stance_key)
+    _applied(player, stance.dealt * dealt, stance.taken * taken)
     pet.energy -= rule.energy
     ctx.repo.invalidate_ready(ctx.user_id)
     battle = fight([player], [enemy], ctx.rng, ctx.content.elements, max_rounds=1)
     hp = max(0, player.hp)
     enemy_hp = max(0, enemy.hp)
-    lines = [f"第 {current['round']}/{rule.exchanges} 回合 · {stance.name}", *battle.lines]
+    lines = [f"第 {current['round']}/{rule.exchanges} 回合 · {stance.name}",
+             f"护法出手：{tactics.NAMES[move] if move else '旧局平招'} · {outcome} · 出伤 ×{player.dealt:.3f} / 承伤 ×{player.taken:.3f}",
+             f"本回合精力 -{rule.energy} · 剩余 {pet.energy}；我方气血 {hp}/{player.stats.hp} · 对方气血 {enemy_hp}/{opponent.stats.hp}",
+             *battle.lines]
+
+    def finish(status: str, reply: Reply) -> Reply:
+        return tactics.record(ctx, bout, "exchange", status, reply, round=current["round"],
+                              stance=stance_key, intent=move, outcome=outcome,
+                              hp=hp, enemy_hp=enemy_hp, energy=rule.energy)
     if enemy_hp <= 0:
         _clear(ctx)
         marker = _marker(ctx, opponent)
@@ -384,30 +417,31 @@ def exchange(ctx: Context, arg: str) -> Reply:
         lines.append(f"击败{opponent.name}，本周奖励：" + "，".join(paid))
         lines.append(f"本周已胜 {weekly_wins(ctx)}/{len(opponents(ctx))} 位护法。")
         lines.append(f"每回合精力 -{rule.energy}；气血只在本场斗法内保留。")
-        return Reply("斗法得胜", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"))
+        return finish("won", Reply("斗法得胜", tuple(lines), ("灵宠斗法 回顾", "我的灵宠", "灵宠突破", "灵宠目标")))
     if hp <= 0:
         _clear(ctx)
         lines.append(f"{pet.name}气血耗尽，斗法中断，未获得本周奖励。")
         lines.append(f"每回合精力 -{rule.energy}；下周或成长后再来挑战。")
-        return Reply("斗法败退", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"))
+        return finish("lost", Reply("斗法败退", tuple(lines), ("灵宠斗法 回顾", "灵宠修炼", "我的灵宠")))
     if current["round"] >= rule.exchanges:
         _clear(ctx)
         lines.append(f"{rule.exchanges} 回合用尽仍未分胜负，斗法以平局收场。")
         lines.append(f"每回合精力 -{rule.energy}；气血只在本场斗法内保留。")
-        return Reply("斗法平局", tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"))
+        return finish("draw", Reply("斗法平局", tuple(lines), ("灵宠斗法 回顾", "灵宠修炼", "我的灵宠")))
     _write(ctx, ROUND_KEY, current["round"] + 1)
     _write(ctx, HP_KEY, hp)
     _write(ctx, ENEMY_HP_KEY, enemy_hp)
     lines.append(
         f"我方 {pet.name} 气血 {hp}/{player.stats.hp} · {opponent.name} 气血 {enemy_hp}/{opponent.stats.hp}"
     )
+    lines.extend(tactics.preview_lines(ctx, {**current, "round": current["round"] + 1}))
     stance_line = len(lines)
     lines.append("下一回合出手：")
     links = tuple(
         InlineCommand(stance_line, item.name, f"灵宠斗法 {item.name}") for item in rule.stances.values()
     )
     links += (InlineCommand(0, "认输", "灵宠斗法 认输"),)
-    return Reply("斗法 · 第 %d 回合" % current["round"], tuple(lines), ("灵宠斗法", "灵宠战报", "我的灵宠"), links)
+    return finish("active", Reply("斗法 · 第 %d 回合" % current["round"], tuple(lines), ("灵宠斗法", "灵宠斗法 回顾", "我的灵宠"), links))
 
 
 def forfeit(ctx: Context, arg: str) -> Reply:
@@ -418,15 +452,25 @@ def forfeit(ctx: Context, arg: str) -> Reply:
         raise GameError("当前没有进行中的斗法。")
     opponent = current["opponent"]
     _clear(ctx)
-    return Reply(
+    bout = current["bout"]
+    if bout is None:
+        owner = ctx.player()
+        pet = ctx.repo.pet(owner.active_pet_id) if owner.active_pet_id else None
+        bout = tactics.opening(ctx, pet, opponent, legacy=True) if pet else {
+            "id": ctx.operation_id, "pet_id": None, "pet_name": "旧局伙伴未记录",
+            "opponent": opponent.model_dump(mode="json"),
+            "rule": ctx.content.rules.duel.model_dump(mode="json"), "legacy": True,
+        }
+    reply = Reply(
         "斗法中止",
         (
             f"你向{opponent.name}抱拳认输，本场斗法到此为止。",
-            "认输不发奖励；气血不会带回下一场，精力照常扣除。",
+            "认输不发奖励、不额外扣精力；已消耗精力不返还，气血不带回下一场。",
             f"本周已胜 {weekly_wins(ctx)}/{len(opponents(ctx))} 位护法。",
         ),
-        ("灵宠斗法", "灵宠战报", "我的灵宠"),
+        ("灵宠斗法", "灵宠斗法 回顾", "我的灵宠"),
     )
+    return tactics.record(ctx, bout, "forfeit", "forfeit", reply, round=current["round"])
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
@@ -434,6 +478,10 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if not parts:
         return page(ctx, "")
     head = parts[0]
+    if head == "详情":
+        return tactics.detail(ctx, " ".join(parts[1:]))
+    if head == "回顾":
+        return tactics.review(ctx, " ".join(parts[1:]))
     if head in HISTORY:
         return history(ctx, " ".join(parts[1:]))
     if len(parts) > 1 and head == "认输":
@@ -448,6 +496,9 @@ def dispatch(ctx: Context, arg: str) -> Reply:
 
 
 def _is_stance(ctx: Context, value: str) -> bool:
+    current = state(ctx)
+    if current and current.get("bout"):
+        return any(value in (key, stance.name) for key, stance in tactics.rule(ctx, current).stances.items())
     try:
         _stance(ctx, value)
     except GameError:
@@ -461,7 +512,9 @@ def objective_line(ctx: Context, user_id: str) -> str:
     total = len(opponents(ctx))
     if current is None:
         return f"斗法：本周已胜 {wins}/{total} 位护法 · 未开局"
-    return f"斗法：本周已胜 {wins}/{total} 位护法 · {current['opponent'].name} 第 {current['round']} 回合"
+    move = tactics.intent(current)
+    hint = f" · 将出{tactics.NAMES[move]}" if move else " · 旧局平招"
+    return f"斗法：本周已胜 {wins}/{total} 位护法 · {current['opponent'].name} 第 {current['round']} 回合" + hint
 
 
 __all__ = [

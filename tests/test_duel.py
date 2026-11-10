@@ -127,7 +127,7 @@ def test_page_lists_every_guardian_and_only_links_the_reachable_one(game, play):
     page = play("duel")
     assert "松风道人（启灵）" in page.text()
     assert "无相居士（元婴）" in page.text()
-    assert {link.label for link in page.inline_commands} == {"挑战"}
+    assert {link.label for link in page.inline_commands} == {"挑战", "观招"}
     assert page.inline_commands[0].command == "灵宠斗法 松风道人"
 
 

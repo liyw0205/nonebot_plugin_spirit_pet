@@ -13,9 +13,10 @@ from .registration import (
     migrate_share_tables, migrate_player_identity, validate_schema18, validate_schema19,
     validate_schema20, validate_schema21, validate_schema22, validate_schema23, validate_schema24,
     validate_schema25, validate_schema26, validate_schema27, backup_schema26, migrate_fishing_table,
+    validate_schema28, backup_schema27, migrate_duel_table,
 )
 
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 28
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -302,6 +303,26 @@ class Store:
                     backup_schema26(self.path)
                     migrate_fishing_table(conn)
                     validate_schema27(conn, schema)
+                    conn.execute("PRAGMA user_version=27")
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 27
+            if version == 27:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 27:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema27(conn, schema)
+                    backup_schema27(self.path)
+                    migrate_duel_table(conn)
+                    validate_schema28(conn, schema)
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     conn.commit()
                 except BaseException:

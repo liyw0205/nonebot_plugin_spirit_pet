@@ -366,3 +366,12 @@ CREATE TABLE fishing_casts (
     reply TEXT NOT NULL
 );
 CREATE INDEX fishing_cast_history ON fishing_casts(user_id, cast_id DESC);
+CREATE TABLE duel_actions (
+    action_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    created_at INTEGER NOT NULL CHECK(created_at>=0),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL
+);
+CREATE INDEX duel_action_history ON duel_actions(user_id, action_id DESC);

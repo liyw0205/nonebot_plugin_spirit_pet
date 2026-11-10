@@ -6,7 +6,7 @@ from contextlib import closing
 import pytest
 
 from nonebot_plugin_spirit_pet.storage import database
-from nonebot_plugin_spirit_pet.storage.database import SCHEMA_PATH, Store
+from nonebot_plugin_spirit_pet.storage.database import SCHEMA_PATH, SCHEMA_VERSION, Store
 from nonebot_plugin_spirit_pet.storage.registration import legacy_schema26
 
 
@@ -38,7 +38,7 @@ def test_schema26_backup_migration_and_repeat_preserve_every_old_row(tmp_path):
     store.initialize()
     assert snapshot(store) == before
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 27
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
         assert not conn.execute("SELECT * FROM fishing_casts").fetchall()
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()

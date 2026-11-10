@@ -1,6 +1,7 @@
 [
   {
     "id": "songfeng",
+    "intents": ["assault", "guard", "feint"],
     "name": "松风道人",
     "description": "启灵境入门护法，出招直来直去，正好试手。",
     "realm": "qiling",
@@ -13,6 +14,7 @@
   },
   {
     "id": "shiquan",
+    "intents": ["guard", "guard", "assault"],
     "name": "石泉客",
     "description": "凝气境青石护法，守得极稳，急躁的出手会被拖垮。",
     "realm": "ningqi",
@@ -25,6 +27,7 @@
   },
   {
     "id": "chixia",
+    "intents": ["guard", "feint", "assault", "assault"],
     "name": "赤霞子",
     "description": "筑基境赤霞护法，攻守均衡，拖到后面会连续抢攻。",
     "realm": "zhuji",
@@ -37,6 +40,7 @@
   },
   {
     "id": "xuanyu",
+    "intents": ["guard", "assault", "guard", "feint"],
     "name": "玄羽真君",
     "description": "金丹境玄羽护法，气血厚实，靠速攻才能抢在回合上限前破局。",
     "realm": "jindan",
@@ -49,6 +53,7 @@
   },
   {
     "id": "wuxiang",
+    "intents": ["feint", "guard", "assault"],
     "name": "无相居士",
     "description": "元婴境无相护法，四维俱高，只有把每回合的取舍都算准才拿得下。",
     "realm": "yuanying",
@@ -61,6 +66,7 @@
   },
   {
     "id": "qingming",
+    "intents": ["assault", "feint", "assault", "guard"],
     "name": "青冥剑主",
     "description": "化神境青冥护法，四维锚定秘境太虚剑魄，出手又快又准，只守不攻会被压在回合上限前。",
     "realm": "huashen",
@@ -73,6 +79,7 @@
   },
   {
     "id": "jiuxiao",
+    "intents": ["feint", "assault", "guard", "assault", "feint"],
     "name": "九霄劫主",
     "description": "渡劫境九霄护法，四维锚定秘境九霄劫灵，攻守皆臻极处，是本作斗法的最后一位对手。",
     "realm": "dujie",
