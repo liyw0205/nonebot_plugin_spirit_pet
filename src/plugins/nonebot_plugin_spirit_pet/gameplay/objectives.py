@@ -61,6 +61,7 @@ from . import drill
 from . import sockets
 from . import team_trial
 from . import cuisine
+from . import cooking
 from . import daily_encounters
 from . import rank_rewards
 from . import equipment_set_rewards
@@ -539,6 +540,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (visits.objective_line(ctx, player.user_id), "灵宠串门"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
+        (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),
         (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
         (corridor.objective_line(ctx, player.user_id), "灵宠回廊"),
         (sects.objective_line(ctx, player.user_id), "灵宠师门"),

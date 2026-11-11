@@ -156,6 +156,8 @@ def page(ctx: Context) -> Reply:
         if _state(ctx, dish) == "可烹饪":
             links.append(InlineCommand(len(lines) - 1, "烹饪", f"灵宠烹饪 {dish.name}"))
     lines.append("单膳进入乾坤袋，可用 灵宠使用 或 灵宠喂养 交给伙伴；宴席立即作用于全部在册伙伴。")
+    lines.append("亲自掌勺：三段调火，按成色产出单膳，共用今日灶火。")
+    links.append(InlineCommand(len(lines) - 1, "前往掌勺", "灵宠掌勺"))
     return Reply(
         "灵宠膳房", tuple(lines),
         ("灵宠膳房", "灵宠背包", "灵宠目标", "我的灵宠"), tuple(links),

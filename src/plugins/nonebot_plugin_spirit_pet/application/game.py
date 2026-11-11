@@ -32,6 +32,9 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_cooking = repo.cooking_operation(operation_id, user_id)
+            if persistent_cooking is not None:
+                return Reply.from_data(persistent_cooking)
             persistent_duel = repo.duel_operation(operation_id, user_id)
             if persistent_duel is not None:
                 return Reply.from_data(persistent_duel)
