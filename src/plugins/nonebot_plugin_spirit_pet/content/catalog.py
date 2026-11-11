@@ -57,6 +57,7 @@ from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
+from ..domain.herbalism_content import HerbRoute
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
@@ -202,6 +203,7 @@ class Catalog:
     market: MarketRule
     drills: dict[str, DrillDummy]
     tracking_maps: dict[str, TrackingMap]
+    herb_routes: dict[str, HerbRoute]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -301,6 +303,7 @@ class Catalog:
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
+            herb_routes=_index(directory / "herb_routes.json", HerbRoute),
         )
         catalog.validate()
         return catalog
@@ -426,6 +429,9 @@ class Catalog:
         self._validate_contracts()
         self._validate_hybrids()
         self._validate_alchemy()
+        for route in self.herb_routes.values():
+            self._require([site.item_id for site in route.sites if site.item_id], self.items,
+                          f"herbalism {route.id} materials")
         self._validate_difficulties()
         self._validate_bounties()
         self._validate_sect_exchange()

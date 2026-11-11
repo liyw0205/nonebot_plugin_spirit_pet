@@ -63,6 +63,7 @@ from . import team_trial
 from . import cuisine
 from . import cooking
 from . import tracking
+from . import herbalism
 from . import daily_encounters
 from . import rank_rewards
 from . import equipment_set_rewards
@@ -536,6 +537,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_farm_line(ctx, player.user_id), "灵宠灵田"),
         (play_games.objective_line(ctx, player.user_id), "灵宠嬉戏 记录"),
         (tracking.objective_line(ctx, player.user_id), "灵宠寻踪"),
+        (herbalism.objective_line(ctx, player.user_id), "灵宠采药"),
         (pet_outing.objective_line(ctx, player.user_id), "灵宠游历赏"),
         (fishing.objective_line(ctx, player.user_id), "灵宠垂钓"),
         (spar_goals.objective_line(ctx, player.user_id), "灵宠切磋目标"),

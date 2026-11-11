@@ -59,7 +59,8 @@ def page(ctx: Context, arg: str) -> Reply:
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
     lines = ["炼丹消耗丹方所列材料与灵石；一次最多炼 10 份，材料不足时整笔拒绝。"]
-    links = []
+    lines.append("缺少材料时，可进药山采集，返程所得也能播种或炼丹。")
+    links = [InlineCommand(1, "进山采药", "灵宠采药")]
     for entry in recipes(ctx):
         product = ctx.content.items[entry.item_id]
         lines.append(

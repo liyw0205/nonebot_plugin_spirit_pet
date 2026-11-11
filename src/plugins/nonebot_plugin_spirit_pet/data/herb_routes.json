@@ -1,0 +1,44 @@
+[
+  {
+    "id": "brook", "name": "溪谷药坡", "description": "溪岸易行，坡顶灵穗与近岸灵粮需要不同路线。", "budget": 10,
+    "sites": [
+      {"name": "谷口", "cost": 1},
+      {"name": "灵粮滩", "cost": 1, "item_id": "spirit_food"},
+      {"name": "血草坡", "cost": 2, "item_id": "seed_blood_herb"},
+      {"name": "溪桥", "cost": 1},
+      {"name": "石坎", "cost": 2},
+      {"name": "灵穗台", "cost": 1, "item_id": "seed_aura_ear"},
+      {"name": "血草湾", "cost": 1, "item_id": "seed_blood_herb"},
+      {"name": "浅水", "cost": 1},
+      {"name": "回声石", "cost": 1}
+    ]
+  },
+  {
+    "id": "ridge", "name": "赤岩药岭", "description": "锻灵矿藏在岩壁一侧，另一侧的血草更便于连采。", "budget": 12,
+    "sites": [
+      {"name": "山门", "cost": 1},
+      {"name": "赤岩阶", "cost": 2},
+      {"name": "矿脉", "cost": 2, "item_id": "forge_ore", "harvest_cost": 2},
+      {"name": "血草径", "cost": 1, "item_id": "seed_blood_herb"},
+      {"name": "血草坳", "cost": 2, "item_id": "seed_blood_herb"},
+      {"name": "石梁", "cost": 1},
+      {"name": "碎石地", "cost": 2},
+      {"name": "粮草台", "cost": 1, "item_id": "spirit_food"},
+      {"name": "鹰望台", "cost": 1}
+    ]
+  },
+  {
+    "id": "grove", "name": "古木药涧", "description": "灵穗沿两条树根道生长，采集前先为回头路留足脚程。", "budget": 12,
+    "sites": [
+      {"name": "林口", "cost": 1},
+      {"name": "盘根路", "cost": 2},
+      {"name": "东灵穗", "cost": 1, "item_id": "seed_aura_ear", "harvest_cost": 2},
+      {"name": "西灵穗", "cost": 1, "item_id": "seed_aura_ear", "harvest_cost": 2},
+      {"name": "古木心", "cost": 3},
+      {"name": "清泉", "cost": 1},
+      {"name": "草籽窝", "cost": 1, "item_id": "seed_blood_herb"},
+      {"name": "落叶径", "cost": 1},
+      {"name": "灵粮圃", "cost": 1, "item_id": "spirit_food"}
+    ]
+  }
+]

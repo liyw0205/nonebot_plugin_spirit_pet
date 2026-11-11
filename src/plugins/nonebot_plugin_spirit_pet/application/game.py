@@ -32,6 +32,9 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_herbalism = repo.herbalism_operation(operation_id, user_id)
+            if persistent_herbalism is not None:
+                return Reply.from_data(persistent_herbalism)
             persistent_tracking = repo.tracking_operation(operation_id, user_id)
             if persistent_tracking is not None:
                 return Reply.from_data(persistent_tracking)
