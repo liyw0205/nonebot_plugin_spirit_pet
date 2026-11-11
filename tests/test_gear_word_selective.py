@@ -32,6 +32,16 @@ def test_catalog_and_detail_show_owned_stack(game, play):
     assert any("选择" in action.command for action in detail.inline_commands)
 
 
+def test_objectives_exposes_word_stacks_and_entry_link(game, play):
+    recipe = craft_one(game, play)
+    page = play("objectives", op="word-objective")
+    line = next(text for text in page.lines if text.startswith("灵器词条："))
+    assert line.startswith("灵器词条：可定向淬词 1 栈")
+    link = next(link for link in page.inline_commands if link.command == "灵宠词条重铸")
+    assert page.lines[link.line] == line
+    assert f"{recipe.name} +0" in play("gear_word_reforge", op="word-objective-catalog").text()
+
+
 def test_selective_rewrites_one_slot_and_keeps_other_slots(game, play):
     recipe = craft_one(game, play)
     before = sql(game[1], "SELECT quest_id, progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE ? ORDER BY quest_id", (f"gear_words_{recipe.item_id}_0_%",))

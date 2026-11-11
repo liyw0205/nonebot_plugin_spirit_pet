@@ -35,13 +35,16 @@ def _prefix(item_id: str, enhancement: int) -> str:
     return f"{WORD_PREFIX}{item_id}_{enhancement}_"
 
 
-def rows(ctx: Context, item_id: str, enhancement: int) -> list[tuple[str, int]]:
+def rows(
+    ctx: Context, item_id: str, enhancement: int, user_id: str | None = None,
+) -> list[tuple[str, int]]:
     """Sorted [(word_id, value)] for the stack, oldest word first."""
     prefix = _prefix(item_id, enhancement)
+    owner = user_id or ctx.user_id
     rows = ctx.repo.conn.execute(
         "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND claimed=1 "
         "AND substr(quest_id, 1, ?)=?",
-        (ctx.user_id, len(prefix), prefix),
+        (owner, len(prefix), prefix),
     ).fetchall()
     entries = []
     for row in rows:
@@ -72,8 +75,9 @@ def _clear(ctx: Context, item_id: str, enhancement: int) -> None:
     )
 
 
-def _owned_stacks(ctx: Context) -> dict[tuple[str, int], dict]:
+def _owned_stacks(ctx: Context, user_id: str | None = None) -> dict[tuple[str, int], dict]:
     stacks: dict[tuple[str, int], dict] = {}
+    owner = user_id or ctx.user_id
 
     def stack(item_id: str, enhancement: int) -> dict:
         return stacks.setdefault((item_id, enhancement), {
@@ -82,24 +86,46 @@ def _owned_stacks(ctx: Context) -> dict[tuple[str, int], dict]:
 
     for row in ctx.repo.conn.execute(
         "SELECT item_id, quantity FROM inventory WHERE user_id=? AND quantity>0",
-        (ctx.user_id,),
+        (owner,),
     ):
         item = ctx.content.items.get(row["item_id"])
         if item is not None and item.kind == "equipment":
             stack(item.id, 0)["bag"] += int(row["quantity"])
     for row in ctx.repo.conn.execute(
         "SELECT item_id, enhancement, quantity FROM unequipped_equipment "
-        "WHERE user_id=? AND quantity>0", (ctx.user_id,),
+        "WHERE user_id=? AND quantity>0", (owner,),
     ):
         stack(row["item_id"], int(row["enhancement"]))["bag"] += int(row["quantity"])
     for row in ctx.repo.conn.execute(
         "SELECT e.item_id, e.enhancement, p.pet_id, p.name FROM equipment e "
         "JOIN pets p USING(pet_id) WHERE p.user_id=? ORDER BY p.pet_id, e.slot",
-        (ctx.user_id,),
+        (owner,),
     ):
         entry = stack(row["item_id"], int(row["enhancement"]))
         entry["pets"].append((int(row["pet_id"]), row["name"]))
     return stacks
+
+
+def objective_line(ctx: Context, user_id: str) -> str:
+    """Summarize usable word stacks without creating or changing state."""
+    if ctx.repo.player(user_id) is None:
+        return "灵器词条：尚未结契"
+    stacks = _owned_stacks(ctx, user_id)
+    if not stacks:
+        return "灵器词条：暂无灵器 · 先打造或获得装备"
+    eligible = []
+    for entry in stacks.values():
+        current = rows(ctx, entry["item_id"], entry["enhancement"], user_id)
+        if any(word_id in ctx.content.gear_words for word_id, _ in current):
+            eligible.append((entry, current))
+    if not eligible:
+        return f"灵器词条：暂无可定向淬词 · 已有 {len(stacks)} 个灵器栈尚无可用词条"
+    word_count = sum(
+        sum(1 for word_id, _ in current if word_id in ctx.content.gear_words)
+        for _, current in eligible
+    )
+    copies = sum(entry["bag"] + len(entry["pets"]) for entry, _ in eligible)
+    return f"灵器词条：可定向淬词 {len(eligible)} 栈 · {word_count} 条词条 · 覆盖 {copies} 件装备"
 
 
 def _stack(ctx: Context, item_name: str, level_text: str, stacks: dict | None = None) -> tuple[object, int, dict]:
