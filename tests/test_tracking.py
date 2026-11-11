@@ -440,6 +440,22 @@ def test_retired_original_pet_has_explicit_reason_and_can_abandon(game, play):
     assert "已放弃" in play("tracking", "放弃").text()
 
 
+def test_only_the_actual_team_partner_growth_invalidates_readiness(game, play):
+    play("adopt", "青鸾")
+    play("summon", "1")
+    play("team_create")
+    play("team_ready")
+    assert sql(game[1], "SELECT ready_pet_id IS NOT NULL AS ready FROM team_members") == [{"ready": 1}]
+    play("tracking", "出发 bamboo")
+    assert sql(game[1], "SELECT ready_pet_id IS NOT NULL AS ready FROM team_members") == [{"ready": 0}]
+    play("switch", "2")
+    play("team_ready")
+    assert sql(game[1], "SELECT ready_pet_id IS NOT NULL AS ready FROM team_members") == [{"ready": 1}]
+    survey(play)
+    play("tracking", "挖掘 1")
+    assert sql(game[1], "SELECT ready_pet_id IS NOT NULL AS ready FROM team_members") == [{"ready": 1}]
+
+
 def test_users_and_old_action_ledger_consumers_are_isolated(game, play):
     play("adopt", "青鸾")
     play("adopt", "青鸾", user="u2")

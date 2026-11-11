@@ -178,7 +178,7 @@ def start(ctx: Context, name: str) -> Reply:
     if pet.energy < ENERGY:
         raise GameError(f"{pet.name}精力不足，需要 {ENERGY} 点。")
     pet.energy -= ENERGY
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     target = ctx.rng.randint(1, 16)
     run = {"status": "active", "event": "start", "map": route.model_dump(),
            "pet_id": pet.pet_id, "pet_name": pet.name, "target": target,
@@ -228,7 +228,7 @@ def act(ctx: Context, action: str, site: int | None, day: int | None) -> Reply:
             _write(ctx, key, _progress(ctx, key) + 1)
     key = f"tracking_pet_completed_{pet.pet_id}"
     _write(ctx, key, _progress(ctx, key) + 1)
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     run.update(status="finished", event="dig", picked=site, found=found)
     lines = [f"{run['map']['name']} · {pet.name}在 {site} 号挖掘：" + ("寻获藏物！" if found else "未寻获藏物。"),
              f"藏物在 {run['target']} 号 · {run['map']['sites'][run['target'] - 1]}。",
