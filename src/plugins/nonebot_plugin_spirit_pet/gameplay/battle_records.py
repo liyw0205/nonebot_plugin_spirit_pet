@@ -48,6 +48,8 @@ def _skill_snapshot(ctx: Context, pet_id: int, fighter: Fighter) -> list[dict]:
 def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> dict:
     primary = ctx.content.elements.get(fighter.primary_element) if fighter.primary_element else None
     title = current_title(ctx, user_id) if user_id else None
+    from .battle_supplies import active as active_supply
+    supply = active_supply(ctx, user_id) if user_id else None
     member = {
         "uid": ctx.player(user_id).uid_label if user_id else None,
         "title": title.name if title else None,
@@ -70,6 +72,9 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
         ],
         "equipment": [],
         "equipment_sets": list(fighter.equipment_sets),
+        "battle_dealt": fighter.dealt,
+        "battle_taken": fighter.taken,
+        "battle_supply": supply.name if supply else None,
         "resonance": fighter.resonance_name,
         "affinity": fighter.affinity,
         "bond_protection": fighter.affinity == BOND_GUARD_AFFINITY,

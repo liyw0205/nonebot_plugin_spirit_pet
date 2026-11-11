@@ -1,0 +1,26 @@
+[
+  {
+    "id": "breakthrough_tonic",
+    "name": "破阵灵酿",
+    "description": "以回元丹入阵，输出与承伤同时提高，适合速战速决。",
+    "item_id": "energy_pill",
+    "dealt": 1.15,
+    "taken": 1.15
+  },
+  {
+    "id": "steady_tonic",
+    "name": "定神灵酿",
+    "description": "以蕴灵丹凝神，输出与承伤同时降低，适合稳住长局。",
+    "item_id": "exp_pill",
+    "dealt": 0.9,
+    "taken": 0.82
+  },
+  {
+    "id": "bond_tonic",
+    "name": "同心灵酿",
+    "description": "以同心丹调息，略增输出并减轻承伤。",
+    "item_id": "affinity_pill",
+    "dealt": 1.06,
+    "taken": 0.94
+  }
+]

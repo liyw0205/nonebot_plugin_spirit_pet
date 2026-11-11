@@ -114,6 +114,10 @@ def combatant(
         stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
     from .intent import rates as intent_rates
     dealt, taken = intent_rates(ctx, user_id or ctx.user_id)
+    from .battle_supplies import rates as supply_rates
+    supply_dealt, supply_taken, _ = supply_rates(ctx, user_id or ctx.user_id)
+    dealt *= supply_dealt
+    taken *= supply_taken
     from .attunement import elements_of, primary_of
     name = f"{ctx.player(user_id).uid_label}的{pet.name}"
     return Fighter.create(

@@ -59,6 +59,7 @@ from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
 from ..domain.fishing_content import FishingBait, FishingSpot
+from ..domain.battle_supply_content import BattleSupply
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -204,6 +205,7 @@ class Catalog:
     drills: dict[str, DrillDummy]
     tracking_maps: dict[str, TrackingMap]
     herb_routes: dict[str, HerbRoute]
+    battle_supplies: dict[str, BattleSupply]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -304,6 +306,7 @@ class Catalog:
             drills=_index(directory / "drills.json", DrillDummy),
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
+            battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
         )
         catalog.validate()
         return catalog
@@ -498,6 +501,17 @@ class Catalog:
         self._validate_farm_levels()
         self._validate_cave_offerings()
         self._validate_sect_content()
+        self._validate_battle_supplies()
+
+    def _validate_battle_supplies(self) -> None:
+        for supply in self.battle_supplies.values():
+            item = self.items.get(supply.item_id)
+            if item is None:
+                raise ValueError(f"battle supply {supply.id} references unknown item {supply.item_id}")
+            if item.kind != "consumable":
+                raise ValueError(f"battle supply {supply.id} item must be consumable")
+        if len({supply.item_id for supply in self.battle_supplies.values()}) != len(self.battle_supplies):
+            raise ValueError("battle supplies must use distinct consumables")
 
     def _validate_daily_followups(self) -> None:
         """Every scheduled follow-up must be reachable from a real trigger choice.

@@ -63,6 +63,7 @@ from ..gameplay import difficulty
 from ..gameplay import bounty
 from ..gameplay import sect_exchange
 from ..gameplay import intent
+from ..gameplay import battle_supplies
 from ..gameplay import sockets
 from ..gameplay import duel, market, merchant
 from ..gameplay import mailbox
@@ -172,6 +173,7 @@ ACTIONS = {
     "world_boss": Command(world_boss.catalog, True, registered=False),
     "world_boss_challenge": Command(world_boss.challenge, True),
     "world_boss_claim": Command(world_boss.claim, True),
+    "battle_supply": Command(battle_supplies.dispatch, True, registered=False),
     "talent_reforge": Command(talent_reforge.reforge, True),
     "talent_lock": Command(talent_reforge.set_lock, True),
     "talent_unlock": Command(talent_reforge.clear_lock, True),
@@ -404,6 +406,7 @@ COMMANDS = {
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
     "灵宠今日秘境": "daily_dungeon", "灵宠今日秘境领奖": "daily_dungeon_claim",
     "灵宠首领": "world_boss", "灵宠挑战首领": "world_boss_challenge", "灵宠首领领奖": "world_boss_claim",
+    "灵宠战备": "battle_supply",
     "灵宠洗练": "talent_reforge", "灵宠锁定天赋": "talent_lock", "灵宠解锁天赋": "talent_unlock", "灵宠洗练记录": "talent_history",
     "灵宠词条重铸": "gear_word_reforge",
     "灵宠羁绊": "bond_levels",

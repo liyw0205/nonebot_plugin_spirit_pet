@@ -40,7 +40,7 @@ from . import lineup_presets
 from . import release
 from . import contracts
 from . import hybrid
-from . import alchemy
+from . import alchemy, battle_supplies
 from . import difficulty
 from . import bounty
 from . import sect_exchange
@@ -597,6 +597,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
+        (battle_supplies.objective_line(ctx, player.user_id), "灵宠战备"),
         (_weekly_line(ctx, player.user_id), "灵宠周常"),
         (_main_quest_line(ctx, player.user_id), "灵宠主线"),
         (_achievement_line(ctx, player.user_id), "灵宠成就"),
