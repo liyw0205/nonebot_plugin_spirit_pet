@@ -3,7 +3,7 @@ from typing import Callable
 
 from ..domain.models import Reply
 from ..gameplay import adventure, cultivation, economy, equipment, forging, identity, information, pets, quests, skills
-from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, tower
+from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, stage_tactics, tower
 from ..gameplay import companionship_rewards
 from ..gameplay import breeding
 from ..gameplay import main_quest
@@ -219,6 +219,7 @@ ACTIONS = {
     "challenge": Command(adventure.challenge, True),
     "stage_catalog": Command(pve_stages.catalog, True, registered=False),
     "stage_challenge": Command(pve_stages.challenge, True),
+    "stage_tactics": Command(stage_tactics.dispatch, True, registered=False),
     "tower_catalog": Command(tower.catalog, True, registered=False),
     "tower_challenge": Command(tower.challenge, True),
     "forbidden": Command(forbidden.catalog, True, registered=False),
@@ -409,7 +410,7 @@ COMMANDS = {
     "灵宠防守": "defense",
     "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠秘境战绩": "dungeon_stats", "灵宠历练战绩": "adventure_stats", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
-    "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge",
+    "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge", "灵宠关卡战术": "stage_tactics",
     "灵宠关卡星级": "stage_stars", "灵宠关卡星级领奖": "stage_stars_claim",
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",

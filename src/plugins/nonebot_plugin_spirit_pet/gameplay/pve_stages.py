@@ -183,6 +183,10 @@ def challenge(ctx: Context, arg: str) -> Reply:
     prior = _prior_reply(ctx, stage)
     if prior is not None:
         return prior
+    from . import stage_tactics
+
+    if stage_tactics.active(ctx):
+        raise GameError("当前已有进行中的关卡战术，请先出手或认输。")
     user_ids = _participants(ctx, stage)
     selected = team_pets(ctx, user_ids, _active_team(ctx)[0]["leader_id"]) if len(user_ids) > 1 else [
         (user_ids[0], pet) for pet in ctx.active_pets(user_ids[0])

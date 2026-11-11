@@ -35,6 +35,9 @@ class Game:
             persistent_duel = repo.duel_operation(operation_id, user_id)
             if persistent_duel is not None:
                 return Reply.from_data(persistent_duel)
+            persistent_stage_tactic = repo.stage_tactic_operation(operation_id, user_id)
+            if persistent_stage_tactic is not None:
+                return Reply.from_data(persistent_stage_tactic)
             persistent_battle = repo.battle_operation(operation_id, user_id)
             if persistent_battle is not None:
                 return Reply(

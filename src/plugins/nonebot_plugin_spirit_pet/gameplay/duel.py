@@ -337,6 +337,10 @@ def start(ctx: Context, arg: str) -> Reply:
     opponent = _opponent(ctx, arg)
     if state(ctx) is not None:
         raise GameError("当前斗法尚未结束，请先出手或认输。")
+    from . import stage_tactics
+
+    if stage_tactics.active(ctx):
+        raise GameError("当前已有进行中的关卡战术，请先完成或认输，再进入斗法。")
     pet = _pet(ctx)
     requirement = realm_index(ctx, opponent.realm)
     if pet.realm < requirement:

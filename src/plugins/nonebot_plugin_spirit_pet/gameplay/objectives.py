@@ -5,6 +5,7 @@ from . import adventure_collection_rewards, daily_assignment, daily_dungeon, due
 from . import banquet, farm_progress
 from . import codex
 from . import stage_stars
+from . import stage_tactics
 from .arena import tier_rewards as arena_tier_rewards
 from . import checkin_rewards, companionship_rewards, companionship
 from . import affinity_milestone_rewards
@@ -598,6 +599,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_assignment_line(ctx, player.user_id), "灵宠课题"),
         (_codex_line(ctx, player.user_id), "灵宠图鉴奖励"),
         (_stage_star_line(ctx, player.user_id), "灵宠关卡星级"),
+        (stage_tactics.objective_line(ctx, player.user_id), "灵宠关卡战术"),
         (_arena_tier_line(ctx, player.user_id), "灵宠段位奖励"),
         (_battle_merit_line(ctx, player.user_id), "灵宠战斗功勋"),
         (_pvp_streak_line(ctx, player.user_id), "灵宠连胜奖励"),

@@ -102,13 +102,19 @@ def review(ctx: Context, arg: str) -> Reply:
         saved = Reply.from_data(json.loads(row["reply"]))
         # Historical actions must not expose live attack/surrender controls.
         return Reply("斗法回顾 · " + saved.title, saved.lines, ("灵宠斗法 回顾", "灵宠斗法", "我的灵宠"))
-    count = ctx.repo.conn.execute("SELECT COUNT(*) FROM duel_actions WHERE user_id=?", (ctx.user_id,)).fetchone()[0]
+    count = ctx.repo.conn.execute(
+        "SELECT COUNT(*) FROM duel_actions WHERE user_id=? "
+        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind')!='stage_tactic')",
+        (ctx.user_id,),
+    ).fetchone()[0]
     number = quantity(arg or "1", 999)
     pages = max(1, (count + 4) // 5)
     if number > pages:
         raise GameError(f"斗法回顾共 {pages} 页。")
     rows = ctx.repo.conn.execute(
-        "SELECT action_id,created_at,snapshot FROM duel_actions WHERE user_id=? ORDER BY action_id DESC LIMIT 5 OFFSET ?",
+        "SELECT action_id,created_at,snapshot FROM duel_actions WHERE user_id=? "
+        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind')!='stage_tactic') "
+        "ORDER BY action_id DESC LIMIT 5 OFFSET ?",
         (ctx.user_id, (number - 1) * 5),
     ).fetchall()
     lines, links = [], []

@@ -51,7 +51,7 @@ READ_ONLY_PAGES = (
     "share_rewards",
     "resonance", "season", "season_missions", "season_rewards", "season_road", "shop",
     "skill_catalog", "skill_mastery_rewards", "skill_overview", "skills",
-    "sect", "sigils", "specialization", "stage_catalog", "stage_stars", "stage_stats", "status", "support", "survival", "talent_history", "temper",
+    "sect", "sigils", "specialization", "stage_catalog", "stage_stars", "stage_stats", "stage_tactics", "status", "support", "survival", "talent_history", "temper",
     "team_trial", "combos", "titles", "tower_catalog", "tribulations", "weekly_quests", "world_boss",
     "affinity_milestone_rewards",
 )

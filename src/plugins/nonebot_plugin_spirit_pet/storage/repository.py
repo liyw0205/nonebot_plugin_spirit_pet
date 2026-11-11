@@ -252,20 +252,46 @@ class Repository:
 
     def duel_operation(self, operation_id: str, user_id: str) -> dict | None:
         row = self.conn.execute(
-            "SELECT user_id, reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+            "SELECT user_id, snapshot, reply FROM duel_actions WHERE operation_id=?", (operation_id,),
         ).fetchone()
         if row is None:
+            return None
+        if json.loads(row["snapshot"]).get("kind") == "stage_tactic":
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def stage_tactic_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id, snapshot, reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None or json.loads(row["snapshot"]).get("kind") != "stage_tactic":
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
         return json.loads(row["reply"])
 
     def latest_duel_action(self, user_id: str) -> dict | None:
-        row = self.conn.execute(
-            "SELECT snapshot FROM duel_actions WHERE user_id=? ORDER BY action_id DESC LIMIT 1",
+        rows = self.conn.execute(
+            "SELECT snapshot FROM duel_actions WHERE user_id=? ORDER BY action_id DESC",
             (user_id,),
-        ).fetchone()
-        return json.loads(row["snapshot"]) if row else None
+        ).fetchall()
+        for row in rows:
+            snapshot = json.loads(row["snapshot"])
+            if snapshot.get("kind") != "stage_tactic":
+                return snapshot
+        return None
+
+    def record_stage_tactic_action(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.conn.execute(
+            "INSERT INTO duel_actions(operation_id,user_id,created_at,snapshot,reply) VALUES (?,?,?,?,?)",
+            (operation_id, user_id, created_at,
+             json.dumps({"kind": "stage_tactic", **snapshot}, ensure_ascii=False),
+             json.dumps(asdict(reply), ensure_ascii=False)),
+        )
 
     def record_duel_action(
         self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
