@@ -117,6 +117,10 @@ def bag(ctx: Context, arg: str) -> Reply:
             steps = _item_steps(ctx, item)
             if steps:
                 links.append(InlineCommand(len(lines) - 1, _bag_label(item, steps[0]), steps[0]))
+            if item.kind == "equipment":
+                links.append(InlineCommand(
+                    len(lines) - 1, "查看词条", f"灵宠词条重铸 查看 {item.name} +0",
+                ))
     if reinforced:
         lines.append("强化装备")
         for row in reinforced:
@@ -125,6 +129,9 @@ def bag(ctx: Context, arg: str) -> Reply:
             links.append(InlineCommand(
                 len(lines) - 1, "装备图鉴",
                 f"灵宠装备图鉴 {ctx.content.equipment[item.equipment_id].name}",
+            ))
+            links.append(InlineCommand(
+                len(lines) - 1, "查看词条", f"灵宠词条重铸 查看 {item.name} +{row['enhancement']}",
             ))
     if len(lines) == 1:
         lines.append("乾坤袋空空如也，先去灵坊看看。")

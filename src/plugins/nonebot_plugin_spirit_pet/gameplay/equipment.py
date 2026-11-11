@@ -97,7 +97,7 @@ def view(ctx: Context, arg: str) -> Reply:
 
 def detail(ctx: Context, pet) -> Reply:
     items = loadout(ctx, pet.pet_id)
-    lines, commands = [], []
+    lines, commands, links = [], [], []
     roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
     suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
     for slot, label in SLOTS.items():
@@ -117,6 +117,9 @@ def detail(ctx: Context, pet) -> Reply:
         word_line = describe_words(ctx, item_id, level)
         if word_line:
             lines.append(word_line)
+            links.append(InlineCommand(
+                len(lines) - 1, "定向淬词", f"灵宠词条重铸 查看 {item.name} +{level}",
+            ))
         if forge.upgrade_stones is None:
             lines.append("强化：已满级。")
             continue
@@ -136,7 +139,7 @@ def detail(ctx: Context, pet) -> Reply:
                 lines.append(
                     "套装加成：" + _bonus_text(equipment_set.bonuses.model_dump()) + "。"
                 )
-    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠套装", "灵宠装备图鉴", "灵宠商店"))
+    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠套装", "灵宠装备图鉴", "灵宠商店"), tuple(links))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
