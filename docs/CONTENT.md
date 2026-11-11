@@ -45,7 +45,7 @@
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
 | equipment.json | 装备槽位、固定属性、元素/类别/境界门槛 |
-| equipment_sets.json | 装备套件组成、名称、说明与完整套件的属性加成 |
+| equipment_sets.json | 装备套件组成、名称、说明、完整套件属性加成与三阶共鸣成本/固定增幅 |
 | skills.json | 技能效果、元素、倍率、学习门槛与秘笈引用 |
 | talents.json | 种族天赋的名称、效果类型、强度与可选元素限制 |
 | skill_levels.json | 技能等级、升到下一级消耗的熟练度、威力倍率 |

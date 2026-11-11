@@ -85,10 +85,13 @@ def combatant(
     from .bond_levels import current_level, apply_bonus
     apply_bonus(current_level(ctx, pet.pet_id), stats)
     equipment_set_names = []
+    from .equipment_set_resonance import active_bonus as set_resonance_bonus
     for equipment_set in active_sets(ctx, pet.pet_id):
         equipment_set_names.append(equipment_set.name)
         for key, bonus in equipment_set.bonuses.model_dump().items():
             stats[key] += bonus
+    for key, value in set_resonance_bonus(ctx, pet.pet_id, user_id or ctx.user_id).items():
+        stats[key] += value
     selected = []
     skill_multipliers = {}
     progression = progress(ctx, pet.pet_id)

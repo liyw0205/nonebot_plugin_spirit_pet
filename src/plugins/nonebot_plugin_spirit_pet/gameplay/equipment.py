@@ -139,6 +139,16 @@ def detail(ctx: Context, pet) -> Reply:
                 lines.append(
                     "套装加成：" + _bonus_text(equipment_set.bonuses.model_dump()) + "。"
                 )
+                from .equipment_set_resonance import bonus as resonance_bonus, level as resonance_level
+                current = resonance_level(ctx, equipment_set.id)
+                lines.append(
+                    f"套装共鸣：{current}/3 阶 · "
+                    f"{_bonus_text(resonance_bonus(ctx, equipment_set.id))}。"
+                )
+                if pet.pet_id in roster and current < 3:
+                    links.append(InlineCommand(
+                        len(lines) - 1, "套装共鸣", f"灵宠套装共鸣 {equipment_set.name}",
+                    ))
     return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠套装", "灵宠装备图鉴", "灵宠商店"), tuple(links))
 
 
@@ -165,7 +175,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 
 def sets(ctx: Context, arg: str) -> Reply:
-    from . import equipment_set_rewards
+    from . import equipment_set_resonance, equipment_set_rewards
 
     player = ctx.repo.player(ctx.user_id)
     user_id = player.user_id if player else ctx.user_id
@@ -219,6 +229,27 @@ def sets(ctx: Context, arg: str) -> Reply:
                 links.append(InlineCommand(line_index, "查看灵坊", f"灵宠商店 {item.name}"))
             if any(recipe.item_id == item.id for recipe in ctx.content.recipes.values()):
                 links.append(InlineCommand(line_index, "查看打造", f"灵宠工坊 {item.name}"))
+
+        resonance_level = equipment_set_resonance.level(ctx, equipment_set.id, user_id)
+        if resonance_level >= equipment_set_resonance.MAX_LEVEL:
+            lines.append(
+                f"套装共鸣：{resonance_level}/{equipment_set_resonance.MAX_LEVEL} 阶 · 已满阶。"
+            )
+        elif equipment_set.id in active:
+            tier = equipment_set.resonance[resonance_level]
+            lines.append(
+                f"套装共鸣：{resonance_level}/{equipment_set_resonance.MAX_LEVEL} 阶 · "
+                f"下一阶 {_bonus_text(tier.bonuses.model_dump())} · "
+                f"需要 {equipment_set_resonance.cost_text(ctx, tier)}。"
+            )
+            links.append(InlineCommand(
+                len(lines) - 1, "套装共鸣", f"灵宠套装共鸣 {equipment_set.name}",
+            ))
+        else:
+            lines.append(
+                f"套装共鸣：{resonance_level}/{equipment_set_resonance.MAX_LEVEL} 阶 · "
+                "需先由当前出战伙伴穿齐后才能投入。"
+            )
 
         if pet is None:
             lines.append("装配状态：尚无可操作的出战灵宠。")

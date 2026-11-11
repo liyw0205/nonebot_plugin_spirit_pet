@@ -624,6 +624,24 @@ class Catalog:
                 raise ValueError("equipment set items must use distinct slots")
             if not any(equipment_set.bonuses.model_dump().values()):
                 raise ValueError("equipment set must provide a bonus")
+            if len(equipment_set.resonance) != 3:
+                raise ValueError("equipment set must define exactly three resonance tiers")
+            previous_cost = None
+            for tier in equipment_set.resonance:
+                if not any(tier.bonuses.model_dump().values()):
+                    raise ValueError("equipment set resonance tier must provide a bonus")
+                self._require(tier.cost.items, self.items, "equipment set resonance cost items")
+                if any(self.items[item_id].kind != "material" for item_id in tier.cost.items):
+                    raise ValueError("equipment set resonance costs must be materials")
+                if previous_cost is not None:
+                    if tier.cost.stones <= previous_cost.stones:
+                        raise ValueError("equipment set resonance stone costs must increase")
+                    if any(
+                        tier.cost.items.get(item_id, 0) < amount
+                        for item_id, amount in previous_cost.items.items()
+                    ):
+                        raise ValueError("equipment set resonance item costs must not decrease")
+                previous_cost = tier.cost
             pieces = [self.equipment[item_id] for item_id in equipment_set.items]
             if not any(
                 all(

@@ -68,6 +68,7 @@ from . import gear_words
 from . import daily_encounters
 from . import rank_rewards
 from . import equipment_set_rewards
+from . import equipment_set_resonance
 from . import realm_milestone_rewards
 from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
@@ -259,6 +260,10 @@ def _equipment_set_line(ctx: Context, user_id: str) -> str:
         names = "、".join(entry.name for entry in entries)
         return f"套装完成奖励：可领 {len(entries)} 套（{names}）· 共 {len(ctx.content.equipment_sets)} 套"
     return f"套装完成奖励：暂无可领 · 共 {len(ctx.content.equipment_sets)} 套"
+
+
+def _equipment_set_resonance_line(ctx: Context, user_id: str) -> str:
+    return equipment_set_resonance.objective_line(ctx, user_id)
 
 
 def _skill_mastery_line(ctx: Context, user_id: str) -> str:
@@ -617,6 +622,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_bloodline_milestone_line(ctx, player.user_id), "灵宠血脉赏"),
         (_lineage_awakening_line(ctx, player.user_id), "灵宠分支赏"),
         (_equipment_set_line(ctx, player.user_id), "灵宠套装"),
+        (_equipment_set_resonance_line(ctx, player.user_id), "灵宠套装"),
         (gear_words.objective_line(ctx, player.user_id), "灵宠词条重铸"),
         (_skill_mastery_line(ctx, player.user_id), "灵宠灵术赏"),
         (_affinity_milestone_line(ctx, player.user_id), "灵宠亲密赏"),

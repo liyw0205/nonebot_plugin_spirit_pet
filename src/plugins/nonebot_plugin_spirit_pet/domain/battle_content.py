@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
-from .content import Definition, Identifier, Name, NonNegative, Positive
+from .content import Definition, Identifier, Name, NonNegative, Positive, ResourceCost
 
 
 class Category(Definition):
@@ -70,12 +70,18 @@ class Equipment(Definition):
     bonuses: Bonuses
 
 
+class EquipmentSetResonance(Definition):
+    cost: ResourceCost
+    bonuses: Bonuses
+
+
 class EquipmentSet(Definition):
     id: Identifier
     name: Name
     description: str
     items: list[Identifier] = Field(min_length=2, max_length=3)
     bonuses: Bonuses
+    resonance: list[EquipmentSetResonance] = Field(default_factory=list, max_length=3)
 
 
 class SkillEffect(Definition):

@@ -13,6 +13,7 @@ from ..gameplay import inheritance
 from ..gameplay import titles
 from ..gameplay import objectives
 from ..gameplay import equipment_set_rewards
+from ..gameplay import equipment_set_resonance
 from ..gameplay import sweep
 from ..gameplay import first_clear
 from ..gameplay import free_summon
@@ -355,6 +356,7 @@ ACTIONS = {
     "equipment_sets": Command(equipment.sets, True, registered=False),
     "equipment_set_equip": Command(equipment.wear_set, True),
     "equipment_set_claim": Command(equipment_set_rewards.claim, True),
+    "equipment_set_resonate": Command(equipment_set_resonance.resonate, True),
     "equipment_catalog": Command(equipment.catalog, True, registered=False),
     "gear_preset": Command(gear_presets.dispatch, True, registered=False),
     "today": Command(today.dispatch, True, registered=False),
@@ -495,6 +497,7 @@ COMMANDS = {
     "灵宠约战": "spar_request",
     "灵宠师徒": "mentorship",
     "灵宠套装": "equipment_sets", "灵宠套装穿戴": "equipment_set_equip",
+    "灵宠套装共鸣": "equipment_set_resonate",
     "灵宠套装领奖": "equipment_set_claim",
     "灵宠强化": "enhance",
     "灵宠血脉": "lineage_catalog", "灵宠分支": "lineage_choose",

@@ -4,27 +4,47 @@
     "name": "青岚风铃",
     "description": "借风而行，攻速兼备。",
     "items": ["wind_feather", "spirit_bell"],
-    "bonuses": {"attack": 4, "speed": 8}
+    "bonuses": {"attack": 4, "speed": 8},
+    "resonance": [
+      {"cost": {"stones": 400, "items": {"forge_ore": 2}}, "bonuses": {"attack": 2, "speed": 2}},
+      {"cost": {"stones": 900, "items": {"forge_ore": 3, "bloodline_essence": 1}}, "bonuses": {"attack": 4, "speed": 4}},
+      {"cost": {"stones": 1800, "items": {"forge_ore": 4, "bloodline_essence": 2}}, "bonuses": {"attack": 7, "speed": 7}}
+    ]
   },
   {
     "id": "stone_guard",
     "name": "山岳镇魂",
     "description": "厚土承身，稳守灵台。",
     "items": ["earth_shell", "stone_core"],
-    "bonuses": {"hp": 30, "defense": 6}
+    "bonuses": {"hp": 30, "defense": 6},
+    "resonance": [
+      {"cost": {"stones": 400, "items": {"forge_ore": 2}}, "bonuses": {"hp": 8, "defense": 2}},
+      {"cost": {"stones": 900, "items": {"forge_ore": 3, "bloodline_essence": 1}}, "bonuses": {"hp": 16, "defense": 4}},
+      {"cost": {"stones": 1800, "items": {"forge_ore": 4, "bloodline_essence": 2}}, "bonuses": {"hp": 28, "defense": 7}}
+    ]
   },
   {
     "id": "venom_edge",
     "name": "幽鳞蚀锋",
     "description": "毒锋相合，出手更快更狠。",
     "items": ["poison_scale", "poison_thorn"],
-    "bonuses": {"attack": 6, "speed": 3}
+    "bonuses": {"attack": 6, "speed": 3},
+    "resonance": [
+      {"cost": {"stones": 400, "items": {"forge_ore": 2}}, "bonuses": {"attack": 3, "speed": 2}},
+      {"cost": {"stones": 900, "items": {"forge_ore": 3, "bloodline_essence": 1}}, "bonuses": {"attack": 6, "speed": 4}},
+      {"cost": {"stones": 1800, "items": {"forge_ore": 4, "bloodline_essence": 2}}, "bonuses": {"attack": 10, "speed": 6}}
+    ]
   },
   {
     "id": "root_silk",
     "name": "木灵缚甲",
     "description": "灵丝护体，根木生息。",
     "items": ["silk_cocoon", "living_root"],
-    "bonuses": {"hp": 35, "defense": 4}
+    "bonuses": {"hp": 35, "defense": 4},
+    "resonance": [
+      {"cost": {"stones": 400, "items": {"forge_ore": 2}}, "bonuses": {"hp": 9, "defense": 1}},
+      {"cost": {"stones": 900, "items": {"forge_ore": 3, "bloodline_essence": 1}}, "bonuses": {"hp": 18, "defense": 3}},
+      {"cost": {"stones": 1800, "items": {"forge_ore": 4, "bloodline_essence": 2}}, "bonuses": {"hp": 30, "defense": 5}}
+    ]
   }
 ]
