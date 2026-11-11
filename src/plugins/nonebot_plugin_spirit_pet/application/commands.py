@@ -69,6 +69,7 @@ from ..gameplay import transfer
 from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import cooking
+from ..gameplay import tracking
 from ..gameplay import skill_presets
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
@@ -227,6 +228,7 @@ ACTIONS = {
     "forbidden_challenge": Command(forbidden.challenge, True),
     "cuisine": Command(cuisine.entry, True, registered=False),
     "cooking": Command(cooking.dispatch, True, registered=False),
+    "tracking": Command(tracking.dispatch, True, registered=False),
     "cuisine_cook": Command(cuisine.cook, True),
     "banquet": Command(banquet.dispatch, True, registered=False),
     "cave": Command(cave.dispatch, True, registered=False),
@@ -418,6 +420,7 @@ COMMANDS = {
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
     "灵宠掌勺": "cooking",
+    "灵宠寻踪": "tracking",
     "灵宠家宴": "banquet",
     "灵宠农事": "farm_progress",
     "灵宠洞府": "cave",

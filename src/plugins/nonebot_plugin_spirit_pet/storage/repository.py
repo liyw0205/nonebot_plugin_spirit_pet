@@ -256,7 +256,7 @@ class Repository:
         ).fetchone()
         if row is None:
             return None
-        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking"):
+        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking"):
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
@@ -276,7 +276,7 @@ class Repository:
         row = self.conn.execute(
             "SELECT snapshot FROM duel_actions WHERE user_id=? "
             "AND (json_extract(snapshot,'$.kind') IS NULL "
-            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking')) "
+            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking')) "
             "ORDER BY action_id DESC LIMIT 1",
             (user_id,),
         ).fetchone()
@@ -326,6 +326,32 @@ class Repository:
         self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
     ) -> None:
         self.record_duel_action(operation_id, user_id, created_at, {**snapshot, "kind": "cooking"}, reply)
+
+    def tracking_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None or json.loads(row["snapshot"]).get("kind") != "tracking":
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def latest_tracking_action(self, user_id: str, finished_only: bool = False) -> dict | None:
+        status = " AND json_extract(snapshot,'$.status') != 'active'" if finished_only else ""
+        row = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? "
+            "AND json_extract(snapshot,'$.kind')='tracking'" + status + " ORDER BY action_id DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])}
+
+    def record_tracking_action(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(operation_id, user_id, created_at, {**snapshot, "kind": "tracking"}, reply)
 
     def record_fishing_cast(
         self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,

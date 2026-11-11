@@ -56,6 +56,7 @@ from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.outing_content import OutingScene
+from ..domain.tracking_content import TrackingMap
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
@@ -200,6 +201,7 @@ class Catalog:
     share_rank_rewards: dict[int, ShareRankReward]
     market: MarketRule
     drills: dict[str, DrillDummy]
+    tracking_maps: dict[str, TrackingMap]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -298,6 +300,7 @@ class Catalog:
             ),
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
+            tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
         )
         catalog.validate()
         return catalog
