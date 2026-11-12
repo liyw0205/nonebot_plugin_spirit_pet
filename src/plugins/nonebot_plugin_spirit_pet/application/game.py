@@ -32,6 +32,9 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_care = repo.farm_care_operation(operation_id, user_id)
+            if persistent_care is not None:
+                return Reply.from_data(persistent_care)
             persistent_convoy = repo.convoy_operation(operation_id, user_id)
             if persistent_convoy is not None:
                 return Reply.from_data(persistent_convoy)

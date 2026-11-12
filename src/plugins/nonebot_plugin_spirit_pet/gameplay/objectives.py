@@ -462,7 +462,7 @@ def _farm_line(ctx: Context, user_id: str) -> str:
             continue
         crop = farming._crop(ctx, crop_row)
         elapsed = ctx.now - crop_row["progress"]
-        duration = farming._effective_duration(ctx, plot, crop.duration)
+        duration = farming._growth_seconds(ctx, plot, crop)
         if elapsed >= duration + farming.WILT_AFTER:
             wilted += 1
         elif elapsed >= duration:

@@ -256,7 +256,7 @@ class Repository:
         ).fetchone()
         if row is None:
             return None
-        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course", "training", "convoy"):
+        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course", "training", "convoy", "farm_care"):
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
@@ -276,7 +276,7 @@ class Repository:
         row = self.conn.execute(
             "SELECT snapshot FROM duel_actions WHERE user_id=? "
             "AND (json_extract(snapshot,'$.kind') IS NULL "
-            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course','training','convoy')) "
+            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course','training','convoy','farm_care')) "
             "ORDER BY action_id DESC LIMIT 1",
             (user_id,),
         ).fetchone()
@@ -430,6 +430,16 @@ class Repository:
             "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),
         ).fetchone()
         if row is None or json.loads(row["snapshot"]).get("kind") != "convoy":
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def farm_care_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None or json.loads(row["snapshot"]).get("kind") != "farm_care":
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")

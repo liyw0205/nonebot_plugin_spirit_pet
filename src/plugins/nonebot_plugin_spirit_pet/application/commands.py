@@ -10,6 +10,7 @@ from ..gameplay import nursery
 from ..gameplay import play_courses
 from ..gameplay import training
 from ..gameplay import convoy
+from ..gameplay import farm_care
 from ..gameplay import main_quest
 from ..gameplay import daily_dungeon
 from ..gameplay import weekly_quests
@@ -305,6 +306,7 @@ ACTIONS = {
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
     "skill_overview": Command(skill_overview.catalog, True, registered=False),
     "farm": Command(farming.catalog, True, registered=False),
+    "farm_care": Command(farm_care.dispatch, True, registered=False),
     "farm_open": Command(farming.open_plot, True),
     "farm_plant": Command(farming.plant, True),
     "farm_harvest": Command(farming.harvest, True),
@@ -401,6 +403,7 @@ COMMANDS = {
     "灵宠封存库": "pet_archive_list", "灵宠封存": "pet_archive", "灵宠复原": "pet_restore",
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
     "灵宠签到领奖": "checkin_reward_claim", "灵宠签到月历": "checkin_calendar", "灵宠背包": "bag", "灵宠商店": "shop",
+    "灵宠养苗": "farm_care",
     "灵宠灵田": "farm", "灵宠开垦": "farm_open", "灵宠播种": "farm_plant", "灵宠收获": "farm_harvest", "灵宠翻新": "farm_renew", "灵宠升级": "farm_upgrade", "灵宠浇水": "farm_water",
     "灵宠嬉戏": "play_game", "灵宠垂钓": "fishing", "灵宠出游": "pet_outing", "灵宠游历赏": "pet_outing_board", "灵宠游历领奖": "pet_outing_claim",
     "灵宠重铸": "reforge",

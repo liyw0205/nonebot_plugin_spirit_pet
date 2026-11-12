@@ -43,7 +43,7 @@ READ_ONLY_PAGES = (
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "tracking", "herbalism", "pvp_rank", "quests",
     "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "collection_rank_rewards",
-    "adventure_stats", "training", "convoy",
+    "adventure_stats", "training", "convoy", "farm_care",
     "share_board",
     "spar_board",
     "spar_stats",

@@ -2,7 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
 from ..utils.time import beijing_day
-from . import battle_pass, counters
+from . import battle_pass, counters, farm_care
 
 PLOT_COUNT = 6
 OPEN_COST = (200, 500, 1200, 2500, 4000, 6000)
@@ -82,7 +82,8 @@ def _growth_seconds(ctx: Context, plot: int, crop, user_id: str | None = None) -
         1,
         _effective_duration(ctx, plot, crop.duration, user_id)
         - _renew_cut(ctx, plot, user_id)
-        - _water_cut(ctx, plot, user_id),
+        - _water_cut(ctx, plot, user_id)
+        - farm_care.cut(ctx, plot, user_id),
     )
 
 
@@ -327,6 +328,8 @@ def catalog(ctx: Context, arg: str) -> Reply:
                     lines.append(
                         f"  轮作加成：收获时 +{ctx.content.rules.farm_rotation.rate_percent}%"
                     )
+                lines.append(f"  本季养护 {farm_care.value(ctx, f'farm_care_step_{plot}')}/3 · 增产{farm_care.bonus(ctx, plot)}%")
+                links.append(InlineCommand(len(lines) - 1, "照料作物", f"灵宠养苗 {plot}"))
         if opened and _tier(ctx, plot) < len(TIER_COST):
             lines.append(f"  可升级：{TIER_COST[_tier(ctx, plot)]} 灵石缩短该田 15% 生长时长")
             links.append(InlineCommand(len(lines) - 1, "升级灵田", f"灵宠升级 {plot}"))
@@ -384,6 +387,9 @@ def plant(ctx: Context, arg: str) -> Reply:
 def _sow(ctx: Context, plot: int, crop) -> None:
     """Consume one seed and start a growth row on the plot."""
     ctx.repo.consume_item(ctx.user_id, crop.seed_item, 1)
+    farm_care.reset(ctx, plot)
+    cycle_key = f"{farm_care.CYCLE}{plot}"
+    farm_care.write(ctx, cycle_key, max(ctx.now, farm_care.value(ctx, cycle_key) + 1))
     # A new growth never inherits the previous round's watering shortcut.
     ctx.repo.conn.execute(
         "DELETE FROM quest_progress WHERE user_id=? AND quest_id=?",
@@ -426,6 +432,9 @@ def harvest(ctx: Context, arg: str) -> Reply:
     elapsed = ctx.now - planted
     if elapsed < duration:
         raise GameError(f"{crop.name}还在生长，剩余 {duration - elapsed} 秒。")
+    care_bonus = farm_care.bonus(ctx, plot)
+    cared = farm_care.value(ctx, f"farm_care_step_{plot}") > 0
+    farm_care.reset(ctx, plot)
     ctx.repo.conn.execute(
         "DELETE FROM quest_progress WHERE user_id=? AND quest_id IN (?, ?, ?)",
         (
@@ -441,30 +450,35 @@ def harvest(ctx: Context, arg: str) -> Reply:
         # Wilted: no yield, only the seed back; the season still counts as this plot's last crop.
         _remember_crop(ctx, plot, crop)
         ctx.repo.add_item(ctx.user_id, crop.seed_item, 1)
-        return Reply("灵田清理", (
+        result = Reply("灵田清理", (
             f"田位 {plot} 的{crop.name}已枯萎，只返还了种子。",
             "下次记得及时收获。",
         ), ("灵宠灵田", "灵宠背包"))
+        return farm_care.receipt(ctx, plot, result) if cared else result
     multiplier = reward_multiplier(ctx, plot)
-    gained = _grant_reward(ctx, crop, multiplier)
+    gained = _grant_reward(ctx, crop, round(multiplier + care_bonus / 100, 2))
     bonus = f"轮作加成 +{ctx.content.rules.farm_rotation.rate_percent}%" if multiplier > 1 else ""
+    if care_bonus:
+        bonus = " · ".join(part for part in (bonus, f"养苗增产 +{care_bonus}%") if part)
     _remember_crop(ctx, plot, crop)
     counters.bump(ctx, "farm_harvests")
     battle_pass.add_experience(ctx, "farm_harvest")
     if replant is not None:
         _sow(ctx, plot, replant)
-        return Reply("灵田补种", (
+        result = Reply("灵田补种", (
             f"田位 {plot} 的{crop.name}成熟收获并已补种。",
             *([bonus] if bonus else []),
             *gained,
             f"已消耗 1 个{ctx.content.items[replant.seed_item].name}，"
             f"{_effective_duration(ctx, plot, replant.duration)} 秒后成熟。",
         ), ("灵宠灵田", "灵宠背包"))
-    return Reply("灵田收获", (
+        return farm_care.receipt(ctx, plot, result) if cared else result
+    result = Reply("灵田收获", (
         f"田位 {plot} 的{crop.name}成熟收获。",
         *([bonus] if bonus else []),
         *gained,
     ), ("灵宠灵田", "灵宠背包"))
+    return farm_care.receipt(ctx, plot, result) if cared else result
 
 
 def renew(ctx: Context, arg: str) -> Reply:
