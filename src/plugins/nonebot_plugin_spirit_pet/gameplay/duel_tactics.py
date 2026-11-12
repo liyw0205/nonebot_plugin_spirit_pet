@@ -97,14 +97,14 @@ def review(ctx: Context, arg: str) -> Reply:
         row = ctx.repo.conn.execute(
             "SELECT * FROM duel_actions WHERE user_id=? AND action_id=?", (ctx.user_id, int(parts[1])),
         ).fetchone()
-        if row is None or json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery"):
+        if row is None or json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course"):
             raise GameError("未找到本人的斗法回合记录。")
         saved = Reply.from_data(json.loads(row["reply"]))
         # Historical actions must not expose live attack/surrender controls.
         return Reply("斗法回顾 · " + saved.title, saved.lines, ("灵宠斗法 回顾", "灵宠斗法", "我的灵宠"))
     count = ctx.repo.conn.execute(
         "SELECT COUNT(*) FROM duel_actions WHERE user_id=? "
-        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery'))",
+        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course'))",
         (ctx.user_id,),
     ).fetchone()[0]
     number = quantity(arg or "1", 999)
@@ -113,7 +113,7 @@ def review(ctx: Context, arg: str) -> Reply:
         raise GameError(f"斗法回顾共 {pages} 页。")
     rows = ctx.repo.conn.execute(
         "SELECT action_id,created_at,snapshot FROM duel_actions WHERE user_id=? "
-        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery')) "
+        "AND (json_extract(snapshot, '$.kind') IS NULL OR json_extract(snapshot, '$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course')) "
         "ORDER BY action_id DESC LIMIT 5 OFFSET ?",
         (ctx.user_id, (number - 1) * 5),
     ).fetchall()

@@ -14,6 +14,7 @@ from ..application.context import Context
 from ..domain.content import Range, Reward
 from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.play_game_content import PlayGame, PlayGameMilestone
+from ..utils.arguments import quantity
 from ..utils.pagination import paginate
 from ..utils.time import beijing_day
 from .combat import pet_stats
@@ -137,6 +138,30 @@ def _grade(score: int) -> int:
     return 1
 
 
+def require_day(ctx: Context) -> None:
+    day = beijing_day(ctx.now)
+    if _played(ctx, ctx.user_id, day)[0] >= GAMES_PER_DAY:
+        raise GameError("今天已经和灵宠嬉戏过了，明日再来。")
+    later = ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id GLOB 'play_game_*' "
+        "AND quest_id>? LIMIT 1", (ctx.user_id, DAY_PREFIX + day),
+    ).fetchone()
+    if later:
+        raise GameError("日期早于已有嬉戏记录，请等待时钟恢复后再开局。")
+
+
+def reserve_day(ctx: Context, game: PlayGame) -> None:
+    day = beijing_day(ctx.now)
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,1,0)",
+        (ctx.user_id, DAY_PREFIX + day),
+    )
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,1,0)",
+        (ctx.user_id, f"{PICK_PREFIX}{day}_{game.id}"),
+    )
+
+
 def catalog(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("格式：灵宠嬉戏。")
@@ -154,6 +179,10 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
     played, picked = _played(ctx, player.user_id)
     lines = [f"今日已玩 {played}/{GAMES_PER_DAY} 局。"]
+    last = ctx.repo.latest_play_course_action(player.user_id)
+    if last and last["snapshot"]["status"] == "active":
+        lines.append("还有一局跃障进行中，请继续或退出原赛道；当前不能另外嬉戏。")
+        return Reply("灵宠嬉戏", tuple(lines), ("灵宠跃障", "灵宠嬉戏 记录", "我的灵宠"))
     links = []
     for game in games(ctx):
         if played >= GAMES_PER_DAY:
@@ -165,7 +194,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
     if played < GAMES_PER_DAY:
         lines.append("每天只能玩一局，精通会一直累积。")
     return Reply(
-        "灵宠嬉戏", tuple(lines), ("灵宠嬉戏 记录", "我的灵宠", "灵宠陪伴奖励"), tuple(links),
+        "灵宠嬉戏", tuple(lines), ("灵宠嬉戏 记录", "我的灵宠", "灵宠陪伴奖励", "灵宠跃障"), tuple(links),
     )
 
 
@@ -179,16 +208,23 @@ def play_game(ctx: Context, arg: str) -> Reply:
     if not name:
         return catalog(ctx, "")
     game = _game(ctx, name)
-    player = ctx.player()
-    day = beijing_day(ctx.now)
-    played, _ = _played(ctx, player.user_id, day)
-    if played >= GAMES_PER_DAY:
-        raise GameError("今天已经和灵宠嬉戏过了，明日再来。")
+    ctx.player()
+    from .play_courses import state
+    if state(ctx):
+        raise GameError("还有一局跃障未结束，请继续或退出原赛道后再嬉戏。")
+    require_day(ctx)
     pet = ctx.pet()
     ctx.require_idle_pet(pet)
+    score = _score(ctx, pet, game)
+    reserve_day(ctx, game)
+    return settle(ctx, pet, game, score)
 
-    grade = _grade(_score(ctx, pet, game))
-    gained = AFFINITY_BY_GRADE[grade] + (game.great_bonus if grade == 3 else 0)
+
+def settle(ctx: Context, pet, game: PlayGame, score: int) -> Reply:
+    """Both instant games and courses consume the same mastery and reward loop."""
+    player = ctx.player()
+    grade = _grade(score)
+    gained = min(100 - pet.affinity, AFFINITY_BY_GRADE[grade] + (game.great_bonus if grade == 3 else 0))
     pet.affinity = min(100, pet.affinity + gained)
 
     rewards: list[str] = []
@@ -197,17 +233,6 @@ def play_game(ctx: Context, arg: str) -> Reply:
             ctx.repo.add_item(player.user_id, item_id, amount)
             rewards.append(f"{ctx.content.items[item_id].name} +{amount}")
 
-    # One play per day, plus the chosen game so the page can name it.
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)"
-        " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=1, claimed=0",
-        (player.user_id, f"{DAY_PREFIX}{day}"),
-    )
-    ctx.repo.conn.execute(
-        "INSERT OR IGNORE INTO quest_progress(user_id, quest_id, progress, claimed)"
-        " VALUES (?, ?, 1, 0)",
-        (player.user_id, f"{PICK_PREFIX}{day}_{game.id}"),
-    )
     total = mastery(ctx, player.user_id, game.id) + 1
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, 1, 0)"
@@ -218,6 +243,7 @@ def play_game(ctx: Context, arg: str) -> Reply:
     from .bond_levels import add_exp
 
     add_exp(ctx, pet.pet_id, 6)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     grade_line = {
         3: f"{pet.name}玩得格外尽兴，灵契愈发牢固（{game.name}·精彩）。",
         2: f"{pet.name}和你玩得开心（{game.name}·寻常）。",
@@ -286,7 +312,7 @@ def claim(ctx: Context, arg: str) -> Reply:
     game = _game(ctx, parts[0])
     if not parts[1].isdecimal():
         raise GameError("档位须为局数整数，例如 5、15、30。")
-    at = int(parts[1])
+    at = quantity(parts[1], max(99, max(entry.at for entry in game.milestones)))
     milestone = next((entry for entry in game.milestones if entry.at == at), None)
     if milestone is None:
         allowed = "、".join(str(entry.at) for entry in game.milestones)
@@ -316,8 +342,9 @@ def objective_line(ctx: Context, user_id: str) -> str:
         1 for game in entries
         if mastery(ctx, user_id, game.id) >= game.milestones[-1].at
     )
-    state = "今日已玩" if played else "今日未玩"
-    return f"嬉戏：{state} · 精通 {mastered}/{len(entries)} 项"
+    last = ctx.repo.latest_play_course_action(user_id)
+    status = "跃障进行中" if last and last["snapshot"]["status"] == "active" else ("今日已玩" if played else "今日未玩")
+    return f"嬉戏：{status} · 精通 {mastered}/{len(entries)} 项"
 
 
 __all__ = [

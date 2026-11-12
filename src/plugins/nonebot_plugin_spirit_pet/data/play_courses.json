@@ -1,0 +1,41 @@
+[
+  {
+    "id": "bamboo",
+    "name": "竹影跳径",
+    "description": "竹影间灵果密集，连采之前要留意后段高栏。",
+    "rows": [
+      ["fruit", "low", "meadow"],
+      ["high", "fruit", "low"],
+      ["high", "high", "low"],
+      ["meadow", "low", "fruit"],
+      ["high", "fruit", "high"],
+      ["fruit", "high", "meadow"]
+    ]
+  },
+  {
+    "id": "creek",
+    "name": "溪石折道",
+    "description": "溪石前后有草坪，绕行歇脚才能稳过连续石栏。",
+    "rows": [
+      ["meadow", "fruit", "high"],
+      ["fruit", "high", "meadow"],
+      ["low", "high", "fruit"],
+      ["high", "meadow", "high"],
+      ["fruit", "high", "fruit"],
+      ["low", "fruit", "meadow"]
+    ]
+  },
+  {
+    "id": "orchard",
+    "name": "果林穿梭",
+    "description": "果林两侧诱人，中路的草坪让伙伴从容换道。",
+    "rows": [
+      ["high", "meadow", "fruit"],
+      ["fruit", "low", "high"],
+      ["high", "fruit", "meadow"],
+      ["fruit", "high", "low"],
+      ["low", "meadow", "fruit"],
+      ["fruit", "high", "fruit"]
+    ]
+  }
+]

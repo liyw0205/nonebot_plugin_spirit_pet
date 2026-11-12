@@ -32,6 +32,9 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_course = repo.play_course_operation(operation_id, user_id)
+            if persistent_course is not None:
+                return Reply.from_data(persistent_course)
             persistent_nursery = repo.nursery_operation(operation_id, user_id)
             if persistent_nursery is not None:
                 return Reply.from_data(persistent_nursery)

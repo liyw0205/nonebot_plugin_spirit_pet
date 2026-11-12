@@ -7,6 +7,7 @@ from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
 from ..gameplay import companionship_rewards
 from ..gameplay import breeding
 from ..gameplay import nursery
+from ..gameplay import play_courses
 from ..gameplay import main_quest
 from ..gameplay import daily_dungeon
 from ..gameplay import weekly_quests
@@ -168,6 +169,7 @@ ACTIONS = {
     "co_train": Command(cultivation.co_train, True),
     "breeding": Command(breeding.breeding, True, registered=False),
     "nursery": Command(nursery.dispatch, True, registered=False),
+    "play_course": Command(play_courses.dispatch, True, registered=False),
     "main_quests": Command(main_quest.catalog, True, registered=False),
     "main_quest_claim": Command(main_quest.claim, True),
     "daily_dungeon": Command(daily_dungeon.catalog, True, registered=False),
@@ -416,6 +418,7 @@ COMMANDS = {
     "灵宠组队论剑": "team_arena", "灵宠组队匹配": "team_arena_match", "灵宠组队论剑挑战": "team_arena_battle", "灵宠组队段位领奖": "team_arena_claim",
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
     "灵宠护育": "nursery",
+    "灵宠跃障": "play_course",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠称号佩戴": "title_equip", "灵宠目标": "objectives",
     "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim", "灵宠每周召唤": "free_summon", "灵宠每周召唤领取": "free_summon_claim", "灵宠行纪": "journey", "灵宠行纪领奖": "journey_claim", "灵宠回响": "echoes", "灵宠回响选择": "echo_choose", "灵宠赛季任务": "season_missions", "灵宠赛季任务领奖": "season_mission_claim", "灵宠课题": "daily_assignment", "灵宠课题领奖": "daily_assignment_claim",

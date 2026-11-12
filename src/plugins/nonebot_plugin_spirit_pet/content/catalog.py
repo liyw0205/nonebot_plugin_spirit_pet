@@ -55,6 +55,7 @@ from ..domain.merchant_exchange_content import MerchantOffer
 from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
+from ..domain.play_course_content import PlayCourse
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
@@ -196,6 +197,7 @@ class Catalog:
     merchant_contracts: dict[str, MerchantContract]
     merchant_standings: dict[str, MerchantStanding]
     play_games: dict[str, PlayGame]
+    play_courses: dict[str, PlayCourse]
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
     fishing_baits: dict[str, FishingBait]
@@ -294,6 +296,7 @@ class Catalog:
             merchant_contracts=_index(directory / "merchant_contracts.json", MerchantContract),
             merchant_standings=_index(directory / "merchant_standings.json", MerchantStanding),
             play_games=_index(directory / "play_games.json", PlayGame),
+            play_courses=_index(directory / "play_courses.json", PlayCourse),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
             fishing_baits=_index(directory / "fishing_baits.json", FishingBait),
@@ -1199,6 +1202,8 @@ class Catalog:
         """Three mini-games must each test a different attribute and pay out."""
         if not self.play_games:
             raise ValueError("play games must not be empty")
+        if not self.play_courses or "reaction" not in self.play_games:
+            raise ValueError("play courses need courses and the reaction game")
         seen_stats: set[str] = set()
         for game in self.play_games.values():
             if game.stat in seen_stats:
