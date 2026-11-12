@@ -1,0 +1,26 @@
+[
+  {
+    "id": "forge", "name": "青山矿车", "description": "绕远路保存伙伴气血，或清除傀儡把锻灵矿送回灵坊。",
+    "stops": [
+      {"name": "林口驿", "roads": [{"name": "溪边缓道", "damage": 18, "enemies": [], "items": {}}, {"name": "傀儡近道", "damage": 5, "enemies": ["wood_guard"], "items": {"forge_ore": 1}}]},
+      {"name": "山腰驿", "roads": [{"name": "盘山缓道", "damage": 24, "enemies": [], "items": {}}, {"name": "旧矿便道", "damage": 8, "enemies": ["wood_guard"], "items": {"forge_ore": 1}}]},
+      {"name": "灵坊驿", "roads": [{"name": "河岸长道", "damage": 20, "enemies": [], "items": {}}, {"name": "石桥近道", "damage": 6, "enemies": ["wood_guard"], "items": {"forge_ore": 1}}]}
+    ]
+  },
+  {
+    "id": "blood", "name": "灵脉药车", "description": "护住药车与同行伙伴，冒险走近道可带回血脉精华。",
+    "stops": [
+      {"name": "药庐驿", "roads": [{"name": "药坡缓道", "damage": 24, "enemies": [], "items": {}}, {"name": "药林近道", "damage": 8, "enemies": ["wood_guard"], "items": {"bloodline_essence": 1}}]},
+      {"name": "古木驿", "roads": [{"name": "林外长道", "damage": 18, "enemies": [], "items": {}}, {"name": "古木便道", "damage": 5, "enemies": ["wood_guard"], "items": {"spirit_food": 1}}]},
+      {"name": "灵脉驿", "roads": [{"name": "涧边缓道", "damage": 26, "enemies": [], "items": {}}, {"name": "山涧近道", "damage": 10, "enemies": ["wood_guard"], "items": {"forge_ore": 1}}]}
+    ]
+  },
+  {
+    "id": "food", "name": "丰谷粮车", "description": "将粮车送过三驿；货物与伙伴的补给要由你分配。",
+    "stops": [
+      {"name": "谷口驿", "roads": [{"name": "田边缓道", "damage": 20, "enemies": [], "items": {}}, {"name": "谷口便道", "damage": 6, "enemies": ["wood_guard"], "items": {"spirit_food": 1}}]},
+      {"name": "稻香驿", "roads": [{"name": "堤上长道", "damage": 26, "enemies": [], "items": {}}, {"name": "稻田近道", "damage": 10, "enemies": ["wood_guard"], "items": {"spirit_food": 1}}]},
+      {"name": "丰谷驿", "roads": [{"name": "村外缓道", "damage": 18, "enemies": [], "items": {}}, {"name": "谷仓近道", "damage": 5, "enemies": ["wood_guard"], "items": {"spirit_food": 1}}]}
+    ]
+  }
+]

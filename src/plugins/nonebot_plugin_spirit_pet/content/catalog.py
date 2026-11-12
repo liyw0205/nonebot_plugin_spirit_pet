@@ -57,6 +57,7 @@ from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.play_course_content import PlayCourse
 from ..domain.training_content import TrainingRule, TrainingTrial
+from ..domain.convoy_content import ConvoyRoute
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
@@ -201,6 +202,7 @@ class Catalog:
     play_courses: dict[str, PlayCourse]
     training_trials: dict[str, TrainingTrial]
     training_rule: TrainingRule
+    convoy_routes: dict[str, ConvoyRoute]
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
     fishing_baits: dict[str, FishingBait]
@@ -302,6 +304,7 @@ class Catalog:
             play_courses=_index(directory / "play_courses.json", PlayCourse),
             training_trials=_index(directory / "training_trials.json", TrainingTrial),
             training_rule=TrainingRule.model_validate(_read(directory / "training_rule.json")),
+            convoy_routes=_index(directory / "convoy_routes.json", ConvoyRoute),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
             fishing_baits=_index(directory / "fishing_baits.json", FishingBait),
@@ -514,6 +517,7 @@ class Catalog:
         self._validate_farm_levels()
         self._validate_cave_offerings()
         self._validate_sect_content()
+        self._validate_convoy()
         self._validate_battle_supplies()
 
     def _validate_battle_supplies(self) -> None:
@@ -1079,6 +1083,28 @@ class Catalog:
             self._require(entry.materials, self.items, f"alchemy {entry.id} materials")
             if self.items[entry.item_id].kind not in {"consumable", "breakthrough"}:
                 raise ValueError(f"alchemy {entry.id} must produce a consumable")
+
+    def _validate_convoy(self):
+        if len(self.convoy_routes) != 3:
+            raise ValueError("convoy needs exactly three routes")
+        food = self.items.get("spirit_food")
+        if food is None or food.price is None or food.price <= 0:
+            raise ValueError("convoy food needs a public shop source")
+        for route in self.convoy_routes.values():
+            value = 0
+            for stop in route.stops:
+                for road in stop.roads:
+                    self._require(road.enemies, self.enemies, "convoy enemies")
+                    self._require(road.items, self.items, "convoy reward items")
+                    for key, count in road.items.items():
+                        if key not in {"forge_ore", "bloodline_essence", "spirit_food"}:
+                            raise ValueError("convoy rewards must use existing growth supplies")
+                        price = self.items[key].price
+                        if price is None:
+                            raise ValueError("convoy reward needs a priced public source")
+                        value += price * count
+            if value > 360:
+                raise ValueError("convoy route reward value exceeds the 360-stone budget")
 
     def _validate_training(self):
         if len(self.training_trials) != 3:

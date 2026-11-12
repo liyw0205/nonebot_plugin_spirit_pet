@@ -1,10 +1,9 @@
 """Manual skill exchanges against telegraphed, level-scaled training targets."""
 
-from dataclasses import asdict
 from hashlib import sha256
 
 from ..application.context import Context
-from ..domain.battle_content import Element, Skill, Talent
+from ..domain.battle_content import Element, Skill
 from ..domain.content import Stats
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
@@ -14,6 +13,7 @@ from ..utils.time import beijing_day
 from . import bond_levels, effects, mastery, talents
 from .combat import Fighter, _act
 from .loadout import combatant
+from .fighter_state import pack as _pack, unpack as _unpack
 
 TITLE = "灵宠连携演练"
 DAY_PREFIX = "training_day_"
@@ -28,28 +28,6 @@ class TrainingRoll:
 
     def random(self):
         return 1.0
-
-
-def _pack(unit: Fighter) -> dict:
-    data = asdict(unit)
-    data["stats"] = unit.stats.model_dump(mode="json")
-    data["skills"] = [skill.model_dump(mode="json") for skill in unit.skills]
-    data["talent"] = unit.talent.model_dump(mode="json") if unit.talent else None
-    return data
-
-
-def _unpack(value: dict) -> Fighter:
-    data = dict(value)
-    data["stats"] = Stats.model_validate(data["stats"])
-    data["skills"] = tuple(Skill.model_validate(skill) for skill in data["skills"])
-    data["talent"] = Talent.model_validate(data["talent"]) if data["talent"] else None
-    data["elements"] = tuple(data["elements"])
-    data["equipment_sets"] = tuple(data["equipment_sets"])
-    state = dict(data["effects"])
-    for key in ("weaken", "empower", "ward", "taunt"):
-        state[key] = effects.TimedEffect(**state[key]) if state[key] else None
-    data["effects"] = effects.EffectState(**state)
-    return Fighter(**data)
 
 
 def state(ctx: Context, user_id: str | None = None) -> dict | None:
