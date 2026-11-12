@@ -60,6 +60,7 @@ from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.battle_supply_content import BattleSupply
+from ..domain.nursery_content import NurseryRule
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
@@ -206,6 +207,7 @@ class Catalog:
     tracking_maps: dict[str, TrackingMap]
     herb_routes: dict[str, HerbRoute]
     battle_supplies: dict[str, BattleSupply]
+    nursery: NurseryRule
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -307,11 +309,13 @@ class Catalog:
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
+            nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
         )
         catalog.validate()
         return catalog
 
     def validate(self):
+        self._validate_nursery()
         if set(self.layers) != set(range(1, 11)):
             raise ValueError("layers must be exactly 1 through 10")
         if set(self.bloodlines) != set(range(len(self.bloodlines))):
@@ -1066,6 +1070,19 @@ class Catalog:
             self._require(entry.materials, self.items, f"alchemy {entry.id} materials")
             if self.items[entry.item_id].kind not in {"consumable", "breakthrough"}:
                 raise ValueError(f"alchemy {entry.id} must produce a consumable")
+
+    def _validate_nursery(self):
+        rule = self.nursery
+        self._require([rule.item_id], self.items, "nursery food")
+        if self.items[rule.item_id].kind != "consumable":
+            raise ValueError("nursery food must be consumable")
+        if len({choice.id for choice in rule.choices}) != len(rule.choices) or len({
+            choice.name for choice in rule.choices
+        }) != len(rule.choices):
+            raise ValueError("nursery choices must be unique")
+        focuses = [(bool(c.exp), bool(c.affinity), bool(c.bond)) for c in rule.choices]
+        if set(focuses) != {(True, False, False), (False, True, False), (False, False, True)}:
+            raise ValueError("nursery choices need three distinct growth focuses")
 
     def _validate_difficulties(self):
         if not self.difficulties:

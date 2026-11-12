@@ -3,6 +3,7 @@ import json
 
 from nonebot import get_driver, get_plugin_config, on_message
 from nonebot.adapters import Bot, Event
+from nonebot.exception import FinishedException
 from nonebot.log import logger
 from nonebot.params import EventMessage
 from nonebot.rule import Rule
@@ -162,19 +163,23 @@ async def _run(bot: Bot, event: Event, text: str) -> None:
             argument,
             _operation_id(bot, event),
         )
+    except FinishedException:
+        raise
     except GameError as exc:
         if exc.reply is None:
             await bot.send(event, str(exc))
             return
         reply = exc.reply
     except Exception as exc:
-        logger.exception(f"Spirit Pet command failed ({type(exc).__name__})")
-        await bot.send(event, "仙途暂遇灵息紊乱，请稍后再试。")
-        return
+        logger.exception(f"Spirit Pet command failed ({type(exc).__name__}); action={action!r}; argument={argument[:160]!r}")
+        raise
     try:
         await send_reply(bot, event, reply, config)
+    except FinishedException:
+        raise
     except Exception as exc:
-        logger.exception(f"Spirit Pet message send failed ({type(exc).__name__})")
+        logger.exception(f"Spirit Pet message send failed ({type(exc).__name__}); action={action!r}; argument={argument[:160]!r}")
+        raise
 
 
 @command_matcher.handle()

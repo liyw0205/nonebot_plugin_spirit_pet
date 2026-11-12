@@ -108,7 +108,8 @@ def test_breeding_consumes_resources_and_yields_the_species_egg(game, play):
     assert items(game[1])["egg_qingluan"] == 1
     energies = {row["pet_id"]: row["energy"] for row in sql(game[1], "SELECT pet_id, energy FROM pets")}
     assert energies[first] == 70 and energies[second] == 70
-    assert links(result) == [(2, "孵化灵卵", "灵宠使用 青鸾灵卵")]
+    assert links(result) == [(2, "孵化灵卵", "灵宠使用 青鸾灵卵"),
+                             (3, "护育预览", "灵宠护育 预览 青鸾灵卵")]
 
 
 def test_bred_egg_hatches_into_a_new_partner(game, play):

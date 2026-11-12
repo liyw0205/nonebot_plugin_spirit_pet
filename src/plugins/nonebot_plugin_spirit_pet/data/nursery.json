@@ -1,0 +1,12 @@
+{
+  "item_id": "spirit_food",
+  "energy": 6,
+  "interval": 600,
+  "lessons": 2,
+  "guardian_bond": 4,
+  "choices": [
+    {"id": "cultivate", "name": "修行", "description": "跟随护育伙伴吐纳，为破壳后的修炼积累修为。", "exp": 20},
+    {"id": "affinity", "name": "亲和", "description": "熟悉你的气息，为新伙伴积累亲密。", "affinity": 2},
+    {"id": "bond", "name": "默契", "description": "在灵契中呼应，为新伙伴积累羁绊经验。", "bond": 8}
+  ]
+}

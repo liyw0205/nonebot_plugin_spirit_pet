@@ -520,6 +520,11 @@ def _race_line(ctx: Context, user_id: str) -> tuple[str, str]:
     return race.objective_line(ctx, user_id), "灵宠竞速"
 
 
+def _nursery_line(ctx: Context, user_id: str) -> str:
+    from . import nursery
+    return nursery.objective_line(ctx, user_id)
+
+
 def objectives(ctx: Context, arg: str) -> Reply:
     """One read-only page summarising every objective system's claimable state."""
     if arg.strip():
@@ -544,6 +549,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (play_games.objective_line(ctx, player.user_id), "灵宠嬉戏 记录"),
         (tracking.objective_line(ctx, player.user_id), "灵宠寻踪"),
         (herbalism.objective_line(ctx, player.user_id), "灵宠采药"),
+        (_nursery_line(ctx, player.user_id), "灵宠护育"),
         (pet_outing.objective_line(ctx, player.user_id), "灵宠游历赏"),
         (fishing.objective_line(ctx, player.user_id), "灵宠垂钓"),
         (spar_goals.objective_line(ctx, player.user_id), "灵宠切磋目标"),

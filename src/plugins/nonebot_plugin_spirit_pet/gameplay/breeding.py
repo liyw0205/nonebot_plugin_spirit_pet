@@ -146,6 +146,8 @@ def breed(ctx: Context, arg: str) -> Reply:
         f"{first.name}（编号 {first.pet_id}）与 {second.name}（编号 {second.pet_id}）同族相契。",
         f"灵石 -{rule.cost.stones}，双方各消耗 {rule.energy} 精力。",
         f"获得{egg.name} ×1。",
+        "也可入巢护育，选择修行、亲和或默契后迎接新伙伴。",
     ), ("灵宠培育", "灵宠背包", "灵宠列表"), (
         InlineCommand(2, "孵化灵卵", f"灵宠使用 {egg.name}"),
+        InlineCommand(3, "护育预览", f"灵宠护育 预览 {egg.name}"),
     ))

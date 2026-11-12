@@ -34,7 +34,7 @@ READ_ONLY_PAGES = (
     "arcs", "ascension", "daily_shop",
     "arena_reward_history", "arena_tier_rewards", "battle_merits", "battle_pass",
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
-    "bond_rewards", "breeding", "catalog", "cave", "checkin_calendar", "checkin_rewards",
+    "bond_rewards", "breeding", "nursery", "catalog", "cave", "checkin_calendar", "checkin_rewards",
     "codex", "codex_trials", "collection", "collection_rank", "corridor", "cuisine", "cooking", "daily_assignment", "daily_dungeon",
     "defense", "dungeon_stats", "dungeons", "echoes", "equipment", "equipment_catalog",
     "attunement", "equipment_sets", "formation", "alchemy", "bounty", "sect_exchange", "intent", "socket", "contracts", "difficulty", "hybrid", "lineup_presets", "pair_bond", "pet_release", "escort", "expedition_catalog", "expedition_history", "expedition_status",

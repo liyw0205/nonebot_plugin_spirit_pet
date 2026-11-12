@@ -117,6 +117,8 @@ def bag(ctx: Context, arg: str) -> Reply:
             steps = _item_steps(ctx, item)
             if steps:
                 links.append(InlineCommand(len(lines) - 1, _bag_label(item, steps[0]), steps[0]))
+            if item.kind == "pet_egg":
+                links.append(InlineCommand(len(lines) - 1, "护育预览", f"灵宠护育 预览 {item.name}"))
             if item.kind == "equipment":
                 links.append(InlineCommand(
                     len(lines) - 1, "查看词条", f"灵宠词条重铸 查看 {item.name} +0",
