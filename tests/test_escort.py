@@ -104,8 +104,9 @@ def test_page_lists_missions_payouts_and_state(game, play):
     assert "满评" in page.text() and "部分" in page.text()
     assert "未通关" in page.text()
     assert [link.command for link in page.inline_commands] == [
-        f"灵宠护送 出发 {mission.name}" for mission in missions(game)
+        *(f"灵宠护送 出发 {mission.name}" for mission in missions(game)), "灵宠护航",
     ]
+    assert page.inline_commands[-1].line == len(page.lines) - 1
 
 
 def test_a_clean_clear_pays_the_full_reward(game, play, monkeypatch):

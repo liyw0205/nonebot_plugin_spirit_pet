@@ -31,6 +31,7 @@ from . import race
 from . import race_prizes
 from . import research
 from . import training
+from . import convoy
 from . import gauntlet
 from . import sigils
 from . import escort
@@ -576,6 +577,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_race_line(ctx, player.user_id)),
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
         (training.objective_line(ctx, player.user_id), "灵宠连携演练"),
+        (convoy.objective_line(ctx, player.user_id), "灵宠护航"),
         (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (sigils.objective_line(ctx, player.user_id), "灵宠符印"),
         (escort.objective_line(ctx, player.user_id), "灵宠护送"),

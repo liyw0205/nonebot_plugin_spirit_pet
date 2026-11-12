@@ -43,7 +43,7 @@ READ_ONLY_PAGES = (
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "tracking", "herbalism", "pvp_rank", "quests",
     "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "collection_rank_rewards",
-    "adventure_stats", "training",
+    "adventure_stats", "training", "convoy",
     "share_board",
     "spar_board",
     "spar_stats",
@@ -87,6 +87,7 @@ DOCUMENTED_COUNTS = {
     "fishing_baits": 3,
     "tracking_maps": 3,
     "herb_routes": 3,
+    "convoy_routes": 3,
 }
 
 

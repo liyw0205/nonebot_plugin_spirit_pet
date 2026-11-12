@@ -80,6 +80,13 @@ _ACTION_LABELS = {
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
     parts = visible.split()
+    if parts and parts[0] == "灵宠护航":
+        if len(parts) >= 4 and parts[1] == "行进":
+            return f"{parts[2]}号{parts[3]}"
+        if len(parts) >= 3 and parts[1] == "出发":
+            return "出发" + parts[2]
+        return {"补给": "灵粮补给", "记录": "护航记录", "撤回": "撤回护航"}.get(
+            parts[1] if len(parts) > 1 else "", "护航路线")
     if parts and parts[0] == "灵宠连携演练":
         if len(parts) > 1 and parts[1] == "出手" and len(parts) >= 3:
             return "演练" + parts[2]

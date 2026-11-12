@@ -197,6 +197,8 @@ def page(ctx: Context, arg: str) -> Reply:
         if grade(ctx, mission_.id) < FULL:
             links.append(InlineCommand(len(lines) - 2, "出发", f"灵宠护送 出发 {mission_.name}"))
     lines.append("每周一 00:00 重置；本周先拿部分评价、之后满评只补差额。")
+    lines.append("也可带一位伙伴护航，途中自主择路、保护货物并消耗灵粮补给。")
+    links.append(InlineCommand(len(lines) - 1, "前往护航", "灵宠护航"))
     return Reply("灵宠护送", tuple(lines), ("灵宠护送", "灵宠秘境", "灵宠战报"), tuple(links))
 
 
