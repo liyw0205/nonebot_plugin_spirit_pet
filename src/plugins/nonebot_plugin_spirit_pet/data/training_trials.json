@@ -1,0 +1,20 @@
+[
+  {
+    "id": "opening", "name": "观势破阵",
+    "description": "先试探，再蓄势重击；趁蓄势进攻，或留出回春与护持的空当。",
+    "health": 3.8, "defense": 0.3, "pressure": 0.28,
+    "moves": ["probe", "charge", "burst", "brace", "strike"]
+  },
+  {
+    "id": "shield", "name": "穿盾应变",
+    "description": "两次护持压低出伤；把强力灵术留给空隙，末段重击前争取制胜。",
+    "health": 3.8, "defense": 0.3, "pressure": 0.28,
+    "moves": ["brace", "strike", "brace", "charge", "burst"]
+  },
+  {
+    "id": "pressure", "name": "逆风续战",
+    "description": "连续进攻消磨气血，蓄势时可反击或回春；治疗与伤害的顺序决定结果。",
+    "health": 3.8, "defense": 0.3, "pressure": 0.28,
+    "moves": ["strike", "strike", "charge", "burst", "strike"]
+  }
+]

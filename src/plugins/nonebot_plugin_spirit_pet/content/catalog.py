@@ -56,6 +56,7 @@ from ..domain.merchant_contract_content import MerchantContract
 from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.play_course_content import PlayCourse
+from ..domain.training_content import TrainingRule, TrainingTrial
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
@@ -198,6 +199,8 @@ class Catalog:
     merchant_standings: dict[str, MerchantStanding]
     play_games: dict[str, PlayGame]
     play_courses: dict[str, PlayCourse]
+    training_trials: dict[str, TrainingTrial]
+    training_rule: TrainingRule
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
     fishing_baits: dict[str, FishingBait]
@@ -297,6 +300,8 @@ class Catalog:
             merchant_standings=_index(directory / "merchant_standings.json", MerchantStanding),
             play_games=_index(directory / "play_games.json", PlayGame),
             play_courses=_index(directory / "play_courses.json", PlayCourse),
+            training_trials=_index(directory / "training_trials.json", TrainingTrial),
+            training_rule=TrainingRule.model_validate(_read(directory / "training_rule.json")),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
             fishing_baits=_index(directory / "fishing_baits.json", FishingBait),
@@ -318,6 +323,7 @@ class Catalog:
         return catalog
 
     def validate(self):
+        self._validate_training()
         self._validate_nursery()
         if set(self.layers) != set(range(1, 11)):
             raise ValueError("layers must be exactly 1 through 10")
@@ -1073,6 +1079,16 @@ class Catalog:
             self._require(entry.materials, self.items, f"alchemy {entry.id} materials")
             if self.items[entry.item_id].kind not in {"consumable", "breakthrough"}:
                 raise ValueError(f"alchemy {entry.id} must produce a consumable")
+
+    def _validate_training(self):
+        if len(self.training_trials) != 3:
+            raise ValueError("training needs exactly three trials")
+        rhythms = [tuple(trial.moves) for trial in self.training_trials.values()]
+        if len(set(rhythms)) != len(rhythms):
+            raise ValueError("training trials need distinct rhythms")
+        food = self.items.get("spirit_food")
+        if food is None or food.kind != "consumable" or food.price is None:
+            raise ValueError("training food needs a public shop source")
 
     def _validate_nursery(self):
         rule = self.nursery

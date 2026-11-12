@@ -1,0 +1,9 @@
+{
+  "energy": 12,
+  "food": 1,
+  "daily_limit": 1,
+  "proficiency_per_cast": 2,
+  "proficiency_cap": 8,
+  "win_bond": 4,
+  "loss_bond": 1
+}

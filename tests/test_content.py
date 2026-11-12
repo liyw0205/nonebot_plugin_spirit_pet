@@ -38,6 +38,7 @@ def test_default_content_is_complete():
     "pets.json", "items.json", "realms.json", "layers.json", "bloodlines.json",
     "adventures.json", "exploration_routes.json", "quests.json", "pools.json", "enemies.json", "dungeons.json",
     "equipment.json", "equipment_sets.json", "skills.json", "elements.json", "categories.json",
+    "training_trials.json",
 ])
 @pytest.mark.parametrize("field", ["created_at", "cooldown", "last_login", "timestamp"])
 def test_static_data_rejects_runtime_fields(content_dir, filename, field):
@@ -49,6 +50,13 @@ def test_static_data_rejects_runtime_fields(content_dir, filename, field):
 def test_nested_runtime_state_and_rules_extra_fields_rejected(content_dir):
     edit(content_dir, "items.json", lambda data: data[0]["effects"].update({"finish_at": 1}))
     with pytest.raises(ValidationError):
+        Catalog.load(content_dir)
+
+
+@pytest.mark.parametrize("field", ["created_at", "cooldown", "last_login", "timestamp"])
+def test_training_rule_rejects_runtime_fields(content_dir, field):
+    edit(content_dir, "training_rule.json", lambda data: data.update({field: 1800000000}))
+    with pytest.raises(ValidationError, match="Extra inputs"):
         Catalog.load(content_dir)
 
 

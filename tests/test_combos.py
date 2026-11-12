@@ -85,7 +85,7 @@ def test_page_lists_all_six_combos_as_unmatched(game, play):
     for combo in game[0].content.combos.values():
         assert combo.name in page.text()
     assert "木灵相济：青木回春 + 青藤鞭 → 气血 +5%，防御 +4% · 未集齐（缺 青木回春、青藤鞭）" in page.text()
-    assert page.inline_commands == ()
+    assert [link.command for link in page.inline_commands] == ["灵宠连携演练"]
 
 
 def test_one_equipped_skill_names_its_missing_partner(game, play):
@@ -189,5 +189,5 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
         parse_qs(urlparse(url).query)["command"][0]
         for url in re.findall(r"\]\((mqqapi://[^)]+)\)", text)
     }
-    assert linked == set()
+    assert linked == {"/灵宠连携演练"}
     assert not linked & buttons

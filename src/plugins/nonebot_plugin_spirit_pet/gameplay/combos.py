@@ -78,7 +78,8 @@ def page(ctx: Context, arg: str) -> Reply:
         ) + "）"
         lines.append(f"{combo.name}：{_pair_text(ctx, combo)} → {_bonus_text(ctx, combo)} · {state}")
     lines.append("连携只按当前装备的技能判定，换下技能立即失效；不额外占用精力或存档。")
-    return Reply("灵宠连携", tuple(lines), ("灵宠连携", "灵宠技能", "我的灵宠"))
+    return Reply("灵宠连携", tuple(lines), ("灵宠连携", "灵宠技能", "我的灵宠"),
+                 (InlineCommand(len(lines) - 1, "连携演练", "灵宠连携演练"),))
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
