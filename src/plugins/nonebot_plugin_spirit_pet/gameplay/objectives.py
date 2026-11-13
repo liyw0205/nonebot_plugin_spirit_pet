@@ -7,6 +7,7 @@ from . import codex
 from . import stage_stars
 from . import stage_tactics
 from .arena import tier_rewards as arena_tier_rewards
+from .arena import merit_exchange as arena_merit_exchange
 from . import checkin_rewards, companionship_rewards, companionship
 from . import affinity_milestone_rewards
 from . import bloodline_milestone_rewards
@@ -439,6 +440,13 @@ def _season_road_line(ctx: Context, user_id: str) -> str:
     return f"论剑征途：暂无可领 · 本季胜 {wins} 场"
 
 
+def _arena_merit_line(ctx: Context, user_id: str) -> str:
+    current = arena_merit_exchange.season_id(ctx)
+    total = arena_merit_exchange.earned(ctx, user_id, current)
+    available = arena_merit_exchange.balance(ctx, user_id, current)
+    return f"论剑战勋：可用 {available} · 本季主动胜场 {total}"
+
+
 def _defense_line(ctx: Context, user_id: str) -> str:
     _, wins = defense.weekly_record(ctx, user_id)
     claimable = defense.claimable(ctx, user_id)
@@ -642,6 +650,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_battle_merit_line(ctx, player.user_id), "灵宠战斗功勋"),
         (_pvp_streak_line(ctx, player.user_id), "灵宠连胜奖励"),
         (_season_road_line(ctx, player.user_id), "灵宠赛季征途"),
+        (_arena_merit_line(ctx, player.user_id), "灵宠论剑战勋"),
         (_defense_line(ctx, player.user_id), "灵宠防守"),
         (_battle_pass_line(ctx, player.user_id), "灵宠战令"),
         (_rank_reward_line(ctx, player.user_id), "灵宠排行奖励"),

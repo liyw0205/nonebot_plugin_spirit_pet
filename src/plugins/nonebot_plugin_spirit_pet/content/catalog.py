@@ -67,6 +67,7 @@ from ..domain.battle_supply_content import BattleSupply
 from ..domain.nursery_content import NurseryRule
 from ..domain.collection_rank_reward_content import CollectionRankReward
 from ..domain.collection_exchange_content import CollectionExchangeOffer
+from ..domain.arena_merit_content import ArenaMeritOffer
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
 from ..domain.market_content import MarketRule
@@ -211,6 +212,7 @@ class Catalog:
     angling_courses: dict[str, AnglingCourse]
     collection_rank_rewards: dict[int, CollectionRankReward]
     collection_exchange: dict[str, CollectionExchangeOffer]
+    arena_merit_exchange: dict[str, ArenaMeritOffer]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
     market: MarketRule
@@ -318,6 +320,9 @@ class Catalog:
             ),
             collection_exchange=_index(
                 directory / "collection_exchange.json", CollectionExchangeOffer,
+            ),
+            arena_merit_exchange=_index(
+                directory / "arena_merit_exchange.json", ArenaMeritOffer,
             ),
             share_rewards=_index(directory / "share_rewards.json", ShareReward, "readers"),
             share_rank_rewards=_index(
@@ -477,6 +482,7 @@ class Catalog:
             raise ValueError("angling courses must cover exactly the fishing spots")
         self._validate_collection_rank_rewards()
         self._validate_collection_exchange()
+        self._validate_arena_merit_exchange()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
         self._validate_market()
@@ -1364,6 +1370,20 @@ class Catalog:
             ):
                 raise ValueError(
                     f"collection exchange {offer.id} rewards must be usable items"
+                )
+
+    def _validate_arena_merit_exchange(self):
+        """Arena merit offers must pay real usable items."""
+        if not self.arena_merit_exchange:
+            raise ValueError("arena merit exchange must not be empty")
+        for offer in self.arena_merit_exchange.values():
+            self._require(offer.items, self.items, f"arena merit exchange {offer.id} items")
+            if any(
+                self.items[item_id].kind not in {"consumable", "material", "breakthrough"}
+                for item_id in offer.items
+            ):
+                raise ValueError(
+                    f"arena merit exchange {offer.id} rewards must be usable items"
                 )
 
     def _validate_share_rank_rewards(self):

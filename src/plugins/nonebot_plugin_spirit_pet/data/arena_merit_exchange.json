@@ -1,0 +1,42 @@
+[
+  {
+    "id": "food_bundle",
+    "name": "战备灵粮",
+    "description": "两份灵粮，补足下一场论剑前的战备。",
+    "cost": 2,
+    "stones": 0,
+    "items": {"spirit_food": 2}
+  },
+  {
+    "id": "ore_bundle",
+    "name": "锻灵矿包",
+    "description": "一块锻灵矿，可投入强化与打造。",
+    "cost": 4,
+    "stones": 0,
+    "items": {"forge_ore": 1}
+  },
+  {
+    "id": "stone_pouch",
+    "name": "论剑灵石袋",
+    "description": "一笔可立即使用的灵石。",
+    "cost": 6,
+    "stones": 120,
+    "items": {}
+  },
+  {
+    "id": "pill_bundle",
+    "name": "破境丹",
+    "description": "一枚破境丹，帮助伙伴冲击大境界。",
+    "cost": 10,
+    "stones": 0,
+    "items": {"breakthrough_pill": 1}
+  },
+  {
+    "id": "essence_bundle",
+    "name": "血脉精华",
+    "description": "一份血脉精华，用于血脉成长。",
+    "cost": 12,
+    "stones": 0,
+    "items": {"bloodline_essence": 1}
+  }
+]

@@ -103,7 +103,7 @@ from ..gameplay import share_rank_rewards
 from ..gameplay import share_rewards
 from ..gameplay import drill
 from ..gameplay.arena import battles, matching, reward_history, seasons
-from ..gameplay.arena import head_to_head, season_road, streak_rewards, tier_rewards, team_arena
+from ..gameplay.arena import head_to_head, merit_exchange, season_road, streak_rewards, tier_rewards, team_arena
 from ..gameplay.teams import management, party, requests
 from .context import Context
 
@@ -133,6 +133,7 @@ ACTIONS = {
     "pvp_head_to_head": Command(head_to_head.head_to_head, True),
     "pvp_streak_rewards": Command(streak_rewards.catalog, True, registered=False),
     "pvp_streak_claim": Command(streak_rewards.claim, True),
+    "arena_merit_exchange": Command(merit_exchange.dispatch, True, registered=False),
     "season_road": Command(season_road.catalog, True, registered=False),
     "season_road_claim": Command(season_road.claim, True),
     "season": Command(seasons.status, True),
@@ -501,6 +502,7 @@ COMMANDS = {
     "灵宠归来": "expedition_claim", "灵宠召回": "expedition_cancel", "灵宠加急": "expedition_hasten",
     "灵宠论剑": "pvp", "灵宠论剑交锋": "pvp_head_to_head", "灵宠论剑战绩": "pvp_head_to_head",
     "灵宠连胜奖励": "pvp_streak_rewards", "灵宠连胜领奖": "pvp_streak_claim",
+    "灵宠论剑战勋": "arena_merit_exchange",
     "灵宠赛季征途": "season_road", "灵宠征途领奖": "season_road_claim", "灵宠切磋": "spar", "灵宠切磋战绩": "spar_stats", "灵宠切磋榜": "spar_board", "灵宠切磋目标": "spar_goals", "灵宠切磋领奖": "spar_goal_claim",
     "灵宠战报": "battle_reports",
     "灵宠分享": "shares",

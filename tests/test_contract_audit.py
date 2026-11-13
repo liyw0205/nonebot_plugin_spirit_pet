@@ -32,7 +32,7 @@ GAMEPLAY = ROOT / "docs" / "GAMEPLAY.md"
 READ_ONLY_PAGES = (
     "achievement_shop", "achievements", "adventure_codex", "adventure_collection_rewards", "adventure_rank",
     "arcs", "ascension", "daily_shop",
-    "arena_reward_history", "arena_tier_rewards", "battle_merits", "battle_pass",
+    "arena_reward_history", "arena_tier_rewards", "arena_merit_exchange", "battle_merits", "battle_pass",
     "battle_pass_history", "bag", "bloodline_milestone_rewards", "bond_levels",
     "bond_rewards", "breeding", "nursery", "catalog", "cave", "checkin_calendar", "checkin_rewards",
     "codex", "codex_trials", "collection", "collection_rank", "corridor", "cuisine", "cooking", "daily_assignment", "daily_dungeon",

@@ -1185,6 +1185,17 @@ $HOME/myenv/bin/python -m pytest tests/test_expedition_content.py -q
 $HOME/myenv/bin/python -m pytest tests/test_arena_content.py -q
 ```
 
+## 论剑战勋兑换定义
+
+`arena_merit_exchange.json` 是本赛季论剑战勋兑换目录，由 `domain/arena_merit_content.py` 的 `ArenaMeritOffer` 校验。每项声明 `id`、`name`、`description`、`cost`（1-100 战勋）、`stones`（非负灵石）和 `items`（物品 ID → 正整数）；灵石与物品不能同时为空。`Catalog._validate_arena_merit_exchange` 要求目录非空、奖励物品存在且属于可使用的消耗品、材料或破境丹。
+
+```json
+{"id": "ore_bundle", "name": "锻灵矿包", "description": "一块锻灵矿。",
+ "cost": 4, "stones": 0, "items": {"forge_ore": 1}}
+```
+
+战勋来源是 `pvp_results` 中当前北京时间自然月、本人作为挑战者且获胜的主动论剑记录，每场 1 枚；切磋、平局、败北、被动防守和组队论剑不计。已用战勋按赛季写入 `quest_progress` 的 `arena_merit_spent_<YYYY-MM>` 行，可用余额为当前赛季胜场数减已用数，换季自动隔离。兑换会在同一事务内校验余额、更新账本并发放灵石/物品，重投、并发、重启和失败回滚不能重复消费；目录只读查询不建立玩家状态。
+
 ## 校验与维护
 
 `domain/content.py`、`domain/battle_content.py` 声明字段、严格类型、上下限与 `extra="forbid"`；`content/catalog.py` 与 `content/validation.py` 校验 ID/名称唯一、层数完整、封顶阶段、各类引用、必需内容和可达的精力消耗。数字字符串不会自动转成数值。
