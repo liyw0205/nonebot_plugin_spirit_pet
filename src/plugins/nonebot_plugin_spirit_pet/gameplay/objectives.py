@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import adventure_collection_rewards, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
+from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
 from . import banquet, farm_progress
 from . import codex
 from . import stage_stars
@@ -367,6 +367,15 @@ def _echo_line(ctx: Context, user_id: str) -> str:
     return f"回响：暂无可回响 · 已发现 {discovered}/{len(ctx.content.encounters)} 条奇闻"
 
 
+def _adventure_travel_line(ctx: Context, user_id: str) -> str:
+    last = ctx.repo.latest_adventure_travel_action(user_id)
+    if not last:
+        return "山海远行：尚无行程记录"
+    run = last["snapshot"]
+    status = {"active": "进行中", "finished": "已完成", "abandoned": "已退出"}[run["status"]]
+    return f"山海远行：{run['route']['name']} · {status} {len(run['history'])}/{len(run['scenes'])} 处"
+
+
 def _adventure_collection_line(ctx: Context, user_id: str) -> str:
     return adventure_collection_rewards.summary(ctx, user_id)
 
@@ -620,6 +629,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_first_clear_line(ctx, player.user_id), "灵宠秘境首通"),
         (_free_summon_line(ctx, player.user_id), "灵宠每周召唤"),
         (_journey_line(ctx, player.user_id), "灵宠行纪"),
+        (_adventure_travel_line(ctx, player.user_id), "灵宠山海远行"),
         (_echo_line(ctx, player.user_id), "灵宠回响"),
         (_adventure_collection_line(ctx, player.user_id), "灵宠奇闻奖励"),
         (_season_line(ctx, player.user_id), "灵宠赛季任务"),

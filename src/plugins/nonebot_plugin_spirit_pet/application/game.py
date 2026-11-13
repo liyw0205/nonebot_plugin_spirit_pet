@@ -38,6 +38,9 @@ class Game:
             persistent_angling = repo.angling_operation(operation_id, user_id)
             if persistent_angling is not None:
                 return Reply.from_data(persistent_angling)
+            persistent_adventure_travel = repo.adventure_travel_operation(operation_id, user_id)
+            if persistent_adventure_travel is not None:
+                return Reply.from_data(persistent_adventure_travel)
             persistent_care = repo.farm_care_operation(operation_id, user_id)
             if persistent_care is not None:
                 return Reply.from_data(persistent_care)

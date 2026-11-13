@@ -1,4 +1,5 @@
 from ..application.context import Context
+from ..domain.content import EncounterOption
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from .rewards import grant
@@ -27,6 +28,9 @@ def _chosen(ctx: Context, user_id: str, encounter_id: str):
     ).fetchone()
     if not row or not row["claimed"]:
         return None
+    frozen = ctx.repo.adventure_travel_choice(user_id, encounter_id)
+    if frozen is not None:
+        return EncounterOption.model_validate(frozen)
     encounter = ctx.content.encounters[encounter_id]
     index = int(row["progress"])
     if not 1 <= index <= len(encounter.options):
@@ -37,12 +41,16 @@ def _chosen(ctx: Context, user_id: str, encounter_id: str):
 def _rows(ctx: Context, user_id: str):
     """(encounter, option, state) for every discovered encounter's options."""
     entries = []
+    from . import adventure_travel
     for encounter in ctx.content.encounters.values():
         if not _discovered(ctx, user_id, encounter.id):
             continue
         chosen = _chosen(ctx, user_id, encounter.id)
+        traveling = adventure_travel.locked_encounter(ctx, user_id, encounter.id)
         for option in encounter.options:
-            if chosen is None:
+            if traveling:
+                state = "行程中"
+            elif chosen is None:
                 state = "可回响"
             elif chosen.id == option.id:
                 state = f"已回响（{chosen.label}）"
@@ -95,6 +103,9 @@ def choose(ctx: Context, arg: str) -> Reply:
     encounter = named(ctx.content.encounters, parts[0])
     if not _discovered(ctx, player.user_id, encounter.id):
         raise GameError(f"尚未发现{encounter.name}，请先在历练中遇见它。")
+    from . import adventure_travel
+    if adventure_travel.locked_encounter(ctx, player.user_id, encounter.id):
+        raise GameError(f"{encounter.name}已纳入山海远行，请在当前行程中选择回响。")
     chosen = _chosen(ctx, player.user_id, encounter.id)
     if chosen is not None:
         raise GameError(f"{encounter.name}已回响（{chosen.label}），其余选项已失效。")

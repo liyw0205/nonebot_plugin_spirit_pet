@@ -91,7 +91,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, adventure_travel, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
 from ..gameplay import banquet, farm_progress
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
@@ -230,6 +230,7 @@ ACTIONS = {
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
     "lineage_choose": Command(lineage.choose, True),
     "explore": Command(adventure.explore, True, registered=False),
+    "adventure_travel": Command(adventure_travel.dispatch, True, registered=False),
     "adventure_codex": Command(adventure.adventure_codex, True, registered=False),
     "dungeons": Command(adventure.dungeons, True, registered=False),
     "challenge": Command(adventure.challenge, True),
@@ -437,7 +438,7 @@ COMMANDS = {
     "灵宠战令": "battle_pass", "灵宠战令进阶": "battle_pass_unlock", "灵宠战令领奖": "battle_pass_claim", "灵宠战令回顾": "battle_pass_history",
     "灵宠飞升": "ascension", "灵宠特供": "daily_shop", "灵宠技能预设": "skill_presets",
     "灵宠防守": "defense",
-    "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠奇闻": "adventure_codex",
+    "灵宠突破": "breakthrough", "灵宠进化": "evolve", "灵宠历练": "explore", "灵宠山海远行": "adventure_travel", "灵宠奇闻": "adventure_codex",
     "灵宠秘境": "dungeons", "灵宠秘境战绩": "dungeon_stats", "灵宠历练战绩": "adventure_stats", "灵宠挑战": "challenge", "灵宠任务": "quests", "灵宠领奖": "claim",
     "灵宠关卡": "stage_catalog", "灵宠关卡战绩": "stage_stats", "灵宠挑战关卡": "stage_challenge", "灵宠关卡战术": "stage_tactics",
     "灵宠关卡星级": "stage_stars", "灵宠关卡星级领奖": "stage_stars_claim",

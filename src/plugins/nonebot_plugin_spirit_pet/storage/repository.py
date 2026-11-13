@@ -256,7 +256,7 @@ class Repository:
         ).fetchone()
         if row is None:
             return None
-        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course", "training", "convoy", "farm_care", "pill_furnace", "angling"):
+        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course", "training", "convoy", "farm_care", "pill_furnace", "angling", "adventure_travel"):
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
@@ -276,7 +276,7 @@ class Repository:
         row = self.conn.execute(
             "SELECT snapshot FROM duel_actions WHERE user_id=? "
             "AND (json_extract(snapshot,'$.kind') IS NULL "
-            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course','training','convoy','farm_care','pill_furnace','angling')) "
+            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course','training','convoy','farm_care','pill_furnace','angling','adventure_travel')) "
             "ORDER BY action_id DESC LIMIT 1",
             (user_id,),
         ).fetchone()
@@ -472,6 +472,46 @@ class Repository:
         self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
     ) -> None:
         self.record_duel_action(operation_id, user_id, created_at, {**snapshot, "kind": "play_course"}, reply)
+
+    def adventure_travel_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None or json.loads(row["snapshot"]).get("kind") != "adventure_travel":
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
+    def latest_adventure_travel_action(self, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? "
+            "AND json_extract(snapshot,'$.kind')='adventure_travel' ORDER BY action_id DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} if row else None
+
+    def record_adventure_travel_action(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(
+            operation_id, user_id, created_at, {**snapshot, "kind": "adventure_travel"}, reply,
+        )
+
+    def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT snapshot FROM duel_actions WHERE user_id=? "
+            "AND json_extract(snapshot,'$.kind')='adventure_travel' "
+            "AND EXISTS (SELECT 1 FROM json_each(snapshot,'$.history') "
+            "WHERE json_extract(value,'$.encounter_id')=?) ORDER BY action_id DESC LIMIT 1",
+            (user_id, encounter_id),
+        ).fetchone()
+        if row is None:
+            return None
+        run = json.loads(row["snapshot"])
+        selected = next(entry["option_id"] for entry in run["history"] if entry["encounter_id"] == encounter_id)
+        scene = next(entry for entry in run["scenes"] if entry["id"] == encounter_id)
+        return next(entry for entry in scene["options"] if entry["id"] == selected)
 
     def convoy_operation(self, operation_id: str, user_id: str) -> dict | None:
         row = self.conn.execute(

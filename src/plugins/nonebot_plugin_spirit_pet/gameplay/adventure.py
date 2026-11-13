@@ -104,6 +104,9 @@ def explore(ctx: Context, arg: str) -> Reply:
         )
 
     route = named(ctx.content.exploration_routes, arg)
+    from . import adventure_travel
+    if adventure_travel.state(ctx):
+        raise GameError("山海远行进行中，请继续或退出当前行程后再历练。")
     player, pet = ctx.player(), ctx.pet()
     minimum = next(index for index, realm in enumerate(ctx.content.realms) if realm.id == route.min_realm)
     if pet.realm < minimum:
