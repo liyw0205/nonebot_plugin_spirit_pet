@@ -1,0 +1,5 @@
+[
+  {"id": "creek", "description": "溪水先急后缓，借回流收线，别在急流里强拉。", "goal": 6, "pulls": [1, 2, -2, 1, -1]},
+  {"id": "deep_pool", "description": "潭底暗流交替，先留张力余地，再抓住两次回流。", "goal": 7, "pulls": [2, -1, 2, -2, 1]},
+  {"id": "abyss", "description": "灵渊两度猛冲，必须兼顾牵引速度与鱼线余力。", "goal": 5, "pulls": [-1, 3, -2, 3, -2]}
+]

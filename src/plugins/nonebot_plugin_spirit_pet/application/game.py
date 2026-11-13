@@ -35,6 +35,9 @@ class Game:
             persistent_furnace = repo.furnace_operation(operation_id, user_id)
             if persistent_furnace is not None:
                 return Reply.from_data(persistent_furnace)
+            persistent_angling = repo.angling_operation(operation_id, user_id)
+            if persistent_angling is not None:
+                return Reply.from_data(persistent_angling)
             persistent_care = repo.farm_care_operation(operation_id, user_id)
             if persistent_care is not None:
                 return Reply.from_data(persistent_care)

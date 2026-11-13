@@ -91,7 +91,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
 from ..gameplay import banquet, farm_progress
 from ..gameplay import collection_rank_rewards
 from ..gameplay import bond_levels
@@ -319,6 +319,7 @@ ACTIONS = {
     "play_game": Command(play_games.play_game, True, registered=False),
     "pet_outing": Command(pet_outing.go_out, True),
     "fishing": Command(fishing.dispatch, True, registered=False),
+    "angling": Command(angling.dispatch, True, registered=False),
     "pet_outing_board": Command(pet_outing.catalog, True, registered=False),
     "pet_outing_claim": Command(pet_outing.claim, True),
     "reforge": Command(reforge.reforge, True, registered=False),
@@ -481,6 +482,7 @@ COMMANDS = {
     "灵宠杂交": "hybrid",
     "灵宠炼丹": "alchemy",
     "灵宠丹炉": "pill_furnace",
+    "灵宠遛鱼": "angling",
     "灵宠试炼": "difficulty",
     "灵宠赏金": "bounty",
     "灵宠传功": "transfer",

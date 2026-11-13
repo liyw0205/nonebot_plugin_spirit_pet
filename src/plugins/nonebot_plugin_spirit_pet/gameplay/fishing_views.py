@@ -73,6 +73,10 @@ def detail(ctx: Context, parts: list[str]) -> Reply:
             links.append(InlineCommand(
                 len(lines) - 1, "查看概率", f"灵宠垂钓 详情 {spot.name} {option.name}",
             ))
+    lines.append("也可选择逐轮遛鱼：开竿后按水势取舍，成功才入篓。")
+    links.append(InlineCommand(
+        len(lines) - 1, "预览遛鱼", f"灵宠遛鱼 预览 {spot.name}" + (f" {bait.name}" if bait else ""),
+    ))
     return Reply(f"{spot.name} · 鱼获与择饵", tuple(lines), (
         "灵宠垂钓", "灵宠垂钓 鱼篓", "灵宠背包", "灵宠灵田",
     ), tuple(links))
@@ -101,10 +105,16 @@ def basket(ctx: Context, parts: list[str]) -> Reply:
         saved = json.loads(row["snapshot"])
         stamp = datetime.fromtimestamp(row["created_at"], BEIJING).strftime("%Y-%m-%d %H:%M")
         cost = (f"、{saved['cost_name']} ×{saved['cost_quantity']}" if saved["cost_quantity"] else "")
-        lines.append(
-            f"{stamp} · {saved['pet_name']} · {saved['spot_name']} / {saved['bait_name']}"
-            f" · {saved['item_name']} ×{saved['amount']} · 消耗精力 {saved['energy']}{cost}"
-        )
+        if saved.get("mode") == "angling":
+            outcome = {"caught": f"{saved['item_name']} ×{saved['amount']}",
+                       "failed": "遛鱼失手", "abandoned": "主动撤竿"}.get(saved["status"], "遛鱼中断")
+            lines.append(f"{stamp} · {saved['pet_name']} · {saved['spot_name']} / {saved['bait_name']}"
+                         f" · {outcome} · 消耗精力 {saved['energy']}{cost}")
+        else:
+            lines.append(
+                f"{stamp} · {saved['pet_name']} · {saved['spot_name']} / {saved['bait_name']}"
+                f" · {saved['item_name']} ×{saved['amount']} · 消耗精力 {saved['energy']}{cost}"
+            )
     commands = []
     if number > 1:
         commands.append(f"灵宠垂钓 鱼篓 {number - 1}")

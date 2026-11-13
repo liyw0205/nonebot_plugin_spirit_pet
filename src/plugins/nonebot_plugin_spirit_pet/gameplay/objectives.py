@@ -33,6 +33,7 @@ from . import research
 from . import training
 from . import convoy
 from . import pill_furnace
+from . import angling
 from . import gauntlet
 from . import sigils
 from . import escort
@@ -555,6 +556,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_nursery_line(ctx, player.user_id), "灵宠护育"),
         (pet_outing.objective_line(ctx, player.user_id), "灵宠游历赏"),
         (fishing.objective_line(ctx, player.user_id), "灵宠垂钓"),
+        (angling.objective_line(ctx, player.user_id), "灵宠遛鱼"),
         (spar_goals.objective_line(ctx, player.user_id), "灵宠切磋目标"),
         (visits.objective_line(ctx, player.user_id), "灵宠串门"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),

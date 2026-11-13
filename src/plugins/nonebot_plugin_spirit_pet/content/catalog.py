@@ -62,6 +62,7 @@ from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
 from ..domain.fishing_content import FishingBait, FishingSpot
+from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
 from ..domain.nursery_content import NurseryRule
 from ..domain.collection_rank_reward_content import CollectionRankReward
@@ -206,6 +207,7 @@ class Catalog:
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
     fishing_baits: dict[str, FishingBait]
+    angling_courses: dict[str, AnglingCourse]
     collection_rank_rewards: dict[int, CollectionRankReward]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
@@ -308,6 +310,7 @@ class Catalog:
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
             fishing_baits=_index(directory / "fishing_baits.json", FishingBait),
+            angling_courses=_index(directory / "angling_courses.json", AnglingCourse),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
             ),
@@ -465,6 +468,8 @@ class Catalog:
         self._validate_play_games()
         self._validate_outing_scenes()
         self._validate_fishing_spots()
+        if set(self.angling_courses) != set(self.fishing_spots):
+            raise ValueError("angling courses must cover exactly the fishing spots")
         self._validate_collection_rank_rewards()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
