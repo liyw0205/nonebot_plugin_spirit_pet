@@ -32,6 +32,9 @@ class Game:
 
         def run(conn):
             repo = Repository(conn)
+            persistent_weekly_reward = repo.weekly_reward_operation(operation_id, user_id)
+            if persistent_weekly_reward is not None:
+                return Reply.from_data(persistent_weekly_reward)
             persistent_furnace = repo.furnace_operation(operation_id, user_id)
             if persistent_furnace is not None:
                 return Reply.from_data(persistent_furnace)

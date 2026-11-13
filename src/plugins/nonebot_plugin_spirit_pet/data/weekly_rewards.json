@@ -1,0 +1,5 @@
+[
+  {"id":"weekly_two","name":"周行初成","threshold":2,"stones":120,"items":{"spirit_food":2}},
+  {"id":"weekly_four","name":"周行渐丰","threshold":4,"stones":240,"items":{"forge_ore":2}},
+  {"id":"weekly_six","name":"周行有成","threshold":6,"stones":360,"items":{"exp_pill":1}}
+]

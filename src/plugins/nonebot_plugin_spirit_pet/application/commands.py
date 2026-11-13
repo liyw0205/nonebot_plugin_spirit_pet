@@ -14,6 +14,7 @@ from ..gameplay import farm_care
 from ..gameplay import main_quest
 from ..gameplay import daily_dungeon
 from ..gameplay import weekly_quests
+from ..gameplay import weekly_rewards
 from ..gameplay import inheritance
 from ..gameplay import titles
 from ..gameplay import objectives
@@ -203,6 +204,7 @@ ACTIONS = {
     "team_arena_claim": Command(team_arena.claim_tier, True),
     "weekly_quests": Command(weekly_quests.catalog, True, registered=False),
     "weekly_quest_claim": Command(weekly_quests.claim, True),
+    "weekly_rewards": Command(weekly_rewards.dispatch, True, registered=False),
     "inheritance": Command(inheritance.inherit, True),
     "titles": Command(titles.catalog, True, registered=False),
     "title_equip": Command(titles.equip, True),
@@ -437,6 +439,7 @@ COMMANDS = {
     "灵宠赠送": "gift", "灵宠寄养": "foster", "灵宠寄养喂食": "foster_feed", "灵宠归还": "foster_return",
     "灵宠组队论剑": "team_arena", "灵宠组队匹配": "team_arena_match", "灵宠组队论剑挑战": "team_arena_battle", "灵宠组队段位领奖": "team_arena_claim",
     "灵宠周常": "weekly_quests", "灵宠周常领奖": "weekly_quest_claim",
+    "灵宠周常赏": "weekly_rewards",
     "灵宠护育": "nursery",
     "灵宠跃障": "play_course",
     "灵宠连携演练": "training",

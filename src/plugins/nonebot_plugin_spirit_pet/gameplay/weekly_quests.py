@@ -104,7 +104,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
             ))
     return Reply(
         f"灵宠周常 {page.number}/{page.total}", tuple(lines),
-        (*page.navigation, "灵宠任务"), tuple(links),
+        (*page.navigation, "灵宠任务", "灵宠周常赏"), tuple(links),
     )
 
 
@@ -125,4 +125,4 @@ def claim(ctx: Context, arg: str) -> Reply:
     )
     return Reply("周常奖励已领取", (
         f"{quest.name}已完成。", *result, "下周一 00:00（北京时间）重置。",
-    ), ("灵宠周常", "灵宠任务"))
+    ), ("灵宠周常", "灵宠任务", "灵宠周常赏"))

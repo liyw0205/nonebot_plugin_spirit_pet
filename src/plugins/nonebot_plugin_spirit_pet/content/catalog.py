@@ -78,6 +78,7 @@ from ..domain.stage_content import Stage
 from ..domain.tower_content import TowerFloor
 from ..domain.main_quest_content import MainQuest
 from ..domain.weekly_quest_content import WeeklyQuest
+from ..domain.weekly_reward_content import WeeklyReward
 from ..domain.title_content import Title
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
@@ -151,6 +152,7 @@ class Catalog:
     tower: dict[str, TowerFloor]
     main_quests: dict[str, MainQuest]
     weekly_quests: dict[str, WeeklyQuest]
+    weekly_rewards: dict[str, WeeklyReward]
     titles: dict[str, Title]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
@@ -259,6 +261,7 @@ class Catalog:
             tower=_index(directory / "tower.json", TowerFloor),
             main_quests=_index(directory / "main_quests.json", MainQuest),
             weekly_quests=_index(directory / "weekly_quests.json", WeeklyQuest),
+            weekly_rewards=_index(directory / "weekly_rewards.json", WeeklyReward),
             titles=_index(directory / "titles.json", Title),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
@@ -546,6 +549,7 @@ class Catalog:
         self._validate_shop_rotation()
         self._validate_journey(realm_ids)
         self._validate_season_missions()
+        self._validate_weekly_rewards()
         self._validate_daily_assignments()
         self._validate_codex_rewards()
         self._validate_crops()
@@ -1701,6 +1705,15 @@ class Catalog:
             current = following[0] if following else None
         if seen != set(chapters):
             raise ValueError("journey chapters must form a single chain")
+
+    def _validate_weekly_rewards(self):
+        thresholds = [entry.threshold for entry in self.weekly_rewards.values()]
+        if set(thresholds) != {2, 4, 6} or len(thresholds) != 3:
+            raise ValueError("weekly rewards must define unique 2/4/6 milestones")
+        if max(thresholds) > len(self.weekly_quests):
+            raise ValueError("weekly reward exceeds available quests")
+        for entry in self.weekly_rewards.values():
+            self._require(entry.items, self.items, "weekly reward items")
 
     def _validate_season_missions(self):
         missions = self.season_missions

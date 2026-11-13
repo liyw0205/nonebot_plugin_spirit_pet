@@ -123,7 +123,7 @@ def test_catalog_shows_the_week_and_zero_progress(game, play):
     assert "秘境历练：0/5（未达成） · 灵石 800-800，锻灵矿 3-3" in listing.text()
     assert "论剑周赛：0/3（未达成） · 灵石 600-600，破境丹 1-1" in listing.text()
     assert links(listing) == []
-    assert listing.commands == ("灵宠周常 2", "灵宠任务")
+    assert listing.commands == ("灵宠周常 2", "灵宠任务", "灵宠周常赏")
     assert play("weekly_quests", "2").title == "灵宠周常 2/3"
 
 

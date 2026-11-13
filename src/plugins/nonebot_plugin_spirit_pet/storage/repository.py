@@ -301,6 +301,16 @@ class Repository:
              json.dumps(asdict(reply), ensure_ascii=False)),
         )
 
+    def weekly_reward_operation(self, operation_id: str, user_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),
+        ).fetchone()
+        if row is None or json.loads(row["snapshot"]).get("kind") != "weekly_reward":
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        return json.loads(row["reply"])
+
     def cooking_operation(self, operation_id: str, user_id: str) -> dict | None:
         row = self.conn.execute(
             "SELECT user_id,snapshot,reply FROM duel_actions WHERE operation_id=?", (operation_id,),

@@ -3,6 +3,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
 from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
 from . import banquet, farm_progress
+from . import weekly_rewards
 from . import codex
 from . import stage_stars
 from . import stage_tactics
@@ -83,7 +84,7 @@ from .achievements import _metric as achievement_metric
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
-    "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠战令", "灵宠图鉴奖励", "灵宠关卡星级",
+    "灵宠周常赏", "灵宠每周召唤", "灵宠行纪", "灵宠回响", "灵宠奇闻奖励", "灵宠赛季任务", "灵宠课题", "灵宠战令", "灵宠图鉴奖励", "灵宠关卡星级",
     "灵宠段位奖励",
     "灵宠战斗功勋",
     "灵宠连胜奖励",
@@ -637,6 +638,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
         (battle_supplies.objective_line(ctx, player.user_id), "灵宠战备"),
         (_weekly_line(ctx, player.user_id), "灵宠周常"),
+        (weekly_rewards.objective_line(ctx, player.user_id), "灵宠周常赏"),
         (_main_quest_line(ctx, player.user_id), "灵宠主线"),
         (_achievement_line(ctx, player.user_id), "灵宠成就"),
         (_endgame_line(ctx, player.user_id), "灵宠成就"),
