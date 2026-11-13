@@ -44,7 +44,7 @@ xiupet logs --lines 100
 
 脚本支持 apt、dnf、yum、apk、pacman、zypper、Homebrew 与 Termux `pkg`。指定 `--skip-system` 后缺少依赖会明确报错，不自动安装系统组件。
 
-也可从本地 `main` 源码目录复制到一个全新空目录安装：
+也可从本地源码目录复制到一个全新空目录安装：
 
 ```bash
 bash scripts/install.sh install --source-mode source --source "$PWD" \
@@ -98,7 +98,7 @@ xiupet start
 
 Release 版本采用 `vMAJOR.MINOR.PATCH`，归档名称为 `project.tar.gz`。Release 安装会保留现有配置、存档和运行数据。
 
-安装器的 `--source-mode release` 与 `xiupet update` 都读取 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，按 `--mirror` 选择直连或加速地址；归档无效就停止，不改用分支归档。
+安装器的 `--source-mode release` 与 `xiupet update` 都读取 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，按 `--mirror` 选择直连或加速地址；归档无效就停止，不改用源码归档。
 
 `xiupet update` 只接受来源标记为 `release` 的受管理安装，拒绝源码目录、缺来源标记及未知来源目录。更新完成后保持停止，需手动 `xiupet start`。
 

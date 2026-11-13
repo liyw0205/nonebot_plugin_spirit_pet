@@ -4,7 +4,7 @@
 - Release 安装从
   `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`
   获取资产；先尝试 `gh-proxy.com`，失败或归档无效后直连 GitHub 官方地址。
-- 归档必须包含项目文件；代理和官方地址均无法下载或校验归档时，安装器停止，不回退到分支归档。
+- 归档必须包含项目文件；代理和官方地址均无法下载或校验归档时，安装器停止，不回退到源码归档。
 - 代理候选必须下载成功并通过归档内容校验后才能使用。
 - Release workflow 从 tag 内容生成并上传 `project.tar.gz`；安装器保留已存在的项目源码、
   `.env`、SQLite 存档和运行数据。

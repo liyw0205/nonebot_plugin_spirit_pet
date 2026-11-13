@@ -26,7 +26,7 @@ Termux 可执行：
 pkg install -y bash curl
 ```
 
-使用 `main` 上的安装器部署最新正式 Release：
+使用官方安装器部署最新正式 Release：
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh) install --source-mode release --target "$HOME/spirit-pet" --no-start
