@@ -1,9 +1,4 @@
-"""Alchemy: turn farm produce and materials into the pills the shop only sells.
-
-Crafting covers equipment only, so pills were strictly a purchase: the crops a player grows and the
-materials they collect never became consumables. Each recipe consumes fixed materials plus stones and
-produces a known number of an existing pill, so the farming loop finally feeds the item loop.
-"""
+"""Alchemy consumes fixed materials and stones for a known yield of pills."""
 
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply

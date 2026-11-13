@@ -1,15 +1,12 @@
 """Weekly race settlement: last week's top three, their rewards, and the archive.
 
-``race.enter`` already persists every week's best time as
-``quest_progress.race_best_<week start>``. Until now only the current week key
-was read, so a completed week's rows were write-only history. This module adds
-the missing read and settlement path without touching the race itself:
+``race.enter`` persists every week's best time as
+``quest_progress.race_best_<week start>``. Settlement uses those retained rows:
 
 * ``race_prize_<week start>`` — claim marker (``progress`` is the final rank)
 * the top three of the previous Beijing week claim once during the current week
 * older weeks stay readable, but their claim window is over
 
-No new table or column: the archive is the existing race-best rows.
 """
 
 from datetime import date, datetime

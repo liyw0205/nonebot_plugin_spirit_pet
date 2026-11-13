@@ -1,14 +1,8 @@
 """灵宠行情: what things actually sold for, not what people are asking.
 
-Schema 22 made ``market_sales`` a permanent ledger of completed sales (gross, tax, net,
-per-unit price) and schema 26 added ``market_bid_sales`` for the buy side, but every read
-in ``market.py`` is scoped to ``seller_id`` or ``buyer_id`` — i.e. your own history. A
-player pricing an item therefore has only the *current* asks to look at, and someone
-posting a 求购 has no way to know whether their price can ever be filled.
-
 This module reads the two ledgers in aggregate and reports, per item and over a bounded
 window, the cleared unit-price band: sample count, cheapest, median and dearest. Nothing
-is stored: no cache, no aggregate table, no schema change.
+is stored.
 
 Two deliberate choices:
 

@@ -1,9 +1,4 @@
-"""Daily bounties: three rotating goals over the new systems, each claimable on its own.
-
-The daily assignment board offers one choice out of three and covers only the original systems. A
-bounty board offers three goals per Beijing day, derived from the pool by the day ordinal, and every
-one of them can be claimed independently — so the counters added for hybridisation, alchemy, contracts
-and hard clears finally have a daily outlet.
+"""Daily bounties: three rotating goals, each claimable independently per Beijing day.
 
 Progress is scoped to today: ``counters.bump`` also maintains a ``stat_<metric>_day_<date>`` row, so
 yesterday's work never counts toward today's bounty and no per-player snapshot is needed.

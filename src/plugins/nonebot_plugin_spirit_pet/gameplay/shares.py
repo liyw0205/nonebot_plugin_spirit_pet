@@ -1,13 +1,6 @@
 """灵宠分享: a revocable, expiring capability to read one battle report.
 
-`battle_records` stores a permanent, immutable report per battle, but
-``repository.battle_report`` authorizes *only* the participants, and
-``battle_participants.permission`` allows just ``participant``/``defender``. So a
-report can only ever be seen by the people who already fought in it — for example,
-a decisive论剑 win or a boss kill cannot be shown to anyone else.
-
-This module adds a second, independently guarded read path without weakening the
-first:
+The capability read path is guarded independently from participant authorization:
 
 * ``create`` mints an unguessable code for a report **the caller participated in**;
 * ``view`` accepts that code from *any* player and renders the stored snapshot and
@@ -32,7 +25,7 @@ from ..utils.time import beijing_day
 from . import battle_records
 
 # Base32 without 0/O/1/I: a code is read aloud and retyped, so ambiguous glyphs are
-# excluded and the alphabet is documented for the acceptance test.
+# excluded.
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 12
 READER_PREFIX = "shareview_"

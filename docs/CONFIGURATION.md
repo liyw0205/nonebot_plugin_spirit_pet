@@ -1,8 +1,8 @@
 # 配置与排错
 
-本文说明当前 UID / schema 26 版本的配置、备份和排错方式。安装步骤见 [安装教程](INSTALLATION.md)。
+本文说明当前 UID / schema 28 版本的配置、备份和排错方式。安装步骤见 [安装教程](INSTALLATION.md)。
 
-安装器首次安装会从 `.env.example` 生成 `.env`；手动安装时执行 `cp .env.example .env`。不要只复制成 `.env.dev` 而遗漏 `ENVIRONMENT=dev` 的入口配置。已有 `.env.dev` / `.env.prod` 时 NoneBot 会读取所选环境文件，同名项可能覆盖 `.env`，请清理重复项。安装与更新保留已有配置，修改后重启生效。
+安装器首次安装会从 `.env.example` 生成 `.env`；手动安装时仅在没有 `.env` 的情况下执行 `cp .env.example .env`。不要只复制成 `.env.dev` 而遗漏 `ENVIRONMENT=dev` 的入口配置。已有 `.env.dev` / `.env.prod` 时 NoneBot 会读取所选环境文件，同名项可能覆盖 `.env`，请清理重复项。安装与更新保留已有配置，修改后重启生效。
 
 | 项目 | 默认值 | 含义 |
 | --- | --- | --- |
@@ -68,16 +68,16 @@ xiupet start
 
 备份目录需提前创建，`.env` 含连接凭证，限制备份文件访问权限。SQLite 工具使用 Online Backup API，即使运行时备份也能得到一致快照；不要只复制处于 WAL 模式的主 `.db` 文件。`backup` 和 `restore` 只接受新目标路径，副本通过完整性与外键检查后才会写入最终位置。
 
-当前版本使用 **schema 26**。空库初始化为当前版本；schema 18 先自动备份并迁移注册时间到 19，schema 19 再自动备份并为玩家分配稳定 UID 到 20，之后 20 → 21（派遣双线）、21 → 22（玩家集市）、22 → 23（灵宠信箱）、23 → 24（灵宠好友）、24 → 25（战报分享）、25 → 26（集市求购）各自独立备份并迁移。平台用户关联、灵宠、装备、资源、队伍和进度保留，不会清空玩家数据。历史注册时间仅从可核实的首次成功领养回复恢复，无记录或有歧义时显示“未记录”。自动备份位于原库旁，名称含 `schema18-backup` 至 `schema25-backup`。
+当前版本使用 **schema 28**。空库初始化为当前版本；schema 18 先自动备份并迁移注册时间到 19，schema 19 再自动备份并为玩家分配稳定 UID 到 20，之后依次迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）和 28（斗法回合账本）。平台用户关联、灵宠、装备、资源、队伍和进度保留，不会清空玩家数据。历史注册时间仅从可核实的首次成功领养回复恢复，无记录或有歧义时显示“未记录”。每一步迁移都会在原库旁创建一致性备份。
 
-18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、高于 26 的版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志与来源代码，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
+18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、高于 28 的版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
 
 `xiupet update` 从最新正式 Release 下载 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，验证归档后只替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并安装依赖；`.env`、`data/`、`.xiupet/`、`.venv`、日志和命令链接均保留。源码替换或依赖安装失败会尝试恢复旧程序文件。该命令只接受正式 Release 管理的安装；本地源码安装不适用此更新流程。
 
 更新启动后可用以下命令确认数据库版本，再查看 `xiupet logs` 和 `我的信息`：
 
 ```bash
-.venv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.db --schema-version 26
+.venv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.db --schema-version 28
 ```
 
 需要恢复时先停止 bot，恢复命令只写入新的数据库路径，然后验证结果，再将 `SPIRIT_PET_DB` 指向恢复副本：

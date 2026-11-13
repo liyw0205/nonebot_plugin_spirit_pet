@@ -1,12 +1,6 @@
 """灵宠名帖: a cultivator's card, with visibility that follows what the game publishes.
 
-Schema 24 made friendship a player-managed edge and schema 26 let friends lend companions
-(``灵宠借力 借用 <好友UID> <编号>``), so the game now asks players to type a stranger's UID
-and browse that stranger's pets — while offering no way to see who they are. ``我的信息``
-only ever renders your own account, and 名帖 elsewhere in the codebase means a *team
-lineup*, not a person.
-
-The card therefore has three tiers, chosen so the card never publishes more than the
+The card has three tiers, chosen so the card never publishes more than the
 existing boards already do:
 
 * ``public`` — UID, the active companion's realm/layer, 论剑段位, 收集榜名次 and the worn
@@ -16,8 +10,7 @@ existing boards already do:
 * ``self`` — the same detail for yourself; 灵石/背包/封存/注册时间 are never rendered here at
   all, because they already live in ``我的信息`` and a card is not the place to leak them.
 
-Everything is derived on read from existing tables: no schema change, no content file, and
-no cached snapshot that could go stale or outlive a friendship.
+Everything is derived on read, so no cached snapshot can outlive a friendship.
 """
 
 from ..application.context import Context

@@ -1,8 +1,7 @@
 """Sect contribution exchange: spend contribution without losing the rank.
 
-Contribution used to be a one-way ladder — every daily practice pushed `sect_contrib_<id>` up, the rank
-was derived from that number, and once rank 5 was reached the currency had nowhere to go. Exchange adds
-a second row, `sect_spent_<id>`, so the **total** still decides the rank and the spendable balance is
+`sect_contrib_<id>` stores lifetime contribution and `sect_spent_<id>` stores expenditure.
+The **total** decides the rank and the spendable balance is
 `total - spent`. Redeeming therefore never demotes a player or weakens their sect passive.
 
 Weekly stock is a count per offer, `sect_exchange_<week-start>_<offer>`, which resets by changing the

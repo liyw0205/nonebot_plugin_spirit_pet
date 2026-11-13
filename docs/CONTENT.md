@@ -144,7 +144,7 @@
 }
 ```
 
-更改或删除已有 ID、重排境界、缩短血脉等级会改变现有存档含义。开发期应创建新测试库验证，不能通过改名假装自动迁移老角色。
+更改或删除已有 ID、重排境界、缩短血脉等级会改变现有存档含义。使用临时测试库验证，不能通过改名假装自动迁移老角色。
 
 ## 道具与奖励
 
@@ -1120,7 +1120,7 @@ $HOME/myenv/bin/python -m pytest tests/test_expedition_content.py -q
 
 ## 论剑赛季定义
 
-`arena.json` 是一个根对象，由 `domain/arena_content.py` 的 `ArenaRules` 与 `ArenaTier` 严格校验，加载为 `Catalog.arena`。所有字段显式必填，旧 `rules.json` 中的 `pvp_energy/pvp_rating_delta` 已移除，不做开发期兼容。
+`arena.json` 是一个根对象，由 `domain/arena_content.py` 的 `ArenaRules` 与 `ArenaTier` 严格校验，加载为 `Catalog.arena`。所有字段显式必填，论剑精力和积分变化由该文件统一定义。
 
 | 字段 | 默认值 | 定义 |
 | --- | --- | --- |

@@ -9,6 +9,7 @@
 - 七个大境界、五阶血脉、54 条种族分支，以及签到、互动、喂养、修炼、突破和每日任务。
 - 元素与天赋、技能熟练度、三槽装备、强化、套装、打造和分解。
 - 一至三只不同种族的出战阵容；单人秘境、章节关卡、离线委托、收集和长期成就。
+- 灵田耕种与养苗、队友浇水、采药、寻踪、护航、连携演练和多种每日/每周玩法。
 - 同族合修、双种族共鸣、组队 PVE、赛季论剑、无损切磋和永久战报。
 
 ## 安装
@@ -46,11 +47,11 @@ xiupet logs --lines 100
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
-cp .env.example .env
+if [ ! -f .env ]; then cp .env.example .env; fi
 .venv/bin/nb run
 ```
 
-手动安装只需执行一次 `cp`；已有 `.env` 时不要覆盖它。
+已有 `.env` 时不要覆盖它。
 
 ## 配置
 
@@ -133,7 +134,7 @@ xiupet start
 
 `xiupet update` 下载最新正式 Release 的 `project.tar.gz`（`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`），只替换程序文件，保留 `.env` 和 `data/`。
 
-默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 26；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，schema 20 迁移到 21（派遣双线）、schema 21 迁移到 22（玩家集市）、schema 22 迁移到 23（灵宠信箱）、schema 23 迁移到 24（灵宠好友）、schema 24 迁移到 25（战报分享）、schema 25 迁移到 26（集市求购），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 26 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。使用 SQLite Online Backup API 做一致性备份和恢复，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
+默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 28；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，随后按顺序迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）和 28（斗法回合账本），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 28 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。使用 SQLite Online Backup API 做一致性备份和恢复，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
 
 ## 文档
 

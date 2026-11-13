@@ -260,9 +260,7 @@ def _static_drop_sources(ctx: Context, item_id: str) -> list[str]:
 def _seed_drop_sources(ctx: Context, item_id: str) -> list[str]:
     """Seeds drop from a realm-tier roll, not from a static reward table.
 
-    The roll lives in the settlement paths (`farming.roll_seed_drop`), so the
-    static reward tables never list a seed and this lookup used to report that
-    seeds drop nowhere. Derive the same sources those rolls cover: the seed a
+    The roll lives in the settlement paths (`farming.roll_seed_drop`). The seed a
     realm yields is offered by every ambush, dungeon (challenge and sweep) and
     expedition of that realm, at each path's documented chance.
     """

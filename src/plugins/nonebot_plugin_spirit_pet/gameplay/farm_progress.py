@@ -1,9 +1,6 @@
 """Farm ladder: 农事 levels earned by harvesting, and their one-time rewards.
 
-``farming.harvest`` only ever bumped the battle pass. The four (now six) plots
-therefore ended in a dead end: a player who kept farming saw no progress past
-the plot they already owned. This module reads the same lifetime
-``stat_farm_harvests`` counter the harvest writes and turns it into a ladder:
+Levels use the lifetime ``stat_farm_harvests`` counter written at harvest:
 
 * the level is derived from ``data/farm_levels.json`` thresholds — no stored
   level that could drift from the counter;

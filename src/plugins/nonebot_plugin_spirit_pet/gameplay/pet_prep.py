@@ -1,8 +1,6 @@
 """灵宠整备: one read-only page per roster pet.
 
-Every growth command used to bind the active pet only, so preparing a backup pet
-meant 灵宠切换 — which replaced the whole battle roster with that one pet. This
-page gathers a pet's gear, skills and sigils and hands out links that carry the
+This page gathers a pet's gear, skills and sigils and hands out links that carry the
 `伙伴 <名字|编号>` selector, so each next step acts on the pet the page is about.
 """
 

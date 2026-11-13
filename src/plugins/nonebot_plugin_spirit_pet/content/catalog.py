@@ -1492,8 +1492,7 @@ class Catalog:
             "main_quest_claims": len(self.main_quests),
             "weekly_claims": len(self.weekly_quests),
             "arc_choices": sum(len(arc.chapters) for arc in self.arcs.values()),
-            # The season ladder lives in gameplay; tests/test_contract_audit.py
-            # asserts this ceiling still equals battle_pass.PREMIUM_LEVELS.
+            # The premium track has six five-level milestones.
             "battle_pass_premium_claims": 6,
         }
 

@@ -1,6 +1,6 @@
 # 连接机器人
 
-本文适用于当前源码的 UID 版本。按 [安装教程](INSTALLATION.md) 部署后，可接入 OneBot V11 或 QQ 官方机器人。
+按[安装教程](INSTALLATION.md)部署后，可接入 OneBot V11 或 QQ 官方机器人。
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 

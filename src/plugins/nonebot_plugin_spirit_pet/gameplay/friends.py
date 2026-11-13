@@ -1,11 +1,7 @@
 """灵宠好友: a player-managed friendship edge with a request handshake.
 
-Until now the friendship edge that gates 灵宠赠送、灵宠寄养 and 灵宠信箱 was
-*derived* — ``gifting.are_friends`` looked for a shared battle or a shared team
-and nothing more. Nobody could add a friend, nobody could see who they were
-allowed to hand something to, and nobody could end a relationship.
-
-This module makes that edge explicit while keeping the derived one working:
+Explicit friendships coexist with the shared-battle and shared-team eligibility
+used by gifting, fostering and mail:
 
 * ``friend_requests`` holds a pending one-sided handshake (``from_id`` →
   ``to_id``) that expires on read, exactly like ``team_requests``;
@@ -13,7 +9,7 @@ This module makes that edge explicit while keeping the derived one working:
   pair** (``user_low < user_high``), so "A and B are friends" cannot be recorded
   twice or half-recorded;
 * ``linked()`` is the single membership predicate, and ``gifting.are_friends``
-  now accepts either an accepted link or the legacy derived edge.
+  accepts either an accepted link or the legacy derived edge.
 
 Neither table carries progress, rewards or battle state: 结交 moves no stones
 and no items, writes no battle record and advances no quest, achievement, daily

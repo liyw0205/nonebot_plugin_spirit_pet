@@ -1,14 +1,11 @@
 """Skill study: grow one equipped skill's proficiency outside of battle.
 
-Combat is the only place proficiency used to move, which left 灵术专精 (needs level 3) and 灵宠传功
-(hands over a level-1, 0-proficiency copy) stuck behind a long grind. Studying spends energy and
-灵粮 to gain proficiency under two caps — per day and per pet per day — so it complements battles
-rather than replacing them.
+Studying spends energy and spirit food to gain proficiency under two independent
+caps: per player per day and per pet per day.
 
 State lives in ``quest_progress``: ``research_day_<beijing date>`` counts studies used today and
 ``research_<beijing date>_<pet_id>`` counts the studies that pet used today. Both carry the date in
-the key, so both caps reset by themselves when Beijing day changes. Both are integers, so no schema
-change is needed and both reset on their own when Beijing day changes.
+the key, so both caps reset when Beijing day changes.
 """
 
 from ..application.context import Context
