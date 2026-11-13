@@ -32,6 +32,7 @@ from . import race_prizes
 from . import research
 from . import training
 from . import convoy
+from . import pill_furnace
 from . import gauntlet
 from . import sigils
 from . import escort
@@ -589,6 +590,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (contracts.objective_line(ctx, player.user_id), "灵宠契约"),
         (hybrid.objective_line(ctx, player.user_id), "灵宠杂交"),
         (alchemy.objective_line(ctx, player.user_id), "灵宠炼丹"),
+        (pill_furnace.objective_line(ctx, player.user_id), "灵宠丹炉"),
         (difficulty.objective_line(ctx, player.user_id), "灵宠试炼"),
         (bounty.objective_line(ctx, player.user_id), "灵宠赏金"),
         (sect_exchange.objective_line(ctx, player.user_id), "灵宠贡献"),

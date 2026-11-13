@@ -86,7 +86,7 @@ def test_page_lists_recipes_costs_and_effects(game, play):
     assert "精力 +" in page.text()
     assert "灵石" in page.text()
     assert {link.command for link in page.inline_commands} == {
-        "灵宠采药", *(f"灵宠炼丹 {entry.name}" for entry in recipes(game))
+        "灵宠采药", "灵宠丹炉", *(f"灵宠炼丹 {entry.name}" for entry in recipes(game))
     }
 
 

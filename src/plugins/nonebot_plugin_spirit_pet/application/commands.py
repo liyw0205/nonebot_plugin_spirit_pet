@@ -64,6 +64,7 @@ from ..gameplay import release
 from ..gameplay import contracts
 from ..gameplay import hybrid
 from ..gameplay import alchemy
+from ..gameplay import pill_furnace
 from ..gameplay import difficulty
 from ..gameplay import bounty
 from ..gameplay import sect_exchange
@@ -273,6 +274,7 @@ ACTIONS = {
     "contracts": Command(contracts.dispatch, True, registered=False),
     "hybrid": Command(hybrid.dispatch, True, registered=False),
     "alchemy": Command(alchemy.dispatch, True, registered=False),
+    "pill_furnace": Command(pill_furnace.dispatch, True, registered=False),
     "difficulty": Command(difficulty.dispatch, True, registered=False),
     "bounty": Command(bounty.dispatch, True, registered=False),
     "sect_exchange": Command(sect_exchange.dispatch, True, registered=False),
@@ -478,6 +480,7 @@ COMMANDS = {
     "灵宠契约": "contracts",
     "灵宠杂交": "hybrid",
     "灵宠炼丹": "alchemy",
+    "灵宠丹炉": "pill_furnace",
     "灵宠试炼": "difficulty",
     "灵宠赏金": "bounty",
     "灵宠传功": "transfer",

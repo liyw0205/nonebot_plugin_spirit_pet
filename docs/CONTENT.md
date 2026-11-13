@@ -612,6 +612,8 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 ## 炼丹定义
 
+`gameplay/pill_furnace.py` 复用四份 `AlchemyRecipe`，每人每北京自然日开炉一次。三段配伍规则与原丹方产物、份数、名称和成本在开炉时冻结，写入 schema 28 动作账本，`kind='pill_furnace'` 与斗法回顾隔离；`pill_furnace_day` 保存最近开炉日，拒绝日期回退。每段、成丹与弃炉都保存完整炉状态和永久操作回执，消息缓存过期后仍按用户身份重放。成丹才累计 `alchemy_brews`，数量按原丹方一份或双份产出；毁丹不累计。丹炉本身不绑定宠物，产物仍通过原物品使用或突破入口消费。
+
 `alchemy.json` 是丹方数组，由 `domain/alchemy_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`stones`（≥1）、`materials`（≥1 项）与 `yield`（1-10）。`AlchemyRecipe` 拒绝「消耗自己的产物」，`Catalog._validate_alchemy` 进一步要求产物与材料都存在于 `items.json`、且产物是 `consumable` 或 `breakthrough`——丹药方产出装备或材料会在启动时被拒。
 
 ```json

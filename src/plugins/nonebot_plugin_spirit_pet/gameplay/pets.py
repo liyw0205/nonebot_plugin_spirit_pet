@@ -9,8 +9,7 @@ def pet_label(ctx: Context, pet) -> str:
     """The one rendering rule for a companion's name.
 
     `create_pet` names every pet after its species, so the species only needs spelling
-    out once a name differs from it. Two pages carried this rule inline; a third surface
-    that printed ``name（species）`` unconditionally rendered 玄狐（玄狐）.
+    out once a name differs from it.
     """
     species_name = ctx.content.species[pet.species_id].name
     return pet.name if pet.name == species_name else f"{pet.name}（{species_name}）"
