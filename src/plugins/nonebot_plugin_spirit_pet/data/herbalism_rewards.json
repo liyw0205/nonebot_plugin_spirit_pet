@@ -1,0 +1,11 @@
+[
+  {"id": "brook_1", "route": "brook", "threshold": 1, "name": "溪谷初识", "stones": 80, "items": {"spirit_food": 1}},
+  {"id": "brook_2", "route": "brook", "threshold": 2, "name": "溪谷熟路", "stones": 160, "items": {"seed_blood_herb": 1}},
+  {"id": "brook_4", "route": "brook", "threshold": 4, "name": "溪谷尽览", "stones": 320, "items": {"seed_aura_ear": 1}},
+  {"id": "ridge_1", "route": "ridge", "threshold": 1, "name": "赤岩初识", "stones": 80, "items": {"spirit_food": 1}},
+  {"id": "ridge_2", "route": "ridge", "threshold": 2, "name": "赤岩熟路", "stones": 180, "items": {"forge_ore": 1}},
+  {"id": "ridge_4", "route": "ridge", "threshold": 4, "name": "赤岩尽览", "stones": 360, "items": {"forge_ore": 2}},
+  {"id": "grove_1", "route": "grove", "threshold": 1, "name": "古木初识", "stones": 80, "items": {"spirit_food": 1}},
+  {"id": "grove_2", "route": "grove", "threshold": 2, "name": "古木熟路", "stones": 180, "items": {"seed_aura_ear": 1}},
+  {"id": "grove_4", "route": "grove", "threshold": 4, "name": "古木尽览", "stones": 360, "items": {"seed_blood_herb": 2}}
+]

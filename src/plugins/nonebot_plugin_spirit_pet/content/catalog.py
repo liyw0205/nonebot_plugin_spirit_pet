@@ -61,6 +61,7 @@ from ..domain.convoy_content import ConvoyRoute
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
+from ..domain.herbalism_reward_content import HerbalismReward
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -219,6 +220,7 @@ class Catalog:
     drills: dict[str, DrillDummy]
     tracking_maps: dict[str, TrackingMap]
     herb_routes: dict[str, HerbRoute]
+    herbalism_rewards: dict[str, HerbalismReward]
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
 
@@ -332,6 +334,7 @@ class Catalog:
             drills=_index(directory / "drills.json", DrillDummy),
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
+            herbalism_rewards=_index(directory / "herbalism_rewards.json", HerbalismReward),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
         )
@@ -464,6 +467,23 @@ class Catalog:
         for route in self.herb_routes.values():
             self._require([site.item_id for site in route.sites if site.item_id], self.items,
                           f"herbalism {route.id} materials")
+        route_ids = set(self.herb_routes)
+        rewards_by_route: dict[str, list[HerbalismReward]] = {route_id: [] for route_id in route_ids}
+        for reward in self.herbalism_rewards.values():
+            if reward.route not in route_ids:
+                raise ValueError(f"herbalism reward {reward.id} references unknown route")
+            route = self.herb_routes[reward.route]
+            harvest_sites = sum(site.item_id is not None for site in route.sites)
+            if reward.threshold > harvest_sites:
+                raise ValueError(f"herbalism reward {reward.id} exceeds route harvest sites")
+            rewards_by_route[reward.route].append(reward)
+            self._require(reward.items, self.items, f"herbalism reward {reward.id} items")
+        if any(not rewards for rewards in rewards_by_route.values()):
+            raise ValueError("every herbalism route needs rewards")
+        for route_id, rewards in rewards_by_route.items():
+            thresholds = [reward.threshold for reward in rewards]
+            if len(thresholds) != len(set(thresholds)) or thresholds != sorted(thresholds):
+                raise ValueError(f"herbalism rewards for {route_id} must have sorted unique thresholds")
         self._validate_difficulties()
         self._validate_bounties()
         self._validate_sect_exchange()

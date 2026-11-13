@@ -43,6 +43,7 @@ from . import formation
 from . import pair_bond
 from . import lineup_presets
 from . import release
+from . import herbalism_rewards
 from . import contracts
 from . import hybrid
 from . import alchemy, battle_supplies
@@ -570,6 +571,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (play_games.objective_line(ctx, player.user_id), "灵宠嬉戏 记录"),
         (tracking.objective_line(ctx, player.user_id), "灵宠寻踪"),
         (herbalism.objective_line(ctx, player.user_id), "灵宠采药"),
+        (herbalism_rewards.objective_line(ctx, player.user_id), "灵宠采药赏"),
         (_nursery_line(ctx, player.user_id), "灵宠护育"),
         (pet_outing.objective_line(ctx, player.user_id), "灵宠游历赏"),
         (fishing.objective_line(ctx, player.user_id), "灵宠垂钓"),

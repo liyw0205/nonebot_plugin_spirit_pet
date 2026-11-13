@@ -78,7 +78,7 @@ from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import cooking
 from ..gameplay import tracking
-from ..gameplay import herbalism
+from ..gameplay import herbalism, herbalism_rewards
 from ..gameplay import skill_presets
 from ..gameplay import daily_assignment
 from ..gameplay import achievements, resonance
@@ -246,6 +246,7 @@ ACTIONS = {
     "cooking": Command(cooking.dispatch, True, registered=False),
     "tracking": Command(tracking.dispatch, True, registered=False),
     "herbalism": Command(herbalism.dispatch, True, registered=False),
+    "herbalism_rewards": Command(herbalism_rewards.dispatch, True, registered=False),
     "cuisine_cook": Command(cuisine.cook, True),
     "banquet": Command(banquet.dispatch, True, registered=False),
     "cave": Command(cave.dispatch, True, registered=False),
@@ -450,6 +451,8 @@ COMMANDS = {
     "灵宠掌勺": "cooking",
     "灵宠寻踪": "tracking",
     "灵宠采药": "herbalism",
+    "灵宠采药赏": "herbalism_rewards",
+    "灵宠采药领奖": "herbalism_rewards",
     "灵宠家宴": "banquet",
     "灵宠农事": "farm_progress",
     "灵宠洞府": "cave",
