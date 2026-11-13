@@ -60,6 +60,7 @@ from ..domain.training_content import TrainingRule, TrainingTrial
 from ..domain.convoy_content import ConvoyRoute
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
+from ..domain.tracking_reward_content import TrackingReward
 from ..domain.herbalism_content import HerbRoute
 from ..domain.herbalism_reward_content import HerbalismReward
 from ..domain.pill_furnace_reward_content import PillFurnaceReward
@@ -220,6 +221,7 @@ class Catalog:
     market: MarketRule
     drills: dict[str, DrillDummy]
     tracking_maps: dict[str, TrackingMap]
+    tracking_rewards: dict[str, TrackingReward]
     herb_routes: dict[str, HerbRoute]
     herbalism_rewards: dict[str, HerbalismReward]
     pill_furnace_rewards: dict[str, PillFurnaceReward]
@@ -335,6 +337,7 @@ class Catalog:
             market=MarketRule.model_validate(_read(directory / "market.json")),
             drills=_index(directory / "drills.json", DrillDummy),
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
+            tracking_rewards=_index(directory / "tracking_rewards.json", TrackingReward),
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
             herbalism_rewards=_index(directory / "herbalism_rewards.json", HerbalismReward),
             pill_furnace_rewards=_index(directory / "pill_furnace_rewards.json", PillFurnaceReward),
@@ -487,6 +490,15 @@ class Catalog:
             thresholds = [reward.threshold for reward in rewards]
             if len(thresholds) != len(set(thresholds)) or thresholds != sorted(thresholds):
                 raise ValueError(f"herbalism rewards for {route_id} must have sorted unique thresholds")
+        tracking_rewards: dict[str, list[TrackingReward]] = {map_id: [] for map_id in self.tracking_maps}
+        for reward in self.tracking_rewards.values():
+            if reward.map_id not in self.tracking_maps:
+                raise ValueError(f"tracking reward {reward.id} references unknown map")
+            tracking_rewards[reward.map_id].append(reward)
+            self._require(reward.items, self.items, f"tracking reward {reward.id} items")
+        for map_id, rewards in tracking_rewards.items():
+            if [entry.threshold for entry in rewards] != [1, 4, len(self.tracking_maps[map_id].sites)]:
+                raise ValueError(f"tracking rewards for {map_id} must cover ordered thresholds 1, 4 and all sites")
         furnace_products = {recipe.item_id for recipe in self.alchemy.values()}
         furnace_rewards: dict[str, list[PillFurnaceReward]] = {product: [] for product in furnace_products}
         for reward in self.pill_furnace_rewards.values():

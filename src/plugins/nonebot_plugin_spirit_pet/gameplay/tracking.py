@@ -154,7 +154,8 @@ def page(ctx: Context) -> Reply:
         lines.append(f"{route.name} · {route.description} · 已寻获 {_progress(ctx, 'tracking_found_' + route.id)} 次。")
     lines.append("可回顾最近结束的一局，或查看伙伴的羁绊成长。")
     links = [InlineCommand(len(lines) - 1, "寻踪记录", "灵宠寻踪 记录"),
-             InlineCommand(len(lines) - 1, "羁绊成长", "灵宠羁绊")]
+             InlineCommand(len(lines) - 1, "羁绊成长", "灵宠羁绊"),
+             InlineCommand(len(lines) - 1, "寻踪图录", "灵宠寻踪图录")]
     if reason:
         lines.append(reason)
         links.extend((InlineCommand(len(lines) - 1, "查看名册", "灵宠列表"),
@@ -236,7 +237,8 @@ def act(ctx: Context, action: str, site: int | None, day: int | None) -> Reply:
              f"灵粮 ×1 已入乾坤袋；亲密 +{affinity_gain}（{pet.affinity}/100）。" if found else "本局没有道具或亲密奖励。",
              f"{pet.name}羁绊经验 +{gained} · 累计 {total} · 等级 {before} → {bond_levels.level(total)}。",
              f"该伙伴已完成 {_progress(ctx, key)} 局 · 寻获 {_progress(ctx, f'tracking_pet_found_{pet.pet_id}')} 次。"]
-    links = (InlineCommand(4, "查看羁绊", "灵宠羁绊"),)
+    links = (InlineCommand(4, "查看羁绊", "灵宠羁绊"),
+             InlineCommand(1, "查看图录", f"灵宠寻踪图录 {run['map']['name']}"))
     return _record(ctx, run, Reply("寻踪结算", tuple(lines), ("灵宠寻踪", "灵宠背包"), links))
 
 
@@ -245,7 +247,7 @@ def result(ctx: Context) -> Reply:
     if last is None:
         return Reply("寻踪记录", ("还没有已结束的寻踪记录。",), ("灵宠寻踪",))
     saved = Reply.from_data(last["reply"])
-    return Reply("寻踪记录", saved.lines, ("灵宠寻踪", "灵宠羁绊"))
+    return Reply("寻踪记录", saved.lines, ("灵宠寻踪", "灵宠羁绊", "灵宠寻踪图录"))
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:

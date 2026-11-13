@@ -1,0 +1,11 @@
+[
+  {"id": "bamboo_1", "map_id": "bamboo", "threshold": 1, "name": "竹溪初访", "stones": 60, "items": {"spirit_food": 1}},
+  {"id": "bamboo_4", "map_id": "bamboo", "threshold": 4, "name": "竹溪寻迹", "stones": 180, "items": {"seed_blood_herb": 1}},
+  {"id": "bamboo_16", "map_id": "bamboo", "threshold": 16, "name": "竹溪尽览", "stones": 500, "items": {"forge_ore": 3}},
+  {"id": "ruins_1", "map_id": "ruins", "threshold": 1, "name": "石庭初访", "stones": 60, "items": {"forge_ore": 1}},
+  {"id": "ruins_4", "map_id": "ruins", "threshold": 4, "name": "石庭寻迹", "stones": 180, "items": {"bloodline_essence": 1}},
+  {"id": "ruins_16", "map_id": "ruins", "threshold": 16, "name": "石庭尽览", "stones": 500, "items": {"forge_ore": 3}},
+  {"id": "orchard_1", "map_id": "orchard", "threshold": 1, "name": "果圃初访", "stones": 60, "items": {"spirit_food": 1}},
+  {"id": "orchard_4", "map_id": "orchard", "threshold": 4, "name": "果圃寻迹", "stones": 180, "items": {"seed_aura_ear": 1}},
+  {"id": "orchard_16", "map_id": "orchard", "threshold": 16, "name": "果圃尽览", "stones": 500, "items": {"seed_ancient_root": 1}}
+]
