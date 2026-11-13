@@ -1,0 +1,10 @@
+[
+  {"id": "energy_pill_1", "product": "energy_pill", "threshold": 1, "name": "回元初成", "stones": 80, "items": {"spirit_food": 1}},
+  {"id": "energy_pill_2", "product": "energy_pill", "threshold": 2, "name": "回元熟炼", "stones": 180, "items": {"seed_blood_herb": 1}},
+  {"id": "exp_pill_1", "product": "exp_pill", "threshold": 1, "name": "蕴灵初成", "stones": 100, "items": {"forge_ore": 1}},
+  {"id": "exp_pill_2", "product": "exp_pill", "threshold": 2, "name": "蕴灵熟炼", "stones": 220, "items": {"seed_aura_ear": 1}},
+  {"id": "affinity_pill_1", "product": "affinity_pill", "threshold": 1, "name": "同心初成", "stones": 90, "items": {"spirit_food": 1}},
+  {"id": "affinity_pill_2", "product": "affinity_pill", "threshold": 2, "name": "同心熟炼", "stones": 200, "items": {"forge_ore": 1}},
+  {"id": "breakthrough_pill_1", "product": "breakthrough_pill", "threshold": 1, "name": "破境初成", "stones": 140, "items": {"bloodline_essence": 1}},
+  {"id": "breakthrough_pill_2", "product": "breakthrough_pill", "threshold": 2, "name": "破境熟炼", "stones": 300, "items": {"seed_ancient_root": 1}}
+]

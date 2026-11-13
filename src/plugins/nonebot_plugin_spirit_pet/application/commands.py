@@ -65,6 +65,7 @@ from ..gameplay import contracts
 from ..gameplay import hybrid
 from ..gameplay import alchemy
 from ..gameplay import pill_furnace
+from ..gameplay import pill_furnace_rewards
 from ..gameplay import difficulty
 from ..gameplay import bounty
 from ..gameplay import sect_exchange
@@ -247,6 +248,8 @@ ACTIONS = {
     "tracking": Command(tracking.dispatch, True, registered=False),
     "herbalism": Command(herbalism.dispatch, True, registered=False),
     "herbalism_rewards": Command(herbalism_rewards.dispatch, True, registered=False),
+    "pill_furnace_rewards": Command(pill_furnace_rewards.catalog, True, registered=False),
+    "pill_furnace_reward_claim": Command(pill_furnace_rewards.claim, True),
     "cuisine_cook": Command(cuisine.cook, True),
     "banquet": Command(banquet.dispatch, True, registered=False),
     "cave": Command(cave.dispatch, True, registered=False),
@@ -453,6 +456,8 @@ COMMANDS = {
     "灵宠采药": "herbalism",
     "灵宠采药赏": "herbalism_rewards",
     "灵宠采药领奖": "herbalism_rewards",
+    "灵宠丹炉赏": "pill_furnace_rewards",
+    "灵宠丹炉领奖": "pill_furnace_reward_claim",
     "灵宠家宴": "banquet",
     "灵宠农事": "farm_progress",
     "灵宠洞府": "cave",

@@ -62,6 +62,7 @@ from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
 from ..domain.herbalism_content import HerbRoute
 from ..domain.herbalism_reward_content import HerbalismReward
+from ..domain.pill_furnace_reward_content import PillFurnaceReward
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -221,6 +222,7 @@ class Catalog:
     tracking_maps: dict[str, TrackingMap]
     herb_routes: dict[str, HerbRoute]
     herbalism_rewards: dict[str, HerbalismReward]
+    pill_furnace_rewards: dict[str, PillFurnaceReward]
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
 
@@ -335,6 +337,7 @@ class Catalog:
             tracking_maps=_index(directory / "tracking_maps.json", TrackingMap),
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
             herbalism_rewards=_index(directory / "herbalism_rewards.json", HerbalismReward),
+            pill_furnace_rewards=_index(directory / "pill_furnace_rewards.json", PillFurnaceReward),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
         )
@@ -484,6 +487,21 @@ class Catalog:
             thresholds = [reward.threshold for reward in rewards]
             if len(thresholds) != len(set(thresholds)) or thresholds != sorted(thresholds):
                 raise ValueError(f"herbalism rewards for {route_id} must have sorted unique thresholds")
+        furnace_products = {recipe.item_id for recipe in self.alchemy.values()}
+        furnace_rewards: dict[str, list[PillFurnaceReward]] = {product: [] for product in furnace_products}
+        for reward in self.pill_furnace_rewards.values():
+            if reward.product not in furnace_products:
+                raise ValueError(f"pill furnace reward {reward.id} references unknown product")
+            furnace_rewards[reward.product].append(reward)
+            self._require(reward.items, self.items, f"pill furnace reward {reward.id} items")
+        if any(not rewards for rewards in furnace_rewards.values()):
+            raise ValueError("every pill furnace product needs rewards")
+        for product, rewards in furnace_rewards.items():
+            thresholds = [reward.threshold for reward in rewards]
+            if len(thresholds) != len(set(thresholds)) or thresholds != sorted(thresholds):
+                raise ValueError(f"pill furnace rewards for {product} must have sorted unique thresholds")
+            if thresholds != [1, 2]:
+                raise ValueError(f"pill furnace rewards for {product} must cover thresholds 1 and 2")
         self._validate_difficulties()
         self._validate_bounties()
         self._validate_sect_exchange()

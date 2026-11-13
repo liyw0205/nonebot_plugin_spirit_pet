@@ -26,6 +26,7 @@
 | tracking_maps.json | 三张寻踪地图：16个行优先地点、两类各8处地貌与初始气息；不保存玩家目标 |
 | herb_routes.json | 三处九点药山：行优先地点、进入脚程、既有材料与采集脚程、总脚程；入口无产物，每处采集必须允许往返 |
 | herbalism_rewards.json | 三条药山各自的 1/2/4 处带回里程碑、奖励名称、灵石和既有物品；路线与阈值必须唯一且不能超过该路线采集点数 |
+| pill_furnace_rewards.json | 四种丹炉产物各自的 1/2 炉成功里程碑；产物必须来自 `alchemy.json`，奖励物品必须存在且阈值唯一递增 |
 | nursery.json | 灵卵护育对象：两次护理预算、间隔、灵粮/精力消耗、原伙伴羁绊及三种互斥成长方向 |
 | training_trials.json | 灵宠连携演练试题、五回合灵靶节奏及开局属性缩放 |
 | training_rule.json | 灵宠连携演练每日名额、入场消耗与有限熟练度/羁绊收益 |
@@ -614,6 +615,8 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 ## 炼丹定义
 
 `gameplay/pill_furnace.py` 复用四份 `AlchemyRecipe`，每人每北京自然日开炉一次。三段配伍规则与原丹方产物、份数、名称和成本在开炉时冻结，写入 schema 28 动作账本，`kind='pill_furnace'` 与斗法回顾隔离；`pill_furnace_day` 保存最近开炉日，拒绝日期回退。每段、成丹与弃炉都保存完整炉状态和永久操作回执，消息缓存过期后仍按用户身份重放。成丹才累计 `alchemy_brews`，数量按原丹方一份或双份产出；毁丹不累计。丹炉本身不绑定宠物，产物仍通过原物品使用或突破入口消费。
+
+`gameplay/pill_furnace_rewards.py` 只读取 `pill_furnace` 成功完成快照，以原产物和不同 `run_id` 统计炉数，单份/双份同计一炉；即时炼丹、毁丹和弃炉不计。`pill_furnace_rewards.json` 每种原产物恰有 1/2 炉两档，启动时检查产物引用、奖励物品和唯一递增阈值。领取凭证使用 `quest_progress` 的 `pill_furnace_reward_<产物>_<阈值>`，`progress` 保存领取时的成功炉数，`claimed=1`；凭证、奖励与操作回复同事务入账。失败不留部分奖励，持久凭证阻止缓存过期后重新领取。
 
 `alchemy.json` 是丹方数组，由 `domain/alchemy_content.py` 校验：每项声明 `id`、`name`、`description`、`item_id`、`stones`（≥1）、`materials`（≥1 项）与 `yield`（1-10）。`AlchemyRecipe` 拒绝「消耗自己的产物」，`Catalog._validate_alchemy` 进一步要求产物与材料都存在于 `items.json`、且产物是 `consumable` 或 `breakthrough`——丹药方产出装备或材料会在启动时被拒。
 

@@ -136,7 +136,7 @@ def page(ctx: Context) -> Reply:
     for entry in alchemy.recipes(ctx):
         lines.append(f"{entry.name} · {alchemy.cost_text(ctx, entry)} · {alchemy.effect_text(ctx, entry)}。")
         links.append(InlineCommand(len(lines) - 1, "预览丹方", f"{TITLE} 预览 {entry.name}"))
-    return Reply(TITLE, tuple(lines), ("灵宠炼丹", TITLE + " 成品", "灵宠背包"), tuple(links))
+    return Reply(TITLE, tuple(lines), ("灵宠炼丹", TITLE + " 成品", "灵宠背包", "灵宠丹炉赏"), tuple(links))
 
 
 def start(ctx: Context, name: str) -> Reply:
@@ -207,6 +207,7 @@ def _finish(ctx: Context, run: dict) -> Reply:
                    else f"灵宠使用 {recipe['product']} 1")
         links.append(InlineCommand(len(lines) - 1, "使用丹药", command))
         lines.append("本炉计一次成功炼丹，可查看成就和今日赏金进度。")
+        links.append(InlineCommand(len(lines) - 1, "查看成品赏", "灵宠丹炉赏"))
     else:
         lines.append("本炉毁丹，无产物、不累计炼丹次数；已付丹材、灵石和机会不退还。")
     run.update(status="finished", portions=amount)
@@ -219,7 +220,10 @@ def result(ctx: Context) -> Reply:
     if last is None:
         return Reply(TITLE + " · 成品", ("还没有结束的丹炉记录。",), (TITLE,))
     saved = Reply.from_data(last["reply"])
-    return Reply(TITLE + " · 成品回顾", saved.lines, (TITLE, "灵宠背包"), saved.inline_commands)
+    commands = (TITLE, "灵宠背包")
+    if not any(link.command == "灵宠丹炉赏" for link in saved.inline_commands):
+        commands += ("灵宠丹炉赏",)
+    return Reply(TITLE + " · 成品回顾", saved.lines, commands, saved.inline_commands)
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
