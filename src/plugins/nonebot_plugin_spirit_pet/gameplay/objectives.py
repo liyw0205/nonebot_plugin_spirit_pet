@@ -24,7 +24,7 @@ from . import arcs
 from . import support, borrow, mentorship
 from . import tribulations
 from . import combos
-from . import achievement_shop
+from . import achievement_shop, collection_exchange
 from . import specialization
 from . import mood
 from . import race
@@ -584,6 +584,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (tribulations.objective_line(ctx, player.user_id), "灵宠劫境"),
         (combos.objective_line(ctx, player.user_id), "灵宠连携"),
         (achievement_shop.objective_line(ctx, player.user_id), "灵宠成就商店"),
+        (collection_exchange.objective_line(ctx, player.user_id), "灵宠收集兑换"),
         (specialization.objective_line(ctx, player.user_id), "灵宠专精"),
         (mood.objective_line(ctx, player.user_id), "灵宠心境"),
         (_race_line(ctx, player.user_id)),

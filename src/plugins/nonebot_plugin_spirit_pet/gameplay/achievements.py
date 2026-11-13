@@ -8,7 +8,7 @@ from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.state import ASCENDED_PREFIX
 from ..utils.arguments import named, quantity
 from ..utils.time import BEIJING
-from . import codex
+from . import codex, collection_exchange
 from .equipment_set_rewards import SET_REWARDS, claim_id
 
 COLLECTION_PAGE_SIZE = 9
@@ -48,10 +48,16 @@ def collection(ctx: Context, arg: str) -> Reply:
         commands.append(f"灵宠收集 {page - 1}")
     if page < pages:
         commands.append(f"灵宠收集 {page + 1}")
-    commands.extend(("灵宠图鉴", "灵宠成就", "灵宠图鉴奖励", "灵宠收集榜"))
+    commands.extend(("灵宠收集兑换", "灵宠图鉴", "灵宠成就", "灵宠图鉴奖励", "灵宠收集榜"))
     collected = len(owned & set(ctx.content.species))
     duplicate_species = sum(amount >= 2 for amount in owned_counts.values())
-    lines = [f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种"]
+    if player is None:
+        lines = [f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种 · 尚未结契"]
+    else:
+        lines = [
+            f"已收集 {collected}/{len(species)} 种 · 同族复数 {duplicate_species} 种",
+            f"收集印记：可用 {collection_exchange.balance(ctx)} · 灵宠收集兑换可查看目录。",
+        ]
     links = []
     claimable = 0
     for entry in entries:

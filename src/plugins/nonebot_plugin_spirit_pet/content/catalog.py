@@ -66,6 +66,7 @@ from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
 from ..domain.nursery_content import NurseryRule
 from ..domain.collection_rank_reward_content import CollectionRankReward
+from ..domain.collection_exchange_content import CollectionExchangeOffer
 from ..domain.share_rank_reward_content import ShareRankReward
 from ..domain.share_reward_content import ShareReward
 from ..domain.market_content import MarketRule
@@ -209,6 +210,7 @@ class Catalog:
     fishing_baits: dict[str, FishingBait]
     angling_courses: dict[str, AnglingCourse]
     collection_rank_rewards: dict[int, CollectionRankReward]
+    collection_exchange: dict[str, CollectionExchangeOffer]
     share_rewards: dict[int, ShareReward]
     share_rank_rewards: dict[int, ShareRankReward]
     market: MarketRule
@@ -313,6 +315,9 @@ class Catalog:
             angling_courses=_index(directory / "angling_courses.json", AnglingCourse),
             collection_rank_rewards=_index(
                 directory / "collection_rank_rewards.json", CollectionRankReward, "rank",
+            ),
+            collection_exchange=_index(
+                directory / "collection_exchange.json", CollectionExchangeOffer,
             ),
             share_rewards=_index(directory / "share_rewards.json", ShareReward, "readers"),
             share_rank_rewards=_index(
@@ -471,6 +476,7 @@ class Catalog:
         if set(self.angling_courses) != set(self.fishing_spots):
             raise ValueError("angling courses must cover exactly the fishing spots")
         self._validate_collection_rank_rewards()
+        self._validate_collection_exchange()
         self._validate_share_rewards()
         self._validate_share_rank_rewards()
         self._validate_market()
@@ -1345,6 +1351,20 @@ class Catalog:
                     raise ValueError(
                         f"collection rank reward {item_id} must not fall as the rank improves"
                     )
+
+    def _validate_collection_exchange(self):
+        """Duplicate-species exchange offers must pay real usable items."""
+        if not self.collection_exchange:
+            raise ValueError("collection exchange must not be empty")
+        for offer in self.collection_exchange.values():
+            self._require(offer.items, self.items, f"collection exchange {offer.id} items")
+            if any(
+                self.items[item_id].kind not in {"consumable", "material", "breakthrough"}
+                for item_id in offer.items
+            ):
+                raise ValueError(
+                    f"collection exchange {offer.id} rewards must be usable items"
+                )
 
     def _validate_share_rank_rewards(self):
         """Share board rank milestones must be three ordered, real rewards."""

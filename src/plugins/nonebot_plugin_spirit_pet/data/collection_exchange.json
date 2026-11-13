@@ -1,0 +1,37 @@
+[
+  {
+    "id": "spirit_food_bundle",
+    "name": "灵粮补给",
+    "description": "三份灵粮，继续喂养或准备出行。",
+    "cost": 1,
+    "items": {"spirit_food": 3}
+  },
+  {
+    "id": "forge_ore_bundle",
+    "name": "锻灵矿包",
+    "description": "两块锻灵矿，用于打造与强化。",
+    "cost": 2,
+    "items": {"forge_ore": 2}
+  },
+  {
+    "id": "exp_pill",
+    "name": "蕴灵丹",
+    "description": "一枚蕴灵丹，用于伙伴成长。",
+    "cost": 2,
+    "items": {"exp_pill": 1}
+  },
+  {
+    "id": "bloodline_essence",
+    "name": "血脉精华",
+    "description": "一份血脉精华，用于进阶与淬炼。",
+    "cost": 3,
+    "items": {"bloodline_essence": 1}
+  },
+  {
+    "id": "stone_cache",
+    "name": "灵石小匣",
+    "description": "一笔可立即使用的灵石。",
+    "cost": 4,
+    "stones": 200
+  }
+]
