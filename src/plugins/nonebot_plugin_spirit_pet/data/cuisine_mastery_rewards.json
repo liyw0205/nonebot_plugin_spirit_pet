@@ -1,0 +1,17 @@
+[
+  {"id":"rice_porridge_1","dish_id":"rice_porridge","name":"初识灵米","threshold":1,"stones":80,"items":{"spirit_food":1}},
+  {"id":"rice_porridge_3","dish_id":"rice_porridge","name":"灵米熟手","threshold":3,"stones":180,"items":{"forge_ore":1}},
+  {"id":"rice_porridge_6","dish_id":"rice_porridge","name":"灵米宗师","threshold":6,"stones":400,"items":{"bloodline_essence":1}},
+  {"id":"herb_soup_1","dish_id":"herb_soup","name":"初识百草","threshold":1,"stones":80,"items":{"spirit_food":1}},
+  {"id":"herb_soup_3","dish_id":"herb_soup","name":"百草熟手","threshold":3,"stones":180,"items":{"forge_ore":1}},
+  {"id":"herb_soup_6","dish_id":"herb_soup","name":"百草宗师","threshold":6,"stones":400,"items":{"bloodline_essence":1}},
+  {"id":"lotus_pastry_1","dish_id":"lotus_pastry","name":"初识莲酥","threshold":1,"stones":80,"items":{"spirit_food":1}},
+  {"id":"lotus_pastry_3","dish_id":"lotus_pastry","name":"莲酥熟手","threshold":3,"stones":180,"items":{"forge_ore":1}},
+  {"id":"lotus_pastry_6","dish_id":"lotus_pastry","name":"莲酥宗师","threshold":6,"stones":400,"items":{"bloodline_essence":1}},
+  {"id":"grain_cake_1","dish_id":"grain_cake","name":"初识麦饼","threshold":1,"stones":80,"items":{"spirit_food":1}},
+  {"id":"grain_cake_3","dish_id":"grain_cake","name":"麦饼熟手","threshold":3,"stones":180,"items":{"forge_ore":1}},
+  {"id":"grain_cake_6","dish_id":"grain_cake","name":"麦饼宗师","threshold":6,"stones":400,"items":{"bloodline_essence":1}},
+  {"id":"moon_cake_1","dish_id":"moon_cake","name":"初识月华","threshold":1,"stones":80,"items":{"spirit_food":1}},
+  {"id":"moon_cake_3","dish_id":"moon_cake","name":"月华熟手","threshold":3,"stones":180,"items":{"forge_ore":1}},
+  {"id":"moon_cake_6","dish_id":"moon_cake","name":"月华宗师","threshold":6,"stones":400,"items":{"bloodline_essence":1}}
+]

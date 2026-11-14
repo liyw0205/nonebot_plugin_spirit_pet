@@ -17,6 +17,7 @@ from ..domain.crafting_content import Recipe
 from ..domain.expedition_content import Expedition
 from ..domain.forbidden_content import ForbiddenZone
 from ..domain.cuisine_content import CuisineDish
+from ..domain.cuisine_mastery_content import CuisineMasteryReward
 from ..domain.cuisine_order_content import CuisineOrder
 from ..domain.team_trial_content import TeamTrial
 from ..domain.cave_content import CaveFacility
@@ -178,6 +179,7 @@ class Catalog:
     shop_offers: dict[str, ShopOffer]
     forbidden: dict[str, ForbiddenZone]
     cuisine: dict[str, CuisineDish]
+    cuisine_mastery_rewards: dict[str, CuisineMasteryReward]
     cuisine_orders: dict[str, CuisineOrder]
     team_trials: dict[str, TeamTrial]
     cave: dict[str, CaveFacility]
@@ -293,6 +295,7 @@ class Catalog:
             arena_tier_rewards=_index(directory / "arena_tier_rewards.json", ArenaTierReward, "tier"),
             forbidden=_index(directory / "forbidden.json", ForbiddenZone),
             cuisine=_index(directory / "cuisine.json", CuisineDish),
+            cuisine_mastery_rewards=_index(directory / "cuisine_mastery_rewards.json", CuisineMasteryReward),
             cuisine_orders=_index(directory / "cuisine_orders.json", CuisineOrder),
             team_trials=_index(directory / "team_trials.json", TeamTrial),
             cave=_index(directory / "cave.json", CaveFacility),
@@ -472,6 +475,7 @@ class Catalog:
         self._validate_tower(realm_ids)
         self._validate_forbidden(realm_ids)
         self._validate_cuisine()
+        self._validate_cuisine_mastery_rewards()
         self._validate_team_trials(realm_ids)
         self._validate_cave()
         self._validate_corridor()
@@ -864,6 +868,23 @@ class Catalog:
         levels = {dish.level for dish in self.cuisine.values()}
         if levels != set(range(1, max(levels) + 1)):
             raise ValueError("cuisine levels must be contiguous from 1")
+
+    def _validate_cuisine_mastery_rewards(self):
+        eligible = {dish_id for dish_id, dish in self.cuisine.items() if dish.item is not None}
+        by_dish: dict[str, list[CuisineMasteryReward]] = {dish_id: [] for dish_id in eligible}
+        for reward in self.cuisine_mastery_rewards.values():
+            if reward.dish_id not in self.cuisine:
+                raise ValueError(f"cuisine mastery reward {reward.id} references unknown dish {reward.dish_id}")
+            if self.cuisine[reward.dish_id].item is None:
+                raise ValueError(f"cuisine mastery reward {reward.id} must reference a single-meal recipe")
+            by_dish[reward.dish_id].append(reward)
+            self._require(reward.items, self.items, "cuisine mastery reward items")
+            if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in reward.items):
+                raise ValueError(f"cuisine mastery reward {reward.id} must reward consumables or materials")
+        for dish_id, rewards in by_dish.items():
+            thresholds = [entry.threshold for entry in sorted(rewards, key=lambda entry: entry.threshold)]
+            if thresholds != [1, 3, 6]:
+                raise ValueError(f"cuisine mastery {dish_id} must define 1/3/6 milestones")
 
     def _validate_team_trials(self, realm_ids):
         if not self.team_trials:
