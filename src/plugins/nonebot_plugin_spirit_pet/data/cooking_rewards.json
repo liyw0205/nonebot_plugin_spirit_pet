@@ -1,0 +1,23 @@
+[
+  {
+    "id": "cooking_one",
+    "name": "初掌灶火",
+    "threshold": 1,
+    "stones": 100,
+    "items": {"spirit_food": 1}
+  },
+  {
+    "id": "cooking_three",
+    "name": "三锅成艺",
+    "threshold": 3,
+    "stones": 260,
+    "items": {"forge_ore": 1}
+  },
+  {
+    "id": "cooking_six",
+    "name": "六味传香",
+    "threshold": 6,
+    "stones": 600,
+    "items": {"bloodline_essence": 1}
+  }
+]

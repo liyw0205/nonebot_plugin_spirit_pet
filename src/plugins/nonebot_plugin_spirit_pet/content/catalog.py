@@ -64,6 +64,7 @@ from ..domain.tracking_reward_content import TrackingReward
 from ..domain.herbalism_content import HerbRoute
 from ..domain.herbalism_reward_content import HerbalismReward
 from ..domain.pill_furnace_reward_content import PillFurnaceReward
+from ..domain.cooking_reward_content import CookingReward
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -231,6 +232,7 @@ class Catalog:
     herb_routes: dict[str, HerbRoute]
     herbalism_rewards: dict[str, HerbalismReward]
     pill_furnace_rewards: dict[str, PillFurnaceReward]
+    cooking_rewards: dict[str, CookingReward]
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
 
@@ -350,6 +352,7 @@ class Catalog:
             herb_routes=_index(directory / "herb_routes.json", HerbRoute),
             herbalism_rewards=_index(directory / "herbalism_rewards.json", HerbalismReward),
             pill_furnace_rewards=_index(directory / "pill_furnace_rewards.json", PillFurnaceReward),
+            cooking_rewards=_index(directory / "cooking_rewards.json", CookingReward),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
         )
@@ -558,6 +561,7 @@ class Catalog:
         self._validate_weekly_rewards()
         self._validate_banquet_rewards()
         self._validate_visit_rewards()
+        self._validate_cooking_rewards()
         self._validate_daily_assignments()
         self._validate_codex_rewards()
         self._validate_crops()
@@ -1737,6 +1741,13 @@ class Catalog:
             raise ValueError("visit rewards must define unique 3/10/30 milestones")
         for entry in entries:
             self._require(entry.items, self.items, "visit reward items")
+
+    def _validate_cooking_rewards(self):
+        entries = sorted(self.cooking_rewards.values(), key=lambda entry: entry.threshold)
+        if [entry.threshold for entry in entries] != [1, 3, 6]:
+            raise ValueError("cooking rewards must define unique 1/3/6 milestones")
+        for entry in entries:
+            self._require(entry.items, self.items, "cooking reward items")
 
     def _validate_season_missions(self):
         missions = self.season_missions
