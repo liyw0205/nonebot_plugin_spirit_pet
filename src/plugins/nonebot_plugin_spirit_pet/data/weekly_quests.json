@@ -252,7 +252,7 @@
       }
     }
   },
-{
+  {
     "id": "weekly_achievement_deep",
     "name": "成就五收",
     "description": "本周领取 5 项成就奖励。",
@@ -273,6 +273,42 @@
           "maximum": 3
         }
       }
+    }
+  },
+  {
+    "id": "weekly_cuisine_orders",
+    "name": "膳房供货",
+    "description": "本周成功交付 2 份膳房订单。",
+    "metric": "weekly_cuisine_orders",
+    "target": 2,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 500, "maximum": 500},
+      "items": {"spirit_food": {"minimum": 3, "maximum": 3}}
+    }
+  },
+  {
+    "id": "weekly_cuisine_practice",
+    "name": "灶火精研",
+    "description": "本周完成 3 局膳房研修。",
+    "metric": "weekly_cuisine_practice",
+    "target": 3,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 650, "maximum": 650},
+      "items": {"affinity_pill": {"minimum": 1, "maximum": 1}}
+    }
+  },
+  {
+    "id": "weekly_banquet",
+    "name": "家宴团圆",
+    "description": "本周成功举办 1 次家宴。",
+    "metric": "weekly_banquets",
+    "target": 1,
+    "reward": {
+      "exp": {"minimum": 0, "maximum": 0},
+      "stones": {"minimum": 450, "maximum": 450},
+      "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
     }
   }
 ]

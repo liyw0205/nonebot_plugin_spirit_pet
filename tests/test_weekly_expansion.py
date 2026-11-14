@@ -49,16 +49,22 @@ def stones(game):
     return player(game[1])["stones"]
 
 
-def test_pool_doubles_with_a_harder_variant_per_metric(game):
+def test_pool_keeps_hard_variants_and_adds_food_metrics(game):
     content = game[0].content
-    assert len(content.weekly_quests) == 12
+    assert len(content.weekly_quests) == 15
     by_metric = {}
     for quest in content.weekly_quests.values():
         by_metric.setdefault(quest.metric, []).append(quest)
-    assert len(by_metric) == 6
-    for metric, entries in by_metric.items():
+    assert len(by_metric) == 9
+    for metric in (
+        "weekly_pve_wins", "weekly_pvp_wins", "weekly_expedition_claims",
+        "weekly_adventures", "weekly_stage_clears", "weekly_achievement_claims",
+    ):
+        entries = by_metric[metric]
         assert len(entries) == 2
         assert len({entry.target for entry in entries}) == 2
+    for metric in ("weekly_cuisine_orders", "weekly_cuisine_practice", "weekly_banquets"):
+        assert len(by_metric[metric]) == 1
     assert set(HARD) <= set(content.weekly_quests)
 
 
@@ -68,6 +74,8 @@ def test_harder_variants_pay_more_than_their_light_counterpart(game):
     for quest in content.weekly_quests.values():
         by_metric.setdefault(quest.metric, []).append(quest)
     for metric, entries in by_metric.items():
+        if len(entries) == 1:
+            continue
         ordered = sorted(entries, key=lambda entry: entry.target)
         lighter, heavier = ordered
         assert heavier.reward.stones.minimum > lighter.reward.stones.minimum
@@ -115,4 +123,4 @@ def test_hub_counts_follow_the_pool(game, play):
     account(game, play)
     line = next(text for text in play("objectives").lines if text.startswith("本周周常："))
     assert f"共 {len(content.weekly_quests)} 项" in line
-    assert "12 项" in line
+    assert "15 项" in line

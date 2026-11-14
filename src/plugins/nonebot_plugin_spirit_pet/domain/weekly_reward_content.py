@@ -6,7 +6,7 @@ from .content import Definition, Identifier, Name, NonNegative, Positive
 class WeeklyReward(Definition):
     id: Identifier
     name: Name
-    threshold: Positive = Field(le=12)
+    threshold: Positive = Field(le=15)
     stones: NonNegative = 0
     items: dict[Identifier, Positive] = Field(default_factory=dict)
 

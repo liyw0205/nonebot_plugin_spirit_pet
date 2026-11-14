@@ -47,7 +47,7 @@
 | achievements.json | 稳定成就 ID、目标指标、完成条件文案和一次性静态奖励 |
 | main_quests.json | 主线步骤的序号、前置、目标指标与一次性奖励，按序解锁 |
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
-| weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置；每个指标 1-2 个难度 |
+| weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置；既有指标有轻量/进阶难度，近期膳房活动按成功回执计入 |
 | season_missions.json | 赛季目标的指标、目标值与每赛季一次性奖励，按自然月重置；每个指标 1-2 个难度 |
 | titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生；可统计五阶灵术精进奖励的永久领取凭证与飞升周目 |
 | ascension.json | 飞升试炼三段（雷劫、心魔、天道）的顺序、说明与敌手引用，不含玩家状态 |
@@ -67,6 +67,8 @@
 | recipes.json | 每件装备的打造灵石/材料、基础分解回收、强化材料回收比例 |
 
 除 `rules.json`、`dao_names.json`、`arena.json`、`nursery.json` 等规则对象外，目录文件为对象数组。不要往这些文件写 `created_at`、`last_train`、`sign_day`、`expires_at`、`timestamp`、`cooldown`、玩家 ID 或库存数量。
+
+`weekly_quests.json` 的 `metric` 由 `WeeklyMetric` 严格限定。膳房相关目标按已有成功记录派生：`weekly_cuisine_orders` 只计本周有效订单目录中的已交付回执；`weekly_cuisine_practice` 只计 `duel_actions` 中本周 `kind=cuisine_practice` 且 `status=finished` 的终态记录；`weekly_banquets` 只认 `banquet_<本周起点>` 开席凭证。不得把烹制、研修中间步骤、放弃或失败请求当作完成。`weekly_rewards.json` 的累计门槛固定为 2/4/6/9，统计本周已领取的周常目标数；领取与该周凭证、奖励同事务保存。
 
 冷却间隔、精力恢复间隔属于运行配置，放在 `.env`；某玩家的最后修炼时间、准备状态属于 SQLite。静态的“进化需要 3 个血脉精华”是成本，不是库存。
 

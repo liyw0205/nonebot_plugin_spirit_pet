@@ -1734,8 +1734,8 @@ class Catalog:
 
     def _validate_weekly_rewards(self):
         thresholds = [entry.threshold for entry in self.weekly_rewards.values()]
-        if set(thresholds) != {2, 4, 6} or len(thresholds) != 3:
-            raise ValueError("weekly rewards must define unique 2/4/6 milestones")
+        if set(thresholds) != {2, 4, 6, 9} or len(thresholds) != 4:
+            raise ValueError("weekly rewards must define unique 2/4/6/9 milestones")
         if max(thresholds) > len(self.weekly_quests):
             raise ValueError("weekly reward exceeds available quests")
         for entry in self.weekly_rewards.values():

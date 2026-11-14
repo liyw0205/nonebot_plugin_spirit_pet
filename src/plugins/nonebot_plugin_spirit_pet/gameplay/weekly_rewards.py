@@ -77,10 +77,11 @@ def claim(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
     if len(parts) not in (1, 3) or (len(parts) == 3 and parts[1] != "周"):
         raise GameError("格式：灵宠周常赏 领奖 档位，例如 灵宠周常赏 领奖 2。")
-    threshold = quantity(parts[0], 12)
+    threshold = quantity(parts[0], len(ctx.content.weekly_quests))
     entry = next((entry for entry in entries(ctx) if entry.threshold == threshold), None)
     if entry is None:
-        raise GameError("周常赏仅有 2、4、6 项三档。")
+        options = "、".join(str(item.threshold) for item in entries(ctx))
+        raise GameError(f"周常赏档位为 {options} 项。")
     start, end = beijing_week(ctx.now)
     if len(parts) == 3 and parts[2] != beijing_day(start):
         raise GameError("这条周常赏领取入口已经跨周，请重新查看灵宠周常赏。")

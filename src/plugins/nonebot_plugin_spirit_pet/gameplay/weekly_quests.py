@@ -45,6 +45,32 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     elif metric == "weekly_achievement_claims":
         query = "SELECT COUNT(*) FROM achievement_claims WHERE user_id=? AND claimed_at>=? AND claimed_at<?"
         params = (user_id, start, end)
+    elif metric == "weekly_cuisine_orders":
+        week = beijing_day(start)
+        prefix = f"cuisine_order_{week}_"
+        rows = conn.execute(
+            "SELECT quest_id, claimed FROM quest_progress WHERE user_id=? AND substr(quest_id,1,?)=?",
+            (user_id, len(prefix), prefix),
+        ).fetchall()
+        delivered = {
+            row["quest_id"][len(prefix):]
+            for row in rows
+            if row["claimed"] and row["quest_id"][len(prefix):] in ctx.content.cuisine_orders
+        }
+        return len(delivered)
+    elif metric == "weekly_cuisine_practice":
+        query = (
+            "SELECT COUNT(*) FROM duel_actions WHERE user_id=? AND created_at>=? AND created_at<? "
+            "AND json_extract(snapshot,'$.kind')='cuisine_practice' "
+            "AND json_extract(snapshot,'$.status')='finished'"
+        )
+        params = (user_id, start, end)
+    elif metric == "weekly_banquets":
+        week_key = f"banquet_{start}"
+        query = (
+            "SELECT COUNT(*) FROM quest_progress WHERE user_id=? AND quest_id=? AND claimed=1"
+        )
+        params = (user_id, week_key)
     else:
         raise ValueError(f"unknown weekly metric: {metric}")
     return conn.execute(query, params).fetchone()[0]
