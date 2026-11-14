@@ -1,0 +1,35 @@
+[
+  {
+    "id": "warm_meal",
+    "name": "暖胃订单",
+    "dish_id": "rice_porridge",
+    "portions": 2,
+    "cuisine_level": 1,
+    "required_reputation": 0,
+    "reputation": 1,
+    "stones": 80,
+    "items": {"spirit_food": 1}
+  },
+  {
+    "id": "herbal_meal",
+    "name": "百草订单",
+    "dish_id": "herb_soup",
+    "portions": 2,
+    "cuisine_level": 2,
+    "required_reputation": 1,
+    "reputation": 2,
+    "stones": 180,
+    "items": {"forge_ore": 1}
+  },
+  {
+    "id": "lotus_meal",
+    "name": "莲香订单",
+    "dish_id": "lotus_pastry",
+    "portions": 3,
+    "cuisine_level": 3,
+    "required_reputation": 3,
+    "reputation": 3,
+    "stones": 360,
+    "items": {"bloodline_essence": 1}
+  }
+]

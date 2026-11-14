@@ -32,6 +32,9 @@ def test_default_content_is_complete():
     assert len(content.realms) == 7
     assert len(content.bloodlines) == 5
     assert content.rules.max_team_size == 3
+    assert [order.id for order in sorted(
+        content.cuisine_orders.values(), key=lambda order: order.required_reputation,
+    )] == ["warm_meal", "herbal_meal", "lotus_meal"]
 
 
 @pytest.mark.parametrize("filename", [
@@ -65,6 +68,12 @@ def test_unknown_reward_item_fails_early(content_dir):
         "ghost_item": {"minimum": 1, "maximum": 2},
     }))
     with pytest.raises(ValueError, match="unknown reward items"):
+        Catalog.load(content_dir)
+
+
+def test_cuisine_orders_require_real_single_meal_recipes(content_dir):
+    edit(content_dir, "cuisine_orders.json", lambda data: data[0].update({"dish_id": "cave_banquet"}))
+    with pytest.raises(ValueError, match="single-meal recipe"):
         Catalog.load(content_dir)
 
 

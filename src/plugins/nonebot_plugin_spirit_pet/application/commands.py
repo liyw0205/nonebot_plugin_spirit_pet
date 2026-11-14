@@ -80,6 +80,7 @@ from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import cooking
 from ..gameplay import cooking_rewards
+from ..gameplay import cuisine_orders
 from ..gameplay import tracking
 from ..gameplay import tracking_codex
 from ..gameplay import herbalism, herbalism_rewards
@@ -254,6 +255,8 @@ ACTIONS = {
     "cooking": Command(cooking.dispatch, True, registered=False),
     "cooking_rewards": Command(cooking_rewards.dispatch, True, registered=False),
     "cooking_reward_claim": Command(cooking_rewards.claim, True),
+    "cuisine_orders": Command(cuisine_orders.dispatch, True, registered=False),
+    "cuisine_order_deliver": Command(cuisine_orders.deliver, True),
     "tracking": Command(tracking.dispatch, True, registered=False),
     "tracking_codex": Command(tracking_codex.catalog, True, registered=False),
     "tracking_reward_claim": Command(tracking_codex.claim, True),
@@ -469,6 +472,7 @@ COMMANDS = {
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
     "灵宠掌勺": "cooking",
     "灵宠掌勺成品赏": "cooking_rewards", "灵宠掌勺成品领奖": "cooking_reward_claim",
+    "灵宠膳房订单": "cuisine_orders", "灵宠订单交付": "cuisine_order_deliver",
     "灵宠寻踪": "tracking",
     "灵宠寻踪图录": "tracking_codex",
     "灵宠寻踪领奖": "tracking_reward_claim",

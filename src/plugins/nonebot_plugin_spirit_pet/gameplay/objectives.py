@@ -70,6 +70,7 @@ from . import drill
 from . import sockets
 from . import team_trial
 from . import cuisine
+from . import cuisine_orders
 from . import cooking
 from . import tracking
 from . import tracking_codex
@@ -101,6 +102,7 @@ HUB_PAGES = (
     "灵宠农事",
     "灵宠特供赏",
     "灵宠家宴",
+    "灵宠膳房订单",
 )
 
 
@@ -594,6 +596,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),
         (cooking_rewards.objective_line(ctx, player.user_id), "灵宠掌勺成品赏"),
+        (cuisine_orders.objective_line(ctx, player.user_id), "灵宠膳房订单"),
         (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
         (banquet_rewards.objective_line(ctx, player.user_id), "灵宠家宴赏"),
         (corridor.objective_line(ctx, player.user_id), "灵宠回廊"),

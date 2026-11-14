@@ -66,6 +66,10 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠合修 2") == ("co_train", "2")
     assert handlers._parse("灵宠突破 2 破境丹") == ("breakthrough", "2 破境丹")
     assert handlers._parse("灵宠进化 2") == ("evolve", "2")
+    assert handlers._parse("灵宠膳房订单") == ("cuisine_orders", "")
+    assert handlers._parse("灵宠订单交付 warm_meal 2026-11-09") == (
+        "cuisine_order_deliver", "warm_meal 2026-11-09",
+    )
     assert handlers._parse("灵宠工坊 2") == ("recipe_catalog", "2")
     assert handlers._parse("灵宠打造 青岚翎 2") == ("craft", "青岚翎 2")
     assert handlers._parse("灵宠分解 青岚翎 +2 1") == ("salvage", "青岚翎 +2 1")
