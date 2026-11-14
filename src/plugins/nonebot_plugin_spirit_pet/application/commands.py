@@ -95,7 +95,7 @@ from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, adventure_stats, adventure_travel, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
-from ..gameplay import banquet, farm_progress
+from ..gameplay import banquet, banquet_rewards, farm_progress
 from ..gameplay import collection_rank_rewards, collection_exchange
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -257,6 +257,7 @@ ACTIONS = {
     "pill_furnace_reward_claim": Command(pill_furnace_rewards.claim, True),
     "cuisine_cook": Command(cuisine.cook, True),
     "banquet": Command(banquet.dispatch, True, registered=False),
+    "banquet_rewards": Command(banquet_rewards.dispatch, True, registered=False),
     "cave": Command(cave.dispatch, True, registered=False),
     "corridor": Command(corridor.dispatch, True, registered=False),
     "sect": Command(sects.dispatch, True, registered=False),
@@ -467,6 +468,7 @@ COMMANDS = {
     "灵宠丹炉赏": "pill_furnace_rewards",
     "灵宠丹炉领奖": "pill_furnace_reward_claim",
     "灵宠家宴": "banquet",
+    "灵宠家宴赏": "banquet_rewards", "灵宠家宴领奖": "banquet_rewards",
     "灵宠农事": "farm_progress",
     "灵宠洞府": "cave",
     "灵宠回廊": "corridor",

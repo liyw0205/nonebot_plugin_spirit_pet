@@ -1,0 +1,23 @@
+[
+  {
+    "id": "banquet_two",
+    "name": "两席相逢",
+    "threshold": 2,
+    "stones": 300,
+    "items": {"spirit_food": 2}
+  },
+  {
+    "id": "banquet_four",
+    "name": "四时同席",
+    "threshold": 4,
+    "stones": 800,
+    "items": {"forge_ore": 2}
+  },
+  {
+    "id": "banquet_eight",
+    "name": "八席成欢",
+    "threshold": 8,
+    "stones": 1800,
+    "items": {"bloodline_essence": 3}
+  }
+]
