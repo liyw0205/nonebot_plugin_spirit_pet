@@ -1,0 +1,23 @@
+[
+  {
+    "id": "shop_one",
+    "name": "初逛灵坊",
+    "threshold": 1,
+    "stones": 80,
+    "items": {"spirit_food": 1}
+  },
+  {
+    "id": "shop_five",
+    "name": "熟客回馈",
+    "threshold": 5,
+    "stones": 240,
+    "items": {"forge_ore": 1}
+  },
+  {
+    "id": "shop_twelve",
+    "name": "特供常客",
+    "threshold": 12,
+    "stones": 600,
+    "items": {"bloodline_essence": 1}
+  }
+]

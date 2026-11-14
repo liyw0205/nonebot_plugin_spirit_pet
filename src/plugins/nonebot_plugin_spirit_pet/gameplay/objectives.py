@@ -4,6 +4,7 @@ from ..utils.time import season_bounds
 from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
 from . import banquet, banquet_rewards, cooking_rewards, farm_progress
 from . import weekly_rewards
+from . import daily_shop_rewards
 from . import codex
 from . import stage_stars
 from . import stage_tactics
@@ -98,6 +99,7 @@ HUB_PAGES = (
     "灵宠境界赏",
     "灵宠际遇",
     "灵宠农事",
+    "灵宠特供赏",
     "灵宠家宴",
 )
 
@@ -584,6 +586,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (visits.objective_line(ctx, player.user_id), "灵宠串门"),
         (visits_rewards.objective_line(ctx, player.user_id), "灵宠串门礼"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
+        (daily_shop_rewards.objective_line(ctx, player.user_id), "灵宠特供赏"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),
         (cooking_rewards.objective_line(ctx, player.user_id), "灵宠掌勺成品赏"),
