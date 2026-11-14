@@ -1,0 +1,20 @@
+[
+  {
+    "rank": 1,
+    "name": "首功名录",
+    "stones": 600,
+    "items": {"forge_ore": 3, "spirit_food": 2}
+  },
+  {
+    "rank": 3,
+    "name": "协力三甲",
+    "stones": 300,
+    "items": {"forge_ore": 2, "spirit_food": 1}
+  },
+  {
+    "rank": 10,
+    "name": "并肩有名",
+    "stones": 120,
+    "items": {"spirit_food": 1}
+  }
+]

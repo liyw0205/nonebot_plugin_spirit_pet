@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import season_bounds
-from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss
+from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
 from . import banquet, banquet_rewards, cooking_rewards, farm_progress
 from . import weekly_rewards
 from . import daily_shop_rewards
@@ -515,6 +515,10 @@ def _world_boss_line(ctx: Context, user_id: str) -> str:
     return f"周首领：威胁 {progress}/{world_boss.THREAT_GOAL}"
 
 
+def _world_boss_rank_line(ctx: Context, user_id: str) -> str:
+    return world_boss_rank_rewards.objective_line(ctx, user_id)
+
+
 def _pvp_streak_line(ctx: Context, user_id: str) -> str:
     from .arena import streak_rewards
     best = streak_rewards.best_streak(ctx, user_id)
@@ -642,6 +646,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
         (team_trial.objective_line(ctx, player.user_id), "灵宠团队试炼"),
         (_world_boss_line(ctx, player.user_id), "灵宠首领"),
+        (_world_boss_rank_line(ctx, player.user_id), "灵宠首领榜"),
         (battle_supplies.objective_line(ctx, player.user_id), "灵宠战备"),
         (_weekly_line(ctx, player.user_id), "灵宠周常"),
         (weekly_rewards.objective_line(ctx, player.user_id), "灵宠周常赏"),
