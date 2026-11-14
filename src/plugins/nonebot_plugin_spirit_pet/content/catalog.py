@@ -80,6 +80,7 @@ from ..domain.main_quest_content import MainQuest
 from ..domain.weekly_quest_content import WeeklyQuest
 from ..domain.weekly_reward_content import WeeklyReward
 from ..domain.banquet_reward_content import BanquetReward
+from ..domain.visit_reward_content import VisitReward
 from ..domain.title_content import Title
 from ..domain.lineage_content import Lineage
 from ..domain.resonance_content import Resonance
@@ -155,6 +156,7 @@ class Catalog:
     weekly_quests: dict[str, WeeklyQuest]
     weekly_rewards: dict[str, WeeklyReward]
     banquet_rewards: dict[str, BanquetReward]
+    visit_rewards: dict[str, VisitReward]
     titles: dict[str, Title]
     achievements: dict[str, Achievement]
     resonances: dict[str, Resonance]
@@ -265,6 +267,7 @@ class Catalog:
             weekly_quests=_index(directory / "weekly_quests.json", WeeklyQuest),
             weekly_rewards=_index(directory / "weekly_rewards.json", WeeklyReward),
             banquet_rewards=_index(directory / "banquet_rewards.json", BanquetReward),
+            visit_rewards=_index(directory / "visit_rewards.json", VisitReward),
             titles=_index(directory / "titles.json", Title),
             achievements=_index(directory / "achievements.json", Achievement),
             resonances=_index(directory / "resonances.json", Resonance),
@@ -554,6 +557,7 @@ class Catalog:
         self._validate_season_missions()
         self._validate_weekly_rewards()
         self._validate_banquet_rewards()
+        self._validate_visit_rewards()
         self._validate_daily_assignments()
         self._validate_codex_rewards()
         self._validate_crops()
@@ -1726,6 +1730,13 @@ class Catalog:
             raise ValueError("banquet rewards must define unique 2/4/8 milestones")
         for entry in entries:
             self._require(entry.items, self.items, "banquet reward items")
+
+    def _validate_visit_rewards(self):
+        entries = sorted(self.visit_rewards.values(), key=lambda entry: entry.threshold)
+        if [entry.threshold for entry in entries] != [3, 10, 30]:
+            raise ValueError("visit rewards must define unique 3/10/30 milestones")
+        for entry in entries:
+            self._require(entry.items, self.items, "visit reward items")
 
     def _validate_season_missions(self):
         missions = self.season_missions

@@ -100,7 +100,8 @@ def page(ctx: Context, arg: str = "") -> Reply:
                 len(lines) - 1, "串门", f"灵宠串门 {friends._uid(ctx, friend_id)}",
             ))
     lines.append(f"每次串门双方伙伴各得羁绊经验 {BOND_EXP}，自己另得灵石 {STONES}。")
-    return Reply("灵宠串门", tuple(lines), ("灵宠好友", "灵宠目标", "我的灵宠"), tuple(links))
+    lines.append("累计串门礼按成功拜访次数计算，可在灵宠串门礼查看。")
+    return Reply("灵宠串门", tuple(lines), ("灵宠好友", "灵宠串门礼", "灵宠目标", "我的灵宠"), tuple(links))
 
 
 def visit(ctx: Context, arg: str) -> Reply:

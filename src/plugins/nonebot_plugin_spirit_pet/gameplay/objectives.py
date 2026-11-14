@@ -61,7 +61,7 @@ from . import play_games
 from . import pet_outing
 from . import fishing
 from . import spar_goals
-from . import visits
+from . import visits, visits_rewards
 from . import mailbox
 from . import friends
 from . import shares
@@ -582,6 +582,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (angling.objective_line(ctx, player.user_id), "灵宠遛鱼"),
         (spar_goals.objective_line(ctx, player.user_id), "灵宠切磋目标"),
         (visits.objective_line(ctx, player.user_id), "灵宠串门"),
+        (visits_rewards.objective_line(ctx, player.user_id), "灵宠串门礼"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),

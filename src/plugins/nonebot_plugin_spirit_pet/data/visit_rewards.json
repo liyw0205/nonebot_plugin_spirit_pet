@@ -1,0 +1,23 @@
+[
+  {
+    "id": "visit_three",
+    "name": "初访有礼",
+    "threshold": 3,
+    "stones": 80,
+    "items": {"spirit_food": 2}
+  },
+  {
+    "id": "visit_ten",
+    "name": "往来渐密",
+    "threshold": 10,
+    "stones": 240,
+    "items": {"forge_ore": 1}
+  },
+  {
+    "id": "visit_thirty",
+    "name": "高朋满座",
+    "threshold": 30,
+    "stones": 800,
+    "items": {"bloodline_essence": 1}
+  }
+]
