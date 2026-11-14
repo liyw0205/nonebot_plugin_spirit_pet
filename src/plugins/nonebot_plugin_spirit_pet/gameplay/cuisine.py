@@ -158,6 +158,8 @@ def page(ctx: Context) -> Reply:
     lines.append("单膳进入乾坤袋，可用 灵宠使用 或 灵宠喂养 交给伙伴；宴席立即作用于全部在册伙伴。")
     lines.append("亲自掌勺：三段调火，按成色产出单膳，共用今日灶火。")
     links.append(InlineCommand(len(lines) - 1, "前往掌勺", "灵宠掌勺"))
+    lines.append("膳房订单：每周交付单膳成品，按厨艺与订单声望解锁后续订单。")
+    links.append(InlineCommand(len(lines) - 1, "查看订单", "灵宠膳房订单"))
     return Reply(
         "灵宠膳房", tuple(lines),
         ("灵宠膳房", "灵宠背包", "灵宠目标", "我的灵宠"), tuple(links),

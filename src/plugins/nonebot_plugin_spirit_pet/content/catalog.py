@@ -1767,8 +1767,6 @@ class Catalog:
         entries = sorted(self.cuisine_orders.values(), key=lambda entry: entry.required_reputation)
         if [entry.required_reputation for entry in entries] != [0, 1, 3]:
             raise ValueError("cuisine orders must form the 0/1/3 reputation chain")
-        if len(entries) != 3:
-            raise ValueError("cuisine orders must define exactly three weekly orders")
         earned = 0
         for entry in entries:
             self._require([entry.dish_id], self.cuisine, "cuisine order dish")
@@ -1777,10 +1775,10 @@ class Catalog:
                 raise ValueError(f"cuisine order {entry.id} must reference a single-meal recipe")
             if entry.cuisine_level < dish.level:
                 raise ValueError(f"cuisine order {entry.id} unlocks before its recipe")
+            if entry.cuisine_level > self.rules.cuisine.max_level:
+                raise ValueError(f"cuisine order {entry.id} requires unreachable cuisine level")
             if entry.required_reputation > earned:
                 raise ValueError(f"cuisine order {entry.id} requires unreachable reputation")
-            if entry.portions > 12:
-                raise ValueError(f"cuisine order {entry.id} requires too many portions")
             self._require(entry.items, self.items, "cuisine order reward items")
             if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in entry.items):
                 raise ValueError(f"cuisine order {entry.id} rewards must be consumable or material")

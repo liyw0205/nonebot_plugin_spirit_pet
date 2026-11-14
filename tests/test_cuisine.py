@@ -129,6 +129,7 @@ def test_page_lists_states_and_links_only_cookable_rows(game, play):
     assert [(link.line, link.command) for link in page.inline_commands] == [
         (1, "灵宠烹饪 灵米粥"),
         (11, "灵宠掌勺"),
+        (12, "灵宠膳房订单"),
     ]
     assert page.commands == ("灵宠膳房", "灵宠背包", "灵宠目标", "我的灵宠")
     assert not {link.command for link in page.inline_commands} & set(page.commands)

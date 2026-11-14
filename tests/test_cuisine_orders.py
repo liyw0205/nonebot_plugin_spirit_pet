@@ -70,7 +70,7 @@ def test_real_cuisine_products_unlock_and_complete_weekly_order_chain(game, play
     start_stones = player(game[1])["stones"]
 
     listing = play("cuisine_orders", now=NOW)
-    assert "warm_meal · 暖胃订单 · 厨艺 1 级 · 交付 灵米粥 ×2" in listing.text()
+    assert "暖胃订单 · 厨艺 1 级 · 需声望 0 · 交付 灵米粥 ×2" in listing.text()
     assert [link.command for link in listing.inline_commands] == []
     assert items(game[1]).get("meal_rice", 0) == 0
 
@@ -119,7 +119,7 @@ def test_real_cuisine_products_unlock_and_complete_weekly_order_chain(game, play
     assert "订单声望 3 → 6" in lotus.text()
     assert items(game[1])["meal_lotus"] == 0
     assert len(order_rows(game)) == 3
-    assert "本周已交付 3/3 · 声望 6 · 可交付 0 份" in play("objectives", now=NOW).text()
+    assert "本周已交付 3/3 · 声望 6 · 可交付 0 单" in play("objectives", now=NOW + 86400).text()
 
 
 def test_invalid_shortage_stale_and_duplicate_delivery_are_noops(game, play):
@@ -194,6 +194,18 @@ def test_delivery_operation_and_week_state_survive_reopen(game, play):
     assert "暖胃订单" in page.lines[2] and "已交付" in page.lines[2]
 
 
+def test_delivery_replay_returns_the_original_reply_and_guards_identity(game, play):
+    adopt(game, play)
+    adopt(game, play, user="u2")
+    add_items(game, {"meal_rice": 2})
+    first = play("cuisine_order_deliver", "暖胃订单", now=NOW, op="replay-order")
+    assert play("cuisine_order_deliver", "unknown", now=NOW, op="replay-order") == first
+    with pytest.raises(GameError, match="different user"):
+        play("cuisine_order_deliver", "warm_meal", user="u2", now=NOW, op="replay-order")
+    assert items(game[1], "u1")["meal_rice"] == 0
+    assert items(game[1], "u2").get("meal_rice", 0) == 0
+
+
 def test_concurrent_delivery_has_one_payout_and_one_consumption(game, play):
     adopt(game, play)
     add_items(game, {"meal_rice": 2})
@@ -232,6 +244,21 @@ def test_failed_reward_write_rolls_back_food_reputation_and_stones(game, play, m
     assert not sql(game[1], "SELECT * FROM operations WHERE operation_id='failed-order-reward'")
 
 
+def test_failed_receipt_write_rolls_back_delivery_and_reward(game, play, monkeypatch):
+    adopt(game, play)
+    add_items(game, {"meal_rice": 2})
+    before = snapshot(game)
+
+    def fail_receipt(*args, **kwargs):
+        raise RuntimeError("injected cuisine order receipt failure")
+
+    monkeypatch.setattr(Repository, "record_duel_action", fail_receipt)
+    with pytest.raises(RuntimeError, match="injected cuisine order receipt failure"):
+        play("cuisine_order_deliver", "warm_meal", now=NOW, op="failed-order-receipt")
+    assert snapshot(game) == before
+    assert not sql(game[1], "SELECT * FROM operations WHERE operation_id='failed-order-receipt'")
+
+
 def test_onebot_delivery_uses_the_same_business_entry(game, play, monkeypatch):
     adopt(game, play, user="12345")
     add_items(game, {"meal_rice": 2}, user="12345")
@@ -252,3 +279,14 @@ def test_onebot_delivery_uses_the_same_business_entry(game, play, monkeypatch):
     asyncio.run(run())
     assert items(store, "12345")["meal_rice"] == 0
     assert order_rows((service, store), "12345")[0]["progress"] == 1
+
+
+def test_delivery_does_not_replace_an_active_duel_snapshot(game, play):
+    adopt(game, play)
+    play("duel", "松风道人", now=NOW, op="duel-before-order")
+    before = play("duel", now=NOW)
+    add_items(game, {"meal_rice": 2})
+    play("cuisine_order_deliver", "warm_meal", now=NOW, op="order-during-duel")
+    assert play("duel", now=NOW).lines == before.lines
+    assert play("duel", "认输", now=NOW, op="forfeit-after-order").title == "斗法中止"
+    assert "膳房订单" in play("objectives", now=NOW).text()

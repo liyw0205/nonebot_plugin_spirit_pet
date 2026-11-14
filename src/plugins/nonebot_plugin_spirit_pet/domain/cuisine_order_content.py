@@ -9,7 +9,7 @@ class CuisineOrder(Definition):
     id: Identifier
     name: Name
     dish_id: Identifier
-    portions: Positive = Field(le=30)
+    portions: Positive = Field(le=12)
     cuisine_level: Positive = Field(le=10)
     required_reputation: NonNegative = Field(le=100)
     reputation: Positive = Field(le=100)

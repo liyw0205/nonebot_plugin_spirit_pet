@@ -1,8 +1,11 @@
 """Weekly meal deliveries consume real cuisine products and grow order reputation."""
 
+from sqlite3 import Row
+
 from ..application.context import Context
 from ..domain.content import Range, Reward
 from ..domain.cuisine_order_content import CuisineOrder
+from ..domain.cuisine_content import CuisineDish
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import beijing_day, beijing_week
 from . import cuisine
@@ -25,7 +28,7 @@ def _key(week: str, order_id: str) -> str:
     return f"{PREFIX}{week}_{order_id}"
 
 
-def _records(ctx: Context, user_id: str, week: str) -> dict[str, object]:
+def _records(ctx: Context, user_id: str, week: str) -> dict[str, Row]:
     prefix = f"{PREFIX}{week}_"
     rows = ctx.repo.conn.execute(
         "SELECT quest_id,progress,claimed FROM quest_progress "
@@ -38,7 +41,7 @@ def _records(ctx: Context, user_id: str, week: str) -> dict[str, object]:
     }
 
 
-def reputation(records: dict[str, object]) -> int:
+def reputation(records: dict[str, Row]) -> int:
     return sum(int(record["progress"]) for record in records.values() if record["claimed"])
 
 
@@ -55,6 +58,22 @@ def _missing(ctx: Context, user_id: str, order: CuisineOrder) -> int:
     dish = ctx.content.cuisine[order.dish_id]
     assert dish.item is not None
     return max(0, order.portions - cuisine.owned_item(ctx, user_id, dish.item))
+
+
+def _validate_order(ctx: Context, order: CuisineOrder) -> CuisineDish:
+    try:
+        CuisineOrder.model_validate(order.model_dump())
+    except ValueError as exc:
+        raise GameError("订单定义暂不可用，本次未交付；请稍后再试。") from exc
+    dish = ctx.content.cuisine.get(order.dish_id)
+    if dish is None or dish.item is None or dish.item not in ctx.content.items:
+        raise GameError("订单菜谱或成品定义缺失，本次未交付；请稍后再试。")
+    if not dish.level <= order.cuisine_level <= ctx.content.rules.cuisine.max_level:
+        raise GameError("订单厨艺门槛异常，本次未交付；请稍后再试。")
+    missing = set(order.items) - set(ctx.content.items)
+    if missing:
+        raise GameError(f"订单奖励定义缺失：{', '.join(sorted(missing))}；本次未交付。")
+    return dish
 
 
 def _status(ctx: Context, user_id: str, order: CuisineOrder, records: dict, rep: int) -> str:
@@ -81,20 +100,28 @@ def catalog(ctx: Context, arg: str = "") -> Reply:
     level = cuisine.level(ctx, ctx.user_id) if player else 0
     lines = [
         f"本周 {beijing_day(start)} 至 {beijing_day(end - 1)} · 厨艺 {level} 级 · 订单声望 {rep}。",
-        "提交指定单膳成品后结算；宴席、即时烹饪效果与掌勺焦糊均不产出可交付灵膳。",
+        "单膳即时烹饪或掌勺成品均可交付；每单每周一次，周一重置订单和声望。",
     ]
+    clock_blocked = bool(player and _has_future_receipt(ctx, player.user_id, start))
     links = []
     for order in entries(ctx):
-        dish = ctx.content.cuisine[order.dish_id]
+        try:
+            dish = _validate_order(ctx, order)
+        except GameError:
+            lines.append(f"{order.name} · 订单定义暂不可用")
+            continue
         item = ctx.content.items[dish.item]
-        status = _status(ctx, ctx.user_id, order, records, rep) if player else "尚未结契"
+        status = (
+            "系统日期早于订单记录" if clock_blocked
+            else _status(ctx, ctx.user_id, order, records, rep) if player else "尚未结契"
+        )
         reward = [f"灵石 {order.stones}"] if order.stones else []
         reward.extend(
             f"{ctx.content.items[item_id].name} {amount}"
             for item_id, amount in order.items.items()
         )
         lines.append(
-            f"{order.id} · {order.name} · 厨艺 {order.cuisine_level} 级 · "
+            f"{order.name} · 厨艺 {order.cuisine_level} 级 · 需声望 {order.required_reputation} · "
             f"交付 {item.name} ×{order.portions} · 声望 +{order.reputation} · "
             f"奖励 {'、'.join(reward)} · {status}"
         )
@@ -114,11 +141,14 @@ def deliver(ctx: Context, arg: str) -> Reply:
         raise GameError("格式：灵宠订单交付 订单编号。")
     order = ctx.content.cuisine_orders.get(parts[0])
     if order is None:
+        order = next((order for order in entries(ctx) if order.name == parts[0]), None)
+    if order is None:
         raise GameError("没有这份灵膳订单，请查看 灵宠膳房订单。")
     start, end, week = _week(ctx)
     if len(parts) == 2 and parts[1] != week:
         raise GameError("这份订单已跨周，请重新查看灵宠膳房订单。")
     player = ctx.player()
+    dish = _validate_order(ctx, order)
     if _has_future_receipt(ctx, player.user_id, start):
         raise GameError("系统日期早于灵膳订单记录，请等待日期恢复。")
     records = _records(ctx, player.user_id, week)
@@ -132,7 +162,6 @@ def deliver(ctx: Context, arg: str) -> Reply:
     rep = reputation(records)
     if rep < order.required_reputation:
         raise GameError(f"订单声望不足：「{order.name}」需要 {order.required_reputation}，当前 {rep}。")
-    dish = ctx.content.cuisine[order.dish_id]
     assert dish.item is not None
     item = ctx.content.items[dish.item]
     owned = cuisine.owned_item(ctx, player.user_id, dish.item)
@@ -173,12 +202,19 @@ def dispatch(ctx: Context, arg: str) -> Reply:
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
-    _, _, week = _week(ctx)
+    start, _, week = _week(ctx)
     records = _records(ctx, user_id, week)
     rep = reputation(records)
     delivered = sum(bool(record["claimed"]) for record in records.values())
-    ready = sum(_status(ctx, user_id, order, records, rep) == "可交付" for order in entries(ctx))
-    return f"膳房订单：本周已交付 {delivered}/{len(entries(ctx))} · 声望 {rep} · 可交付 {ready} 份"
+    ready = 0
+    if not _has_future_receipt(ctx, user_id, start):
+        for order in entries(ctx):
+            try:
+                _validate_order(ctx, order)
+            except GameError:
+                continue
+            ready += _status(ctx, user_id, order, records, rep) == "可交付"
+    return f"膳房订单：本周已交付 {delivered}/{len(entries(ctx))} · 声望 {rep} · 可交付 {ready} 单"
 
 
 __all__ = ["TITLE", "catalog", "deliver", "dispatch", "entries", "objective_line", "reputation"]
