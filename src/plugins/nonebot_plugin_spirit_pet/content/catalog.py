@@ -66,6 +66,7 @@ from ..domain.herbalism_reward_content import HerbalismReward
 from ..domain.pill_furnace_reward_content import PillFurnaceReward
 from ..domain.cooking_reward_content import CookingReward
 from ..domain.daily_shop_reward_content import DailyShopReward
+from ..domain.world_boss_rank_reward_content import WorldBossRankReward
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -235,6 +236,7 @@ class Catalog:
     pill_furnace_rewards: dict[str, PillFurnaceReward]
     cooking_rewards: dict[str, CookingReward]
     daily_shop_rewards: dict[str, DailyShopReward]
+    world_boss_rank_rewards: dict[int, WorldBossRankReward]
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
 
@@ -356,6 +358,9 @@ class Catalog:
             pill_furnace_rewards=_index(directory / "pill_furnace_rewards.json", PillFurnaceReward),
             cooking_rewards=_index(directory / "cooking_rewards.json", CookingReward),
             daily_shop_rewards=_index(directory / "daily_shop_rewards.json", DailyShopReward),
+            world_boss_rank_rewards=_index(
+                directory / "world_boss_rank_rewards.json", WorldBossRankReward, "rank",
+            ),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
         )
@@ -566,6 +571,7 @@ class Catalog:
         self._validate_visit_rewards()
         self._validate_cooking_rewards()
         self._validate_daily_shop_rewards()
+        self._validate_world_boss_rank_rewards()
         self._validate_daily_assignments()
         self._validate_codex_rewards()
         self._validate_crops()
@@ -1759,6 +1765,31 @@ class Catalog:
             raise ValueError("daily shop rewards must define unique 1/5/12 milestones")
         for entry in entries:
             self._require(entry.items, self.items, "daily shop reward items")
+
+    def _validate_world_boss_rank_rewards(self):
+        """Contribution ranks must be three ordered, real rewards."""
+        if set(self.world_boss_rank_rewards) != {1, 3, 10}:
+            raise ValueError("world boss rank rewards must cover ranks 1, 3 and 10")
+        ordered = [self.world_boss_rank_rewards[rank] for rank in (1, 3, 10)]
+        for reward in ordered:
+            self._require(
+                reward.items, self.items, f"world boss rank {reward.rank} reward items",
+            )
+            if any(
+                self.items[item_id].kind not in {"consumable", "material"}
+                for item_id in reward.items
+            ):
+                raise ValueError(
+                    f"world boss rank {reward.rank} reward items must be consumable or material"
+                )
+        for higher, lower in zip(ordered, ordered[1:]):
+            if higher.stones < lower.stones:
+                raise ValueError("world boss rank reward stones must not fall as the rank improves")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"world boss rank reward {item_id} must not fall as the rank improves"
+                    )
 
     def _validate_season_missions(self):
         missions = self.season_missions

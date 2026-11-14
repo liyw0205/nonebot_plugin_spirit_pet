@@ -95,7 +95,7 @@ from ..gameplay import checkin_calendar, checkin_rewards
 from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
-from ..gameplay import adventure_collection_rewards, adventure_stats, adventure_travel, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss
+from ..gameplay import adventure_collection_rewards, adventure_stats, adventure_travel, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss, world_boss_rank_rewards
 from ..gameplay import banquet, banquet_rewards, farm_progress, visits_rewards, daily_shop_rewards
 from ..gameplay import collection_rank_rewards, collection_exchange
 from ..gameplay import bond_levels
@@ -188,6 +188,7 @@ ACTIONS = {
     "world_boss": Command(world_boss.catalog, True, registered=False),
     "world_boss_challenge": Command(world_boss.challenge, True),
     "world_boss_claim": Command(world_boss.claim, True),
+    "world_boss_rank_rewards": Command(world_boss_rank_rewards.dispatch, True, registered=False),
     "battle_supply": Command(battle_supplies.dispatch, True, registered=False),
     "talent_reforge": Command(talent_reforge.reforge, True),
     "talent_lock": Command(talent_reforge.set_lock, True),
@@ -439,6 +440,7 @@ COMMANDS = {
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
     "灵宠今日秘境": "daily_dungeon", "灵宠今日秘境领奖": "daily_dungeon_claim",
     "灵宠首领": "world_boss", "灵宠挑战首领": "world_boss_challenge", "灵宠首领领奖": "world_boss_claim",
+    "灵宠首领榜": "world_boss_rank_rewards", "灵宠首领榜领奖": "world_boss_rank_rewards",
     "灵宠战备": "battle_supply",
     "灵宠洗练": "talent_reforge", "灵宠锁定天赋": "talent_lock", "灵宠解锁天赋": "talent_unlock", "灵宠洗练记录": "talent_history",
     "灵宠词条重铸": "gear_word_reforge",

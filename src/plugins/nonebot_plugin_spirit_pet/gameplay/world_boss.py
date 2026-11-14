@@ -186,7 +186,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         lines.append("今日挑战次数已用完，明日 00:00（北京时间）再战。")
     else:
         links.insert(0, InlineCommand(0, "挑战首领", "灵宠挑战首领"))
-    return Reply("灵宠首领", tuple(lines), ("灵宠秘境", "灵宠任务", "灵宠帮助"), tuple(links))
+    return Reply("灵宠首领", tuple(lines), ("灵宠秘境", "灵宠首领榜", "灵宠任务", "灵宠帮助"), tuple(links))
 
 
 def challenge(ctx: Context, arg: str) -> Reply:
