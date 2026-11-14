@@ -71,6 +71,7 @@ from . import sockets
 from . import team_trial
 from . import cuisine
 from . import cuisine_orders
+from . import cuisine_practice
 from . import cooking
 from . import tracking
 from . import tracking_codex
@@ -597,6 +598,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),
         (cooking_rewards.objective_line(ctx, player.user_id), "灵宠掌勺成品赏"),
         (cuisine_orders.objective_line(ctx, player.user_id), "灵宠膳房订单"),
+        (cuisine_practice.objective_line(ctx, player.user_id), "灵宠膳房研修"),
         (banquet.objective_line(ctx, player.user_id), "灵宠家宴"),
         (banquet_rewards.objective_line(ctx, player.user_id), "灵宠家宴赏"),
         (corridor.objective_line(ctx, player.user_id), "灵宠回廊"),

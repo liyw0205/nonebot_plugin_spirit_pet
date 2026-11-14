@@ -160,6 +160,8 @@ def page(ctx: Context) -> Reply:
     links.append(InlineCommand(len(lines) - 1, "前往掌勺", "灵宠掌勺"))
     lines.append("膳房订单：每周交付单膳成品，按厨艺与订单声望解锁后续订单。")
     links.append(InlineCommand(len(lines) - 1, "查看订单", "灵宠膳房订单"))
+    lines.append("膳房研修：每天消费一份单膳，三段选择后为伙伴结算成长。")
+    links.append(InlineCommand(len(lines) - 1, "开始研修", "灵宠膳房研修"))
     return Reply(
         "灵宠膳房", tuple(lines),
         ("灵宠膳房", "灵宠背包", "灵宠目标", "我的灵宠"), tuple(links),
