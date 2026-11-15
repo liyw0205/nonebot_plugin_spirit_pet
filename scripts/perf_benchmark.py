@@ -46,7 +46,20 @@ class _TimedStore(Store):
     def __init__(self, path: Path):
         super().__init__(path)
         self.begin_samples: list[tuple[str, float]] = []
+        self.special_replay_queries = 0
+        self.operation_preflight_queries = 0
         self._transaction_recorder = self.begin_samples.append
+
+    def connect(self):
+        conn = super().connect()
+        conn.set_trace_callback(self._trace)
+        return conn
+
+    def _trace(self, statement: str) -> None:
+        if "/* special-replay */" in statement:
+            self.special_replay_queries += 1
+        if "/* operation-preflight */" in statement and "SELECT" in statement and "reply" in statement:
+            self.operation_preflight_queries += 1
 
     def clear_begin_samples(self) -> None:
         self.begin_samples.clear()
@@ -143,6 +156,12 @@ def _explain(path: Path, user_id: str) -> dict[str, list[str]]:
                 "WHERE user_id=? AND archived=0 AND species_id=? AND pet_id!=? ORDER BY pet_id",
                 (user_id, "benchmark-species", 0),
             ).fetchall(),
+            "special_replay": conn.execute(
+                "EXPLAIN QUERY PLAN SELECT user_id FROM duel_actions WHERE operation_id=? "
+                "UNION ALL SELECT initiator_id FROM battle_records WHERE operation_id=? "
+                "UNION ALL SELECT user_id FROM fishing_casts WHERE operation_id=?",
+                ("explain-operation", "explain-operation", "explain-operation"),
+            ).fetchall(),
         }
     return {name: [str(dict(row)) for row in rows] for name, rows in plans.items()}
 
@@ -159,6 +178,8 @@ def _measure_case(
     started = time.perf_counter()
     fixed_claim_ops = {user: f"perf-claim-{user}" for user in users}
     begin_start = len(game.store.begin_samples)
+    replay_start = game.store.special_replay_queries
+    preflight_start = game.store.operation_preflight_queries
 
     def call(index: int):
         user = users[index % len(users)]
@@ -211,6 +232,8 @@ def _measure_case(
         "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
         "transaction_begin": wait_stats(begin_waits),
         "immediate_begin": wait_stats(immediate_waits),
+        "special_replay_queries": game.store.special_replay_queries - replay_start,
+        "operation_preflight_queries": game.store.operation_preflight_queries - preflight_start,
     }
 
 

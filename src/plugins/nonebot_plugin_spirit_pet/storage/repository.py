@@ -7,6 +7,24 @@ from ..domain.models import GameError, Reply
 from ..domain.state import ASCENDED_PREFIX, Pet, Player
 
 
+_SPECIAL_REPLAY_PRIORITIES = {
+    "cuisine_order": 1,
+    "weekly_reward": 2,
+    "pill_furnace": 3,
+    "angling": 4,
+    "adventure_travel": 5,
+    "farm_care": 6,
+    "convoy": 7,
+    "training": 8,
+    "play_course": 9,
+    "nursery": 10,
+    "herbalism": 11,
+    "tracking": 12,
+    "cooking": 13,
+    "stage_tactic": 15,
+}
+
+
 class Repository:
     """One identity map per transaction; never opens a second connection."""
 
@@ -326,6 +344,50 @@ class Repository:
         if row["initiator_id"] != user_id:
             raise GameError("operation ID reused by a different user")
         return json.loads(row["reply"])
+
+    def special_operation(self, operation_id: str) -> tuple[str, str, dict] | None:
+        """Find a durable replay in one indexed round trip.
+
+        Special receipts historically lived in three tables and were checked
+        one by one by ``Game.execute``.  Keep that lookup order, including
+        collisions across tables, while fetching at most one row per table.
+        ``operation_id`` is unique in each table, so the candidate set is
+        bounded to three rows.
+        """
+        rows = self.conn.execute(
+            "SELECT /* special-replay */ source, user_id, snapshot, reply FROM ("
+            "SELECT 'duel' AS source, user_id, snapshot, reply FROM duel_actions WHERE operation_id=? "
+            "UNION ALL "
+            "SELECT 'battle' AS source, initiator_id AS user_id, NULL AS snapshot, reply "
+            "FROM battle_records WHERE operation_id=? "
+            "UNION ALL "
+            "SELECT 'fishing' AS source, user_id, snapshot, reply "
+            "FROM fishing_casts WHERE operation_id=?"
+            ")",
+            (operation_id, operation_id, operation_id),
+        ).fetchall()
+        if not rows:
+            return None
+
+        candidates: list[tuple[int, str, str, dict]] = []
+        for row in rows:
+            source = str(row["source"])
+            if source == "battle":
+                kind = "battle"
+                priority = 16
+            elif source == "fishing":
+                kind = "fishing"
+                priority = 17
+            else:
+                snapshot = json.loads(row["snapshot"])
+                kind = snapshot.get("kind")
+                priority = _SPECIAL_REPLAY_PRIORITIES.get(kind, 14)
+                if kind not in _SPECIAL_REPLAY_PRIORITIES:
+                    kind = "duel"
+            candidates.append((priority, kind, str(row["user_id"]), json.loads(row["reply"])))
+
+        _, kind, owner, reply = min(candidates, key=lambda candidate: candidate[0])
+        return kind, owner, reply
 
     def fishing_operation(self, operation_id: str, user_id: str) -> dict | None:
         row = self.conn.execute(

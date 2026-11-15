@@ -25,10 +25,25 @@ def test_benchmark_is_bounded_and_removes_temporary_database():
     assert result["cases"]
     assert all(case["samples"] > 0 for case in result["cases"])
     assert all(case["p99_ms"] >= case["p50_ms"] for case in result["cases"])
-    assert all(case["transaction_begin"]["count"] == case["samples"] for case in result["cases"])
+    assert all(case["transaction_begin"]["count"] <= case["samples"] for case in result["cases"])
     assert all(
         case["transaction_begin"]["p99_ms"] >= case["transaction_begin"]["p50_ms"]
         for case in result["cases"]
+    )
+    assert all(
+        case["special_replay_queries"] == 0
+        for case in result["cases"]
+        if case["action"] in {"pet_list", "help", "cuisine", "cuisine_mastery"}
+    )
+    write_cases = [case for case in result["cases"] if case["action"] == "identity"]
+    assert write_cases
+    assert all(
+        0 <= case["special_replay_queries"] <= case["samples"] for case in write_cases
+    )
+    assert any(
+        case["special_replay_queries"] == case["samples"]
+        for case in write_cases
+        if case["phase"] == "cold" and case["concurrency"] == 1
     )
     assert "USING COVERING INDEX quest_progress_user_status" in " ".join(
         result["explain"]["cuisine_progress"]
@@ -40,6 +55,10 @@ def test_benchmark_is_bounded_and_removes_temporary_database():
     assert "USING COVERING INDEX pets_owner" in counts_plan
     candidate_plan = " ".join(result["explain"]["co_training_candidates"])
     assert "USING INDEX pets_owner_species" in candidate_plan or "USING COVERING INDEX pets_owner_species" in candidate_plan
+    replay_plan = " ".join(result["explain"]["special_replay"])
+    assert "sqlite_autoindex_duel_actions_1" in replay_plan
+    assert "sqlite_autoindex_battle_records_1" in replay_plan
+    assert "sqlite_autoindex_fishing_casts_1" in replay_plan
 
 
 @pytest.mark.parametrize("users", [1000, 10000])

@@ -357,6 +357,15 @@ class Store:
         record_operation: bool = True,
     ) -> Reply:
         with closing(self.connect()) as conn:
+            if record_operation:
+                cached = conn.execute(
+                    "SELECT /* operation-preflight */ user_id, reply FROM operations WHERE operation_id=?",
+                    (operation_id,),
+                ).fetchone()
+                if cached:
+                    if cached["user_id"] != user_id:
+                        raise GameError("operation ID reused by a different user")
+                    return Reply.from_data(json.loads(cached["reply"]))
             begin_mode = "BEGIN IMMEDIATE" if immediate else "BEGIN"
             recorder = getattr(self, "_transaction_recorder", None)
             if recorder is None:

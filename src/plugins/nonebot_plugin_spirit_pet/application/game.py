@@ -48,60 +48,14 @@ class Game:
                     context.player()
                 return command.handler(context, argument)
             repo = Repository(conn)
-            persistent_cuisine_order = repo.cuisine_order_operation(operation_id, user_id)
-            if persistent_cuisine_order is not None:
-                return Reply.from_data(persistent_cuisine_order)
-            persistent_weekly_reward = repo.weekly_reward_operation(operation_id, user_id)
-            if persistent_weekly_reward is not None:
-                return Reply.from_data(persistent_weekly_reward)
-            persistent_furnace = repo.furnace_operation(operation_id, user_id)
-            if persistent_furnace is not None:
-                return Reply.from_data(persistent_furnace)
-            persistent_angling = repo.angling_operation(operation_id, user_id)
-            if persistent_angling is not None:
-                return Reply.from_data(persistent_angling)
-            persistent_adventure_travel = repo.adventure_travel_operation(operation_id, user_id)
-            if persistent_adventure_travel is not None:
-                return Reply.from_data(persistent_adventure_travel)
-            persistent_care = repo.farm_care_operation(operation_id, user_id)
-            if persistent_care is not None:
-                return Reply.from_data(persistent_care)
-            persistent_convoy = repo.convoy_operation(operation_id, user_id)
-            if persistent_convoy is not None:
-                return Reply.from_data(persistent_convoy)
-            persistent_training = repo.training_operation(operation_id, user_id)
-            if persistent_training is not None:
-                return Reply.from_data(persistent_training)
-            persistent_course = repo.play_course_operation(operation_id, user_id)
-            if persistent_course is not None:
-                return Reply.from_data(persistent_course)
-            persistent_nursery = repo.nursery_operation(operation_id, user_id)
-            if persistent_nursery is not None:
-                return Reply.from_data(persistent_nursery)
-            persistent_herbalism = repo.herbalism_operation(operation_id, user_id)
-            if persistent_herbalism is not None:
-                return Reply.from_data(persistent_herbalism)
-            persistent_tracking = repo.tracking_operation(operation_id, user_id)
-            if persistent_tracking is not None:
-                return Reply.from_data(persistent_tracking)
-            persistent_cooking = repo.cooking_operation(operation_id, user_id)
-            if persistent_cooking is not None:
-                return Reply.from_data(persistent_cooking)
-            persistent_duel = repo.duel_operation(operation_id, user_id)
-            if persistent_duel is not None:
-                return Reply.from_data(persistent_duel)
-            persistent_stage_tactic = repo.stage_tactic_operation(operation_id, user_id)
-            if persistent_stage_tactic is not None:
-                return Reply.from_data(persistent_stage_tactic)
-            persistent_battle = repo.battle_operation(operation_id, user_id)
-            if persistent_battle is not None:
-                return Reply(
-                    persistent_battle["title"], tuple(persistent_battle["lines"]),
-                    tuple(persistent_battle["commands"]),
-                )
-            persistent_cast = repo.fishing_operation(operation_id, user_id)
-            if persistent_cast is not None:
-                return Reply.from_data(persistent_cast)
+            persistent = repo.special_operation(operation_id)
+            if persistent is not None:
+                kind, owner, payload = persistent
+                if owner != user_id:
+                    raise GameError("operation ID reused by a different user")
+                if kind == "battle":
+                    return Reply(payload["title"], tuple(payload["lines"]), tuple(payload["commands"]))
+                return Reply.from_data(payload)
             context = Context(repo, self.content, self.config, self.rng, user_id, timestamp, operation_id)
             if command.registered:
                 context.player()
