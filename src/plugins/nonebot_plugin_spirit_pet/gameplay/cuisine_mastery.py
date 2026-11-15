@@ -41,13 +41,6 @@ def cooked(ctx: Context, dish_id: str, user_id: str | None = None) -> int:
     return _progress(ctx, user_id).get(cuisine.DISH_PREFIX + dish_id, (0, 0))[0]
 
 
-def _claim_row(ctx: Context, dish_id: str, threshold: int, user_id: str | None = None):
-    return ctx.repo.conn.execute(
-        "SELECT progress, claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
-        (user_id or ctx.user_id, _key(dish_id, threshold)),
-    ).fetchone()
-
-
 def claimed(ctx: Context, dish_id: str, threshold: int, user_id: str | None = None) -> bool:
     return _progress(ctx, user_id).get(_key(dish_id, threshold), (0, 0))[1] == 1
 
@@ -137,14 +130,13 @@ def claim(ctx: Context, arg: str) -> Reply:
     )
     if entry is None:
         raise GameError("该菜谱没有这个精通档位。")
-    row = _claim_row(ctx, dish.id, threshold)
-    if row is not None:
-        if row["claimed"] == 1:
+    progress = _progress(ctx)
+    marker = progress.get(_key(dish.id, threshold))
+    if marker is not None:
+        if marker[1] == 1:
             raise GameError(f"{dish.name} {threshold} 份精通奖励已领取。")
-        if row["claimed"] not in (0, 1):
-            raise GameError("膳房精通领取记录损坏，请联系管理员检查存档。")
         raise GameError("该菜谱精通领取记录异常，请联系管理员检查存档。")
-    amount = cooked(ctx, dish.id)
+    amount = progress.get(cuisine.DISH_PREFIX + dish.id, (0, 0))[0]
     if amount < threshold:
         raise GameError(f"{dish.name} 尚未达到 {threshold} 份精通，目前成功 {amount} 份。")
     missing = set(entry.items) - set(ctx.content.items)

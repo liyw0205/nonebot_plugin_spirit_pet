@@ -82,7 +82,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
     pages = max(1, (owned_count + 4) // 5)
     if page > pages:
         raise GameError(f"共 {pages} 页。")
-    selected = ctx.repo.owned_pets(ctx.user_id, limit=5, offset=(page - 1) * 5)
+    selected = ctx.repo.owned_pets_page(ctx.user_id, limit=5, offset=(page - 1) * 5)
     archived_count = ctx.repo.archived_pet_count(ctx.user_id)
     lines = [f"在册 {owned_count}/{ctx.config.spirit_pet_max_pets} · 封存 {archived_count} 只。"]
     inline_commands = []

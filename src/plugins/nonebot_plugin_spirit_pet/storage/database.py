@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import time
 from collections.abc import Callable
 from contextlib import closing
 from dataclasses import asdict
@@ -351,7 +352,16 @@ class Store:
         record_operation: bool = True,
     ) -> Reply:
         with closing(self.connect()) as conn:
-            conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
+            begin_mode = "BEGIN IMMEDIATE" if immediate else "BEGIN"
+            recorder = getattr(self, "_transaction_recorder", None)
+            if recorder is None:
+                conn.execute(begin_mode)
+            else:
+                started = time.perf_counter()
+                try:
+                    conn.execute(begin_mode)
+                finally:
+                    recorder((begin_mode, (time.perf_counter() - started) * 1000))
             try:
                 cached = conn.execute(
                     "SELECT user_id, reply FROM operations WHERE operation_id=?", (operation_id,),

@@ -41,6 +41,18 @@ class Repository:
             self.pets[pet_id] = pet
         return self.pets[pet_id]
 
+    def _pet_from_row(self, row: sqlite3.Row) -> Pet:
+        pet_id = int(row["pet_id"])
+        cached = self.pets.get(pet_id)
+        if cached is not None:
+            return cached
+        data = dict(row)
+        data["archived"] = bool(data["archived"])
+        data["ascended"] = bool(data.get("ascended", 0))
+        pet = Pet(**data)
+        self.pets[pet_id] = pet
+        return pet
+
     def active_expedition(self, pet_id: int) -> sqlite3.Row | None:
         return self.conn.execute(
             "SELECT * FROM expeditions WHERE pet_id=? AND state='running'", (pet_id,),
@@ -123,6 +135,18 @@ class Repository:
         ids = self.conn.execute(query, args)
         return [self.pet(row["pet_id"]) for row in ids]
 
+    def owned_pets_page(self, user_id: str, *, limit: int, offset: int) -> list[Pet]:
+        query = (
+            "SELECT p.*, EXISTS("
+            "SELECT 1 FROM quest_progress q "
+            "WHERE q.user_id=p.user_id AND q.quest_id=? || CAST(p.pet_id AS TEXT) AND q.claimed=1"
+            ") AS ascended FROM pets p WHERE p.user_id=? AND p.archived=0 ORDER BY p.pet_id"
+        )
+        args: tuple = (ASCENDED_PREFIX, user_id)
+        query += " LIMIT ? OFFSET ?"
+        args += (limit, offset)
+        return [self._pet_from_row(row) for row in self.conn.execute(query, args)]
+
     def owned_pet_count(self, user_id: str) -> int:
         return int(self.conn.execute(
             "SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=0", (user_id,),
@@ -141,11 +165,15 @@ class Repository:
         }
 
     def archived_pets(self, user_id: str, *, limit: int, offset: int) -> list[Pet]:
-        ids = self.conn.execute(
-            "SELECT pet_id FROM pets WHERE user_id=? AND archived=1 ORDER BY pet_id LIMIT ? OFFSET ?",
-            (user_id, limit, offset),
+        rows = self.conn.execute(
+            "SELECT p.*, EXISTS("
+            "SELECT 1 FROM quest_progress q "
+            "WHERE q.user_id=p.user_id AND q.quest_id=? || CAST(p.pet_id AS TEXT) AND q.claimed=1"
+            ") AS ascended FROM pets p "
+            "WHERE p.user_id=? AND p.archived=1 ORDER BY p.pet_id LIMIT ? OFFSET ?",
+            (ASCENDED_PREFIX, user_id, limit, offset),
         )
-        return [self.pet(row["pet_id"]) for row in ids]
+        return [self._pet_from_row(row) for row in rows]
 
     def archived_pet_count(self, user_id: str) -> int:
         return int(self.conn.execute(

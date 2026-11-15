@@ -40,6 +40,18 @@ NOW = 1_800_000_000
 DEFAULT_SAMPLE = 100
 
 
+class _TimedStore(Store):
+    """Keep lock-wait instrumentation out of the production Store API."""
+
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self.begin_samples: list[tuple[str, float]] = []
+        self._transaction_recorder = self.begin_samples.append
+
+    def clear_begin_samples(self) -> None:
+        self.begin_samples.clear()
+
+
 def _percentile(values: list[float], percentile: float) -> float:
     if not values:
         return 0.0
@@ -113,8 +125,11 @@ def _explain(path: Path, user_id: str) -> dict[str, list[str]]:
                 "WHERE user_id=? AND quest_id LIKE 'cuisine_%'", (user_id,)
             ).fetchall(),
             "pet_page": conn.execute(
-                "EXPLAIN QUERY PLAN SELECT pet_id FROM pets WHERE user_id=? AND archived=0 "
-                "ORDER BY pet_id LIMIT 5 OFFSET 0", (user_id,)
+                "EXPLAIN QUERY PLAN SELECT p.*, EXISTS("
+                "SELECT 1 FROM quest_progress q "
+                "WHERE q.user_id=p.user_id AND q.quest_id=? || CAST(p.pet_id AS TEXT) AND q.claimed=1"
+                ") AS ascended FROM pets p WHERE p.user_id=? AND p.archived=0 "
+                "ORDER BY p.pet_id LIMIT 5 OFFSET 0", ("ascended_", user_id)
             ).fetchall(),
             "pet_count": conn.execute(
                 "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=0", (user_id,)
@@ -134,6 +149,7 @@ def _measure_case(
     started_cpu = time.process_time()
     started = time.perf_counter()
     fixed_claim_ops = {user: f"perf-claim-{user}" for user in users}
+    begin_start = len(game.store.begin_samples)
 
     def call(index: int):
         user = users[index % len(users)]
@@ -157,6 +173,19 @@ def _measure_case(
             if error:
                 errors.append(error)
     elapsed = time.perf_counter() - started
+    begin_samples = game.store.begin_samples[begin_start:]
+    begin_waits = [sample for _, sample in begin_samples]
+    immediate_waits = [sample for mode, sample in begin_samples if mode == "BEGIN IMMEDIATE"]
+
+    def wait_stats(values: list[float]) -> dict[str, float]:
+        return {
+            "count": len(values),
+            "total_ms": round(sum(values), 3),
+            "p50_ms": round(_percentile(values, 0.50), 3),
+            "p95_ms": round(_percentile(values, 0.95), 3),
+            "p99_ms": round(_percentile(values, 0.99), 3),
+        }
+
     return {
         "action": action,
         "concurrency": concurrency,
@@ -171,6 +200,8 @@ def _measure_case(
         "onebot_response_bytes_avg": round(onebot_bytes / len(samples)) if samples else 0,
         "qq_response_bytes_avg": round(qq_bytes / len(samples)) if samples else 0,
         "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "transaction_begin": wait_stats(begin_waits),
+        "immediate_begin": wait_stats(immediate_waits),
     }
 
 
@@ -182,7 +213,10 @@ def run(args: argparse.Namespace) -> dict:
     try:
         seed_info = _seed(path, args.users, args.batch_size, catalog)
         config = Config(spirit_pet_db=path, spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=True)
-        game = Game(Store(path), config, content=catalog)
+        store = _TimedStore(path)
+        store.initialize()
+        store.clear_begin_samples()
+        game = Game(store, config, content=catalog)
         users = [f"perf-{index:07d}" for index in range(min(args.sample_users, args.users))]
         actions = (
             ("identity", ""), ("pet_list", "1"), ("help", "成长"), ("cuisine", ""),

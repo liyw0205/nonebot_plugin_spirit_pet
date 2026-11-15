@@ -110,6 +110,22 @@ def _state(ctx: Context, dish: CuisineDish, count: int = 1) -> str:
     return "可烹饪"
 
 
+def _page_snapshot(ctx: Context) -> tuple[object, dict[str, int], int, int, dict[str, int]]:
+    """Load the page's mutable state once instead of once per recipe row."""
+    player = ctx.player()
+    progress = ctx.repo.cuisine_progress(ctx.user_id)
+    cooked = {
+        key[len(DISH_PREFIX):]: values[0]
+        for key, values in progress.items()
+        if key.startswith(DISH_PREFIX)
+    }
+    mastered_count = sum(value > 0 for value in cooked.values())
+    current_level = min(ctx.content.rules.cuisine.max_level, 1 + mastered_count)
+    heat_used = progress.get(f"{HEAT_PREFIX}{beijing_day(ctx.now)}", (0, 0))[0]
+    heat_left_value = max(0, ctx.content.rules.cuisine.daily_heat - heat_used)
+    return player, cooked, current_level, heat_left_value, ctx.repo.inventory(ctx.user_id)
+
+
 def spend_heat(ctx: Context, amount: int) -> None:
     """Record heat spent today; callers validate the remaining heat first."""
     if amount <= 0:
@@ -138,19 +154,32 @@ def page(ctx: Context) -> Reply:
             "尚未结契，先完成领养，再来掌勺。",
         ), ("灵宠帮助",), (InlineCommand(1, "开始领养", "灵宠领养 "),))
     rules = ctx.content.rules.cuisine
+    player, cooked, current_level, heat_left_value, inventory = _page_snapshot(ctx)
+    mastered_count = sum(value > 0 for value in cooked.values())
     lines = [
-        f"厨艺 {level(ctx)} 级 · 已掌握 {mastered(ctx)}/{len(ctx.content.cuisine)} 道"
-        f" · 今日灶火 {heat_left(ctx)}/{rules.daily_heat}（北京时间 00:00 重置）。",
+        f"厨艺 {current_level} 级 · 已掌握 {mastered_count}/{len(ctx.content.cuisine)} 道"
+        f" · 今日灶火 {heat_left_value}/{rules.daily_heat}（北京时间 00:00 重置）。",
     ]
     links = []
     for dish in dishes(ctx):
         scope = "宴席（全体）" if dish.effects else "单膳"
+        if current_level < dish.level:
+            state = "未解锁（需厨艺 %s 级）" % dish.level
+        elif heat_left_value < dish.heat:
+            state = "灶火不足"
+        elif player.stones < dish.stones or any(
+            inventory.get(item_id, 0) < amount
+            for item_id, amount in dish.ingredients.items()
+        ):
+            state = "材料不足"
+        else:
+            state = "可烹饪"
         lines.append(
             f"{dish.name} · {dish.level} 级 · 灶火 {dish.heat} · {scope}"
             f" · {_cost_text(ctx, dish)} · {_effects_text(_dish_effects(ctx, dish))}"
-            f" · {_state(ctx, dish)}"
+            f" · {state}"
         )
-        if _state(ctx, dish) == "可烹饪":
+        if state == "可烹饪":
             links.append(InlineCommand(len(lines) - 1, "烹饪", f"灵宠烹饪 {dish.name}"))
     lines.append("单膳进入乾坤袋，可用 灵宠使用 或 灵宠喂养 交给伙伴；宴席立即作用于全部在册伙伴。")
     lines.append("亲自掌勺：三段调火，按成色产出单膳，共用今日灶火。")

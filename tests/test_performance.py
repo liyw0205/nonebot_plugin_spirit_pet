@@ -25,9 +25,17 @@ def test_benchmark_is_bounded_and_removes_temporary_database():
     assert result["cases"]
     assert all(case["samples"] > 0 for case in result["cases"])
     assert all(case["p99_ms"] >= case["p50_ms"] for case in result["cases"])
+    assert all(case["transaction_begin"]["count"] == case["samples"] for case in result["cases"])
+    assert all(
+        case["transaction_begin"]["p99_ms"] >= case["transaction_begin"]["p50_ms"]
+        for case in result["cases"]
+    )
     assert "USING COVERING INDEX quest_progress_user_status" in " ".join(
         result["explain"]["cuisine_progress"]
     )
+    pet_plan = " ".join(result["explain"]["pet_page"])
+    assert "USING INDEX pets_owner" in pet_plan or "USING COVERING INDEX pets_owner" in pet_plan
+    assert "sqlite_autoindex_quest_progress_1" in pet_plan
 
 
 @pytest.mark.parametrize("users", [1000, 10000])
