@@ -116,6 +116,8 @@ CREATE TABLE quest_progress (
     claimed INTEGER NOT NULL DEFAULT 0 CHECK (claimed IN (0, 1)),
     PRIMARY KEY(user_id, quest_id)
 );
+CREATE INDEX quest_progress_user_status
+    ON quest_progress(user_id, quest_id, progress, claimed);
 CREATE TABLE teams (
     team_id INTEGER PRIMARY KEY AUTOINCREMENT,
     leader_id TEXT NOT NULL UNIQUE REFERENCES players(user_id)

@@ -28,7 +28,16 @@ class Store:
         conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA busy_timeout=15000")
         return conn
+
+    @staticmethod
+    def _ensure_performance_indexes(conn: sqlite3.Connection) -> None:
+        """Install additive covering indexes without changing the schema version."""
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS quest_progress_user_status "
+            "ON quest_progress(user_id, quest_id, progress, claimed)"
+        )
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,6 +48,7 @@ class Store:
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             ).fetchall()
             if version == SCHEMA_VERSION:
+                self._ensure_performance_indexes(conn)
                 return
             if version == 0 and not tables:
                 conn.execute("BEGIN IMMEDIATE")
@@ -61,6 +71,7 @@ class Store:
                     if statement.strip():
                         raise RuntimeError("Incomplete schema SQL")
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                    self._ensure_performance_indexes(conn)
                     conn.commit()
                 except BaseException:
                     conn.rollback()
@@ -336,10 +347,11 @@ class Store:
 
     def transact(
         self, user_id: str, operation_id: str, now: int,
-        action: Callable[[sqlite3.Connection], Reply],
+        action: Callable[[sqlite3.Connection], Reply], *, immediate: bool = True,
+        record_operation: bool = True,
     ) -> Reply:
         with closing(self.connect()) as conn:
-            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
             try:
                 cached = conn.execute(
                     "SELECT user_id, reply FROM operations WHERE operation_id=?", (operation_id,),
@@ -351,11 +363,12 @@ class Store:
                     result = Reply.from_data(data)
                 else:
                     result = action(conn)
-                    conn.execute(
-                        "INSERT INTO operations VALUES (?, ?, ?, ?)",
-                        (operation_id, user_id, now, json.dumps(asdict(result), ensure_ascii=False)),
-                    )
-                    conn.execute("DELETE FROM operations WHERE created_at < ?", (now - 604800,))
+                    if record_operation:
+                        conn.execute(
+                            "INSERT INTO operations VALUES (?, ?, ?, ?)",
+                            (operation_id, user_id, now, json.dumps(asdict(result), ensure_ascii=False)),
+                        )
+                        conn.execute("DELETE FROM operations WHERE created_at < ?", (now - 604800,))
                 conn.commit()
                 return result
             except BaseException:

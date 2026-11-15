@@ -23,21 +23,22 @@ def _key(dish_id: str, threshold: int) -> str:
     return f"{PREFIX}{dish_id}_{threshold}"
 
 
-def cooked(ctx: Context, dish_id: str, user_id: str | None = None) -> int:
+def _progress(ctx: Context, user_id: str | None = None) -> dict[str, tuple[int, int]]:
     owner = user_id or ctx.user_id
-    row = ctx.repo.conn.execute(
-        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?",
-        (owner, cuisine.DISH_PREFIX + dish_id),
-    ).fetchone()
-    if row is None:
-        return 0
     try:
-        value = int(row["progress"])
+        rows = ctx.repo.cuisine_progress(owner)
     except (TypeError, ValueError) as exc:
-        raise GameError(f"{dish_id} 的膳房精通进度损坏，请联系管理员检查存档。") from exc
-    if value < 0:
-        raise GameError(f"{dish_id} 的膳房精通进度损坏，请联系管理员检查存档。")
-    return value
+        raise GameError("膳房精通进度损坏，请联系管理员检查存档。") from exc
+    for key, (progress, claimed_value) in rows.items():
+        if key.startswith(cuisine.DISH_PREFIX) and progress < 0:
+            raise GameError(f"{key.removeprefix(cuisine.DISH_PREFIX)} 的膳房精通进度损坏，请联系管理员检查存档。")
+        if key.startswith(PREFIX) and claimed_value not in (0, 1):
+            raise GameError("膳房精通领取记录损坏，请联系管理员检查存档。")
+    return rows
+
+
+def cooked(ctx: Context, dish_id: str, user_id: str | None = None) -> int:
+    return _progress(ctx, user_id).get(cuisine.DISH_PREFIX + dish_id, (0, 0))[0]
 
 
 def _claim_row(ctx: Context, dish_id: str, threshold: int, user_id: str | None = None):
@@ -48,12 +49,7 @@ def _claim_row(ctx: Context, dish_id: str, threshold: int, user_id: str | None =
 
 
 def claimed(ctx: Context, dish_id: str, threshold: int, user_id: str | None = None) -> bool:
-    row = _claim_row(ctx, dish_id, threshold, user_id)
-    if row is None:
-        return False
-    if row["claimed"] not in (0, 1):
-        raise GameError("膳房精通领取记录损坏，请联系管理员检查存档。")
-    return row["claimed"] == 1
+    return _progress(ctx, user_id).get(_key(dish_id, threshold), (0, 0))[1] == 1
 
 
 def mastery_level(ctx: Context, dish_id: str, user_id: str | None = None) -> int:
@@ -65,10 +61,11 @@ def claimable(ctx: Context, user_id: str | None = None) -> list:
     owner = user_id or ctx.user_id
     if ctx.repo.player(owner) is None:
         return []
+    progress = _progress(ctx, owner)
     return [
         entry for entry in rewards(ctx)
-        if cooked(ctx, entry.dish_id, owner) >= entry.threshold
-        and not claimed(ctx, entry.dish_id, entry.threshold, owner)
+        if progress.get(cuisine.DISH_PREFIX + entry.dish_id, (0, 0))[0] >= entry.threshold
+        and progress.get(_key(entry.dish_id, entry.threshold), (0, 0))[1] != 1
     ]
 
 
@@ -87,20 +84,31 @@ def catalog(ctx: Context, arg: str = "") -> Reply:
     player = ctx.repo.player(ctx.user_id)
     lines = []
     links = []
+    progress: dict[str, tuple[int, int]] = {}
+    reward_entries = {
+        dish.id: rewards(ctx, dish.id) for dish in cuisine.dishes(ctx)
+    }
+    all_rewards = tuple(entry for entries in reward_entries.values() for entry in entries)
     if player is None:
         lines.append("尚未结契，先完成领养；膳房成功产出的单膳会累计对应菜谱精通。")
         links.append(InlineCommand(0, "开始领养", "灵宠领养 "))
     else:
-        ready = len(claimable(ctx))
+        progress = _progress(ctx)
+        ready = sum(
+            progress.get(cuisine.DISH_PREFIX + entry.dish_id, (0, 0))[0] >= entry.threshold
+            and progress.get(_key(entry.dish_id, entry.threshold), (0, 0))[1] != 1
+            for entry in all_rewards
+        )
         lines.append(f"共有 {ready} 档精通奖励可领取；即时烹饪与掌勺成膳都会计入，焦糊和宴席不计。")
     for dish in cuisine.dishes(ctx):
-        if not rewards(ctx, dish.id):
+        entries = reward_entries[dish.id]
+        if not entries:
             continue
-        amount = cooked(ctx, dish.id)
-        level = mastery_level(ctx, dish.id)
+        amount = progress.get(cuisine.DISH_PREFIX + dish.id, (0, 0))[0]
+        level = sum(amount >= threshold for threshold in THRESHOLDS)
         lines.append(f"{dish.name} · 成功 {amount} 份 · 精通 {level}/{len(THRESHOLDS)} 级")
-        for entry in rewards(ctx, dish.id):
-            is_claimed = claimed(ctx, dish.id, entry.threshold)
+        for entry in entries:
+            is_claimed = progress.get(_key(dish.id, entry.threshold), (0, 0))[1] == 1
             state = "已领取" if is_claimed else (
                 "可领取" if player and amount >= entry.threshold else f"未达成（{amount}/{entry.threshold}）"
             )
@@ -165,11 +173,20 @@ def objective_line(ctx: Context, user_id: str) -> str:
     player = ctx.repo.player(user_id)
     if player is None:
         return "膳房精通：尚未结契"
-    ready = claimable(ctx, user_id)
-    mastered = sum(mastery_level(ctx, dish.id, user_id) for dish in cuisine.dishes(ctx))
-    total = len(rewards(ctx))
+    progress = _progress(ctx, user_id)
+    entries = rewards(ctx)
+    ready = sum(
+        progress.get(cuisine.DISH_PREFIX + entry.dish_id, (0, 0))[0] >= entry.threshold
+        and progress.get(_key(entry.dish_id, entry.threshold), (0, 0))[1] != 1
+        for entry in entries
+    )
+    mastered = sum(
+        progress.get(cuisine.DISH_PREFIX + dish.id, (0, 0))[0] >= threshold
+        for dish in cuisine.dishes(ctx) for threshold in THRESHOLDS
+    )
+    total = len(entries)
     if ready:
-        return f"膳房精通：可领 {len(ready)} 档 · 已达 {mastered}/{total} 档"
+        return f"膳房精通：可领 {ready} 档 · 已达 {mastered}/{total} 档"
     return f"膳房精通：已达 {mastered}/{total} 档"
 
 

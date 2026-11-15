@@ -114,11 +114,31 @@ class Repository:
         if player is not None:
             player.active_pet_id = pet_ids[0]
 
-    def owned_pets(self, user_id: str) -> list[Pet]:
-        ids = self.conn.execute(
-            "SELECT pet_id FROM pets WHERE user_id=? AND archived=0 ORDER BY pet_id", (user_id,),
-        )
+    def owned_pets(self, user_id: str, *, limit: int | None = None, offset: int = 0) -> list[Pet]:
+        query = "SELECT pet_id FROM pets WHERE user_id=? AND archived=0 ORDER BY pet_id"
+        args: tuple = (user_id,)
+        if limit is not None:
+            query += " LIMIT ? OFFSET ?"
+            args += (limit, offset)
+        ids = self.conn.execute(query, args)
         return [self.pet(row["pet_id"]) for row in ids]
+
+    def owned_pet_count(self, user_id: str) -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=0", (user_id,),
+        ).fetchone()[0])
+
+    def cuisine_progress(self, user_id: str) -> dict[str, tuple[int, int]]:
+        """Read cuisine portions and mastery receipts in one covering-index scan."""
+        rows = self.conn.execute(
+            "SELECT quest_id, progress, claimed FROM quest_progress "
+            "WHERE user_id=? AND quest_id LIKE 'cuisine_%'",
+            (user_id,),
+        )
+        return {
+            str(row["quest_id"]): (int(row["progress"]), int(row["claimed"]))
+            for row in rows
+        }
 
     def archived_pets(self, user_id: str, *, limit: int, offset: int) -> list[Pet]:
         ids = self.conn.execute(

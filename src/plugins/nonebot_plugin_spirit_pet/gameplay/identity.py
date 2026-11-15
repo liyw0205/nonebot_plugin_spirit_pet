@@ -17,6 +17,6 @@ def profile(ctx: Context, arg: str) -> Reply:
         f"UID：{player.uid}",
         f"注册时间：{registered}",
         f"灵石：{player.stones}",
-        f"灵宠：在册 {len(ctx.repo.owned_pets(ctx.user_id))} 只 · 封存 {ctx.repo.archived_pet_count(ctx.user_id)} 只",
+        f"灵宠：在册 {ctx.repo.owned_pet_count(ctx.user_id)} 只 · 封存 {ctx.repo.archived_pet_count(ctx.user_id)} 只",
         f"出战伙伴：{len(ctx.repo.active_pets(ctx.user_id))} 只",
     ), ("我的灵宠", "灵宠列表", "灵宠背包"))

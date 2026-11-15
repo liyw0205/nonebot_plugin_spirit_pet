@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from typing import Any
 from urllib.parse import quote
 
@@ -77,6 +78,7 @@ _ACTION_LABELS = {
 }
 
 
+@lru_cache(maxsize=512)
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
     parts = visible.split()
@@ -155,6 +157,7 @@ def _action_items(reply: Reply) -> tuple[tuple[str, str], ...]:
     return tuple((_action_label(command), command) for command in unique[:4])
 
 
+@lru_cache(maxsize=512)
 def inline_command(label: str, command: str, prefix: str = "/") -> str:
     label = label.removeprefix("/").strip()
     if not re.fullmatch(r"[\u4e00-\u9fffA-Za-z0-9 /+\-]+", label):

@@ -25,14 +25,11 @@ def dishes(ctx: Context) -> list[CuisineDish]:
 
 def _cooked(ctx: Context, user_id: str | None = None) -> dict[str, int]:
     owner = user_id or ctx.user_id
-    rows = ctx.repo.conn.execute(
-        "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
-        (owner, f"{DISH_PREFIX}%"),
-    )
+    rows = ctx.repo.cuisine_progress(owner)
     return {
-        row["quest_id"][len(DISH_PREFIX):]: int(row["progress"])
-        for row in rows
-        if row["quest_id"].startswith(DISH_PREFIX)
+        key[len(DISH_PREFIX):]: values[0]
+        for key, values in rows.items()
+        if key.startswith(DISH_PREFIX)
     }
 
 
