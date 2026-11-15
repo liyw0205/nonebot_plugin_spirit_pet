@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -17,7 +18,7 @@ from nonebot_plugin_spirit_pet.application.game import Game
 from nonebot_plugin_spirit_pet.content.catalog import DATA_DIR, Catalog
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.market_content import MarketRule
-from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.domain.models import GameError, Reply
 from nonebot_plugin_spirit_pet.gameplay import market
 from nonebot_plugin_spirit_pet.storage.database import SCHEMA_PATH, SCHEMA_VERSION, Store
 from nonebot_plugin_spirit_pet.storage.registration import legacy_schema21
@@ -152,6 +153,40 @@ def test_unregistered_market_is_read_only_and_creates_no_player(game, play):
     assert [link.command for link in reply.inline_commands] == ["灵宠领养 "]
     assert sql(game[1], "SELECT user_id FROM players") == []
     assert listings(game) == []
+
+
+def test_market_lookups_use_deferred_transactions_but_writes_stay_immediate(game, play, monkeypatch):
+    account(game, play)
+    modes = []
+    original = Store.transact
+
+    def record_mode(self, *args, **kwargs):
+        modes.append(kwargs.get("immediate"))
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Store, "transact", record_mode)
+    play("market")
+    assert modes[-1] is False
+    grant(game, {"forge_ore": 5})
+    play("market", "上架 锻灵矿 1 90")
+    assert modes[-1] is True
+
+
+def test_deferred_market_sweep_retries_after_a_busy_snapshot(game):
+    calls = []
+
+    def action(_conn):
+        calls.append(True)
+        if len(calls) == 1:
+            raise sqlite3.OperationalError("database is locked")
+        return Reply("重试成功", (), ())
+
+    result = game[1].transact(
+        "u1", "market-deferred-retry", NOW, action,
+        immediate=False, record_operation=False, retry_deferred_on_busy=True,
+    )
+    assert result.title == "重试成功"
+    assert len(calls) == 2
 
 
 def test_listing_escrows_the_stack_and_appears_on_the_board(game, play):
@@ -297,6 +332,20 @@ def test_expired_listing_returns_the_escrow_and_leaves_the_board(game, play):
         play("market", f"购买 {listing_id}", user="u2", now=later)
 
 
+def test_expired_market_page_is_idempotent_under_concurrent_readers(game, play):
+    account(game, play)
+    grant(game, {"forge_ore": 5})
+    sell(play)
+    later = NOW + 4 * DAY
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        replies = list(pool.map(lambda _: play("market", now=later), range(8)))
+
+    assert all(reply.title == "灵宠集市" for reply in replies)
+    assert listings(game)[0]["state"] == "expired"
+    assert items(game[1])["forge_ore"] == 5
+
+
 def test_a_retired_item_listing_is_closed_without_paying_the_escrow(game, play):
     account(game, play)
     grant(game, {"forge_ore": 1})
@@ -308,6 +357,115 @@ def test_a_retired_item_listing_is_closed_without_paying_the_escrow(game, play):
     row = listings(game)[0]
     assert row["state"] == "expired"
     assert items(game[1]).get("ghost_item") is None
+    listing_snapshot = next(
+        value for key, value in game[0]._market_sweep_cache.items()
+        if key[0] == "market_listings"
+    )
+    assert all(row["listing_id"] != 1 for row in listing_snapshot)
+    play("market")
+    assert listings(game)[0]["state"] == "expired"
+
+
+def test_a_retired_item_bid_refunds_once_and_leaves_the_cache(game, play):
+    account(game, play)
+    set_stones(game, 100)
+    play("market", "求购")
+    sql(
+        game[1],
+        "INSERT INTO market_bids(buyer_id,item_id,quantity,unit_price,escrow,created_at,"
+        "expires_at,state) VALUES (?,?,?,?,?,?,?,'active')",
+        ("u1", "ghost_item", 1, 10, 10, NOW, NOW + DAY),
+    )
+
+    play("market", "求购")
+    assert player(game[1])["stones"] == 110
+    assert sql(game[1], "SELECT state FROM market_bids WHERE bid_id=1")[0]["state"] == "expired"
+    bid_snapshot = next(
+        value for key, value in game[0]._market_sweep_cache.items()
+        if key[0] == "market_bids"
+    )
+    assert all(row["bid_id"] != 1 for row in bid_snapshot)
+
+    sql(
+        game[1],
+        "INSERT INTO market_bids(buyer_id,item_id,quantity,unit_price,escrow,created_at,"
+        "expires_at,state) VALUES (?,?,?,?,?,?,?,'active')",
+        ("u1", "forge_ore", 1, 10, 10, NOW, NOW + DAY),
+    )
+    play("market", "求购")
+    sql(game[1], "UPDATE market_bids SET item_id='ghost_item' WHERE bid_id=2")
+    play("market", "求购")
+    assert player(game[1])["stones"] == 120
+    assert sql(game[1], "SELECT state FROM market_bids WHERE bid_id=2")[0]["state"] == "expired"
+    bid_snapshot = next(
+        value for key, value in game[0]._market_sweep_cache.items()
+        if key[0] == "market_bids"
+    )
+    assert all(row["bid_id"] not in {1, 2} for row in bid_snapshot)
+
+    play("market", "求购")
+    assert player(game[1])["stones"] == 120
+    assert sql(game[1], "SELECT state FROM market_bids WHERE bid_id=1")[0]["state"] == "expired"
+    assert sql(game[1], "SELECT state FROM market_bids WHERE bid_id=2")[0]["state"] == "expired"
+
+
+def test_market_sweep_cache_is_bounded_and_due_rows_are_live(game, play):
+    account(game, play)
+    grant(game, {"forge_ore": 20})
+    sell(play, amount=1)
+
+    for listing_id in range(2, 10):
+        sql(
+            game[1],
+            "INSERT INTO market_listings(listing_id,seller_id,item_id,quantity,unit_price,"
+            "created_at,expires_at,state) VALUES (?,?,?,?,?,?,?,'active')",
+            (listing_id, "u1", "forge_ore", 1, 10, NOW, NOW + DAY),
+        )
+        play("market")
+    listing_keys = [
+        key for key in game[0]._market_sweep_cache if key[0] == "market_listings"
+    ]
+    assert len(listing_keys) == 1
+
+    for bid_id in range(1, 9):
+        sql(
+            game[1],
+            "INSERT INTO market_bids(bid_id,buyer_id,item_id,quantity,unit_price,escrow,"
+            "created_at,expires_at,state) VALUES (?,?,?,?,?,?,?,?,'active')",
+            (bid_id, "u1", "forge_ore", 1, 10, 10, NOW, NOW + DAY),
+        )
+        play("market", "求购")
+    bid_keys = [key for key in game[0]._market_sweep_cache if key[0] == "market_bids"]
+    assert len(bid_keys) == 1
+
+    sql(
+        game[1],
+        "UPDATE market_listings SET expires_at=? WHERE listing_id=2",
+        (NOW + 1,),
+    )
+    play("market", now=NOW + 1)
+    assert listings(game)[1]["state"] == "expired"
+    listing_snapshot = next(
+        value for key, value in game[0]._market_sweep_cache.items()
+        if key[0] == "market_listings"
+    )
+    assert all(row["listing_id"] != 2 for row in listing_snapshot)
+
+    sql(
+        game[1],
+        "UPDATE market_listings SET item_id='ghost_item' WHERE listing_id=3",
+    )
+    play("market")
+    listing_keys = [
+        key for key in game[0]._market_sweep_cache if key[0] == "market_listings"
+    ]
+    assert len(listing_keys) == 1
+    assert listings(game)[2]["state"] == "expired"
+    listing_snapshot = next(
+        value for key, value in game[0]._market_sweep_cache.items()
+        if key[0] == "market_listings"
+    )
+    assert all(row["listing_id"] != 3 for row in listing_snapshot)
 
 
 def test_upgrade_charges_once_and_raises_the_cap(game, play):

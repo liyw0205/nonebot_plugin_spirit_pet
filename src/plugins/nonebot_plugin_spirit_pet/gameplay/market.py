@@ -17,18 +17,47 @@ receives ``gross - fee``. The tax leaves the economy; no player receives it.
 """
 
 import re
+import threading
 
 from ..application.context import Context
 from ..domain.market_content import MarketRule, Stall
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import quantity
-from ..utils.pagination import paginate
+from ..utils.pagination import Page
 from ..utils.time import beijing_day
 from . import market_standing
 
 STALL_KEY = "market_stall"
 PAGE_SIZE = 5
 SALE_PAGE_SIZE = 5
+
+
+def _query_page(
+    ctx: Context,
+    query: str,
+    args: tuple,
+    count_query: str,
+    count_args: tuple,
+    argument: str,
+    title: str,
+    command: str,
+    page_size: int,
+) -> tuple[Page, int]:
+    """Fetch one bounded page and its total without materializing all rows."""
+    number = quantity(argument or "1", 999)
+    total = int(ctx.repo.conn.execute(count_query, count_args).fetchone()[0])
+    pages = max(1, (total + page_size - 1) // page_size)
+    if number > pages:
+        raise GameError(f"{title}共 {pages} 页。")
+    rows = ctx.repo.conn.execute(
+        f"{query} LIMIT ? OFFSET ?", (*args, page_size, (number - 1) * page_size),
+    ).fetchall()
+    navigation = []
+    if number > 1:
+        navigation.append(f"{command} {number - 1}")
+    if number < pages:
+        navigation.append(f"{command} {number + 1}")
+    return Page(tuple(rows), number, pages, tuple(navigation)), total
 
 
 def rule(ctx: Context) -> MarketRule:
@@ -90,6 +119,65 @@ def board(ctx: Context) -> list:
     ).fetchall()
 
 
+def _known_or_expired(ctx: Context, table: str) -> list:
+    """Load due rows cheaply and scan retired item ids once per item revision."""
+    if table == "market_listings":
+        columns = "listing_id, seller_id, item_id, quantity, expires_at"
+    else:
+        columns = "bid_id, buyer_id, item_id, escrow, expires_at"
+    due = list(ctx.repo.conn.execute(
+        f"SELECT {columns} FROM {table} WHERE state='active' AND expires_at<=? ORDER BY rowid",
+        (ctx.now,),
+    ).fetchall())
+    known_ids = tuple(ctx.content.items)
+    if not known_ids:
+        return due
+    revision = int(ctx.repo.conn.execute(
+        "SELECT revision FROM market_sweep_meta WHERE table_name=?", (table,),
+    ).fetchone()[0])
+    cache_key = (table, known_ids, revision)
+    cache = ctx.market_sweep_cache
+    lock = ctx.market_sweep_lock
+    if cache is None or lock is None:
+        cache = {}
+        lock = threading.Lock()
+    with lock:
+        retired = cache.get(cache_key)
+        if retired is None:
+            # Keep one retired-row snapshot per table/catalog.  The revision
+            # changes on item-id mutations, so stale snapshots must not retain
+            # every historical revision (or replaced catalog) for the lifetime
+            # of a Game instance.
+            for stale_key in tuple(cache):
+                if stale_key[0] == table:
+                    del cache[stale_key]
+            placeholders = ",".join("?" for _ in known_ids)
+            retired = tuple(ctx.repo.conn.execute(
+                f"SELECT {columns} FROM {table} WHERE state='active' "
+                f"AND item_id NOT IN ({placeholders}) ORDER BY rowid",
+                known_ids,
+            ).fetchall())
+            cache[cache_key] = retired
+    seen = {row["listing_id"] if table == "market_listings" else row["bid_id"] for row in due}
+    return [*due, *(row for row in retired if (
+        row["listing_id"] if table == "market_listings" else row["bid_id"]
+    ) not in seen)]
+
+
+def _discard_swept_rows(ctx: Context, table: str, row_ids: set[int]) -> None:
+    """Remove rows closed by this sweep from every cached retired snapshot."""
+    if not row_ids or ctx.market_sweep_cache is None or ctx.market_sweep_lock is None:
+        return
+    identity = "listing_id" if table == "market_listings" else "bid_id"
+    with ctx.market_sweep_lock:
+        for key, retired in tuple(ctx.market_sweep_cache.items()):
+            if key[0] != table:
+                continue
+            remaining = tuple(row for row in retired if row[identity] not in row_ids)
+            if len(remaining) != len(retired):
+                ctx.market_sweep_cache[key] = remaining
+
+
 def sweep_expired(ctx: Context) -> int:
     """Close listings past their deadline and return the escrow to each seller.
 
@@ -98,11 +186,9 @@ def sweep_expired(ctx: Context) -> int:
     deliberately not handed back through ``add_item`` — the item no longer exists
     in content, and a dead id in the bag would only confuse the shop pages.
     """
-    rows = ctx.repo.conn.execute(
-        "SELECT listing_id, seller_id, item_id, quantity, expires_at FROM market_listings"
-        " WHERE state='active' ORDER BY listing_id",
-    ).fetchall()
+    rows = _known_or_expired(ctx, "market_listings")
     closed_count = 0
+    swept_ids: set[int] = set()
     for row in rows:
         known = row["item_id"] in ctx.content.items
         if known and row["expires_at"] > ctx.now:
@@ -112,10 +198,12 @@ def sweep_expired(ctx: Context) -> int:
             " WHERE listing_id=? AND state='active'",
             (ctx.now, row["listing_id"]),
         )
+        swept_ids.add(int(row["listing_id"]))
         if closed.rowcount == 1:
             closed_count += 1
             if known:
                 ctx.repo.add_item(row["seller_id"], row["item_id"], row["quantity"])
+    _discard_swept_rows(ctx, "market_listings", swept_ids)
     return closed_count
 
 
@@ -167,17 +255,26 @@ def page(ctx: Context, arg: str = "") -> Reply:
         )
     sweep(ctx)
     player = ctx.player()
-    rows = board(ctx)
-    entries = [(row, ctx.content.items[row["item_id"]]) for row in rows]
-    page_data = paginate(entries, arg, "灵宠集市", "灵宠集市", PAGE_SIZE)
+    page_data, total_rows = _query_page(
+        ctx,
+        "SELECT * FROM market_listings WHERE state='active' ORDER BY item_id, unit_price, listing_id",
+        (),
+        "SELECT COUNT(*) FROM market_listings WHERE state='active'",
+        (),
+        arg,
+        "灵宠集市",
+        "灵宠集市",
+        PAGE_SIZE,
+    )
+    entries = [(row, ctx.content.items[row["item_id"]]) for row in page_data.entries]
     current = tier(ctx)
     lines = [
-        f"灵石：{player.stones} · 在售 {len(rows)} 件 · "
+        f"灵石：{player.stones} · 在售 {total_rows} 件 · "
         f"我的摊位：{current.name}（{len(active_listings(ctx))}/"
         f"{market_standing.listing_slots(ctx, ctx.user_id)}）",
     ]
     links = []
-    for row, item in page_data.entries:
+    for row, item in entries:
         total = row["unit_price"] * row["quantity"]
         owner = "自家摊位" if row["seller_id"] == ctx.user_id else uid_of(ctx, row["seller_id"])
         days = max(0, (row["expires_at"] - ctx.now + 86399) // 86400)
@@ -189,7 +286,7 @@ def page(ctx: Context, arg: str = "") -> Reply:
             links.append(InlineCommand(
                 len(lines) - 1, "购买", f"灵宠集市 购买 {row['listing_id']}",
             ))
-    if not entries:
+    if not total_rows:
         lines.append("集市暂时空空如也。")
         lines.append("想出手？上架材料或丹药，等别的修士来买。")
         links.append(InlineCommand(len(lines) - 1, "上架物品", "灵宠集市 上架 "))
@@ -259,11 +356,17 @@ def mine(ctx: Context, arg: str = "") -> Reply:
 def records(ctx: Context, arg: str = "") -> Reply:
     ctx.player()
     sweep(ctx)
-    sales = ctx.repo.conn.execute(
+    page_data, total_rows = _query_page(
+        ctx,
         "SELECT * FROM market_sales WHERE seller_id=? ORDER BY sold_at DESC, listing_id DESC",
         (ctx.user_id,),
-    ).fetchall()
-    page_data = paginate(sales, arg, "成交记录", "灵宠集市 记录", SALE_PAGE_SIZE)
+        "SELECT COUNT(*) FROM market_sales WHERE seller_id=?",
+        (ctx.user_id,),
+        arg,
+        "成交记录",
+        "灵宠集市 记录",
+        SALE_PAGE_SIZE,
+    )
     totals = ctx.repo.conn.execute(
         "SELECT COUNT(*) AS n, COALESCE(SUM(net), 0) AS net, COALESCE(SUM(fee), 0) AS fee"
         " FROM market_sales WHERE seller_id=?",
@@ -278,7 +381,7 @@ def records(ctx: Context, arg: str = "") -> Reply:
             f" ×{sale['quantity']}"
             f" · 总价 {sale['gross']} · 税 {sale['fee']} · 实收 {sale['net']}"
         )
-    if not sales:
+    if not total_rows:
         lines.append("还没有成交记录。")
     lines.append(f"第 {page_data.number}/{page_data.total} 页。")
     return Reply(
@@ -508,11 +611,9 @@ def sweep_bids(ctx: Context) -> int:
     and because the escrow is stones (not a stack) the refund is always payable —
     a dead item id never has to be put back into anyone's bag.
     """
-    rows = ctx.repo.conn.execute(
-        "SELECT bid_id, buyer_id, item_id, escrow, expires_at FROM market_bids"
-        " WHERE state='active' ORDER BY bid_id",
-    ).fetchall()
+    rows = _known_or_expired(ctx, "market_bids")
     closed_count = 0
+    swept_ids: set[int] = set()
     for row in rows:
         known = row["item_id"] in ctx.content.items
         if known and row["expires_at"] > ctx.now:
@@ -521,11 +622,14 @@ def sweep_bids(ctx: Context) -> int:
             "UPDATE market_bids SET state='expired', closed_at=? WHERE bid_id=? AND state='active'",
             (ctx.now, row["bid_id"]),
         )
+        swept_ids.add(int(row["bid_id"]))
         if closed.rowcount == 1:
             closed_count += 1
-            buyer = ctx.repo.player(row["buyer_id"])
-            if buyer is not None:
-                buyer.stones += int(row["escrow"])
+            ctx.repo.conn.execute(
+                "UPDATE players SET stones=stones+? WHERE user_id=?",
+                (int(row["escrow"]), row["buyer_id"]),
+            )
+    _discard_swept_rows(ctx, "market_bids", swept_ids)
     return closed_count
 
 
@@ -682,16 +786,25 @@ def bid_page(ctx: Context, arg: str = "") -> Reply:
     sweep(ctx)
     player = ctx.player()
     market = rule(ctx)
-    rows = bid_board(ctx)
-    entries = [(row, ctx.content.items[row["item_id"]]) for row in rows]
-    page_data = paginate(entries, arg, "灵宠集市 求购", "灵宠集市 求购", BID_PAGE_SIZE)
+    page_data, total_rows = _query_page(
+        ctx,
+        "SELECT * FROM market_bids WHERE state='active' ORDER BY item_id, unit_price DESC, bid_id",
+        (),
+        "SELECT COUNT(*) FROM market_bids WHERE state='active'",
+        (),
+        arg,
+        "灵宠集市 求购",
+        "灵宠集市 求购",
+        BID_PAGE_SIZE,
+    )
+    entries = [(row, ctx.content.items[row["item_id"]]) for row in page_data.entries]
     lines = [
-        f"灵石：{player.stones} · 在等货的求购 {len(rows)} 条"
+        f"灵石：{player.stones} · 在等货的求购 {total_rows} 条"
         f" · 我挂出 {len(active_bids(ctx))}/"
         f"{market_standing.bid_slots(ctx, ctx.user_id)}。",
     ]
     links = []
-    for row, item in page_data.entries:
+    for row, item in entries:
         mine = row["buyer_id"] == ctx.user_id
         owner = "自家求购" if mine else uid_of(ctx, row["buyer_id"])
         days = max(0, (row["expires_at"] - ctx.now + 86399) // 86400)
@@ -704,7 +817,7 @@ def bid_page(ctx: Context, arg: str = "") -> Reply:
             links.append(InlineCommand(
                 len(lines) - 1, "应单", f"灵宠集市 应单 {row['bid_id']}",
             ))
-    if not entries:
+    if not total_rows:
         lines.append("暂时没有人在收东西。")
         lines.append("想收货？挂一条求购，先付全款，等有货的人来应单。")
         links.append(InlineCommand(len(lines) - 1, "挂求购", "灵宠集市 求购 "))
@@ -717,12 +830,17 @@ def bid_records(ctx: Context, arg: str = "") -> Reply:
     """Both sides of the player's filled buy orders, newest first."""
     ctx.player()
     sweep(ctx)
-    sales = ctx.repo.conn.execute(
-        "SELECT * FROM market_bid_sales WHERE buyer_id=? OR seller_id=?"
-        " ORDER BY sold_at DESC, bid_id DESC",
+    page_data, total_rows = _query_page(
+        ctx,
+        "SELECT * FROM market_bid_sales WHERE buyer_id=? OR seller_id=? ORDER BY sold_at DESC, bid_id DESC",
         (ctx.user_id, ctx.user_id),
-    ).fetchall()
-    page_data = paginate(sales, arg, "求购记录", "灵宠集市 求购记录", SALE_PAGE_SIZE)
+        "SELECT COUNT(*) FROM market_bid_sales WHERE buyer_id=? OR seller_id=?",
+        (ctx.user_id, ctx.user_id),
+        arg,
+        "求购记录",
+        "灵宠集市 求购记录",
+        SALE_PAGE_SIZE,
+    )
     bought = ctx.repo.conn.execute(
         "SELECT COUNT(*) AS n, COALESCE(SUM(gross), 0) AS gross FROM market_bid_sales WHERE buyer_id=?",
         (ctx.user_id,),
@@ -743,7 +861,7 @@ def bid_records(ctx: Context, arg: str = "") -> Reply:
             f" ×{sale['quantity']} · 单价 {sale['unit_price']}"
             f" · 总价 {sale['gross']} · 税 {sale['fee']} · 实收 {sale['net']}"
         )
-    if not sales:
+    if not total_rows:
         lines.append("还没有成交过的求购。")
     lines.append(f"第 {page_data.number}/{page_data.total} 页。")
     return Reply(

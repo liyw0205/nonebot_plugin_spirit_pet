@@ -43,6 +43,56 @@ class Store:
             "CREATE INDEX IF NOT EXISTS pets_owner_species "
             "ON pets(user_id, archived, species_id, pet_id)"
         )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_listing_expiry "
+            "ON market_listings(state, expires_at, listing_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_sales_seller_time "
+            "ON market_sales(seller_id, sold_at DESC, listing_id DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_bid_expiry "
+            "ON market_bids(state, expires_at, bid_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_bid_sales_buyer_time "
+            "ON market_bid_sales(buyer_id, sold_at DESC, bid_id DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_bid_sales_seller_time "
+            "ON market_bid_sales(seller_id, sold_at DESC, bid_id DESC)"
+        )
+        # Retired-item discovery is cached by Game. State-only settlements do
+        # not change that result, while external item-id inserts/updates do.
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS market_sweep_meta "
+            "(table_name TEXT PRIMARY KEY, revision INTEGER NOT NULL DEFAULT 0)"
+        )
+        conn.executemany(
+            "INSERT OR IGNORE INTO market_sweep_meta(table_name, revision) VALUES (?, 0)",
+            (("market_listings",), ("market_bids",)),
+        )
+        conn.execute(
+            "CREATE TRIGGER IF NOT EXISTS market_listings_sweep_item_insert "
+            "AFTER INSERT ON market_listings BEGIN "
+            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_listings'; END"
+        )
+        conn.execute(
+            "CREATE TRIGGER IF NOT EXISTS market_listings_sweep_item_update "
+            "AFTER UPDATE OF item_id ON market_listings BEGIN "
+            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_listings'; END"
+        )
+        conn.execute(
+            "CREATE TRIGGER IF NOT EXISTS market_bids_sweep_item_insert "
+            "AFTER INSERT ON market_bids BEGIN "
+            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_bids'; END"
+        )
+        conn.execute(
+            "CREATE TRIGGER IF NOT EXISTS market_bids_sweep_item_update "
+            "AFTER UPDATE OF item_id ON market_bids BEGIN "
+            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_bids'; END"
+        )
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -354,7 +404,7 @@ class Store:
     def transact(
         self, user_id: str, operation_id: str, now: int,
         action: Callable[[sqlite3.Connection], Reply], *, immediate: bool = True,
-        record_operation: bool = True,
+        record_operation: bool = True, retry_deferred_on_busy: bool = False,
     ) -> Reply:
         with closing(self.connect()) as conn:
             if record_operation:
@@ -366,35 +416,46 @@ class Store:
                     if cached["user_id"] != user_id:
                         raise GameError("operation ID reused by a different user")
                     return Reply.from_data(json.loads(cached["reply"]))
-            begin_mode = "BEGIN IMMEDIATE" if immediate else "BEGIN"
-            recorder = getattr(self, "_transaction_recorder", None)
-            if recorder is None:
-                conn.execute(begin_mode)
-            else:
-                started = time.perf_counter()
-                try:
+            def run_transaction(begin_mode: str) -> Reply:
+                recorder = getattr(self, "_transaction_recorder", None)
+                if recorder is None:
                     conn.execute(begin_mode)
-                finally:
-                    recorder((begin_mode, (time.perf_counter() - started) * 1000))
-            try:
-                cached = conn.execute(
-                    "SELECT user_id, reply FROM operations WHERE operation_id=?", (operation_id,),
-                ).fetchone()
-                if cached:
-                    if cached["user_id"] != user_id:
-                        raise GameError("operation ID reused by a different user")
-                    data = json.loads(cached["reply"])
-                    result = Reply.from_data(data)
                 else:
-                    result = action(conn)
-                    if record_operation:
-                        conn.execute(
-                            "INSERT INTO operations VALUES (?, ?, ?, ?)",
-                            (operation_id, user_id, now, json.dumps(asdict(result), ensure_ascii=False)),
-                        )
-                        conn.execute("DELETE FROM operations WHERE created_at < ?", (now - 604800,))
-                conn.commit()
-                return result
-            except BaseException:
-                conn.rollback()
-                raise
+                    started = time.perf_counter()
+                    try:
+                        conn.execute(begin_mode)
+                    finally:
+                        recorder((begin_mode, (time.perf_counter() - started) * 1000))
+                try:
+                    cached = conn.execute(
+                        "SELECT user_id, reply FROM operations WHERE operation_id=?", (operation_id,),
+                    ).fetchone()
+                    if cached:
+                        if cached["user_id"] != user_id:
+                            raise GameError("operation ID reused by a different user")
+                        data = json.loads(cached["reply"])
+                        result = Reply.from_data(data)
+                    else:
+                        result = action(conn)
+                        if record_operation:
+                            conn.execute(
+                                "INSERT INTO operations VALUES (?, ?, ?, ?)",
+                                (operation_id, user_id, now, json.dumps(asdict(result), ensure_ascii=False)),
+                            )
+                            conn.execute("DELETE FROM operations WHERE created_at < ?", (now - 604800,))
+                    conn.commit()
+                    return result
+                except BaseException:
+                    conn.rollback()
+                    raise
+
+            begin_mode = "BEGIN IMMEDIATE" if immediate else "BEGIN"
+            try:
+                return run_transaction(begin_mode)
+            except sqlite3.OperationalError as exc:
+                if not (
+                    retry_deferred_on_busy and not immediate
+                    and "locked" in str(exc).lower()
+                ):
+                    raise
+                return run_transaction("BEGIN IMMEDIATE")
