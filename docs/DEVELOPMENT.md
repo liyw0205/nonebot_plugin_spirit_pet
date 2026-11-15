@@ -35,7 +35,7 @@ PYTHONPYCACHEPREFIX=/tmp/spirit-pet-compile /home/nonebot-shared-venv/bin/python
 git diff --check
 ```
 
-需要隔离解释器时，将命令中的路径替换为显式环境，或设置 `XIUPET_VENV=/path/to/venv`；安装、更新、启动、重启和登录会沿用该覆盖值。
+以上共享解释器仅用于本机远程开发、测试和性能基准；Linux 安装/运行默认仍是 `/root/myenv`。需要隔离测试解释器时，将命令中的路径替换为显式环境；运行脚本则使用 `--venv PATH` 或 `XIUPET_VENV=PATH` 覆盖默认值。
 
 内容或战斗公式变化时，额外运行对应的内容校验和固定种子场景；适配器变化时只补必要的解析、消息结构或 OneBot 运输合同。不要把未运行的全量、仿真、WS、QQ 真机或 Termux 验收写成已通过。
 

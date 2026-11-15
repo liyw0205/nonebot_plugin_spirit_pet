@@ -60,8 +60,8 @@ Docker/容器中的 `127.0.0.1` 指向容器本身，不一定是 NoneBot 所在
 ```bash
 xiupet stop
 cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
-/home/nonebot-shared-venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
-/home/nonebot-shared-venv/bin/python scripts/database_admin.py verify /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+/root/myenv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+/root/myenv/bin/python scripts/database_admin.py verify /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
 xiupet update
 xiupet start
 ```
@@ -72,19 +72,19 @@ xiupet start
 
 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 分段迁移，各段有独立备份；不要认为后一段失败就会撤回已经完成的前一段。schema 1-17、高于 28 的版本、未版本化的非空库与不匹配的表结构会拒绝继续启动。保留原库和备份，核对启动日志，不要删除数据、换路径或重建数据库来绕过迁移拒绝。
 
-`xiupet update` 从最新正式 Release 下载 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，验证归档后只替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并在默认共享环境中安装依赖；`.env`、`data/`、`.xiupet/`、已有 `.venv`、日志和命令链接均保留。源码替换或依赖安装失败会尝试恢复旧程序文件。该命令只接受正式 Release 管理的安装；本地源码安装不适用此更新流程。显式 `--venv PATH` 或 `XIUPET_VENV=PATH` 会改用指定环境。
+`xiupet update` 从最新正式 Release 下载 `https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`，验证归档后只替换 `src/`、`scripts/`、`pyproject.toml` 与 `requirements.txt` 并在默认 `/root/myenv` 中安装依赖；`.env`、`data/`、`.xiupet/`、已有 `.venv`、日志和命令链接均保留。源码替换或依赖安装失败会尝试恢复旧程序文件。该命令只接受正式 Release 管理的安装；本地源码安装不适用此更新流程。显式 `--venv PATH` 或 `XIUPET_VENV=PATH` 会改用指定环境。
 
 更新启动后可用以下命令确认数据库版本，再查看 `xiupet logs` 和 `我的信息`：
 
 ```bash
-/home/nonebot-shared-venv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.db --schema-version 28
+/root/myenv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.db --schema-version 28
 ```
 
 需要恢复时先停止 bot，恢复命令只写入新的数据库路径，然后验证结果，再将 `SPIRIT_PET_DB` 指向恢复副本：
 
 ```bash
-/home/nonebot-shared-venv/bin/python scripts/database_admin.py restore /YOUR/BACKUP/DIRECTORY/pre-upgrade.db data/spirit_pet/spirit_pet.restored.db
-/home/nonebot-shared-venv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.restored.db
+/root/myenv/bin/python scripts/database_admin.py restore /YOUR/BACKUP/DIRECTORY/pre-upgrade.db data/spirit_pet/spirit_pet.restored.db
+/root/myenv/bin/python scripts/database_admin.py verify data/spirit_pet/spirit_pet.restored.db
 ```
 
 默认 `verify` 检查完整性，不断言 schema；确认备份来源版本后可添加相应的 `--schema-version`。回滚时同时使用与备份 schema 对应的代码、配置和数据库，不单独降级其中一项。当前代码不会把备份降级，还原也不会迁移 schema。保留原始数据库，确认恢复副本正常前不要更改或删除它。

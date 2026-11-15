@@ -10,7 +10,7 @@ RELEASE_PROXIES=(
     "https://gh-proxy.org/"
 )
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
-DEFAULT_VENV_PATH="/home/nonebot-shared-venv"
+DEFAULT_VENV_PATH="/root/myenv"
 SOURCE_MARKER=.xiupet-source
 ACTION=install
 if (($#)) && [[ $1 =~ ^(install|update|convert|uninstall|start|stop|restart|status|logs|login)$ ]]; then
@@ -124,7 +124,7 @@ while (($#)); do
         -h|--help)
             printf 'Usage: %s [install|update|convert|uninstall|start|stop|restart|status|logs|login] [TARGET] [options]\n' "$0"
             printf 'Options: --source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH\n'
-            printf 'Default virtual environment: /home/nonebot-shared-venv; XIUPET_VENV overrides it.\n'
+            printf 'Default virtual environment: /root/myenv; XIUPET_VENV overrides it.\n'
             printf 'Compatibility aliases: --directory PATH and --source release|checkout.\n'
             exit 0
             ;;

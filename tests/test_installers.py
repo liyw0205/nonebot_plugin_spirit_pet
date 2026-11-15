@@ -96,11 +96,11 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     assert "[install|update|convert|uninstall|start|stop|restart|status|logs|login]" in result.stdout
     assert "--source-mode auto|release|source" in result.stdout
     assert "--target PATH" in result.stdout
-    assert "/home/nonebot-shared-venv" in result.stdout
+    assert "/root/myenv" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
     assert "install|update|convert|uninstall|start|stop|restart|status|logs|login" in manager_help.stdout
-    assert "/home/nonebot-shared-venv" in manager_help.stdout
+    assert "/root/myenv" in manager_help.stdout
     assert "QQ 官方机器人授权" in manager_help.stdout
 
 
@@ -540,7 +540,7 @@ def test_management_wrapper_forwards_unified_install_arguments(tmp_path):
     ]
 
 
-def test_management_migrates_legacy_project_venv_marker_to_shared_default(tmp_path):
+def test_management_migrates_legacy_project_venv_marker_to_runtime_default(tmp_path):
     if os.name == "nt" or not shutil.which("bash"):
         pytest.skip("bash unavailable")
     project = tmp_path / "target"
@@ -570,7 +570,7 @@ def test_management_migrates_legacy_project_venv_marker_to_shared_default(tmp_pa
         )
         assert result.returncode == 0, result.stdout + result.stderr
         forwarded = log.read_text(encoding="utf-8").splitlines()
-        assert forwarded[forwarded.index("--venv") + 1] == "/home/nonebot-shared-venv"
+        assert forwarded[forwarded.index("--venv") + 1] == "/root/myenv"
 
     environment["XIUPET_VENV"] = str(tmp_path / "custom-venv")
     (project / ".xiupet-venv").write_text(".venv\n", encoding="utf-8")
