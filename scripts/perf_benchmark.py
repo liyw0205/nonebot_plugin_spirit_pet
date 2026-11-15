@@ -134,6 +134,15 @@ def _explain(path: Path, user_id: str) -> dict[str, list[str]]:
             "pet_count": conn.execute(
                 "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=0", (user_id,)
             ).fetchall(),
+            "pet_counts": conn.execute(
+                "EXPLAIN QUERY PLAN SELECT SUM(archived=0), SUM(archived=1) "
+                "FROM pets WHERE user_id=?", (user_id,)
+            ).fetchall(),
+            "co_training_candidates": conn.execute(
+                "EXPLAIN QUERY PLAN SELECT * FROM pets "
+                "WHERE user_id=? AND archived=0 AND species_id=? AND pet_id!=? ORDER BY pet_id",
+                (user_id, "benchmark-species", 0),
+            ).fetchall(),
         }
     return {name: [str(dict(row)) for row in rows] for name, rows in plans.items()}
 

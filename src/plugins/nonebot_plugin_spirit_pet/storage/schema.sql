@@ -49,6 +49,7 @@ CREATE TABLE pets (
     UNIQUE(user_id, pet_id)
 );
 CREATE INDEX pets_owner ON pets(user_id, archived, pet_id);
+CREATE INDEX pets_owner_species ON pets(user_id, archived, species_id, pet_id);
 CREATE INDEX pets_rank ON pets(archived, realm DESC, layer DESC, exp DESC);
 CREATE TABLE active_pet_slots (
     user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,

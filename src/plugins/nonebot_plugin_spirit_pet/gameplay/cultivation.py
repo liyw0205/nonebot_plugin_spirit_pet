@@ -92,8 +92,11 @@ def co_train(ctx: Context, arg: str) -> Reply:
     ), ("灵宠合修", "灵宠任务"), (InlineCommand(0, "查看成长", "我的灵宠"),))
 
 
-def _co_training_blocker(ctx: Context, pet) -> str:
-    expedition = ctx.repo.active_expedition(pet.pet_id)
+def _co_training_blocker(ctx: Context, pet, expeditions=None) -> str:
+    expedition = (
+        expeditions.get(pet.pet_id)
+        if expeditions is not None else ctx.repo.active_expedition(pet.pet_id)
+    )
     if expedition is not None:
         return "外出中，先完成行程" if ctx.now < expedition["finishes_at"] else "行程已完成，先领取奖励"
     if _available_energy(ctx, pet) < ctx.content.rules.training_energy:
@@ -151,21 +154,30 @@ def _co_training_partners(ctx: Context, argument: str) -> Reply:
                  tuple(commands) + page.navigation, tuple(links))
 
 
-def available_co_training_partner(ctx: Context):
+def available_co_training_partner(ctx: Context, known_expeditions=None, known_pet_ids=None):
     player = ctx.repo.player(ctx.user_id)
     if player is None or player.active_pet_id is None:
         return None
     active = ctx.repo.pet(player.active_pet_id)
     if (
         active.archived
-        or _co_training_blocker(ctx, active)
         or cooldown_left(player.last_train, ctx.now, ctx.config.spirit_pet_train_cooldown)
     ):
         return None
-    for partner in ctx.repo.owned_pets(ctx.user_id):
-        if partner.pet_id == active.pet_id or partner.species_id != active.species_id:
-            continue
-        if not _co_training_blocker(ctx, partner):
+    known_expeditions = known_expeditions or {}
+    known_pet_ids = known_pet_ids or set()
+    expeditions = dict(known_expeditions)
+    missing_active = active.pet_id not in known_pet_ids
+    if missing_active:
+        expeditions.update(ctx.repo.active_expeditions([active.pet_id]))
+    if _co_training_blocker(ctx, active, expeditions):
+        return None
+    partners = ctx.repo.co_training_candidates(ctx.user_id, active.species_id, active.pet_id)
+    missing_partners = [partner.pet_id for partner in partners if partner.pet_id not in known_pet_ids]
+    if missing_partners:
+        expeditions.update(ctx.repo.active_expeditions(missing_partners))
+    for partner in partners:
+        if not _co_training_blocker(ctx, partner, expeditions):
             return partner
     return None
 

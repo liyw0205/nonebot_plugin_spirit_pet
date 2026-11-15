@@ -76,18 +76,18 @@ def summon(ctx: Context, arg: str, free: bool = False) -> Reply:
 
 def pet_list(ctx: Context, arg: str) -> Reply:
     ctx.player()
-    owned_count = ctx.repo.owned_pet_count(ctx.user_id)
-    active_ids = {pet.pet_id for pet in ctx.repo.active_pets(ctx.user_id)}
+    owned_count, archived_count = ctx.repo.pet_counts(ctx.user_id)
+    active_ids = ctx.repo.active_pet_ids(ctx.user_id)
     page = quantity(arg or "1", 999)
     pages = max(1, (owned_count + 4) // 5)
     if page > pages:
         raise GameError(f"共 {pages} 页。")
     selected = ctx.repo.owned_pets_page(ctx.user_id, limit=5, offset=(page - 1) * 5)
-    archived_count = ctx.repo.archived_pet_count(ctx.user_id)
+    expeditions = ctx.repo.active_expeditions([pet.pet_id for pet in selected])
     lines = [f"在册 {owned_count}/{ctx.config.spirit_pet_max_pets} · 封存 {archived_count} 只。"]
     inline_commands = []
     for index, pet in enumerate(selected, 1):
-        expedition = ctx.repo.active_expedition(pet.pet_id)
+        expedition = expeditions.get(pet.pet_id)
         activity = ""
         if expedition is not None:
             state = "外出中" if ctx.now < expedition["finishes_at"] else "待领取"
@@ -99,7 +99,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
         )
         if pet.pet_id not in active_ids:
             inline_commands.append(InlineCommand(len(lines) - 1, "设为出战", f"灵宠出战 {pet.pet_id}"))
-    co_training_partner = available_co_training_partner(ctx)
+    co_training_partner = available_co_training_partner(ctx, expeditions, {pet.pet_id for pet in selected})
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
         inline_commands.append(InlineCommand(len(lines) - 1, "选择合修伙伴", "灵宠合修"))

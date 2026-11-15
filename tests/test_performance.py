@@ -36,6 +36,10 @@ def test_benchmark_is_bounded_and_removes_temporary_database():
     pet_plan = " ".join(result["explain"]["pet_page"])
     assert "USING INDEX pets_owner" in pet_plan or "USING COVERING INDEX pets_owner" in pet_plan
     assert "sqlite_autoindex_quest_progress_1" in pet_plan
+    counts_plan = " ".join(result["explain"]["pet_counts"])
+    assert "USING COVERING INDEX pets_owner" in counts_plan
+    candidate_plan = " ".join(result["explain"]["co_training_candidates"])
+    assert "USING INDEX pets_owner_species" in candidate_plan or "USING COVERING INDEX pets_owner_species" in candidate_plan
 
 
 @pytest.mark.parametrize("users", [1000, 10000])

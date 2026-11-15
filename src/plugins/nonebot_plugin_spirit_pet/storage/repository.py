@@ -58,6 +58,17 @@ class Repository:
             "SELECT * FROM expeditions WHERE pet_id=? AND state='running'", (pet_id,),
         ).fetchone()
 
+    def active_expeditions(self, pet_ids: list[int]) -> dict[int, sqlite3.Row]:
+        """Load running expeditions for a rendered pet page in one round trip."""
+        if not pet_ids:
+            return {}
+        placeholders = ",".join("?" for _ in pet_ids)
+        rows = self.conn.execute(
+            f"SELECT * FROM expeditions WHERE state='running' AND pet_id IN ({placeholders})",
+            tuple(pet_ids),
+        )
+        return {int(row["pet_id"]): row for row in rows}
+
     def player_by_uid(self, value: str | int) -> Player | None:
         text = str(value).strip()
         match = re.fullmatch(r"(?:UID\s*)?([0-9]+)", text, re.IGNORECASE)
@@ -99,6 +110,18 @@ class Repository:
         if player is None or player.active_pet_id is None:
             return []
         return [self.pet(player.active_pet_id)]
+
+    def active_pet_ids(self, user_id: str) -> set[int]:
+        """Return roster IDs without materializing pets for list rendering."""
+        player = self.player(user_id)
+        rows = self.conn.execute(
+            "SELECT pet_id FROM active_pet_slots WHERE user_id=? ORDER BY slot", (user_id,),
+        ).fetchall()
+        if rows and player is not None and player.active_pet_id == rows[0]["pet_id"]:
+            return {int(row["pet_id"]) for row in rows}
+        if player is None or player.active_pet_id is None:
+            return set()
+        return {int(player.active_pet_id)}
 
     def set_active_pets(self, user_id: str, pet_ids: list[int]) -> None:
         if not 1 <= len(pet_ids) <= 3:
@@ -151,6 +174,22 @@ class Repository:
         return int(self.conn.execute(
             "SELECT COUNT(*) FROM pets WHERE user_id=? AND archived=0", (user_id,),
         ).fetchone()[0])
+
+    def pet_counts(self, user_id: str) -> tuple[int, int]:
+        """Return active and archived counts with one indexed aggregate scan."""
+        row = self.conn.execute(
+            "SELECT SUM(archived=0), SUM(archived=1) FROM pets WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
+        return int(row[0] or 0), int(row[1] or 0)
+
+    def co_training_candidates(self, user_id: str, species_id: str, exclude_pet_id: int) -> list[Pet]:
+        rows = self.conn.execute(
+            "SELECT * FROM pets WHERE user_id=? AND archived=0 AND species_id=? AND pet_id!=? "
+            "ORDER BY pet_id",
+            (user_id, species_id, exclude_pet_id),
+        )
+        return [self._pet_from_row(row) for row in rows]
 
     def cuisine_progress(self, user_id: str) -> dict[str, tuple[int, int]]:
         """Read cuisine portions and mastery receipts in one covering-index scan."""

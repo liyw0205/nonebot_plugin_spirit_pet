@@ -39,6 +39,10 @@ class Store:
             "CREATE INDEX IF NOT EXISTS quest_progress_user_status "
             "ON quest_progress(user_id, quest_id, progress, claimed)"
         )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS pets_owner_species "
+            "ON pets(user_id, archived, species_id, pet_id)"
+        )
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -336,6 +340,7 @@ class Store:
                     migrate_duel_table(conn)
                     validate_schema28(conn, schema)
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                    self._ensure_performance_indexes(conn)
                     conn.commit()
                 except BaseException:
                     conn.rollback()
