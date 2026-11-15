@@ -63,36 +63,6 @@ class Store:
             "CREATE INDEX IF NOT EXISTS market_bid_sales_seller_time "
             "ON market_bid_sales(seller_id, sold_at DESC, bid_id DESC)"
         )
-        # Retired-item discovery is cached by Game. State-only settlements do
-        # not change that result, while external item-id inserts/updates do.
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS market_sweep_meta "
-            "(table_name TEXT PRIMARY KEY, revision INTEGER NOT NULL DEFAULT 0)"
-        )
-        conn.executemany(
-            "INSERT OR IGNORE INTO market_sweep_meta(table_name, revision) VALUES (?, 0)",
-            (("market_listings",), ("market_bids",)),
-        )
-        conn.execute(
-            "CREATE TRIGGER IF NOT EXISTS market_listings_sweep_item_insert "
-            "AFTER INSERT ON market_listings BEGIN "
-            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_listings'; END"
-        )
-        conn.execute(
-            "CREATE TRIGGER IF NOT EXISTS market_listings_sweep_item_update "
-            "AFTER UPDATE OF item_id ON market_listings BEGIN "
-            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_listings'; END"
-        )
-        conn.execute(
-            "CREATE TRIGGER IF NOT EXISTS market_bids_sweep_item_insert "
-            "AFTER INSERT ON market_bids BEGIN "
-            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_bids'; END"
-        )
-        conn.execute(
-            "CREATE TRIGGER IF NOT EXISTS market_bids_sweep_item_update "
-            "AFTER UPDATE OF item_id ON market_bids BEGIN "
-            "UPDATE market_sweep_meta SET revision=revision+1 WHERE table_name='market_bids'; END"
-        )
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)

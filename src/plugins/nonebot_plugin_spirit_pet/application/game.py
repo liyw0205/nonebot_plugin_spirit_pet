@@ -1,4 +1,5 @@
 import random
+import sqlite3
 import threading
 import time
 
@@ -39,6 +40,17 @@ class Game:
         self.content = content if content is not None else Catalog.load()
         self._market_sweep_cache: dict[tuple[str, tuple[str, ...], int], tuple] = {}
         self._market_sweep_lock = threading.Lock()
+        self._market_version_lock = threading.Lock()
+        self._market_count_cache: dict[tuple[str, int], int] = {}
+        self._market_version_conn: sqlite3.Connection | None = None
+
+    def _market_data_version(self) -> int:
+        with self._market_version_lock:
+            if self._market_version_conn is None:
+                self._market_version_conn = sqlite3.connect(
+                    self.store.path, timeout=15, isolation_level=None, check_same_thread=False,
+                )
+            return int(self._market_version_conn.execute("PRAGMA data_version").fetchone()[0])
 
     def execute(
         self, user_id: str, action: str, argument: str, operation_id: str, now: int | None = None,
@@ -55,14 +67,17 @@ class Game:
         read_only = action in READ_ONLY_ACTIONS or (
             action == "market" and _market_read_only(argument)
         )
-
+        market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):
             if read_only:
                 context = Context(repo=Repository(conn), content=self.content, config=self.config,
                                    rng=self.rng, user_id=user_id, now=timestamp,
                                    operation_id=operation_id,
                                    market_sweep_cache=self._market_sweep_cache,
-                                   market_sweep_lock=self._market_sweep_lock)
+                                   market_sweep_lock=self._market_sweep_lock,
+                                   market_count_cache=self._market_count_cache,
+                                   market_data_version=self._market_data_version,
+                                   market_initial_data_version=market_initial_version)
                 if command.registered:
                     context.player()
                 return command.handler(context, argument)
@@ -77,7 +92,9 @@ class Game:
                 return Reply.from_data(payload)
             context = Context(
                 repo, self.content, self.config, self.rng, user_id, timestamp, operation_id,
-                self._market_sweep_cache, self._market_sweep_lock,
+                self._market_sweep_cache, self._market_sweep_lock, self._market_count_cache,
+                self._market_data_version,
+                market_initial_version,
             )
             if command.registered:
                 context.player()

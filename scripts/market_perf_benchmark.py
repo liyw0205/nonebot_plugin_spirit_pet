@@ -172,7 +172,7 @@ def _seed(
     }
 
 
-def _legacy_page(ctx, query, args, count_query, count_args, argument, title, command, page_size):
+def _legacy_page(ctx, query, args, count_query, count_args, argument, title, command, page_size, count_table=None):
     rows = ctx.repo.conn.execute(query, args).fetchall()
     number = quantity(argument or "1", 999)
     total = len(rows)
@@ -404,26 +404,30 @@ def _explain(path: Path) -> dict[str, list[str]]:
         return result
 
 
-def run(args: argparse.Namespace) -> dict:
-    directory = Path(tempfile.mkdtemp(prefix="spirit-pet-market-perf-")) if args.database is None else None
-    path = Path(args.database) if args.database else directory / "market.db"
+def _run_variant(
+    args: argparse.Namespace,
+    path: Path,
+    variant: str,
+    seed: dict[str, int | str],
+    market_rows: int,
+    *,
+    check_correctness: bool,
+) -> dict:
+    """Measure one isolated copy of a previously built fixture."""
+    sample_count = min(args.sample_users, args.users)
+    _configure_variant(variant)
+    config = Config(spirit_pet_db=path, spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=True)
+    store = TimedStore(path)
+    store.initialize()
+    game = Game(store, config, content=Catalog.load())
+    store.reset_metrics()
+    users = [_uid(i) for i in range(sample_count)]
+    if not users:
+        raise ValueError("users must leave at least one active listing")
+    cases = []
+    actions = (("board", ""), ("bid_board", "求购"), ("mine", "我的"), ("records", "记录"), ("bid_records", "求购记录"), ("buy", ""), ("fill", ""))
+    case_slot = 0
     try:
-        sample_count = min(args.sample_users, args.users)
-        active_needed = 2 * (args.iterations + 1) * sample_count
-        market_rows = max(args.users, args.history + active_needed)
-        seed = _seed(path, args.users, args.batch_size, args.history, market_rows)
-        _configure_variant(args.variant)
-        config = Config(spirit_pet_db=path, spirit_pet_qq_mode="native", spirit_pet_qq_keyboard=True)
-        store = TimedStore(path)
-        store.initialize()
-        game = Game(store, config, content=Catalog.load())
-        store.reset_metrics()
-        users = [_uid(i) for i in range(sample_count)]
-        if not users:
-            raise ValueError("users must leave at least one active listing")
-        cases = []
-        actions = (("board", ""), ("bid_board", "求购"), ("mine", "我的"), ("records", "记录"), ("bid_records", "求购记录"), ("buy", ""), ("fill", ""))
-        case_slot = 0
         for phase, iterations in (("cold", 1), ("hot", args.iterations)):
             for action, argument in actions:
                 for concurrency in args.concurrency:
@@ -431,11 +435,11 @@ def run(args: argparse.Namespace) -> dict:
                         game, config, seed, action, argument, users, concurrency, iterations, phase, case_slot,
                     )
                     measured["phase"] = phase
-                    measured["variant"] = args.variant
+                    measured["variant"] = variant
                     cases.append(measured)
                     case_slot += 1
         return {
-            "variant": args.variant,
+            "variant": variant,
             "seed_id": FIXED_SEED,
             "users": args.users,
             "history": args.history,
@@ -445,19 +449,63 @@ def run(args: argparse.Namespace) -> dict:
             "fixture_bytes": _fixture_bytes(path),
             "seed": seed,
             "explain": _explain(path),
-            "correctness": _correctness(path, config, Catalog.load()),
+            "correctness": _correctness(path, config, Catalog.load()) if check_correctness else {},
             "cases": cases,
         }
     finally:
         market._query_page = _ORIGINAL_QUERY_PAGE
         market._known_or_expired = _ORIGINAL_SWEEP
+
+
+def run(args: argparse.Namespace) -> dict:
+    """Compatibility entry point for one bounded variant."""
+    directory = Path(tempfile.mkdtemp(prefix="spirit-pet-market-perf-")) if args.database is None else None
+    path = Path(args.database) if args.database else directory / "market.db"
+    try:
+        sample_count = min(args.sample_users, args.users)
+        active_needed = 2 * (args.iterations + 1) * sample_count
+        market_rows = max(args.users, args.history + active_needed)
+        seed = _seed(path, args.users, args.batch_size, args.history, market_rows)
+        return _run_variant(args, path, args.variant, seed, market_rows, check_correctness=True)
+    finally:
         if directory is not None:
             shutil.rmtree(directory, ignore_errors=True)
 
 
+def run_pair(args: argparse.Namespace) -> dict:
+    """Build one fixture, then compare before/after copies without reseeding."""
+    directory = Path(tempfile.mkdtemp(prefix="spirit-pet-market-perf-pair-"))
+    base = directory / "fixture.db"
+    before_path = directory / "before.db"
+    after_path = directory / "after.db"
+    try:
+        sample_count = min(args.sample_users, args.users)
+        active_needed = 2 * (args.iterations + 1) * sample_count
+        market_rows = max(args.users, args.history + active_needed)
+        seed = _seed(base, args.users, args.batch_size, args.history, market_rows)
+        shutil.copy2(base, before_path)
+        shutil.copy2(base, after_path)
+        before = _run_variant(args, before_path, "before", seed, market_rows, check_correctness=False)
+        after = _run_variant(args, after_path, "after", seed, market_rows, check_correctness=True)
+        return {
+            "variant": "pair",
+            "seed_id": FIXED_SEED,
+            "users": args.users,
+            "history": args.history,
+            "market_rows": market_rows,
+            "sample_users": sample_count,
+            "fixture_bytes": _fixture_bytes(base),
+            "seed": seed,
+            "before": before,
+            "after": after,
+        }
+    finally:
+        shutil.rmtree(directory, ignore_errors=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--variant", choices=("before", "after"), default="after")
+    parser.add_argument("--variant", choices=("before", "after", "pair"), default="pair")
     parser.add_argument("--users", type=int, default=DEFAULT_USERS)
     parser.add_argument("--history", type=int, default=DEFAULT_HISTORY)
     parser.add_argument("--sample-users", type=int, default=20)
@@ -467,7 +515,7 @@ def main() -> None:
     parser.add_argument("--database")
     parser.add_argument("--output")
     args = parser.parse_args()
-    result = run(args)
+    result = run_pair(args) if args.variant == "pair" else run(args)
     encoded = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).write_text(encoded, encoding="utf-8")

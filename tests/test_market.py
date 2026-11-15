@@ -468,6 +468,29 @@ def test_market_sweep_cache_is_bounded_and_due_rows_are_live(game, play):
     assert all(row["listing_id"] != 3 for row in listing_snapshot)
 
 
+def test_market_active_count_cache_invalidates_external_state_changes(game, play):
+    account(game, play)
+    grant(game, {"forge_ore": 2})
+    sell(play, amount=1)
+    sql(
+        game[1],
+        "INSERT INTO market_listings(listing_id,seller_id,item_id,quantity,unit_price,"
+        "created_at,expires_at,state) VALUES (?,?,?,?,?,?,?,'active')",
+        (2, "u1", "forge_ore", 1, 11, NOW, NOW + DAY),
+    )
+
+    assert "在售 2 件" in play("market").text()
+    assert len(game[0]._market_count_cache) == 1
+
+    sql(
+        game[1],
+        "UPDATE market_listings SET state='cancelled',closed_at=? WHERE listing_id=2",
+        (NOW,),
+    )
+    assert "在售 1 件" in play("market").text()
+    assert len(game[0]._market_count_cache) == 1
+
+
 def test_upgrade_charges_once_and_raises_the_cap(game, play):
     account(game, play)
     set_stones(game, 5000)

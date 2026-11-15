@@ -21,6 +21,9 @@ class Context:
     operation_id: str
     market_sweep_cache: dict | None = None
     market_sweep_lock: Any = None
+    market_count_cache: dict | None = None
+    market_data_version: Any = None
+    market_initial_data_version: int | None = None
 
     def adoption_reply(self) -> Reply:
         starters = [species.name for species in self.content.species.values() if species.starter]

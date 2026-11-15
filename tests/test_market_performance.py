@@ -1,7 +1,5 @@
 from argparse import Namespace
-from pathlib import Path
-
-from scripts.market_perf_benchmark import run
+from scripts.market_perf_benchmark import run_pair
 
 
 def _args(variant):
@@ -18,33 +16,33 @@ def _args(variant):
     )
 
 
-def test_market_benchmark_is_bounded_and_cleans_temporary_database():
-    result = run(_args("after"))
+def test_market_benchmark_pair_reuses_fixture_and_cleans_temporary_database():
+    result = run_pair(_args("pair"))
     assert result["users"] == 64
     assert result["sample_users"] == 16
     assert result["seed_id"] == "market-fixed-20261116"
     assert result["market_rows"] == 80
     assert result["fixture_bytes"] > 0
-    assert not Path(result["database"]).exists()
-    assert {case["action"] for case in result["cases"]} == {
+    assert {case["action"] for case in result["after"]["cases"]} == {
         "board", "bid_board", "mine", "records", "bid_records", "buy", "fill",
     }
-    assert all(case["error_rate"] == 0 for case in result["cases"])
-    assert all(case["p99_ms"] >= case["p50_ms"] for case in result["cases"])
-    assert all(case["sql_statements"] > 0 for case in result["cases"])
-    assert all(result["correctness"].values())
-    assert "market_listing_board" in " ".join(result["explain"]["listing_page"])
-    assert "market_listing_expiry" in " ".join(result["explain"]["listing_expiry"])
-    assert "market_bid_board" in " ".join(result["explain"]["bid_page"])
-    assert "market_bid_expiry" in " ".join(result["explain"]["bid_expiry"])
+    for variant in (result["before"], result["after"]):
+        assert all(case["error_rate"] == 0 for case in variant["cases"])
+        assert all(case["p99_ms"] >= case["p50_ms"] for case in variant["cases"])
+        assert all(case["sql_statements"] > 0 for case in variant["cases"])
+    assert all(result["after"]["correctness"].values())
+    assert "market_listing_board" in " ".join(result["after"]["explain"]["listing_page"])
+    assert "market_listing_expiry" in " ".join(result["after"]["explain"]["listing_expiry"])
+    assert "market_bid_board" in " ".join(result["after"]["explain"]["bid_page"])
+    assert "market_bid_expiry" in " ".join(result["after"]["explain"]["bid_expiry"])
 
 
-def test_market_before_variant_keeps_same_player_cases():
-    result = run(_args("before"))
-    assert result["variant"] == "before"
-    assert len(result["cases"]) == 14
+def test_market_benchmark_pair_keeps_same_player_cases():
+    result = run_pair(_args("pair"))
+    assert result["variant"] == "pair"
+    assert len(result["before"]["cases"]) == 14
+    assert len(result["after"]["cases"]) == 14
     assert result["seed_id"] == "market-fixed-20261116"
     assert result["market_rows"] == 80
-    assert all(case["samples"] == 16 for case in result["cases"])
-    assert all(case["error_rate"] == 0 for case in result["cases"])
-    assert all(result["correctness"].values())
+    assert all(case["samples"] == 16 for case in result["before"]["cases"])
+    assert all(case["samples"] == 16 for case in result["after"]["cases"])

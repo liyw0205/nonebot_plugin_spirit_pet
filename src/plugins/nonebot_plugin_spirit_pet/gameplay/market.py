@@ -42,10 +42,31 @@ def _query_page(
     title: str,
     command: str,
     page_size: int,
+    count_table: str | None = None,
 ) -> tuple[Page, int]:
     """Fetch one bounded page and its total without materializing all rows."""
     number = quantity(argument or "1", 999)
-    total = int(ctx.repo.conn.execute(count_query, count_args).fetchone()[0])
+    if count_table is None:
+        total = int(ctx.repo.conn.execute(count_query, count_args).fetchone()[0])
+    else:
+        cache = ctx.market_count_cache
+        lock = ctx.market_sweep_lock
+        initial_version = ctx.market_initial_data_version
+        if cache is None or lock is None or ctx.market_data_version is None or initial_version is None:
+            total = int(ctx.repo.conn.execute(count_query, count_args).fetchone()[0])
+        else:
+            stable = ctx.market_data_version() == initial_version
+            key = (count_table, initial_version)
+            with lock:
+                total_value = cache.get(key) if stable else None
+                if total_value is None:
+                    total_value = int(ctx.repo.conn.execute(count_query, count_args).fetchone()[0])
+                    if ctx.market_data_version() == initial_version:
+                        for stale_key in tuple(cache):
+                            if stale_key[0] == count_table:
+                                del cache[stale_key]
+                        cache[key] = total_value
+                total = total_value
     pages = max(1, (total + page_size - 1) // page_size)
     if number > pages:
         raise GameError(f"{title}共 {pages} 页。")
@@ -132,32 +153,39 @@ def _known_or_expired(ctx: Context, table: str) -> list:
     known_ids = tuple(ctx.content.items)
     if not known_ids:
         return due
-    revision = int(ctx.repo.conn.execute(
-        "SELECT revision FROM market_sweep_meta WHERE table_name=?", (table,),
-    ).fetchone()[0])
-    cache_key = (table, known_ids, revision)
+    initial_version = ctx.market_initial_data_version
+    if ctx.market_data_version is None or initial_version is None:
+        cache_key = None
+    else:
+        cache_key = (table, known_ids, initial_version)
+        if ctx.market_data_version() != initial_version:
+            cache_key = None
     cache = ctx.market_sweep_cache
     lock = ctx.market_sweep_lock
-    if cache is None or lock is None:
-        cache = {}
-        lock = threading.Lock()
-    with lock:
-        retired = cache.get(cache_key)
-        if retired is None:
-            # Keep one retired-row snapshot per table/catalog.  The revision
-            # changes on item-id mutations, so stale snapshots must not retain
-            # every historical revision (or replaced catalog) for the lifetime
-            # of a Game instance.
-            for stale_key in tuple(cache):
-                if stale_key[0] == table:
-                    del cache[stale_key]
-            placeholders = ",".join("?" for _ in known_ids)
-            retired = tuple(ctx.repo.conn.execute(
-                f"SELECT {columns} FROM {table} WHERE state='active' "
-                f"AND item_id NOT IN ({placeholders}) ORDER BY rowid",
-                known_ids,
-            ).fetchall())
-            cache[cache_key] = retired
+    if cache is None or lock is None or cache_key is None:
+        placeholders = ",".join("?" for _ in known_ids)
+        retired = tuple(ctx.repo.conn.execute(
+            f"SELECT {columns} FROM {table} WHERE state='active' "
+            f"AND item_id NOT IN ({placeholders}) ORDER BY rowid",
+            known_ids,
+        ).fetchall())
+    else:
+        with lock:
+            retired = cache.get(cache_key)
+            if retired is None:
+                # Keep one retired-row snapshot per table/catalog. The data
+                # version changes on every committed external or local write.
+                for stale_key in tuple(cache):
+                    if stale_key[0] == table:
+                        del cache[stale_key]
+                placeholders = ",".join("?" for _ in known_ids)
+                retired = tuple(ctx.repo.conn.execute(
+                    f"SELECT {columns} FROM {table} WHERE state='active' "
+                    f"AND item_id NOT IN ({placeholders}) ORDER BY rowid",
+                    known_ids,
+                ).fetchall())
+                if ctx.market_data_version() == initial_version:
+                    cache[cache_key] = retired
     seen = {row["listing_id"] if table == "market_listings" else row["bid_id"] for row in due}
     return [*due, *(row for row in retired if (
         row["listing_id"] if table == "market_listings" else row["bid_id"]
@@ -265,6 +293,7 @@ def page(ctx: Context, arg: str = "") -> Reply:
         "灵宠集市",
         "灵宠集市",
         PAGE_SIZE,
+        "market_listings",
     )
     entries = [(row, ctx.content.items[row["item_id"]]) for row in page_data.entries]
     current = tier(ctx)
@@ -796,6 +825,7 @@ def bid_page(ctx: Context, arg: str = "") -> Reply:
         "灵宠集市 求购",
         "灵宠集市 求购",
         BID_PAGE_SIZE,
+        "market_bids",
     )
     entries = [(row, ctx.content.items[row["item_id"]]) for row in page_data.entries]
     lines = [
