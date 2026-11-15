@@ -32,7 +32,7 @@ pkg install -y bash curl
 bash <(curl -fsSL https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh) install --source-mode release --target "$HOME/spirit-pet" --no-start
 ```
 
-安装器会准备 Python 3.10+、虚拟环境、依赖和 `xiupet`，首次安装会从 `.env.example` 创建 `.env`。填写配置后启动：
+安装器默认使用主机共享虚拟环境 `/home/nonebot-shared-venv`，在其中安装 Python 依赖、`nb-cli` 和插件；不会删除项目目录中已有的 `.venv`。首次安装会从 `.env.example` 创建 `.env`。填写配置后启动：
 
 ```bash
 xiupet start
@@ -42,14 +42,15 @@ xiupet logs --lines 100
 
 如果 `xiupet` 不在 `PATH`，使用 `bash scripts/xiupet.sh start`。安装参数和 Termux 注意事项见[安装与启动](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/INSTALLATION.md)。
 
-已有 Python 3.10+ 时也可以手动安装：
+已有共享环境时也可以手动安装：
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
+/home/nonebot-shared-venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
 if [ ! -f .env ]; then cp .env.example .env; fi
-.venv/bin/nb run
+/home/nonebot-shared-venv/bin/nb run
 ```
+
+需要独立虚拟环境时，在安装、更新、启动、重启或登录命令中传入 `--venv PATH`，或设置 `XIUPET_VENV=PATH`；显式覆盖优先于共享默认值。
 
 已有 `.env` 时不要覆盖它。
 
@@ -127,7 +128,7 @@ xiupet login
 cd "$HOME/spirit-pet"
 xiupet stop
 cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
-.venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+/home/nonebot-shared-venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
 xiupet update
 xiupet start
 ```

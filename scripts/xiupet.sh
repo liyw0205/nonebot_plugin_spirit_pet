@@ -18,6 +18,7 @@ SOURCE_ROOT=${XIUPET_SOURCE:-$PROJECT}
 SOURCE_MODE=${XIUPET_SOURCE_MODE:-auto}
 MIRROR=${XIUPET_MIRROR:-accelerated}
 MIRROR_URL=${XIUPET_MIRROR_URL:-}
+DEFAULT_VENV_PATH=/home/nonebot-shared-venv
 VENV_PATH=${XIUPET_VENV:-}
 LOG_LINES=80
 YES=0
@@ -29,7 +30,16 @@ fail() { printf 'xiupet: %s\n' "$*" >&2; exit 1; }
 
 refresh_paths() {
     if ((VENV_EXPLICIT == 0)); then
-        if [[ -f $PROJECT/.xiupet-venv ]]; then VENV_PATH=$(<"$PROJECT/.xiupet-venv"); else VENV_PATH=.venv; fi
+        if [[ -f $PROJECT/.xiupet-venv ]]; then
+            local recorded_venv
+            recorded_venv=$(<"$PROJECT/.xiupet-venv")
+            case "$recorded_venv" in
+                .venv|./.venv|"$PROJECT/.venv") VENV_PATH=$DEFAULT_VENV_PATH ;;
+                *) VENV_PATH=$recorded_venv ;;
+            esac
+        else
+            VENV_PATH=$DEFAULT_VENV_PATH
+        fi
     fi
     [[ $VENV_PATH == /* ]] || VENV_PATH=$PROJECT/$VENV_PATH
     VENV=${VENV_PATH%/}
@@ -44,6 +54,7 @@ refresh_paths() {
 usage() {
     printf '用法：xiupet <install|update|convert|uninstall|start|stop|restart|status|logs|login> [选项]\n'
     printf '选项：--source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH --lines N\n'
+    printf '默认虚拟环境：/home/nonebot-shared-venv；XIUPET_VENV 可显式覆盖。\n'
     printf 'QQ 官方机器人授权：xiupet login [--timeout SEC] [--interval SEC]\n'
 }
 

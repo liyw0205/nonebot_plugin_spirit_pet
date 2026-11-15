@@ -12,7 +12,7 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/liyw0205/nonebot_plugin_spirit_pet/main/scripts/install.sh) install --source-mode release --target "$HOME/spirit-pet" --no-start
 ```
 
-首次安装创建 `.venv`，安装 `nb-cli==1.5.0` 与 `requirements.txt`，从 `.env.example` 生成 `.env`。重复安装保留源码、现有 `.env` 与存档。按 [接入教程](CONNECTIONS.md) 填写机器人配置后启动：
+首次安装默认使用 `/home/nonebot-shared-venv`，在共享环境中安装 `nb-cli==1.5.0` 与 `requirements.txt`，从 `.env.example` 生成 `.env`。不会删除目标目录已有的 `.venv` 或其他旧环境。重复安装保留源码、现有 `.env` 与存档。按 [接入教程](CONNECTIONS.md) 填写机器人配置后启动：
 
 ```bash
 xiupet start
@@ -22,7 +22,7 @@ xiupet logs --lines 100
 
 若 `~/.local/bin` 未加入 PATH，可使用 `bash scripts/xiupet.sh start` 等同名动作；也可按安装器提示将该目录加入 PATH。每个实例使用自己的 `scripts/xiupet.sh`，同一个快捷链接不会覆盖另一个安装。
 
-安装默认保持停止，便于先填配置；传入 `--run` 才以前台 `.venv/bin/nb run` 启动，按 Ctrl+C 停止。Termux 仍需使用当前受维护的环境，并按设备系统设置允许后台运行；安装脚本不会消除 Android 的进程限制。
+安装默认保持停止，便于先填配置；传入 `--run` 才以前台 `/home/nonebot-shared-venv/bin/nb run` 启动，按 Ctrl+C 停止。Termux 仍需使用当前受维护的环境，并按设备系统设置允许后台运行；安装脚本不会消除 Android 的进程限制。
 
 ## 安装选项
 
@@ -35,12 +35,13 @@ xiupet logs --lines 100
 | `--source PATH` | 本地源码目录；配合 `--source-mode source` 使用 |
 | `--mirror direct|accelerated|custom` | Release 下载方式；`custom` 另需 `--mirror-url URL` |
 | `--target PATH` | 目标目录；默认 Release 安装到 `~/spirit-pet` |
-| `--venv PATH` | 指定 Python 虚拟环境目录，默认目标目录下的 `.venv` |
+| `--venv PATH` | 指定 Python 虚拟环境目录，默认 `/home/nonebot-shared-venv` |
 | `--no-start` | 安装后不启动 |
 | `--skip-system` 或 `SPIRIT_PET_SKIP_SYSTEM=1` | 已有 Python、venv、curl、tar 时跳过系统包管理器 |
 | `--yes` | 卸载时确认删除，非交互卸载必填 |
 | `SPIRIT_PET_PYTHON` | 指定可用的 Python 3.10+ 解释器 |
 | `SPIRIT_PET_BIN_DIR` | 指定 `xiupet` 快捷命令目录，默认 `~/.local/bin` |
+| `XIUPET_VENV` | 指定共享默认之外的 Python 虚拟环境目录；等价于显式环境覆盖 |
 
 脚本支持 apt、dnf、yum、apk、pacman、zypper、Homebrew 与 Termux `pkg`。指定 `--skip-system` 后缺少依赖会明确报错，不自动安装系统组件。
 
@@ -58,12 +59,11 @@ bash scripts/install.sh install --source-mode source --source "$PWD" \
 手动安装适用于本地源码目录。已有 Python 3.10+ 时，在项目目录执行：
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
+/home/nonebot-shared-venv/bin/python -m pip install 'nb-cli==1.5.0' -r requirements.txt
 if [ ! -f .env ]; then cp .env.example .env; fi
 ```
 
-编辑 `.env` 后运行 `.venv/bin/nb run`。不要覆盖已有 `.env`。`ONEBOT_V11_ACCESS_TOKEN` 仅在启用 OneBot 鉴权时手动配置，不启用时可留空或省略。项目没有 `bot.py` 启动入口。
+编辑 `.env` 后运行 `/home/nonebot-shared-venv/bin/nb run`。不要覆盖已有 `.env`。`ONEBOT_V11_ACCESS_TOKEN` 仅在启用 OneBot 鉴权时手动配置，不启用时可留空或省略。项目没有 `bot.py` 启动入口。需要独立环境时使用 `bash scripts/install.sh ... --venv PATH` 或 `XIUPET_VENV=PATH`。
 
 ## 管理已安装实例
 
@@ -77,7 +77,7 @@ if [ ! -f .env ]; then cp .env.example .env; fi
 | `xiupet uninstall` | 停止并卸载；独立受管理目录会整目录删除 |
 | `xiupet login` | 执行 QQ 官方机器人扫码授权，写入 `.env`；运行中的实例会自动重启 |
 
-默认日志为 `.xiupet/run.log`。源码仓库卸载只移除 `.venv`、运行状态和快捷链接，保留源码、`.env`、存档；安装器复制创建的独立受管理目录会整个删除，卸载前必须另存数据库和配置。也可显式运行 `bash scripts/install.sh uninstall --directory PATH --yes`。
+默认日志为 `.xiupet/run.log`。源码仓库卸载只移除运行状态和快捷链接，保留源码、`.env`、存档及旧虚拟环境；安装器复制创建的独立受管理目录会整个删除，卸载前必须另存数据库和配置。也可显式运行 `bash scripts/install.sh uninstall --directory PATH --yes`。
 
 ## 更新正式 Release 安装
 
@@ -87,7 +87,7 @@ if [ ! -f .env ]; then cp .env.example .env; fi
 cd "$HOME/spirit-pet"
 xiupet stop
 cp .env /YOUR/BACKUP/DIRECTORY/env-pre-upgrade
-.venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
+/home/nonebot-shared-venv/bin/python scripts/database_admin.py backup data/spirit_pet/spirit_pet.db /YOUR/BACKUP/DIRECTORY/pre-upgrade.db
 xiupet update
 xiupet start
 ```

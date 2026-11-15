@@ -96,9 +96,11 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     assert "[install|update|convert|uninstall|start|stop|restart|status|logs|login]" in result.stdout
     assert "--source-mode auto|release|source" in result.stdout
     assert "--target PATH" in result.stdout
+    assert "/home/nonebot-shared-venv" in result.stdout
     manager_help = subprocess.run(["bash", str(ROOT / "scripts/xiupet.sh"), "--help"], capture_output=True, text=True)
     assert manager_help.returncode == 0
     assert "install|update|convert|uninstall|start|stop|restart|status|logs|login" in manager_help.stdout
+    assert "/home/nonebot-shared-venv" in manager_help.stdout
     assert "QQ 官方机器人授权" in manager_help.stdout
 
 
@@ -151,6 +153,7 @@ def test_release_download_prefers_verified_proxy_and_falls_back_to_official(
         [
             "bash", str(source_project / "scripts/install.sh"), "install",
             "--source-mode", "release", "--directory", str(destination), "--yes", "--no-start",
+            "--venv", str(destination / ".venv"),
         ],
         capture_output=True, text=True, env=environment,
     )
@@ -181,7 +184,7 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
         "SPIRIT_PET_BIN_DIR": str(bin_dir),
         "SPIRIT_PET_SKIP_SYSTEM": "1",
     }
-    command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"]
+    command = ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start", "--venv", str(destination / ".venv")]
     result = subprocess.run(command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
     assert (destination / ".xiupet-source").read_text(encoding="utf-8") == "source\n"
@@ -203,7 +206,7 @@ def test_install_copies_source_creates_env_and_shell_command_then_preserves_conf
     save = data_dir / "player.db"
     save.write_bytes(b"existing player save")
     option_first_command = [
-        "bash", str(source_project / "scripts/install.sh"), "--source", "checkout", "--directory", str(destination), "--yes", "--no-start",
+        "bash", str(source_project / "scripts/install.sh"), "--source", "checkout", "--directory", str(destination), "--yes", "--no-start", "--venv", str(destination / ".venv"),
     ]
     result = subprocess.run(option_first_command, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -294,6 +297,7 @@ def test_release_update_replaces_code_reinstalls_dependencies_and_preserves_runt
         "SPIRIT_PET_TEST_RELEASE_ARCHIVE": str(archive),
         "SPIRIT_PET_TEST_DEPENDENCY_LOG": str(dependency_log),
         "SPIRIT_PET_SKIP_SYSTEM": "1",
+        "XIUPET_VENV": str(destination / ".venv"),
     }
     if fail_dependencies:
         environment["SPIRIT_PET_TEST_FAIL_DEPENDENCIES"] = "1"
@@ -395,7 +399,7 @@ def test_convert_legacy_managed_install_requires_real_release_and_preserves_user
     result = subprocess.run(
         [
             "bash", str(ROOT / "scripts/install.sh"), "convert", "--target", str(destination),
-            "--mirror", "direct", "--yes",
+            "--mirror", "direct", "--yes", "--venv", str(destination / ".venv"),
         ],
         capture_output=True, text=True, env=environment,
     )
@@ -448,7 +452,7 @@ def test_missing_python_is_prepared_by_apt_before_install(source_project, tmp_pa
     }
     env.pop("SPIRIT_PET_SKIP_SYSTEM", None)
     result = subprocess.run(
-        ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start"],
+        ["bash", str(source_project / "scripts/install.sh"), "install", "--source", "checkout", "--directory", str(destination), "--yes", "--no-start", "--venv", str(destination / ".venv")],
         capture_output=True, text=True, env=env,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -492,7 +496,7 @@ def test_linux_management_command_uses_nb_and_can_start_stop_status(source_proje
     venv = source_project / ".venv"
     (venv / "bin").mkdir(parents=True)
     shutil.copy2(executable, venv / "bin/nb")
-    env = {**os.environ, "XIUPET_PROJECT": str(source_project)}
+    env = {**os.environ, "XIUPET_PROJECT": str(source_project), "XIUPET_VENV": str(venv)}
 
     started = subprocess.run(["bash", str(source_project / "scripts/xiupet.sh"), "start"], capture_output=True, text=True, env=env)
     assert started.returncode == 0, started.stdout + started.stderr
@@ -534,6 +538,52 @@ def test_management_wrapper_forwards_unified_install_arguments(tmp_path):
         "--mirror", "custom", "--venv", str(tmp_path / "custom-venv"), "--no-start",
         "--mirror-url", "https://mirror.invalid/project.tar.gz", "--yes",
     ]
+
+
+def test_management_migrates_legacy_project_venv_marker_to_shared_default(tmp_path):
+    if os.name == "nt" or not shutil.which("bash"):
+        pytest.skip("bash unavailable")
+    project = tmp_path / "target"
+    scripts = project / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/xiupet.sh", scripts / "xiupet.sh")
+    installer = scripts / "install.sh"
+    log = tmp_path / "installer-args.log"
+    installer.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '%s\\n' \"$@\" > \"$SPIRIT_PET_TEST_INSTALL_ARGS\"\n",
+        encoding="utf-8",
+    )
+    installer.chmod(0o755)
+    environment = {
+        **os.environ,
+        "SPIRIT_PET_TEST_INSTALL_ARGS": str(log),
+    }
+    for marker in (".venv\n", f"{project / '.venv'}\n"):
+        (project / ".xiupet-venv").write_text(marker, encoding="utf-8")
+        result = subprocess.run(
+            [
+                "bash", str(scripts / "xiupet.sh"), "install",
+                "--target", str(project), "--source", str(ROOT), "--source-mode", "source",
+            ],
+            capture_output=True, text=True, env=environment,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        forwarded = log.read_text(encoding="utf-8").splitlines()
+        assert forwarded[forwarded.index("--venv") + 1] == "/home/nonebot-shared-venv"
+
+    environment["XIUPET_VENV"] = str(tmp_path / "custom-venv")
+    (project / ".xiupet-venv").write_text(".venv\n", encoding="utf-8")
+    result = subprocess.run(
+        [
+            "bash", str(scripts / "xiupet.sh"), "install",
+            "--target", str(project), "--source", str(ROOT), "--source-mode", "source",
+        ],
+        capture_output=True, text=True, env=environment,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    forwarded = log.read_text(encoding="utf-8").splitlines()
+    assert forwarded[forwarded.index("--venv") + 1] == str(tmp_path / "custom-venv")
 
 
 def test_installer_and_management_command_are_bash_and_use_nb_cli():

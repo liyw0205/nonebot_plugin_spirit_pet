@@ -10,6 +10,7 @@ RELEASE_PROXIES=(
     "https://gh-proxy.org/"
 )
 DEFAULT_DIRECTORY="$HOME/spirit-pet"
+DEFAULT_VENV_PATH="/home/nonebot-shared-venv"
 SOURCE_MARKER=.xiupet-source
 ACTION=install
 if (($#)) && [[ $1 =~ ^(install|update|convert|uninstall|start|stop|restart|status|logs|login)$ ]]; then
@@ -38,7 +39,7 @@ SOURCE_PATH=
 SOURCE_MODE=auto
 MIRROR=accelerated
 MIRROR_URL=
-VENV_PATH=
+VENV_PATH=${XIUPET_VENV:-}
 INDEX_URL=${PIP_INDEX_URL:-}
 PYTHON_PATH=${SPIRIT_PET_PYTHON:-}
 YES=0
@@ -123,6 +124,7 @@ while (($#)); do
         -h|--help)
             printf 'Usage: %s [install|update|convert|uninstall|start|stop|restart|status|logs|login] [TARGET] [options]\n' "$0"
             printf 'Options: --source-mode auto|release|source --source PATH --mirror direct|accelerated|custom --target PATH --venv PATH\n'
+            printf 'Default virtual environment: /home/nonebot-shared-venv; XIUPET_VENV overrides it.\n'
             printf 'Compatibility aliases: --directory PATH and --source release|checkout.\n'
             exit 0
             ;;
@@ -364,7 +366,7 @@ prepare_project() {
         [[ -e $entry || -L $entry ]] || continue
         name=${entry##*/}
         case "$name" in
-            .git|.venv|.xiupet|.xiupet-managed|.xiupet-source|.pytest_cache|.ruff_cache|__pycache__|.env|data) continue ;;
+            .git|.venv|.xiupet|.xiupet-venv|.xiupet-managed|.xiupet-source|.pytest_cache|.ruff_cache|__pycache__|.env|data) continue ;;
         esac
         cp -R -n "$entry" "$DIRECTORY/"
     done
@@ -474,7 +476,7 @@ install_project() {
         prepare_project
     fi
     ensure_python
-    local venv=${VENV_PATH:-$DIRECTORY/.venv}
+    local venv=${VENV_PATH:-$DEFAULT_VENV_PATH}
     [[ $venv == /* ]] || venv=$PWD/$venv
     mkdir -p -- "$(dirname -- "$venv")"
     VENV_PATH=$(CDPATH= cd -- "$(dirname -- "$venv")" 2>/dev/null && pwd -P)/$(basename -- "$venv")
@@ -494,7 +496,11 @@ install_project() {
     [[ -z $INDEX_URL ]] || pip_args+=(--index-url "$INDEX_URL")
     "$venv/bin/python" -m pip install "${pip_args[@]}" --upgrade pip
     "$venv/bin/python" -m pip install "${pip_args[@]}" 'nb-cli==1.5.0' -r "$DIRECTORY/requirements.txt"
-    printf '%s\n' "$venv" > "$DIRECTORY/.xiupet-venv"
+    if [[ $venv == "$DEFAULT_VENV_PATH" ]]; then
+        rm -f -- "$DIRECTORY/.xiupet-venv"
+    else
+        printf '%s\n' "$venv" > "$DIRECTORY/.xiupet-venv"
+    fi
     if [[ -f $DIRECTORY/scripts/qq_login.py ]]; then
         mkdir -p "$DIRECTORY/.xiupet"
         cp "$DIRECTORY/scripts/qq_login.py" "$DIRECTORY/.xiupet/qq_login.py"
@@ -556,8 +562,8 @@ uninstall_project() {
         rm -rf -- "$DIRECTORY"
         printf '已卸载并删除安装目录。\n'
     else
-        rm -rf -- "$DIRECTORY/.venv" "$DIRECTORY/.xiupet"
-        printf '已移除运行环境；源码、.env 和存档已保留。\n'
+        rm -rf -- "$DIRECTORY/.xiupet"
+        printf '已移除运行状态；源码、.env、存档和旧虚拟环境已保留。\n'
     fi
 }
 

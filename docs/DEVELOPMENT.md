@@ -30,10 +30,12 @@ OneBot 和 QQ 共用同一业务事务。适配器层只负责身份、消息键
 运行与变更直接相关的测试。以下为静态内容检查示例，按实际影响替换测试文件：
 
 ```bash
-flock -w 600 /tmp/nonebot-project-validation.lock timeout 180 .venv/bin/python -B -m pytest -q -p no:cacheprovider tests/test_content.py
-PYTHONPYCACHEPREFIX=/tmp/spirit-pet-compile .venv/bin/python -m compileall -q src tests scripts
+flock -w 600 /tmp/nonebot-project-validation.lock timeout 180 /home/nonebot-shared-venv/bin/python -B -m pytest -q -p no:cacheprovider tests/test_content.py
+PYTHONPYCACHEPREFIX=/tmp/spirit-pet-compile /home/nonebot-shared-venv/bin/python -m compileall -q src tests scripts
 git diff --check
 ```
+
+需要隔离解释器时，将命令中的路径替换为显式环境，或设置 `XIUPET_VENV=/path/to/venv`；安装、更新、启动、重启和登录会沿用该覆盖值。
 
 内容或战斗公式变化时，额外运行对应的内容校验和固定种子场景；适配器变化时只补必要的解析、消息结构或 OneBot 运输合同。不要把未运行的全量、仿真、WS、QQ 真机或 Termux 验收写成已通过。
 

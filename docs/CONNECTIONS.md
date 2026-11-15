@@ -4,7 +4,7 @@
 
 [安装教程](INSTALLATION.md) · [配置与排错](CONFIGURATION.md)
 
-安装默认保持停止；可在项目目录执行 `.venv/bin/nb run`，或用生成的 `xiupet start` 后台启动。自定义虚拟环境时使用该环境中的 `nb` 命令。
+安装默认保持停止；默认共享环境为 `/home/nonebot-shared-venv`，可在项目目录执行 `/home/nonebot-shared-venv/bin/nb run`，或用生成的 `xiupet start` 后台启动。使用 `--venv PATH` 或 `XIUPET_VENV=PATH` 时，启动、重启、更新和登录都会沿用该显式环境。
 
 安装器首次生成的 `.env` 不设置 `ONEBOT_V11_ACCESS_TOKEN`。该变量仅在启用 OneBot 鉴权时手动配置；不启用鉴权可留空或省略，启用时客户端与服务端必须使用同一值。重复安装不会覆盖 `.env`；修改连接参数后需重启 bot。已有 `.env.dev` / `.env.prod` 也会参与 NoneBot 环境配置，检查是否存在同名参数覆盖。
 
