@@ -35,10 +35,6 @@ def test_market_benchmark_pair_reuses_fixture_and_cleans_temporary_database():
     assert "market_listing_expiry" in " ".join(result["after"]["explain"]["listing_expiry"])
     assert "market_bid_board" in " ".join(result["after"]["explain"]["bid_page"])
     assert "market_bid_expiry" in " ".join(result["after"]["explain"]["bid_expiry"])
-
-
-def test_market_benchmark_pair_keeps_same_player_cases():
-    result = run_pair(_args("pair"))
     assert result["variant"] == "pair"
     assert len(result["before"]["cases"]) == 14
     assert len(result["after"]["cases"]) == 14
