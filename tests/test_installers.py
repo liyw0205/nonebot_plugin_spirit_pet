@@ -104,6 +104,14 @@ def test_shell_entrypoints_parse_and_help_without_python_or_system_changes():
     assert "QQ 官方机器人授权" in manager_help.stdout
 
 
+def test_ci_install_smoke_uses_the_isolated_target_venv():
+    workflow = (ROOT / ".github/workflows/main.yml").read_text(encoding="utf-8")
+    install_step = 'bash scripts/install.sh --source checkout --directory "$RUNNER_TEMP/spirit pet"'
+    isolated_venv = '--venv "$RUNNER_TEMP/spirit pet/.venv"'
+    assert install_step + " " + isolated_venv in workflow
+    assert '"$RUNNER_TEMP/spirit pet/.venv/bin/python" "$RUNNER_TEMP/spirit pet/scripts/smoke_test.py"' in workflow
+
+
 def test_removed_branch_option_is_rejected_before_python_or_network_access():
     result = subprocess.run(
         ["bash", str(ROOT / "scripts/install.sh"), "install", "--branch=dev"],

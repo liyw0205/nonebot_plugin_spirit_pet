@@ -47,7 +47,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install from checkout
-        run: bash scripts/install.sh --source checkout --directory "$RUNNER_TEMP/spirit pet" --yes --no-start
+        run: bash scripts/install.sh --source checkout --directory "$RUNNER_TEMP/spirit pet" --venv "$RUNNER_TEMP/spirit pet/.venv" --yes --no-start
       - name: Verify isolated runtime
         run: |
           "$RUNNER_TEMP/spirit pet/.venv/bin/python" "$RUNNER_TEMP/spirit pet/scripts/smoke_test.py"
