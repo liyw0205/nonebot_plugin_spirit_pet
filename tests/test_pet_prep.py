@@ -3,7 +3,8 @@
 import pytest
 
 from nonebot_plugin_spirit_pet.adapters.handlers import _parse
-from nonebot_plugin_spirit_pet.adapters.messaging import _action_items
+from nonebot_plugin_spirit_pet.adapters.messaging import _action_items, _qq_segments
+from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import pet, player, sql
@@ -215,11 +216,74 @@ def test_prep_page_lists_gear_skills_and_sigils(game, play):
     text = page.text()
     assert "玄狐二号" in text and "灵心铃" in text
     assert "赤焰术" in text and "初光符" in text
+    assert "基础成长" in text and "每日养成" in text and "进阶" in text
     assert "整备只读" in text
     linked = {link.command for link in page.inline_commands}
     assert f"伙伴 {second}" in " ".join(linked)
+    assert {
+        f"灵宠修炼 {second}", f"灵宠喂养 {second}", f"灵宠互动 {second}",
+        f"灵宠突破 {second}", f"灵宠进化 {second}", "灵宠羁绊",
+    } <= linked
     assert len(page.commands) <= 4
     assert len(set(page.commands)) == len(page.commands)
+
+
+def test_prep_growth_link_executes_for_the_named_backup_pet(game, play):
+    account(play)
+    active = pet(game[1])["pet_id"]
+    second = add_pet(game[1])
+    sql(game[1], "UPDATE pets SET energy=50 WHERE pet_id=?", (second,))
+    page = play("pet_prep", str(second), now=NOW)
+    command = next(link.command for link in page.inline_commands if link.command == f"灵宠喂养 {second}")
+    action, argument = _parse(command)
+
+    result = play(action, argument, now=NOW)
+
+    assert "灵粮 -1" in result.text()
+    assert sql(game[1], "SELECT energy, exp, affinity FROM pets WHERE pet_id=?", (active,)) == [
+        {"energy": 100, "exp": 0, "affinity": 0},
+    ]
+    assert sql(game[1], "SELECT energy, exp, affinity FROM pets WHERE pet_id=?", (second,)) == [
+        {"energy": 70, "exp": 10, "affinity": 5},
+    ]
+
+
+def test_prep_hides_spent_or_blocked_daily_actions(game, play):
+    account(play)
+    second = add_pet(game[1])
+    sql(game[1], "UPDATE inventory SET quantity=0 WHERE user_id='u1' AND item_id='spirit_food'")
+    play("bond", str(second), now=NOW)
+
+    page = play("pet_prep", str(second), now=NOW + 1)
+    linked = {link.command for link in page.inline_commands}
+
+    assert "灵粮不足" in page.text()
+    assert "互动今日已完成" in page.text()
+    assert f"灵宠喂养 {second}" not in linked
+    assert f"灵宠互动 {second}" not in linked
+    assert f"灵宠修炼 {second}" in linked
+
+
+def test_prep_growth_links_are_readable_in_onebot_and_separate_from_qq_buttons(game, play):
+    account(play)
+    second = add_pet(game[1])
+    page = play("pet_prep", str(second), now=NOW)
+
+    plain, _ = _qq_segments(page, Config(spirit_pet_qq_mode="text"))
+    assert f"修炼（/灵宠修炼 {second}）" in plain
+    assert "mqqapi://" not in plain
+
+    _, native = _qq_segments(page, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native
+        if segment.type == "keyboard"
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    links = {link.command for link in page.inline_commands}
+    assert buttons == set(page.commands)
+    assert not buttons & links
 
 
 def test_prep_page_is_read_only(game, play):

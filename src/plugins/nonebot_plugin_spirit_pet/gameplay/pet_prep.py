@@ -6,6 +6,8 @@ This page gathers a pet's gear, skills and sigils and hands out links that carry
 
 from ..application.context import Context
 from ..domain.models import InlineCommand, Reply
+from ..utils.time import beijing_day, cooldown_left
+from . import bond_levels
 from . import equipment, sigils, skills
 from .ascension_rules import skill_slots
 from .pet_targets import named_pet
@@ -30,12 +32,72 @@ def prep(ctx: Context, arg: str) -> Reply:
             ("灵宠帮助",),
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
+    player = ctx.repo.player(ctx.user_id)
     pet = named_pet(ctx, arg, "整备") if arg.strip() else ctx.pet()
     roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
     marker = " · 当前出战" if pet.pet_id in roster else ""
     suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
     lines = [f"{pet.name}（编号 {pet.pet_id}）{marker}。"]
     links = []
+
+    realm = ctx.content.realms[pet.realm]
+    bloodline = ctx.content.bloodlines[pet.bloodline]
+    lines.extend((
+        "基础成长：",
+        f"  境界：{realm.name} {pet.layer}层 · 血脉：{bloodline.name}",
+        f"  修为：{pet.exp} · 灵石：{player.stones} · 精力：{pet.energy}/100 · 亲密：{pet.affinity}/100",
+    ))
+    expedition = ctx.repo.active_expedition(pet.pet_id)
+    if expedition is not None:
+        state = "外出中" if ctx.now < expedition["finishes_at"] else "已完成待领取"
+        lines.append(f"  每日养成：行程「{expedition['task_name']}」{state}，领取后才能继续。")
+        lines.append("  进阶：行程结束并领取后，才能突破或进化。")
+    else:
+        daily_line = len(lines)
+        remaining = cooldown_left(player.last_train, ctx.now, ctx.config.spirit_pet_train_cooldown)
+        food = ctx.repo.inventory(ctx.user_id).get("spirit_food", 0)
+        daily = [f"修炼调息中（{remaining}秒）" if remaining else "修炼可用"]
+        if food:
+            daily.append(f"灵粮 {food} 份")
+        else:
+            daily.append("灵粮不足")
+        if player.last_bond_day >= beijing_day(ctx.now):
+            daily.append("互动今日已完成")
+        else:
+            daily.append("互动可用")
+        lines.append("  每日养成：" + " · ".join(daily))
+        if not remaining:
+            links.append(InlineCommand(daily_line, "修炼", f"灵宠修炼 {pet.pet_id}"))
+        if food:
+            links.append(InlineCommand(daily_line, "喂养", f"灵宠喂养 {pet.pet_id}"))
+        if player.last_bond_day < beijing_day(ctx.now):
+            links.append(InlineCommand(daily_line, "互动", f"灵宠互动 {pet.pet_id}"))
+
+        advance_line = len(lines)
+        breakthrough = (
+            ctx.content.realms[pet.realm].advancement
+            if pet.layer == 10 else ctx.content.layers[pet.layer].advancement
+        )
+        evolution = bloodline.evolution
+        advance = []
+        if breakthrough is None:
+            advance.append("突破已达最高境界")
+        else:
+            advance.append("突破可尝试")
+            links.append(InlineCommand(advance_line, "突破", f"灵宠突破 {pet.pet_id}"))
+        if evolution is None:
+            advance.append("进化已达最高血脉")
+        else:
+            advance.append("进化可尝试")
+            links.append(InlineCommand(advance_line, "进化", f"灵宠进化 {pet.pet_id}"))
+        lines.append("  进阶：" + " · ".join(advance))
+
+    bond_line = len(lines)
+    lines.append(
+        f"  羁绊：等级 {bond_levels.current_level(ctx, pet.pet_id)} · "
+        f"经验 {bond_levels.exp(ctx, pet.pet_id)} · 可从「灵宠羁绊」查看长期成长。"
+    )
+    links.append(InlineCommand(bond_line, "查看羁绊", "灵宠羁绊"))
 
     worn = equipment.loadout(ctx, pet.pet_id)
     lines.append(f"装备 {len(worn)}/{len(equipment.SLOTS)}：")
