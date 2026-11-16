@@ -37,26 +37,23 @@ def window(ctx: Context) -> tuple[int, int]:
 
 
 def _rows(ctx: Context, item_id: str | None = None) -> list[dict]:
-    """Every cleared sale inside the window, from both ledgers."""
+    """Recent sales for one detail page, with filtering kept in SQLite."""
     since, _ = window(ctx)
-    sql = (
-        "SELECT item_id, quantity, unit_price, sold_at, '{}' AS source FROM {}"
-        " WHERE sold_at >= ?"
-    )
+    sql = "SELECT item_id, quantity, unit_price, sold_at, '{}' AS source FROM {} WHERE sold_at >= ?"
+    suffix = " AND item_id=?" if item_id is not None else ""
+    params: tuple = (since, *(() if item_id is None else (item_id,)))
     sales = [
         dict(row)
         for row in ctx.repo.conn.execute(
-            sql.format(SOURCE_LISTING, "market_sales"), (since,)
+            sql.format(SOURCE_LISTING, "market_sales") + suffix, params
         ).fetchall()
     ]
     sales.extend(
         dict(row)
         for row in ctx.repo.conn.execute(
-            sql.format(SOURCE_BID, "market_bid_sales"), (since,)
+            sql.format(SOURCE_BID, "market_bid_sales") + suffix, params
         ).fetchall()
     )
-    if item_id is not None:
-        sales = [row for row in sales if row["item_id"] == item_id]
     return sales
 
 
@@ -82,6 +79,50 @@ def _by_item(ctx: Context) -> dict[str, list[dict]]:
     return grouped
 
 
+def _summaries(ctx: Context) -> list[dict]:
+    """Aggregate the page in SQLite instead of materializing every sale in Python."""
+    since, _ = window(ctx)
+    cache = ctx.market_trend_cache
+    lock = ctx.market_sweep_lock
+    initial_version = ctx.market_initial_data_version
+    if cache is not None and lock is not None and ctx.market_data_version is not None and initial_version is not None:
+        with lock:
+            key = (since, initial_version)
+            if ctx.market_data_version() == initial_version and key in cache:
+                return [dict(row) for row in cache[key]]
+            result = _summary_query(ctx, since)
+            if ctx.market_data_version() == initial_version:
+                cache.clear()
+                cache[key] = tuple(result)
+            return result
+    return _summary_query(ctx, since)
+
+
+def _summary_query(ctx: Context, since: int) -> list[dict]:
+    query = (
+        "WITH sales AS ("
+        " SELECT item_id, quantity, unit_price FROM market_sales INDEXED BY market_sales_trend"
+        " WHERE sold_at>=? UNION ALL"
+        " SELECT item_id, quantity, unit_price FROM market_bid_sales INDEXED BY market_bid_sales_trend"
+        " WHERE sold_at>=?"
+        "), ranked AS ("
+        " SELECT item_id, quantity, unit_price,"
+        " COUNT(*) OVER (PARTITION BY item_id) AS sample_count,"
+        " ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY unit_price) AS price_rank"
+        " FROM sales"
+        "), grouped AS ("
+        " SELECT item_id, sample_count, MIN(unit_price) AS low, MAX(unit_price) AS high,"
+        " SUM(quantity) AS units,"
+        " SUM(CASE WHEN price_rank IN ((sample_count+1)/2, (sample_count+2)/2)"
+        " THEN unit_price ELSE 0 END) AS median_sum"
+        " FROM ranked GROUP BY item_id, sample_count"
+        ") SELECT item_id, sample_count, low,"
+        " median_sum / CASE WHEN sample_count % 2 = 0 THEN 2 ELSE 1 END AS median,"
+        " high, units FROM grouped ORDER BY sample_count DESC, item_id"
+    )
+    return [dict(row) for row in ctx.repo.conn.execute(query, (since, since)).fetchall()]
+
+
 def _name(ctx: Context, item_id: str) -> str:
     item = ctx.content.items.get(item_id)
     return item.name if item is not None else item_id
@@ -100,42 +141,45 @@ def _day(ts: int) -> str:
     return datetime.fromtimestamp(ts, BEIJING).strftime("%m-%d")
 
 
-def _line(ctx: Context, item_id: str, rows: list[dict]) -> str:
-    prices = [row["unit_price"] for row in rows]
-    low, mid, high = summary(prices)
-    units = sum(row["quantity"] for row in rows)
+def _line(ctx: Context, item_id: str, rows: list[dict] | dict) -> str:
+    if isinstance(rows, dict):
+        low, mid, high = rows["low"], rows["median"], rows["high"]
+        count = rows["sample_count"]
+        units = rows["units"]
+    else:
+        prices = [row["unit_price"] for row in rows]
+        low, mid, high = summary(prices)
+        count = len(rows)
+        units = sum(row["quantity"] for row in rows)
     return (
         f"{_name(ctx, item_id)}：中位 {mid} · 最低 {low} · 最高 {high}"
-        f" · 成交 {len(rows)} 笔（{units} 件）"
+        f" · 成交 {count} 笔（{units} 件）"
     )
 
 
 def page(ctx: Context, arg: str) -> Reply:
     """List every item that actually cleared inside the window, paginated."""
-    since, days = window(ctx)
-    grouped = {
-        item_id: rows for item_id, rows in _by_item(ctx).items() if rows
-    }
-    if not grouped:
+    _, days = window(ctx)
+    summaries = _summaries(ctx)
+    if not summaries:
         return Reply(TITLE, (
             f"最近 {days} 天集市没有任何成交。",
             "有成交后，这里会给出每件物品的成交中位价、区间与笔数。",
             "行情只读成交账本，不展示任何人的挂单价格。",
         ), ("灵宠集市", "灵宠集市 记录", "灵宠帮助"),
             (InlineCommand(0, "去集市看看", "灵宠集市"),))
-    ordered = sorted(grouped.items(), key=lambda entry: (-len(entry[1]), entry[0]))
-    pages = max(1, (len(ordered) + PAGE_SIZE - 1) // PAGE_SIZE)
+    pages = max(1, (len(summaries) + PAGE_SIZE - 1) // PAGE_SIZE)
     number = quantity(arg or "1", 999)
     if number > pages:
         raise GameError(f"行情共 {pages} 页。")
-    selected = ordered[(number - 1) * PAGE_SIZE:number * PAGE_SIZE]
+    selected = summaries[(number - 1) * PAGE_SIZE:number * PAGE_SIZE]
     lines = [
-        f"最近 {days} 天成交 {len(ordered)} 种物品 · 第 {number}/{pages} 页。",
+        f"最近 {days} 天成交 {len(summaries)} 种物品 · 第 {number}/{pages} 页。",
     ]
     links = []
-    for item_id, rows in selected:
-        lines.append(_line(ctx, item_id, rows))
-        links.append(InlineCommand(len(lines) - 1, "查看", f"{COMMAND} 行情 {item_id}"))
+    for row in selected:
+        lines.append(_line(ctx, row["item_id"], row))
+        links.append(InlineCommand(len(lines) - 1, "查看", f"{COMMAND} 行情 {row['item_id']}"))
     lines.append("中位价是窗口内成交单价的中位数，不是挂单价；成交笔数少的物品参考价值有限。")
     commands = [f"{COMMAND} 行情", COMMAND, f"{COMMAND} 记录"]
     if pages > 1:

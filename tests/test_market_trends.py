@@ -90,6 +90,35 @@ def test_summary_uses_the_documented_middle_convention():
     assert market_trends.summary([100, 101]) == (100, 100, 101)
 
 
+def test_page_summary_keeps_exact_median_and_uses_trend_indexes(game, play):
+    account(game, play, "u1")
+    account(game, play, "u2", "玄狐")
+    grant(game, {"forge_ore": 12})
+    for price in (100, 200, 300, 400):
+        sell(game, play, price, 1)
+    page = play("market", "行情")
+    assert "锻灵矿：中位 250 · 最低 100 · 最高 400 · 成交 4 笔（4 件）" in page.text()
+    names = {
+        row["name"] for row in sql(
+            game[1],
+            "SELECT name FROM sqlite_master WHERE type='index' AND name IN "
+            "('market_sales_trend', 'market_bid_sales_trend')",
+        )
+    }
+    assert names == {"market_sales_trend", "market_bid_sales_trend"}
+
+
+def test_trend_cache_invalidates_after_external_sale_update(game, play):
+    account(game, play, "u1")
+    account(game, play, "u2", "玄狐")
+    grant(game, {"forge_ore": 3})
+    sell(game, play, 100, 1)
+    assert "中位 100" in play("market", "行情").text()
+    sql(game[1], "UPDATE market_sales SET unit_price=300")
+    assert "中位 300" in play("market", "行情").text()
+    assert len(game[0]._market_trend_cache) == 1
+
+
 # ---------------------------------------------------------------- empty
 
 def test_no_sales_says_so_instead_of_zero(game, play):

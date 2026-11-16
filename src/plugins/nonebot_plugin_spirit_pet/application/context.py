@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ..content.catalog import Catalog
@@ -24,6 +24,8 @@ class Context:
     market_count_cache: dict | None = None
     market_data_version: Any = None
     market_initial_data_version: int | None = None
+    market_trades_cache: dict[str, int] = field(default_factory=dict)
+    market_trend_cache: dict | None = None
 
     def adoption_reply(self) -> Reply:
         starters = [species.name for species in self.content.species.values() if species.starter]

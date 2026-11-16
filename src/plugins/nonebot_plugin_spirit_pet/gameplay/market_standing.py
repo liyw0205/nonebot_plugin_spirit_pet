@@ -19,17 +19,17 @@ CLAIM_PREFIX = "merchant_standing_"
 
 def trades(ctx: Context, user_id: str) -> int:
     """Lifetime real trades this player made as the seller."""
-    rows = ctx.repo.conn.execute(
-        "SELECT COUNT(*) FROM market_sales WHERE seller_id=?",
-        (user_id,),
+    cached = ctx.market_trades_cache.get(user_id)
+    if cached is not None:
+        return cached
+    row = ctx.repo.conn.execute(
+        "SELECT (SELECT COUNT(*) FROM market_sales WHERE seller_id=?)"
+        " + (SELECT COUNT(*) FROM market_bid_sales WHERE seller_id=?)",
+        (user_id, user_id),
     ).fetchone()
-    direct = int(rows[0]) if rows else 0
-    rows = ctx.repo.conn.execute(
-        "SELECT COUNT(*) FROM market_bid_sales WHERE seller_id=?",
-        (user_id,),
-    ).fetchone()
-    bids = int(rows[0]) if rows else 0
-    return direct + bids
+    result = int(row[0]) if row else 0
+    ctx.market_trades_cache[user_id] = result
+    return result
 
 
 def sorted_standings(ctx: Context) -> list[MerchantStanding]:

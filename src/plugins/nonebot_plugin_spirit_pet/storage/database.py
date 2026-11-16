@@ -52,6 +52,10 @@ class Store:
             "ON market_sales(seller_id, sold_at DESC, listing_id DESC)"
         )
         conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_sales_trend "
+            "ON market_sales(sold_at, item_id, unit_price, quantity)"
+        )
+        conn.execute(
             "CREATE INDEX IF NOT EXISTS market_bid_expiry "
             "ON market_bids(state, expires_at, bid_id)"
         )
@@ -62,6 +66,10 @@ class Store:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS market_bid_sales_seller_time "
             "ON market_bid_sales(seller_id, sold_at DESC, bid_id DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS market_bid_sales_trend "
+            "ON market_bid_sales(sold_at, item_id, unit_price, quantity)"
         )
 
     def initialize(self) -> None:

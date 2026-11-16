@@ -42,6 +42,7 @@ class Game:
         self._market_sweep_lock = threading.Lock()
         self._market_version_lock = threading.Lock()
         self._market_count_cache: dict[tuple[str, int], int] = {}
+        self._market_trend_cache: dict[tuple[int, int], tuple[dict, ...]] = {}
         self._market_version_conn: sqlite3.Connection | None = None
 
     def _market_data_version(self) -> int:
@@ -77,7 +78,8 @@ class Game:
                                    market_sweep_lock=self._market_sweep_lock,
                                    market_count_cache=self._market_count_cache,
                                    market_data_version=self._market_data_version,
-                                   market_initial_data_version=market_initial_version)
+                                   market_initial_data_version=market_initial_version,
+                                   market_trend_cache=self._market_trend_cache)
                 if command.registered:
                     context.player()
                 return command.handler(context, argument)
@@ -95,6 +97,7 @@ class Game:
                 self._market_sweep_cache, self._market_sweep_lock, self._market_count_cache,
                 self._market_data_version,
                 market_initial_version,
+                {}, self._market_trend_cache,
             )
             if command.registered:
                 context.player()

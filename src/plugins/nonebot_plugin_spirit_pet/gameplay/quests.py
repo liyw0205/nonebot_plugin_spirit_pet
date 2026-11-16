@@ -34,9 +34,13 @@ def advance(ctx: Context, event: str, user_id: str | None = None):
 
 def quests(ctx: Context, arg: str) -> Reply:
     player = refresh(ctx)
+    quest_ids = tuple(ctx.content.quests)
+    placeholders = ",".join("?" for _ in quest_ids)
     rows = {
         row["quest_id"]: row for row in ctx.repo.conn.execute(
-            "SELECT * FROM quest_progress WHERE user_id=?", (player.user_id,),
+            f"SELECT quest_id, progress, claimed FROM quest_progress WHERE user_id=?"
+            f" AND quest_id IN ({placeholders})",
+            (player.user_id, *quest_ids),
         )
     }
     lines = []
