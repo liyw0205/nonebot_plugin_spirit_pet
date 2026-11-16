@@ -121,11 +121,14 @@ def test_team_pages_keep_bounded_distinct_actions_without_duplicating_row_links(
 def test_team_run_entry_appears_exactly_when_the_whole_team_is_ready(game, play):
     team_id = prepare(game, play, size=3)
     assert "灵宠组队挑战 上古灵殿" not in play("team_status", user=USERS[0]).commands
+    assert "灵宠队伍 秘境" not in play("team_status", user=USERS[0]).commands
     with pytest.raises(GameError, match="全体成员准备"):
         play("team_challenge", "上古灵殿", user=USERS[0])
     ready_all(game, team_id)
     roster = play("team_status", user=USERS[0])
-    assert "灵宠组队挑战 上古灵殿" in roster.commands
+    assert "灵宠队伍 秘境" in roster.commands
+    catalog = play("team_status", "秘境", user=USERS[0])
+    assert "灵宠组队挑战 上古灵殿" in [link.command for link in catalog.inline_commands]
     assert "已准备" in roster.text()
     assert_distinct_bounded_actions(roster)
     assert play("team_challenge", "上古灵殿", user=USERS[0]).title.startswith("秘境")

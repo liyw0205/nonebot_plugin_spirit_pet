@@ -220,6 +220,17 @@ def dungeons(ctx: Context, arg: str) -> Reply:
                 dungeon.name, lines, ("灵宠列表", "灵宠秘境"),
                 (InlineCommand(len(lines) - 1, "填写出战编号", "灵宠出战 "),),
             )
+        if dungeon.team:
+            from .teams.common import membership
+            member = membership(ctx)
+            if member is None:
+                lines += ("组队秘境至少需要两名玩家，先建立或加入一支小队。",)
+                return Reply(dungeon.name, lines, ("灵宠秘境", "灵宠帮助 组队与派遣"), (
+                    InlineCommand(len(lines) - 1, "组建小队", "灵宠组队"),
+                ))
+            return Reply(dungeon.name, lines, ("灵宠队伍", "灵宠秘境"), (
+                InlineCommand(0, "查看队伍挑战条件", "灵宠队伍 秘境"),
+            ))
         return Reply(
             dungeon.name, lines, (challenge, "我的灵宠", "灵宠秘境"),
             (InlineCommand(0, "前往挑战", challenge),),
@@ -318,7 +329,10 @@ def run_dungeon(
         ctx.repo.invalidate_ready(user_id)
     lines.append(f"每只灵宠精力 -{dungeon.energy}；气血仅在本场战斗内结算。")
     title = "秘境获胜" if battle.winner == 0 else ("秘境平局" if battle.winner == -1 else "秘境败退")
-    reply = Reply(title, tuple(lines), ("灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养"))
+    commands = ("灵宠战报", "灵宠队伍", "灵宠任务", "灵宠队伍 秘境") if len(user_ids) > 1 else (
+        "灵宠战报", "我的灵宠", "灵宠任务", "灵宠喂养",
+    )
+    reply = Reply(title, tuple(lines), commands)
     record_battle(ctx, kind="pve", battle_key=dungeon.id, battle_name=dungeon.name, battle=battle,
                   capture=capture, reply=reply)
     if return_state:
