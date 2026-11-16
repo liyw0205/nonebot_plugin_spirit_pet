@@ -15,6 +15,13 @@ def breakthrough_chance(pet, cost, bonus: float = 0.0) -> float:
     return min(1.0, cost.chance + pet.affinity / 1000 + bonus + failures * MAJOR_BREAKTHROUGH_PITY)
 
 
+def _advancement_reply(ctx: Context, pet, title: str, lines) -> Reply:
+    return Reply(title, (*lines,
+        f"{pet.name}（编号 {pet.pet_id}）· {ctx.content.realms[pet.realm].name} {pet.layer}层"
+        f" · {ctx.content.bloodlines[pet.bloodline].name} · 修为 {pet.exp} · 灵石 {ctx.player().stones}。",
+    ), ("灵宠主线", "灵宠任务"), (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),))
+
+
 def train(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
     pet = selected_pet(ctx, arg, "修炼")
@@ -235,7 +242,7 @@ def breakthrough(ctx: Context, arg: str) -> Reply:
         lines = [f"{pet.name}踏入{stage}！", f"修为 -{exp}，灵石 -{stones}。"]
         if major and previous_failures:
             lines.append(f"连续失败积累的额外成功率 +{previous_failures * MAJOR_BREAKTHROUGH_PITY:.0%} 已清零。")
-        return Reply("大境界破境成功" if major else "小境界突破成功", tuple(lines))
+        return _advancement_reply(ctx, pet, "大境界破境成功" if major else "小境界突破成功", lines)
     if major:
         pet.major_breakthrough_failures += 1
     lost = exp // 4
@@ -248,7 +255,7 @@ def breakthrough(ctx: Context, arg: str) -> Reply:
             f"破境积累：连续失败 {failures} 次，额外成功率 +{failures * MAJOR_BREAKTHROUGH_PITY:.0%}；"
             f"下次成功率（不含破境丹）{next_chance:.0%}。"
         )
-    return Reply("破境未成", tuple(lines))
+    return _advancement_reply(ctx, pet, "破境未成", lines)
 
 
 def evolve(ctx: Context, arg: str) -> Reply:
@@ -266,10 +273,10 @@ def evolve(ctx: Context, arg: str) -> Reply:
     player.stones -= cost.stones
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     if ctx.rng.random() >= cost.chance:
-        return Reply("进化未成", ("血脉未改变，本次修为、灵石和材料已消耗。",))
+        return _advancement_reply(ctx, pet, "进化未成", ("血脉未改变，本次修为、灵石和材料已消耗。",))
     pet.bloodline += 1
     advance(ctx, "evolve")
-    return Reply("血脉觉醒", (
+    return _advancement_reply(ctx, pet, "血脉觉醒", (
         f"{pet.name}进化为{ctx.content.bloodlines[pet.bloodline].name}。",
         f"修为 -{cost.exp}，灵石 -{cost.stones}，进化材料已消耗。",
     ))

@@ -78,7 +78,8 @@ def test_claim_grants_the_reward_and_unlocks_the_next_step(game, play):
     listing = play("main_quests")
     assert "1. 初结灵契 · 已完成" in listing.text()
     assert "2. 双灵相伴 · 进行中 · 1/2" in listing.text()
-    assert links(listing) == []
+    assert links(listing) == [(7, "召唤一位伙伴", "灵宠召唤 1")]
+    assert not any(command.startswith("灵宠主线领奖") for _, _, command in links(listing))
 
 
 def test_claim_rejects_unmet_out_of_order_unknown_and_repeat(game, play):
