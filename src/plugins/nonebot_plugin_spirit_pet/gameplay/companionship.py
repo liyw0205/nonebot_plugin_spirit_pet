@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..domain.state import Player
 from ..utils.time import beijing_day
+from .economy import _recovery_available
 from .pet_targets import selected_pet
 from .quests import advance
 
@@ -33,7 +34,8 @@ def bond(ctx: Context, arg: str) -> Reply:
     yesterday = (date.fromisoformat(today) - timedelta(days=1)).isoformat()
     streak = player.current_bond_streak + 1 if player.last_bond_day == yesterday else 1
     gained = min(2, 100 - pet.affinity)
-    scene = SCENES[ctx.rng.randint(0, len(SCENES) - 1)].format(name=pet.name)
+    name = f"{pet.name}（编号 {pet.pet_id}）" if arg else pet.name
+    scene = SCENES[ctx.rng.randint(0, len(SCENES) - 1)].format(name=name)
     player.last_bond_day = today
     player.current_bond_streak = streak
     player.best_bond_streak = max(player.best_bond_streak, streak)
@@ -47,8 +49,15 @@ def bond(ctx: Context, arg: str) -> Reply:
     affinity = f"亲密 +{gained}（{pet.affinity}/100）；每日互动次数已用尽。" if gained else (
         "亲密已满，本次陪伴不再增加；每日互动次数已用尽。"
     )
-    return Reply("灵宠相伴", (
+    lines = (
         scene,
         affinity,
         f"连续陪伴：当前 {streak} 天 · 最佳 {player.best_bond_streak} 天。",
-    ), ("我的灵宠", "灵宠任务", "灵宠喂养", "灵宠陪伴奖励"))
+    )
+    if arg:
+        links = [InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}")]
+        food = ctx.content.items["spirit_food"]
+        if ctx.repo.inventory(ctx.user_id).get(food.id, 0) > 0 and _recovery_available(food.effects, pet):
+            links.append(InlineCommand(1, "喂养这位伙伴", f"灵宠喂养 {pet.pet_id}"))
+        return Reply("灵宠相伴", lines, ("灵宠任务", "灵宠陪伴奖励"), tuple(links))
+    return Reply("灵宠相伴", lines, ("我的灵宠", "灵宠任务", "灵宠喂养", "灵宠陪伴奖励"))
