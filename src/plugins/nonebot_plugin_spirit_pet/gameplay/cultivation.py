@@ -29,7 +29,8 @@ def train(ctx: Context, arg: str) -> Reply:
     return Reply("吐纳修炼", (
         f"{pet.name}（编号 {pet.pet_id}）吸纳天地灵气。",
         f"修为 +{gained}，精力 -{rules.training_energy}。",
-    ), ("灵宠列表", "我的灵宠"))
+        f"当前：修为 {pet.exp} · 精力 {pet.energy}/100。",
+    ), ("灵宠任务", "灵宠主线"), (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),))
 
 
 def _breakthrough_arguments(arg: str) -> tuple[str, str]:
