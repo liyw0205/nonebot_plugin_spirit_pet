@@ -104,6 +104,120 @@ def test_view_and_preview_do_not_register_or_restore_energy(game, play):
     assert snapshot(game[1]) == before
 
 
+@pytest.mark.parametrize("has_egg", [False, True])
+def test_nursery_prerequisites_keep_recovery_actions_and_message_contract(game, play, has_egg):
+    play("adopt", "青鸾")
+    if has_egg:
+        grant(game, "egg_qingluan")
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+    before = snapshot(game[1])
+
+    page = play("nursery")
+    assert "尚未选择出战灵宠" in page.text()
+    assert {link.command for link in page.inline_commands} >= {"灵宠列表", "灵宠出战 "}
+
+    preview = play("nursery", "预览 egg_qingluan")
+    assert "尚未选择出战灵宠" in preview.text()
+    assert {link.command for link in preview.inline_commands} >= {"灵宠列表", "灵宠出战 "}
+    assert not any(link.label == "入巢护育" for link in preview.inline_commands)
+
+    plain, _ = _qq_segments(preview, Config(spirit_pet_qq_mode="text"))
+    assert "填写出战编号（/灵宠出战）" in plain
+    assert "mqqapi://" not in plain
+    _, native = _qq_segments(preview, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native["keyboard"]
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    markdown = native["markdown"][0].data["markdown"].content
+    links = {
+        parse_qs(urlparse(url).query)["command"][0].removeprefix("/")
+        for url in re.findall(r"\]\((mqqapi://[^)]+)\)", markdown)
+    }
+    assert buttons == set(preview.commands) - {link.command for link in preview.inline_commands}
+    assert {"灵宠列表", "灵宠出战 "} <= links
+    assert not buttons & links
+    prefill = next(parse_qs(urlparse(url).query) for url in re.findall(r"\]\((mqqapi://[^)]+)\)", markdown)
+                   if parse_qs(urlparse(url).query)["command"] == ["/灵宠出战 "])
+    assert prefill["enter"] == ["false"]
+    with pytest.raises(GameError) as rejected:
+        play("nursery", "入巢 egg_qingluan")
+    assert rejected.value.reply is not None and rejected.value.reply.title == "选择伙伴"
+    assert snapshot(game[1]) == before
+
+
+def test_nursery_recovery_enters_nest_then_uses_original_guardian_without_active_pet(game, play):
+    guardian = setup(game, play)
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+    preview = play("nursery", "预览 egg_qingluan")
+    select = next(link.command for link in preview.inline_commands if link.command == "灵宠出战 ")
+    play(*handlers._parse(select + str(guardian)))
+    preview = play("nursery", "预览 egg_qingluan")
+    opening = next(link.command for link in preview.inline_commands if link.label == "入巢护育")
+    play(*handlers._parse(opening))
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+    nest_page = play("nursery", now=NOW + 600)
+    assert "巢中：青鸾灵卵" in nest_page.text()
+    care = next(link.command for link in nest_page.inline_commands if link.label == "照料修行")
+    play(*handlers._parse(care), now=NOW + 600)
+    nest_page = play("nursery", now=NOW + 1200)
+    welcome = next(command for command in nest_page.commands if command.startswith("灵宠护育 迎接 "))
+    result = play(*handlers._parse(welcome), now=NOW + 1200, op="recovered-welcome")
+    assert "破壳相见" in result.title
+    baby_id = nest(game[1])["baby_id"]
+    assert sql(game[1], "SELECT exp FROM pets WHERE pet_id=?", (baby_id,)) == [{"exp": 20}]
+    assert player(game[1])["active_pet_id"] is None
+    assert sql(game[1], "SELECT * FROM active_pet_slots") == []
+    assert items(game[1])["spirit_food"] == 7
+    assert items(game[1])["egg_qingluan"] == 1
+    assert nest(game[1])["guardian_id"] == guardian
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id=?", (f"bond_exp_{guardian}",)) == [{"progress": 4}]
+    before = snapshot(game[1])
+    assert play(*handlers._parse(welcome), now=NOW + 1201, op="recovered-welcome") == result
+    assert snapshot(game[1]) == before
+
+
+@pytest.mark.parametrize("adapter", ["OneBot V11", "QQ"])
+def test_nursery_recovery_and_argument_errors_use_public_adapter_replies(game, play, monkeypatch, adapter):
+    monkeypatch.setattr(handlers, "game", game[0])
+    monkeypatch.setattr(handlers, "config", Config(spirit_pet_command_prefix="!", spirit_pet_qq_mode="native"))
+    monkeypatch.setattr("nonebot_plugin_spirit_pet.application.game.time.time", lambda: NOW)
+    bot = SimpleNamespace(self_id="9000", adapter=SimpleNamespace(get_name=lambda: adapter), send=AsyncMock())
+
+    def command(text, message_id):
+        event = (qq_event(text=text, message_id=str(message_id)) if adapter == "QQ"
+                 else onebot_event(text, message_id))
+        asyncio.run(handlers.handle_command(bot, event, event.get_message()))
+        reply = bot.send.call_args.args[1]
+        return reply["markdown"][0].data["markdown"].content if adapter == "QQ" and not isinstance(reply, str) else reply
+
+    first = command("!灵宠护育 预览 青鸾灵卵", 201)
+    assert "尚未结契" in first and "开始领养" in first
+    assert sql(game[1], "SELECT * FROM players") == []
+    play("adopt", "青鸾", user="12345")
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='12345'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='12345'")
+    before = snapshot(game[1])
+    recovered = command("!灵宠护育 预览 青鸾灵卵", 202)
+    assert "尚未选择出战灵宠" in recovered
+    if adapter == "QQ":
+        payloads = [parse_qs(urlparse(url).query)["command"][0]
+                    for url in re.findall(r"\]\((mqqapi://[^)]+)\)", recovered)]
+        assert "!灵宠出战 " in payloads
+        assert "!灵宠列表" in payloads
+    else:
+        assert "填写出战编号（!灵宠出战）" in recovered
+        assert "mqqapi://" not in recovered
+    assert "格式" in command("!灵宠护育 预览", 203)
+    assert bot.send.await_count == 3
+    assert snapshot(game[1]) == before
+
+
 def test_inventory_pages_and_preview_links_reach_real_start(game, play):
     setup(game, play)
     for egg in (item for item in game[0].content.items.values() if item.kind == "pet_egg"):

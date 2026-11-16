@@ -84,6 +84,16 @@ def _command(nest: dict, action: str) -> str:
     return f"{TITLE} {action} 巢 {nest['nest_id']} 步 {len(nest['history']) + 1}"
 
 
+def _append_recovery(lines: list[str], links: list[InlineCommand], error: GameError) -> None:
+    """Keep prerequisite recovery actions visible on read-only nursery pages."""
+    lines.append(str(error))
+    if error.reply is None:
+        return
+    line = len(lines) - 1
+    links.extend(InlineCommand(line, action.label, action.command)
+                 for action in error.reply.inline_commands)
+
+
 def _record(ctx: Context, nest: dict, reply: Reply) -> Reply:
     ctx.repo.record_nursery_action(ctx.operation_id, ctx.user_id, ctx.now,
                                  {**nest, "updated_at": ctx.now}, reply)
@@ -149,11 +159,16 @@ def page(ctx: Context, arg: str = "") -> Reply:
     lines = [f"每日北京时间最多入巢一次，每人同时护育一枚；{rule.lessons}次照料可集中或分配成长方向。",
              f"入巢保管灵卵，{rule.interval * rule.lessons}秒后可迎接；每次照料间隔{rule.interval}秒，消耗{ctx.content.items[rule.item_id].name}1、原伙伴精力{rule.energy}。",
              "今日已入巢，明日再开启。" if _used(ctx) else "今日尚未入巢。"]
+    links = []
+    if owner.active_pet_id is None:
+        try:
+            ctx.pet()
+        except GameError as exc:
+            _append_recovery(lines, links, exc)
     if not eggs:
         return Reply(TITLE, (*lines, "背包暂无灵卵，可从同族培育或秘境获取。"),
-                     ("灵宠培育", "灵宠秘境", TITLE + " 记录"))
+                     ("灵宠培育", "灵宠秘境", TITLE + " 记录"), tuple(links))
     page_data = paginate(eggs, arg, TITLE, TITLE, page_size=4)
-    links = []
     for item in page_data.entries:
         lines.append(f"{item.name} ×{_owned(ctx, item.id)} · 种族 {ctx.content.species[item.species_id].name}。")
         links.append(InlineCommand(len(lines) - 1, "查看护育", f"{TITLE} 预览 {item.name}"))
@@ -178,7 +193,7 @@ def preview(ctx: Context, arg: str) -> Reply:
         try:
             guardian = _guardian(ctx, selector)
         except GameError as exc:
-            lines.append(str(exc))
+            _append_recovery(lines, links, exc)
         else:
             blocker = _blocker(ctx, guardian)
             lines.append(f"护育伙伴 {guardian.name}（编号 {guardian.pet_id}）· 可用精力 {_available_energy(ctx, guardian)} · {blocker or '在册闲置'}。")
