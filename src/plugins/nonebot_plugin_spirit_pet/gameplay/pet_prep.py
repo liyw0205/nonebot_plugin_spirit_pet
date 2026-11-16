@@ -119,6 +119,9 @@ def prep(ctx: Context, arg: str) -> Reply:
     lines.append(f"灵术 {carried}/{skill_slots(ctx, pet)} 携带 · 已学 {len(learned)} 门：")
     if not learned:
         lines.append("  尚未学习灵术。")
+        links.append(InlineCommand(
+            len(lines) - 1, "挑选灵术", f"灵宠技能图鉴 伙伴 {pet.pet_id}",
+        ))
     for skill_id, active in learned.items():
         skill = ctx.content.skills[skill_id]
         lines.append(

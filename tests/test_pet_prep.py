@@ -354,3 +354,101 @@ def test_action_items_dedupe_links_from_buttons(game, play):
     buttons = {command for _, command in pairs}
     links = {link.command for link in reply.inline_commands}
     assert buttons & links == set()
+
+
+def test_empty_backup_pet_reaches_targeted_catalog_and_learning(game, play):
+    account(play)
+    active = pet(game[1])["pet_id"]
+    second = add_pet(game[1])
+    give(game[1], "book_fireball")
+
+    prep_page = play("pet_prep", str(second), now=NOW)
+    catalog_command = f"灵宠技能图鉴 伙伴 {second}"
+    assert any(link.command == catalog_command for link in prep_page.inline_commands)
+
+    action, argument = _parse(catalog_command)
+    assert (action, argument) == ("skill_catalog", f"伙伴 {second}")
+    page = play(action, argument, now=NOW)
+    assert page.title.startswith("万法灵谱 1/")
+    assert f"灵宠技能图鉴 赤焰术 伙伴 {second}" in page.commands
+    assert f"灵宠技能图鉴 2 伙伴 {second}" in page.commands
+
+    detail = play("skill_catalog", f"赤焰术 伙伴 {second}", now=NOW)
+    learn_command = f"灵宠学习 赤焰术 伙伴 {second}"
+    assert f"目标伙伴：玄狐二号（编号 {second}）。" in detail.text()
+    assert learn_command in detail.commands
+    assert detail.inline_commands[0].command == learn_command
+
+    action, argument = _parse(learn_command)
+    result = play(action, argument, now=NOW)
+    assert "玄狐二号学会了赤焰术" in result.text()
+    assert sql(game[1], "SELECT pet_id, skill_id FROM learned_skills") == [
+        {"pet_id": second, "skill_id": "fireball"},
+    ]
+    assert pet(game[1])["pet_id"] == active
+
+
+def test_targeted_skill_catalog_handles_unregistered_no_active_and_invalid_targets(game, play):
+    with pytest.raises(GameError) as rejected:
+        play("skill_catalog", "伙伴 1", user="u9", now=NOW)
+    assert rejected.value.reply is not None
+    assert rejected.value.reply.title == "初遇灵宠"
+    assert sql(game[1], "SELECT * FROM players WHERE user_id='u9'") == []
+
+    account(play)
+    second = add_pet(game[1])
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+
+    page = play("skill_catalog", f"伙伴 {second}", now=NOW)
+    assert f"灵宠技能图鉴 赤焰术 伙伴 {second}" in page.commands
+    with pytest.raises(GameError) as missing_active:
+        play("skills", now=NOW)
+    assert missing_active.value.reply is not None
+    assert missing_active.value.reply.title == "选择伙伴"
+
+    for argument, message in (
+        ("伙伴", "请填写伙伴名字或编号"),
+        ("伙伴 不存在", "没有找到名为不存在的在册伙伴"),
+        ("伙伴 0", "请填写灵宠列表中的有效编号"),
+        ("赤焰术 伙伴", "请填写伙伴名字或编号"),
+    ):
+        with pytest.raises(GameError, match=message):
+            play("skill_catalog", argument, now=NOW)
+
+
+def test_targeted_skill_messages_keep_blue_links_and_onebot_text_readable(game, play):
+    account(play)
+    second = add_pet(game[1])
+    prep_page = play("pet_prep", str(second), now=NOW)
+    plain, _ = _qq_segments(prep_page, Config(spirit_pet_qq_mode="text"))
+    assert f"挑选灵术（/灵宠技能图鉴 伙伴 {second}）" in plain
+    assert "mqqapi://" not in plain
+
+    _, native = _qq_segments(prep_page, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native
+        if segment.type == "keyboard"
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    links = {link.command for link in prep_page.inline_commands}
+    assert buttons == set(prep_page.commands)
+    assert not buttons & links
+
+    detail = play("skill_catalog", f"风刃术 伙伴 {second}", now=NOW)
+    plain, _ = _qq_segments(detail, Config(spirit_pet_qq_mode="text"))
+    assert f"为此伙伴学习（/灵宠学习 风刃术 伙伴 {second}）" in plain
+    assert "mqqapi://" not in plain
+    _, native = _qq_segments(detail, Config(spirit_pet_qq_mode="native"))
+    markdown = native[0].data["markdown"].content
+    assert "[为此伙伴学习](mqqapi://" in markdown
+    button_commands = {
+        button.action.data.removeprefix("/")
+        for segment in native
+        if segment.type == "keyboard"
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    assert f"灵宠学习 风刃术 伙伴 {second}" not in button_commands

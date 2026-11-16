@@ -1,5 +1,5 @@
 from ..application.context import Context
-from ..domain.models import GameError, Reply
+from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named
 from ..utils.pagination import paginate
 from .ascension_rules import skill_slots
@@ -33,24 +33,42 @@ def view(ctx: Context, arg: str = "") -> Reply:
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
-    if arg and not arg.isdecimal():
-        skill = named(ctx.content.skills, arg)
+    value, who = split_selector(arg)
+    pet = named_pet(ctx, who, "查看灵术") if who else None
+    suffix = f" 伙伴 {pet.pet_id}" if pet is not None else ""
+    if value and not value.isdecimal():
+        skill = named(ctx.content.skills, value)
         book = ctx.content.items[skill.book_item]
-        commands = [f"灵宠学习 {skill.name}"]
+        commands = [f"灵宠学习 {skill.name}{suffix}"]
         if book.price is not None:
             commands.append(f"灵宠商店 {book.name}")
+        if pet is not None:
+            lines = (
+                f"目标伙伴：{pet.name}（编号 {pet.pet_id}）。",
+                skill.description, f"目标：{targeting_text(skill)}。",
+                f"适用：{requirement_text(ctx, skill.requirements)}。",
+                f"学习秘笈：{book.name}。",
+            )
+            commands.extend((f"灵宠技能图鉴 {skill.name}{suffix}", f"灵宠技能{suffix}"))
+            return Reply(
+                f"万法灵谱 · {skill.name}", lines, tuple(commands),
+                (InlineCommand(0, "为此伙伴学习", commands[0]),),
+            )
         return Reply(f"万法灵谱 · {skill.name}", (
             skill.description, f"目标：{targeting_text(skill)}。",
             f"适用：{requirement_text(ctx, skill.requirements)}。",
             f"学习秘笈：{book.name}。",
         ), (*commands, "灵宠技能图鉴", "灵宠技能"))
-    page = paginate(ctx.content.skills.values(), arg, "万法灵谱", "灵宠技能图鉴")
+    page = paginate(ctx.content.skills.values(), value, "万法灵谱", "灵宠技能图鉴")
+    navigation = tuple(f"{command}{suffix}" for command in page.navigation)
+    return_command = f"灵宠技能{suffix}" if pet is not None else "灵宠技能"
     return Reply(f"万法灵谱 {page.number}/{page.total}", tuple(
         f"{skill.name}：{skill.description} · {requirement_text(ctx, skill.requirements)}"
         f" · 目标：{targeting_text(skill)}"
         f" · 需 {ctx.content.items[skill.book_item].name}"
         for skill in page.entries
-    ), (*(f"灵宠技能图鉴 {skill.name}" for skill in page.entries), *page.navigation, "灵宠技能"))
+    ), (*(f"灵宠技能图鉴 {skill.name}{suffix}" for skill in page.entries),
+          *navigation, return_command))
 
 
 def learn(ctx: Context, arg: str) -> Reply:
