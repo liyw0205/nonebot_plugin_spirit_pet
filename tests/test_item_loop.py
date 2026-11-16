@@ -177,11 +177,24 @@ def test_purchase_use_and_hatch_replies_carry_their_next_steps(game, play):
     sql(game[1], "UPDATE pets SET energy=40")
     play("buy", "回元丹 1")
     used = play("use", "回元丹 1")
-    assert used.commands == ("灵宠背包", "灵宠使用 回元丹 1", "我的灵宠")
+    assert pet(game[1])["energy"] == 90
+    assert items(game[1])["energy_pill"] == 0
+    assert used.commands == ("灵宠背包", "我的灵宠")
     egg = item_of(game, "pet_egg")
     stock(game, egg.id)
     hatched = play("use", f"{egg.name} 1")
     assert hatched.title == "灵卵孵化" and "灵宠背包" in hatched.commands
+
+
+@pytest.mark.parametrize("energy,amount,repeat", [(40, 2, True), (60, 2, False), (40, 1, False)])
+def test_consumable_repeat_requires_remaining_stock_and_useful_effect(game, play, energy, amount, repeat):
+    play("adopt", "青鸾")
+    sql(game[1], "UPDATE pets SET energy=?", (energy,))
+    sql(game[1], "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('u1','energy_pill',?)", (amount,))
+    reply = play("use", "回元丹 1")
+    assert pet(game[1])["energy"] == min(100, energy + 50)
+    assert items(game[1])["energy_pill"] == amount - 1
+    assert ("灵宠使用 回元丹 1" in reply.commands) is repeat
 
 
 def test_affinity_pill_is_sold_used_and_capped_at_full_affinity(game, play):

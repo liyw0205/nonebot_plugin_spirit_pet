@@ -227,7 +227,7 @@ def use(ctx: Context, arg: str) -> Reply:
     return _use_consumable(ctx, item, amount, pet)
 
 
-def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
+def _use_consumable(ctx: Context, item, amount: int, pet, *, targeted: bool = False) -> Reply:
     ctx.require_idle_pet(pet)
     effects = item.effects
     if not effects.exp and (not effects.energy or pet.energy == 100) and (
@@ -243,18 +243,30 @@ def _use_consumable(ctx: Context, item, amount: int, pet) -> Reply:
     if item.id == "spirit_food":
         advance(ctx, "feed")
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
-    # Repeat only while another dose would still be accepted; the post-use values are
-    # read from the mutated pet, not a stale row.
-    repeat = ("灵宠喂养",) if item.id == "spirit_food" else (f"灵宠使用 {item.name} 1",)
-    steps = repeat if _recovery_available(effects, pet) else ()
-    return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", (
-        f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。",
-    ), ("灵宠背包", *steps, "我的灵宠"))
+    remaining = ctx.repo.inventory(ctx.user_id).get(item.id, 0)
+    if item.id == "spirit_food":
+        repeat = f"灵宠喂养 {pet.pet_id}" if targeted else "灵宠喂养"
+    else:
+        repeat = f"灵宠使用 {item.name} 1"
+    steps = (repeat,) if remaining and _recovery_available(effects, pet) else ()
+    lines = [f"{item.name} -{amount}，精力 +{energy}，修为 +{exp}，亲密 +{affinity}。"]
+    links = ()
+    if targeted:
+        lines.insert(0, f"{pet.name}（编号 {pet.pet_id}）。")
+        lines.append(
+            f"当前：精力 {pet.energy}/100 · 修为 {pet.exp} · 亲密 {pet.affinity}/100"
+            f" · {item.name}剩余 {remaining} 份。"
+        )
+        links = (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),)
+    commands = ("灵宠背包", *steps)
+    if not targeted:
+        commands += ("我的灵宠",)
+    return Reply("灵粮温养" if item.id == "spirit_food" else "使用道具", tuple(lines), commands, links)
 
 
 def feed(ctx: Context, arg: str) -> Reply:
     pet = selected_pet(ctx, arg, "喂养")
-    reply = _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet)
+    reply = _use_consumable(ctx, ctx.content.items["spirit_food"], 1, pet, targeted=bool(arg))
     from .mood import care
     care(ctx, pet)
     return reply
