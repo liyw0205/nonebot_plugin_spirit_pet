@@ -7,6 +7,7 @@ from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.gameplay import journey
 from nonebot_plugin_spirit_pet.storage.repository import Repository
 
 from .support import pet, player, sql
@@ -48,7 +49,7 @@ def test_main_rewards_lead_to_recruit_training_and_numbered_breakthrough(game, p
     ]
 
 
-@pytest.mark.parametrize("order", range(2, 17))
+@pytest.mark.parametrize("order", range(2, 21))
 def test_every_current_main_step_has_registered_actions_without_mutating_progress(game, play, order):
     play("adopt")
     current_step(game[1], order)
@@ -186,11 +187,82 @@ def test_completed_main_chain_leads_to_existing_long_term_play(game, play):
     current_step(game[1], 16)
     sql(game[1], "UPDATE pets SET realm=6")
     reply = play("main_quest_claim", "渡劫问鼎")
-    assert reply.commands == ("灵宠周常", "灵宠目标")
+    assert "行纪三章" in reply.text()
+    assert any(link.command == "灵宠行纪" for link in reply.inline_commands)
     page = play("main_quests", "4")
-    assert "全部完成" in page.text()
-    assert {"灵宠周常", "灵宠目标"} <= set(page.commands)
-    assert not page.inline_commands
+    assert "17. 行纪三章 · 进行中 · 0/3" in page.text()
+    assert "20. 十族入册 · 未解锁" in page.text()
+
+
+def test_long_term_main_steps_use_permanent_metrics_and_replay_claim(game, play):
+    play("adopt")
+    current_step(game[1], 17)
+    for index in range(1, 4):
+        sql(game[1],
+            "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', ?, 0, 1)",
+            (journey.claim_id(f"journey_{index:02d}"),))
+    page = play("main_quests", "4")
+    assert "17. 行纪三章 · 可领奖 · 3/3" in page.text()
+    claim = next(link.command for link in page.inline_commands if link.command == "灵宠主线领奖 行纪三章")
+    first = play(*handlers._parse(claim), op="main-long-term")
+    stones_after = player(game[1])["stones"]
+    assert "首通留名" in first.text()
+    assert any(link.command == "灵宠秘境首通" for link in first.inline_commands)
+    assert play(*handlers._parse(claim), op="main-long-term") == first
+    assert player(game[1])["stones"] == stones_after
+    assert sql(game[1], "SELECT claimed FROM quest_progress WHERE quest_id='main_17'") == [{"claimed": 1}]
+
+
+def test_actual_journey_actions_unlock_main_continuation_and_permanent_replay(game, play):
+    from .test_explore_ambush import skip_ambush
+
+    play("adopt", "青鸾")
+    current_step(game[1], 17)
+    sql(game[1], "UPDATE pets SET realm=6,layer=10")
+    play("challenge", "青岚林")
+    first = play("journey_claim", "灵泉初醒", op="journey-start")
+    explore = next(link.command for link in first.inline_commands if link.command.startswith("灵宠历练 "))
+    skip_ambush(game)
+    play(*handlers._parse(explore))
+    play("journey_claim", "灵泉寻踪")
+    for step in (1, 2):
+        play("challenge", "月影谷", now=1_800_000_000 + step * 3600)
+    play("journey_claim", "月影双行", now=1_800_007_200)
+    reply = play("main_quest_claim", "行纪三章", now=1_800_007_200, op="journey-main")
+    assert "首通留名" in reply.text()
+    sql(game[1], "DELETE FROM operations")
+    before = snapshot(game[1])
+    assert play("main_quest_claim", "行纪三章", op="journey-main", now=1_800_086_400) == reply
+    assert play("journey_claim", "灵泉初醒", op="journey-start", now=1_800_086_400) == first
+    assert snapshot(game[1]) == before
+
+
+@pytest.mark.parametrize("order", [18, 19, 20])
+def test_long_term_main_thresholds_and_once_only_rewards(game, play, order):
+    play("adopt", "青鸾")
+    current_step(game[1], order)
+    quest = game[0].content.main_quests[f"main_{order}"]
+    with pytest.raises(GameError, match="尚未达成"):
+        play("main_quest_claim", quest.name)
+    if order == 18:
+        for dungeon in list(game[0].content.dungeons.values())[:quest.target]:
+            sql(game[1], "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES ('u1',?,1,1)",
+                (f"first_clear_{dungeon.id}",))
+    elif order == 19:
+        for index, achievement in enumerate(list(game[0].content.achievements.values())[:quest.target]):
+            sql(game[1], "INSERT INTO achievement_claims(user_id,achievement_id,operation_id,claimed_at,reward_snapshot,reply) "
+                "VALUES ('u1',?,?,1800000000,'{}','{}')", (achievement.id, f"seed-achievement-{index}"))
+    else:
+        for species in [key for key in game[0].content.species if key != "qingluan"][:quest.target - 1]:
+            add_pet(game[1], species_id=species, name=species)
+    before = player(game[1])["stones"]
+    reply = play("main_quest_claim", quest.name)
+    assert player(game[1])["stones"] == before + quest.reward.stones.minimum
+    with pytest.raises(GameError, match="已领取"):
+        play("main_quest_claim", quest.name)
+    if order == 20:
+        assert "主线已全部完成" in reply.text()
+        assert reply.commands == ("灵宠周常", "灵宠目标")
 
 
 def test_main_team_goal_connects_to_real_preparation_battle_and_claim(game, play):

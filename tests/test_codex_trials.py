@@ -87,7 +87,7 @@ def test_page_paginates_and_marks_ownership(game, play):
     assert page.inline_commands == ()
     owned = play("codex_trials", "2")
     assert "青鸾 · 可挑战" in owned.text()
-    assert {link.command for link in owned.inline_commands} == {"灵宠图鉴试炼 挑战 青鸾"}
+    assert {link.command for link in owned.inline_commands} == {"灵宠图鉴试炼 挑战 青鸾 伙伴 1"}
     with pytest.raises(GameError, match="共 3 页"):
         play("codex_trials", "4")
 

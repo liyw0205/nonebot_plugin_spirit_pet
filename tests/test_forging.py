@@ -45,15 +45,15 @@ def test_equipment_view_shows_scaled_bonuses_next_cost_and_action(game, play, le
     for key, label in (("hp", "气血"), ("attack", "攻击"), ("defense", "防御"), ("speed", "速度")):
         assert f"{label} +{bonuses[key]}" in reply.text()
     assert "护甲：未装备" in reply.text()
-    assert "灵宠强化 护甲" not in reply.commands
+    assert "灵宠强化 护甲 伙伴 1" not in reply.commands
     if forge.upgrade_stones is None:
         assert "已满级" in reply.text()
-        assert "灵宠强化 灵器" not in reply.commands
+        assert "灵宠强化 灵器 伙伴 1" not in reply.commands
     else:
         assert f"强化至 +{level + 1}：{forge.upgrade_stones} 灵石" in reply.text()
         for key, amount in forge.upgrade_items.items():
             assert f"{content.items[key].name} {amount}" in reply.text()
-        assert "灵宠强化 灵器" in reply.commands
+        assert "灵宠强化 灵器 伙伴 1" in reply.commands
 
 
 @pytest.mark.parametrize("argument", ["灵器", "青岚翎"])

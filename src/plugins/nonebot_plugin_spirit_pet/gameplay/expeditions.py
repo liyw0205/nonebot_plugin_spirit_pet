@@ -266,7 +266,11 @@ def claim(ctx: Context, arg: str) -> Reply:
             lines.append(f"{ctx.content.items[key].name} +{amount}")
     advance(ctx, "expedition")
     battle_pass.add_experience(ctx, "expedition_return")
-    return Reply("委托归来", tuple(lines), ("灵宠委托", "灵宠列表", "灵宠背包"))
+    reply = Reply("委托归来", tuple(lines), ("灵宠委托", "灵宠列表", "灵宠背包"),
+                  (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),))
+    ctx.repo.record_duel_action(ctx.operation_id, ctx.user_id, ctx.now,
+        {"kind": "expedition_claim", "job_id": row["job_id"], "pet_id": pet.pet_id}, reply)
+    return reply
 
 
 def cancel(ctx: Context, arg: str) -> Reply:

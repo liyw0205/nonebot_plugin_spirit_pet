@@ -402,5 +402,29 @@
         }
       }
     }
+  },
+  {
+    "id": "main_17", "name": "行纪三章", "description": "完成并领取三章山海行纪奖励。",
+    "order": 17, "metric": "journey_claims", "target": 3, "previous_id": "main_16",
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 600, "maximum": 600},
+               "items": {"forge_ore": {"minimum": 3, "maximum": 3}}}
+  },
+  {
+    "id": "main_18", "name": "首通留名", "description": "领取三处不同秘境的首通奖励。",
+    "order": 18, "metric": "first_clear_claims", "target": 3, "previous_id": "main_17",
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 700, "maximum": 700},
+               "items": {"breakthrough_pill": {"minimum": 1, "maximum": 1}}}
+  },
+  {
+    "id": "main_19", "name": "十功成册", "description": "领取十项不同成就奖励。",
+    "order": 19, "metric": "achievements_claimed", "target": 10, "previous_id": "main_18",
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 800, "maximum": 800},
+               "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}}
+  },
+  {
+    "id": "main_20", "name": "十族入册", "description": "累计收集十个不同种族的伙伴。",
+    "order": 20, "metric": "species_collected", "target": 10, "previous_id": "main_19",
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 900, "maximum": 900},
+               "items": {"forge_ore": {"minimum": 4, "maximum": 4}}}
   }
 ]

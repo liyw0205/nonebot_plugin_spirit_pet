@@ -1,12 +1,20 @@
 from ..application.context import Context
 from ..domain.content import Reward
+from ..domain.models import GameError
 
 
-def grant(ctx: Context, reward: Reward, user_id: str | None = None) -> tuple[str, ...]:
+def grant(ctx: Context, reward: Reward, user_id: str | None = None, *, pet_id: int | None = None) -> tuple[str, ...]:
     player = ctx.player(user_id)
     pet = None
     if reward.exp.maximum > 0:
-        pet = ctx.pet(user_id)
+        if pet_id is None:
+            pet = ctx.pet(user_id)
+        else:
+            pet = ctx.repo.pet(pet_id)
+            if pet is None or pet.user_id != player.user_id:
+                raise GameError("没有属于你的这只灵宠。")
+            if pet.archived:
+                raise ctx.archived_active_pet(pet, player.user_id)
         ctx.require_idle_pet(pet)
     exp = ctx.rng.randint(reward.exp.minimum, reward.exp.maximum)
     stones = ctx.rng.randint(reward.stones.minimum, reward.stones.maximum)

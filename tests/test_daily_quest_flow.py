@@ -41,9 +41,9 @@ def test_daily_board_runs_numbered_care_and_settles_each_reward(game, play):
         play(*handlers._parse(action))
     for name in ("吐纳一周天", "温养灵契", "灵契相伴"):
         command = row_action(play("quests"), name)
-        assert command == f"灵宠领奖 {name}"
+        assert command == f"灵宠领奖 {name} 日 2027-01-15"
         reply = play(*handlers._parse(command), op=f"claim-{name}")
-        assert reply.commands == ("灵宠任务", "灵宠主线", "灵宠目标")
+        assert reply.commands == ("灵宠任务", "灵宠周常 4", "灵宠目标")
         assert play(*handlers._parse(command), op=f"claim-{name}") == reply
         before_repeat = snapshot(game[1])
         with pytest.raises(GameError, match="已领取"):
@@ -66,9 +66,8 @@ def test_daily_board_rejects_parameters_without_resetting_state(game, play, arg)
 
 def test_daily_board_unregistered_user_is_not_created(game, play):
     before = snapshot(game[1])
-    with pytest.raises(GameError) as error:
-        play("quests")
-    assert error.value.reply.inline_commands[0].command == "灵宠领养 "
+    reply = play("quests")
+    assert reply.inline_commands[0].command == "灵宠领养 "
     assert snapshot(game[1]) == before
 
 

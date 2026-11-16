@@ -12,6 +12,14 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
     """Count this week's progress from records that are already permanent."""
     conn = ctx.repo.conn
     start, end = beijing_week(ctx.now)
+    if metric in {"weekly_daily_claims", "weekly_active_days"}:
+        rows = conn.execute(
+            "SELECT json_extract(snapshot,'$.day') AS day, json_extract(snapshot,'$.quest_id') AS quest_id "
+            "FROM duel_actions WHERE user_id=? AND created_at>=? AND created_at<? "
+            "AND json_extract(snapshot,'$.kind')='daily_quest_claim'", (user_id, start, end),
+        )
+        claims = {(row["day"], row["quest_id"]) for row in rows if row["quest_id"] in ctx.content.quests}
+        return len(claims) if metric == "weekly_daily_claims" else len({day for day, _ in claims})
     if metric == "weekly_pve_wins":
         query = (
             "SELECT COUNT(*) FROM battle_records b JOIN battle_participants p USING(battle_id) "
@@ -79,11 +87,47 @@ def _metric(ctx: Context, user_id: str, metric: str) -> int:
 def claimed_this_week(ctx: Context, user_id: str, quest_id: str) -> bool:
     """A claim counts for this week only when its stored week start matches."""
     start, _ = beijing_week(ctx.now)
-    row = ctx.repo.conn.execute(
-        "SELECT progress, claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
-        (user_id, quest_id),
+    return ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND claimed=1 "
+        "AND ((quest_id=? AND progress=?) OR quest_id=?)",
+        (user_id, quest_id, start, f"weekly_claim_{start}_{quest_id}"),
+    ).fetchone() is not None
+
+
+def require_current_week(ctx: Context, quest_id: str, requested: str = "") -> None:
+    start, _ = beijing_week(ctx.now)
+    if requested and requested != beijing_day(start):
+        raise GameError("这条领取入口已经跨周，请重新查看本周页面。")
+    latest = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?", (ctx.user_id, quest_id),
     ).fetchone()
-    return bool(row and row["claimed"] and row["progress"] == start)
+    if latest and latest["progress"] > start:
+        raise GameError("系统日期早于领取记录，请等待日期恢复。")
+
+
+def record_claim(ctx: Context, quest_id: str) -> None:
+    start, _ = beijing_week(ctx.now)
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,?,1)",
+        (ctx.user_id, f"weekly_claim_{start}_{quest_id}", start),
+    )
+    # Keep the latest-period row for existing readers and pre-upgrade saves.
+    ctx.repo.conn.execute(
+        "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,?,1) "
+        "ON CONFLICT(user_id,quest_id) DO UPDATE SET progress=excluded.progress,claimed=1",
+        (ctx.user_id, quest_id, start),
+    )
+
+
+def _next_command(quest) -> str:
+    return {
+        "weekly_pve_wins": "灵宠秘境", "weekly_pvp_wins": "灵宠论剑榜",
+        "weekly_expedition_claims": "灵宠行程", "weekly_adventures": "灵宠历练",
+        "weekly_stage_clears": "灵宠关卡", "weekly_achievement_claims": "灵宠成就",
+        "weekly_cuisine_orders": "灵宠膳房订单", "weekly_cuisine_practice": "灵宠膳房研修",
+        "weekly_banquets": "灵宠家宴", "weekly_daily_claims": "灵宠任务",
+        "weekly_active_days": "灵宠任务",
+    }[quest.metric]
 
 
 def _reward_summary(ctx: Context, quest) -> str:
@@ -126,8 +170,12 @@ def catalog(ctx: Context, arg: str) -> Reply:
         )
         if state == "可领取":
             links.append(InlineCommand(
-                len(lines) - 1, "领取奖励", f"灵宠周常领奖 {quest.name}",
+                len(lines) - 1, "领取奖励", f"灵宠周常领奖 {quest.name} 周 {beijing_day(start)}",
             ))
+        elif state == "未达成":
+            command = _next_command(quest)
+            if command not in {link.command for link in links}:
+                links.append(InlineCommand(len(lines) - 1, "继续目标", command))
     return Reply(
         f"灵宠周常 {page.number}/{page.total}", tuple(lines),
         (*page.navigation, "灵宠任务", "灵宠周常赏"), tuple(links),
@@ -136,19 +184,19 @@ def catalog(ctx: Context, arg: str) -> Reply:
 
 def claim(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
-    quest = named(ctx.content.weekly_quests, arg)
+    name, separator, week = arg.rpartition(" 周 ")
+    quest = named(ctx.content.weekly_quests, name if separator else arg)
+    require_current_week(ctx, quest.id, week if separator else "")
     if claimed_this_week(ctx, player.user_id, quest.id):
         raise GameError("本周这项奖励已领取，下周再来。")
     value = _metric(ctx, player.user_id, quest.metric)
     if value < quest.target:
         raise GameError(f"本周尚未达成：{quest.description}（进度 {value}/{quest.target}）")
     result = grant(ctx, quest.reward, player.user_id)
-    start, _ = beijing_week(ctx.now)
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1) "
-        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
-        (player.user_id, quest.id, start),
-    )
-    return Reply("周常奖励已领取", (
+    record_claim(ctx, quest.id)
+    reply = Reply("周常奖励已领取", (
         f"{quest.name}已完成。", *result, "下周一 00:00（北京时间）重置。",
     ), ("灵宠周常", "灵宠任务", "灵宠周常赏"))
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "weekly_quest_claim", "week_start": beijing_week(ctx.now)[0], "quest_id": quest.id}, reply)
+    return reply

@@ -120,7 +120,7 @@ def test_an_achievement_sigil_unlocks_at_its_threshold(game, play):
     seed_claims(game, 1, offset=4)
     page = play("sigils")
     assert "疾行符 · 速度 +18 · 精炼 1/3 · 需要 成就领取 5/5 · 可装备" in page.text()
-    assert "灵宠符印 装备 疾行符" in [link.command for link in page.inline_commands]
+    assert "灵宠符印 装备 疾行符 伙伴 1" in [link.command for link in page.inline_commands]
 
 
 def test_a_collection_sigil_unlocks_by_species_count(game, play):

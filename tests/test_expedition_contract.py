@@ -347,7 +347,7 @@ def test_permanent_departure_deduplication_and_old_terminal_events_cannot_touch_
     play("expedition_start", "采灵药", user=OWNER, op="retained-start")
     first = journeys(game[1])[0]
     settled_at = first["finishes_at"] if terminal == "expedition_claim" else NOW + 1
-    play(terminal, str(first["job_id"]), user=OWNER, now=settled_at, op="retained-terminal")
+    terminal_reply = play(terminal, str(first["job_id"]), user=OWNER, now=settled_at, op="retained-terminal")
     future = NOW + 8 * 86400
     play("expedition_start", "采灵药", user=OWNER, now=future, op="new-start")
     second = journeys(game[1])[-1]
@@ -356,8 +356,11 @@ def test_permanent_departure_deduplication_and_old_terminal_events_cannot_touch_
     old_reply = play("expedition_start", "采灵药", user=OWNER, now=future, op="retained-start")
     assert str(first["job_id"]) in old_reply.text()
     assert world(game[1]) == before
-    with pytest.raises(GameError):
-        play(terminal, str(first["job_id"]), user=OWNER, now=future, op="retained-terminal")
+    if terminal == "expedition_claim":
+        assert play(terminal, str(first["job_id"]), user=OWNER, now=future, op="retained-terminal") == terminal_reply
+    else:
+        with pytest.raises(GameError):
+            play(terminal, str(first["job_id"]), user=OWNER, now=future, op="retained-terminal")
     assert world(game[1]) == before
     play("expedition_cancel", str(second["job_id"]), user=OWNER, now=future + 1)
     sql(game[1], "DELETE FROM operations WHERE operation_id='retained-start'")

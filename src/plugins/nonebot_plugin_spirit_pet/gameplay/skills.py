@@ -20,7 +20,7 @@ def learned(ctx: Context, pet_id: int) -> dict[str, int]:
 
 def view(ctx: Context, arg: str = "") -> Reply:
     body, who = split_selector(arg)
-    pet = named_pet(ctx, who, "查看灵术") if who else ctx.pet()
+    pet = named_pet(ctx, who, "查看灵术", refresh_energy=False) if who else ctx.pet()
     skills = learned(ctx, pet.pet_id)
     mastery = progress(ctx, pet.pet_id)
     lines = tuple(
@@ -29,12 +29,12 @@ def view(ctx: Context, arg: str = "") -> Reply:
         for key, active in skills.items()
     ) or ("尚未学习灵术。",)
     return Reply(f"{pet.name}的技能", (*lines, f"携带上限：{skill_slots(ctx, pet)} 个。"),
-                 ("灵宠技能图鉴", "灵宠万法总览", "灵宠商店"))
+                 (f"灵宠技能图鉴 伙伴 {pet.pet_id}", f"灵宠整备 {pet.pet_id}", "灵宠商店"))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
     value, who = split_selector(arg)
-    pet = named_pet(ctx, who, "查看灵术") if who else None
+    pet = named_pet(ctx, who, "查看灵术", refresh_energy=False) if who else None
     suffix = f" 伙伴 {pet.pet_id}" if pet is not None else ""
     if value and not value.isdecimal():
         skill = named(ctx.content.skills, value)

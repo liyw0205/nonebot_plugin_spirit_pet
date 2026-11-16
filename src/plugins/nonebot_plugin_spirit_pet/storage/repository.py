@@ -405,7 +405,7 @@ class Repository:
         ).fetchone()
         if row is None:
             return None
-        if json.loads(row["snapshot"]).get("kind") in ("stage_tactic", "cooking", "tracking", "herbalism", "nursery", "play_course", "training", "convoy", "farm_care", "pill_furnace", "angling", "adventure_travel", "cuisine_order"):
+        if json.loads(row["snapshot"]).get("kind") is not None:
             return None
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
@@ -424,8 +424,7 @@ class Repository:
     def latest_duel_action(self, user_id: str) -> dict | None:
         row = self.conn.execute(
             "SELECT snapshot FROM duel_actions WHERE user_id=? "
-            "AND (json_extract(snapshot,'$.kind') IS NULL "
-            "OR json_extract(snapshot,'$.kind') NOT IN ('stage_tactic','cooking','tracking','herbalism','nursery','play_course','training','convoy','farm_care','pill_furnace','angling','adventure_travel','cuisine_order')) "
+            "AND json_extract(snapshot,'$.kind') IS NULL "
             "ORDER BY action_id DESC LIMIT 1",
             (user_id,),
         ).fetchone()

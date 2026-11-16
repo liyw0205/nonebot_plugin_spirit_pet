@@ -51,11 +51,11 @@ def stones(game):
 
 def test_pool_keeps_hard_variants_and_adds_food_metrics(game):
     content = game[0].content
-    assert len(content.weekly_quests) == 15
+    assert len(content.weekly_quests) == 17
     by_metric = {}
     for quest in content.weekly_quests.values():
         by_metric.setdefault(quest.metric, []).append(quest)
-    assert len(by_metric) == 9
+    assert len(by_metric) == 11
     for metric in (
         "weekly_pve_wins", "weekly_pvp_wins", "weekly_expedition_claims",
         "weekly_adventures", "weekly_stage_clears", "weekly_achievement_claims",
@@ -97,7 +97,7 @@ def test_hard_variant_claims_once_and_resets_next_week(game, play):
 
     listing = play("weekly_quests", page)
     assert f"{quest.name}：{quest.target}/{quest.target}（可领取）" in listing.text()
-    assert (2, "领取奖励", f"灵宠周常领奖 {quest.name}") in links(listing)
+    assert (2, "领取奖励", f"灵宠周常领奖 {quest.name} 周 2027-01-11") in links(listing)
 
     before = stones(game)
     claim = play("weekly_quest_claim", quest.name, op="weekly-hard")
@@ -123,4 +123,4 @@ def test_hub_counts_follow_the_pool(game, play):
     account(game, play)
     line = next(text for text in play("objectives").lines if text.startswith("本周周常："))
     assert f"共 {len(content.weekly_quests)} 项" in line
-    assert "15 项" in line
+    assert "17 项" in line

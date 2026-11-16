@@ -62,7 +62,7 @@ def test_real_weekly_claims_unlock_and_pay_cumulative_reward(game, play):
     account(play)
     complete_two_real_quests(game, play)
     page = play("weekly_rewards")
-    assert "已领取 2/15 项周常" in page.lines[0]
+    assert "已领取 2/17 项周常" in page.lines[0]
     assert "2 项 · 周行初成" in page.text() and "可领取" in page.text()
     assert any(link.command == "灵宠周常赏 领奖 2 周 2027-01-11" for link in page.inline_commands)
     before = player(game[1])["stones"]

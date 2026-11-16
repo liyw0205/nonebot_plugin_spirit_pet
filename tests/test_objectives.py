@@ -5,6 +5,7 @@ from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
 from .support import pet, sql
+from .test_targeted_care import snapshot
 
 NOW = 1_800_000_000
 
@@ -81,6 +82,19 @@ def test_hub_is_read_only(game, play):
     assert sql(game[1], "SELECT battle_id FROM battle_records") == []
     assert sql(game[1], "SELECT achievement_id FROM achievement_claims") == []
     assert pet(game[1])["energy"] == energy
+
+
+@pytest.mark.parametrize("day_offset", [-1, 1])
+def test_hub_projects_daily_state_without_changing_records(game, play, day_offset):
+    play("adopt", "青鸾", now=NOW)
+    play("sign", now=NOW)
+    before = snapshot(game[1])
+
+    reply = play("objectives", now=NOW + day_offset * 86400)
+
+    expected = "系统日期早于每日任务记录" if day_offset < 0 else "暂无可领"
+    assert expected in line(reply, "今日任务：")
+    assert snapshot(game[1]) == before
 
 
 def test_hub_replays_one_operation_once(game, play):

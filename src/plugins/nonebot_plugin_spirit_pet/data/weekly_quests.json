@@ -310,5 +310,17 @@
       "stones": {"minimum": 450, "maximum": 450},
       "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
     }
+  },
+  {
+    "id": "weekly_daily_claims", "name": "课业六成", "description": "本周领取六份每日任务奖励。",
+    "metric": "weekly_daily_claims", "target": 6,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 180, "maximum": 180},
+               "items": {"spirit_food": {"minimum": 2, "maximum": 2}}}
+  },
+  {
+    "id": "weekly_active_days", "name": "三日不辍", "description": "本周在三个不同日期领取每日任务奖励。",
+    "metric": "weekly_active_days", "target": 3,
+    "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 240, "maximum": 240},
+               "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}
   }
 ]

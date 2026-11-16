@@ -122,8 +122,7 @@ def page(ctx: Context, arg: str) -> Reply:
 
 
 def _detail(ctx: Context, pet) -> Reply:
-    roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
-    suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
+    suffix = f" 伙伴 {pet.pet_id}"
     filled = equipped(ctx, pet.pet_id)
     slots_text = "、".join(
         f"{slot}号 {ctx.content.sigils[sigil_id].name}" for slot, sigil_id in sorted(filled.items())
@@ -157,7 +156,8 @@ def _detail(ctx: Context, pet) -> Reply:
                 row, f"精炼至{level + 1}阶", f"灵宠符印 精炼 {sigil.name}{suffix}",
             ))
     lines.append("格式：灵宠符印 装备 <符印> / 卸下 <符印> / 精炼 <符印>；为后备伙伴操作时在末尾加 伙伴 <名字|编号>。")
-    return Reply("灵宠符印", tuple(lines), ("灵宠符印", "我的灵宠", "灵宠技能"), tuple(links))
+    return Reply("灵宠符印", tuple(lines), (f"灵宠符印{suffix}", f"灵宠整备 {pet.pet_id}",
+                 f"灵宠技能{suffix}"), tuple(links))
 
 
 def _total_text(totals: dict[str, int]) -> str:
@@ -325,7 +325,7 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     body, who = split_selector(arg)
     if not body and who:
         ctx.player()
-        return _detail(ctx, named_pet(ctx, who, "查看符印"))
+        return _detail(ctx, named_pet(ctx, who, "查看符印", refresh_energy=False))
     raise GameError("格式：灵宠符印 [装备 <符印>|卸下 <符印>|精炼 <符印>|总览|伙伴 <名字|编号>]。")
 
 

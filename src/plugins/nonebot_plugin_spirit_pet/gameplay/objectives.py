@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from ..utils.time import season_bounds
-from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, quests, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
+from ..utils.time import beijing_day, season_bounds
+from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
 from . import banquet, banquet_rewards, cooking_rewards, farm_progress
 from . import weekly_rewards
 from . import daily_shop_rewards
@@ -116,6 +116,12 @@ def _claim_line(name: str, claimable: list[str], total: int) -> str:
 
 def _daily_line(ctx: Context, user_id: str) -> str:
     """Mirror `quests.quests`' claimable test over the shared progress table."""
+    player = ctx.repo.player(user_id)
+    today = beijing_day(ctx.now)
+    if player is not None and today < player.quest_day:
+        return "今日任务：系统日期早于每日任务记录，请等待日期恢复。"
+    if player is None or today != player.quest_day:
+        return _claim_line("今日任务", [], len(ctx.content.quests))
     rows = {
         row["quest_id"]: row for row in ctx.repo.conn.execute(
             "SELECT * FROM quest_progress WHERE user_id=?", (user_id,),
@@ -571,7 +577,6 @@ def objectives(ctx: Context, arg: str) -> Reply:
             "这里汇总每日、每周、成长、收集与套装奖励的领取状态。",
         ), ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
 
-    quests.refresh(ctx)
     # Each row is paired with its hub command so a link can never drift onto a
     # neighbouring row when a new objective row is inserted.
     rows = [

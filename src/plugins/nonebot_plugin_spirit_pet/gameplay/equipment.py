@@ -88,7 +88,7 @@ def view(ctx: Context, arg: str) -> Reply:
     if body.startswith("总览"):
         return overview(ctx, body[len("总览"):])
     if who:
-        pet = named_pet(ctx, who, "查看装备")
+        pet = named_pet(ctx, who, "查看装备", refresh_energy=bool(body))
         return equip_for(ctx, pet, body) if body else detail(ctx, pet)
     if body:
         return equip_for(ctx, ctx.pet(), body)
@@ -99,7 +99,8 @@ def detail(ctx: Context, pet) -> Reply:
     items = loadout(ctx, pet.pet_id)
     lines, commands, links = [], [], []
     roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
-    suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
+    suffix = f" 伙伴 {pet.pet_id}"
+    inventory = ctx.repo.inventory(ctx.user_id)
     for slot, label in SLOTS.items():
         if slot not in items:
             lines.append(f"{label}：未装备")
@@ -126,6 +127,17 @@ def detail(ctx: Context, pet) -> Reply:
         costs = [f"{forge.upgrade_stones} 灵石"]
         costs.extend(f"{ctx.content.items[key].name} {amount}" for key, amount in forge.upgrade_items.items())
         lines.append(f"强化至 +{level + 1}：{'、'.join(costs)}。")
+        missing = [(key, amount - inventory.get(key, 0)) for key, amount in forge.upgrade_items.items()
+                   if inventory.get(key, 0) < amount]
+        if missing:
+            lines.append("材料缺口：" + "、".join(f"{ctx.content.items[key].name} {amount}" for key, amount in missing))
+            for key, _ in missing:
+                command = (f"灵宠历练{suffix}" if key == "forge_ore"
+                           else f"灵宠图鉴 掉落 {ctx.content.items[key].name}")
+                links.append(InlineCommand(len(lines) - 1, "寻找材料", command))
+        if ctx.player().stones < forge.upgrade_stones:
+            lines.append(f"灵石缺口：{forge.upgrade_stones - ctx.player().stones}。")
+            links.append(InlineCommand(len(lines) - 1, "完成每日任务", "灵宠任务"))
         commands.append(f"灵宠强化 {label}{suffix}")
     equipped_ids = {
         ctx.content.items[item_id].equipment_id for item_id, _ in items.values()
@@ -149,14 +161,21 @@ def detail(ctx: Context, pet) -> Reply:
                     links.append(InlineCommand(
                         len(lines) - 1, "套装共鸣", f"灵宠套装共鸣 {equipment_set.name}",
                     ))
-    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, "灵宠套装", "灵宠装备图鉴", "灵宠商店"), tuple(links))
+    return Reply(f"{pet.name}的装备", tuple(lines), (*commands, f"灵宠整备 {pet.pet_id}",
+                 f"灵宠装备图鉴{suffix}", "灵宠商店"), tuple(links))
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
+    arg, who = split_selector(arg)
+    player = ctx.repo.player(ctx.user_id)
+    pet = named_pet(ctx, who, "查看装备", refresh_energy=False) if who else (
+        ctx.repo.pet(player.active_pet_id) if player and player.active_pet_id is not None else None
+    )
+    suffix = f" 伙伴 {pet.pet_id}" if pet else ""
     if arg and not arg.isdecimal():
         gear = named(ctx.content.equipment, arg)
         item = next(item for item in ctx.content.items.values() if item.equipment_id == gear.id)
-        commands = [f"灵宠工坊 {item.name}", f"灵宠装备 {item.name}"]
+        commands = [f"灵宠工坊 {item.name}", f"灵宠装备 {item.name}{suffix}"]
         if item.price is not None:
             commands.insert(0, f"灵宠购买 {item.name}")
         return Reply(f"灵物图鉴 · {gear.name}", (
@@ -164,14 +183,15 @@ def catalog(ctx: Context, arg: str) -> Reply:
             f"基础加成：气血 +{gear.bonuses.hp} 攻击 +{gear.bonuses.attack}"
             f" 防御 +{gear.bonuses.defense} 速度 +{gear.bonuses.speed}。",
             f"灵坊售价：{item.price} 灵石。" if item.price is not None else "不在灵坊出售。",
-        ), (*commands, "灵宠装备图鉴", "灵宠装备"))
+        ), (*commands, f"灵宠装备图鉴{suffix}", f"灵宠装备{suffix}"))
     page = paginate(ctx.content.equipment.values(), arg, "灵物图鉴", "灵宠装备图鉴")
     return Reply(f"灵物图鉴 {page.number}/{page.total}", tuple(
         f"{gear.name} · {SLOTS[gear.slot]} · {requirement_text(ctx, gear.requirements)}"
         f" · 气血 +{gear.bonuses.hp} 攻击 +{gear.bonuses.attack}"
         f" 防御 +{gear.bonuses.defense} 速度 +{gear.bonuses.speed}"
         for gear in page.entries
-    ), (*(f"灵宠装备图鉴 {gear.name}" for gear in page.entries), *page.navigation, "灵宠装备"))
+    ), (*(f"灵宠装备图鉴 {gear.name}{suffix}" for gear in page.entries),
+         *(f"{command}{suffix}" for command in page.navigation), f"灵宠装备{suffix}"))
 
 
 def sets(ctx: Context, arg: str) -> Reply:
@@ -403,7 +423,7 @@ def equip_for(ctx: Context, pet, arg: str) -> Reply:
     return Reply("装备灵物", (
         f"{pet.name}装备了{item.name} +{enhancement}，占用{SLOTS[gear.slot]}位。",
         "替换下的旧装备已返回背包。" if current else "装备期间该灵物不在背包中。",
-    ))
+    ), (f"灵宠整备 {pet.pet_id}", f"灵宠装备 伙伴 {pet.pet_id}"))
 
 
 def unequip(ctx: Context, arg: str) -> Reply:
@@ -415,4 +435,5 @@ def unequip(ctx: Context, arg: str) -> Reply:
     ctx.repo.conn.execute("DELETE FROM equipment WHERE pet_id=? AND slot=?", (pet.pet_id, slot))
     put(ctx, item_id, enhancement)
     note_prep_change(ctx, pet)
-    return Reply("卸下灵物", (f"{ctx.content.items[item_id].name} +{enhancement}已返回背包。",))
+    return Reply("卸下灵物", (f"{ctx.content.items[item_id].name} +{enhancement}已返回背包。",),
+                 (f"灵宠整备 {pet.pet_id}",))

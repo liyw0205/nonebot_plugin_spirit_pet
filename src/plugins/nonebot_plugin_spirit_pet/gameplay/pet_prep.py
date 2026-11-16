@@ -4,9 +4,12 @@ This page gathers a pet's gear, skills and sigils and hands out links that carry
 `伙伴 <名字|编号>` selector, so each next step acts on the pet the page is about.
 """
 
+from dataclasses import replace
+
 from ..application.context import Context
 from ..domain.models import InlineCommand, Reply
 from ..utils.time import beijing_day, cooldown_left
+from ..utils.energy import restore_energy
 from . import bond_levels
 from . import equipment, sigils, skills
 from .ascension_rules import skill_slots
@@ -33,10 +36,14 @@ def prep(ctx: Context, arg: str) -> Reply:
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
     player = ctx.repo.player(ctx.user_id)
-    pet = named_pet(ctx, arg, "整备") if arg.strip() else ctx.pet()
+    selector = arg.strip() or (str(player.active_pet_id) if player.active_pet_id is not None else "")
+    if not selector:
+        raise ctx.missing_pet()
+    pet = replace(named_pet(ctx, selector, "整备", refresh_energy=False))
+    restore_energy(pet, ctx.now, ctx.config.spirit_pet_energy_interval)
     roster = {member.pet_id for member in ctx.repo.active_pets(ctx.user_id)}
     marker = " · 当前出战" if pet.pet_id in roster else ""
-    suffix = "" if pet.pet_id in roster else f" 伙伴 {pet.pet_id}"
+    suffix = f" 伙伴 {pet.pet_id}"
     lines = [f"{pet.name}（编号 {pet.pet_id}）{marker}。"]
     links = []
 
@@ -104,7 +111,7 @@ def prep(ctx: Context, arg: str) -> Reply:
     for slot, label in equipment.SLOTS.items():
         if slot not in worn:
             lines.append(f"  {label}：未装备")
-            links.append(InlineCommand(len(lines) - 1, "去挑装备", "灵宠装备图鉴"))
+            links.append(InlineCommand(len(lines) - 1, "去挑装备", f"灵宠装备图鉴{suffix}"))
             continue
         item_id, level = worn[slot]
         lines.append(f"  {label}：{ctx.content.items[item_id].name} +{level}")
@@ -154,4 +161,5 @@ def prep(ctx: Context, arg: str) -> Reply:
             ))
 
     lines.append("整备只读：不切换出战、不消耗材料；每一步都按本页伙伴执行。")
-    return Reply(TITLE, tuple(lines), (TITLE, "灵宠装备", "灵宠技能", "灵宠符印"), tuple(links))
+    return Reply(TITLE, tuple(lines), (f"灵宠历练{suffix}", f"灵宠装备{suffix}",
+                 f"灵宠技能{suffix}", f"灵宠符印{suffix}"), tuple(links))

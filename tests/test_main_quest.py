@@ -31,8 +31,8 @@ def claimed_ids(game, user="u1"):
 
 def test_content_defines_an_ordered_chain(game):
     quests = sorted(game[0].content.main_quests.values(), key=lambda quest: quest.order)
-    assert [quest.order for quest in quests] == list(range(1, 17))
-    assert [quest.id for quest in quests] == [f"main_{index:02d}" for index in range(1, 17)]
+    assert [quest.order for quest in quests] == list(range(1, 21))
+    assert [quest.id for quest in quests] == [f"main_{index:02d}" for index in range(1, 21)]
     for index, quest in enumerate(quests):
         assert quest.previous_id == (quests[index - 1].id if index else None)
         assert quest.target > 0 and quest.description
@@ -104,6 +104,8 @@ def test_daily_reset_keeps_main_claim_but_clears_daily_rows(game, play):
     sql(game[1], "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1', 'sign_once', 1, 1)")
     sql(game[1], "UPDATE players SET quest_day='2026-01-01'")
     play("quests")
+    assert sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='sign_once'")
+    play("train")
     assert claimed_ids(game) == ["main_01"]
     assert not sql(game[1], "SELECT * FROM quest_progress WHERE quest_id='sign_once'")
 

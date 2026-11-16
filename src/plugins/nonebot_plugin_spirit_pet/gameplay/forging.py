@@ -56,7 +56,10 @@ def enhance(ctx: Context, arg: str) -> Reply:
         "UPDATE equipment SET enhancement=? WHERE pet_id=? AND slot=?", (reached, pet.pet_id, slot),
     )
     note_prep_change(ctx, pet)
-    return Reply("灵物淬炼", (
+    reply = Reply("灵物淬炼", (
         f"{pet.name}的{name}强化至 +{reached}。",
         f"消耗 {'、'.join(costs)}；装备属性倍率 {ctx.content.forge_levels[reached].bonus_multiplier:g}。",
-    ), ("灵宠装备", "灵宠背包"))
+    ), (f"灵宠装备 伙伴 {pet.pet_id}", f"灵宠整备 {pet.pet_id}", "灵宠背包"))
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "equipment_enhance", "pet_id": pet.pet_id, "item_id": item_id, "level": reached}, reply)
+    return reply

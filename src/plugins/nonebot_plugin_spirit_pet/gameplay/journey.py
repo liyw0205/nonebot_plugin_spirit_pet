@@ -1,6 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
+from ..utils.time import cooldown_left
 from .rewards import grant
 from .sweep import _cleared
 
@@ -89,6 +90,42 @@ def _state(ctx: Context, user_id: str, chapter) -> str:
     return f"进行中（{value}/{chapter.task.count}）"
 
 
+def _next_step(ctx: Context, chapter) -> tuple[str, str]:
+    task = chapter.task
+    if _value(ctx, ctx.user_id, task) >= task.count:
+        return "领取本章奖励", f"灵宠行纪领奖 {chapter.name}"
+    if task.kind in {"clear_dungeon", "win_at"}:
+        return "前往秘境", f"灵宠秘境 {ctx.content.dungeons[task.target].name}"
+    if task.kind == "collect_species":
+        return "查看种族来源", f"灵宠图鉴 {ctx.content.species[task.target].name}"
+    if task.kind == "enable_resonance":
+        return "查看共鸣", f"灵宠共鸣 查看 {ctx.content.resonances[task.target].name}"
+    player = ctx.player()
+    if player.active_pet_id is None:
+        return "选择伙伴", "灵宠列表"
+    pet = ctx.repo.pet(player.active_pet_id)
+    if pet.archived:
+        return "复原伙伴", f"灵宠复原 {pet.pet_id}"
+    if ctx.repo.active_expedition(pet.pet_id) is not None:
+        return "查看行程", "灵宠行程"
+    if task.kind == "discover":
+        from . import adventure_travel
+        from .cultivation import _available_energy
+        route = next(route for route in ctx.content.exploration_routes.values() if task.target in route.encounters)
+        if adventure_travel.state(ctx):
+            return "继续远行", "灵宠山海远行"
+        if pet.realm < _realm_index(ctx, route.min_realm):
+            return "提升境界", f"灵宠整备 {pet.pet_id}"
+        if cooldown_left(player.last_explore, ctx.now, ctx.config.spirit_pet_explore_cooldown):
+            return "调息期间整备", f"灵宠整备 {pet.pet_id}"
+        if _available_energy(ctx, pet) < ctx.content.rules.explore_energy:
+            return "补充精力", f"灵宠整备 {pet.pet_id}"
+        return "探访奇闻", f"灵宠历练 {route.name} 伙伴 {pet.pet_id}"
+    from .main_quest import _advancement_step
+    label, command, _ = _advancement_step(ctx, pet, "max_realm")
+    return label, command
+
+
 def catalog(ctx: Context, arg: str) -> Reply:
     entries = tuple(ctx.content.journey.values())
     pages = max(1, (len(entries) + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -110,10 +147,9 @@ def catalog(ctx: Context, arg: str) -> Reply:
         state = _state(ctx, player.user_id, chapter)
         lines.append(f"{chapter.name} · {_realm_name(ctx, chapter.realm)} · {state}")
         lines.append(chapter.story)
-        if state == "可领取":
-            links.append(InlineCommand(
-                len(lines) - 2, "领取本章奖励", f"灵宠行纪领奖 {chapter.name}",
-            ))
+        if state not in {"已完成", "未解锁"}:
+            label, command = _next_step(ctx, chapter)
+            links.append(InlineCommand(len(lines) - 2, label, command))
     done = sum(1 for chapter in entries if _claimed(ctx, player.user_id, chapter.id))
     claimable = sum(1 for chapter in entries if _state(ctx, player.user_id, chapter) == "可领取")
     lines.append(f"共 {len(entries)} 章，已完成 {done} 章，尚有 {claimable} 章可领取。")
@@ -146,6 +182,13 @@ def claim(ctx: Context, arg: str) -> Reply:
     )
     following = [c for c in ctx.content.journey.values() if c.previous_id == chapter.id]
     hint = f"下一章「{following[0].name}」已解锁。" if following else "山海行纪已全部完成。"
-    return Reply("行纪奖励已领取", (
+    links = ()
+    if following:
+        label, command = _next_step(ctx, following[0])
+        links = (InlineCommand(len(result) + 1, label, command),)
+    reply = Reply("行纪奖励已领取", (
         f"{chapter.name} · {chapter.story}", *result, hint,
-    ), ("灵宠行纪", "灵宠主线", "灵宠目标"))
+    ), ("灵宠行纪", "灵宠主线", "灵宠目标"), links)
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "journey_claim", "chapter_id": chapter.id}, reply)
+    return reply

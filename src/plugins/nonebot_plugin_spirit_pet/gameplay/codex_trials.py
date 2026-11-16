@@ -22,6 +22,7 @@ from .combat import enemy_fighter, fight
 from .loadout import combatant
 from .mastery import award_mastery
 from .quests import advance
+from .pet_targets import named_pet, split_selector
 
 TRIAL_KEY = "codex_trial_"
 MILESTONE_KEY = "codex_trial_milestone_"
@@ -45,7 +46,8 @@ def cleared(ctx: Context, user_id: str | None = None) -> dict[str, int]:
         "SELECT quest_id, progress FROM quest_progress WHERE user_id=? AND quest_id LIKE ?",
         (user_id or ctx.user_id, f"{TRIAL_KEY}%"),
     )
-    return {row["quest_id"][len(TRIAL_KEY):]: int(row["progress"]) for row in rows}
+    return {row["quest_id"][len(TRIAL_KEY):]: int(row["progress"]) for row in rows
+            if row["quest_id"][len(TRIAL_KEY):] in ctx.content.species}
 
 
 def _owned_pets(ctx: Context, user_id: str | None = None):
@@ -127,8 +129,12 @@ def page(ctx: Context, arg: str) -> Reply:
             f" · 幻影 气血 {enemy.stats.hp} · 攻击 {enemy.stats.attack}"
             f" · 防御 {enemy.stats.defense} · 速度 {enemy.stats.speed}"
         )
-        if rounds is not None or _pet_for(ctx, species.id) is not None:
-            links.append(InlineCommand(len(lines) - 1, "挑战", f"灵宠图鉴试炼 挑战 {species.name}"))
+        pet = _pet_for(ctx, species.id)
+        if pet is not None:
+            if ctx.repo.active_expedition(pet.pet_id) is not None:
+                links.append(InlineCommand(len(lines) - 1, "查看行程", "灵宠行程"))
+            else:
+                links.append(InlineCommand(len(lines) - 1, "挑战", f"灵宠图鉴试炼 挑战 {species.name} 伙伴 {pet.pet_id}"))
     milestones = [
         f"{milestone.count} 族 → "
         + "、".join(
@@ -188,14 +194,18 @@ def _pay_milestones(ctx: Context, entry: CodexTrial, reached: int) -> list[str]:
 
 
 def challenge(ctx: Context, arg: str) -> Reply:
-    text = arg.strip()
+    text, selector = split_selector(arg)
     if not text:
         raise GameError("格式：灵宠图鉴试炼 挑战 <种族名>。")
     entry = trial(ctx)
     species = named(ctx.content.species, text)
-    pet = _pet_for(ctx, species.id)
+    pet = named_pet(ctx, selector, "挑战试炼") if selector else _pet_for(ctx, species.id)
     if pet is None:
         raise GameError(f"尚未拥有{species.name}，无法挑战该族幻影。")
+    if pet.species_id != species.id:
+        raise GameError("这位伙伴与试炼种族不符，请重新查看图鉴试炼。")
+    if not selector:
+        pet = named_pet(ctx, str(pet.pet_id), "挑战试炼")
     player = ctx.player()
     ctx.check_action(player, pet, "pve", entry.energy, ctx.config.spirit_pet_pve_cooldown)
 
@@ -207,7 +217,7 @@ def challenge(ctx: Context, arg: str) -> Reply:
 
     pet.energy -= entry.energy
     player.last_pve = ctx.now
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     lines = [f"{species.name} · 幻影 · {battle.rounds} 回合", *battle.lines]
     lines.extend(award_mastery(
         ctx, ctx.user_id, battle.skill_uses[0].get(pet.pet_id, {}), pet_id=pet.pet_id,
@@ -231,11 +241,14 @@ def challenge(ctx: Context, arg: str) -> Reply:
         title = "图鉴试炼平局" if battle.winner == -1 else "图鉴试炼败退"
         lines.append("本次未通关，试炼进度不变。")
     lines.append(f"精力 -{entry.energy}；气血仅在本场战斗内结算。")
-    reply = Reply(title, tuple(lines), ("灵宠图鉴试炼", "灵宠战报", "我的灵宠"))
+    reply = Reply(title, tuple(lines), ("灵宠图鉴试炼", "灵宠战报", "灵宠出战"),
+                  (InlineCommand(len(lines) - 1, "查看整备", f"灵宠整备 {pet.pet_id}"),))
     record_battle(
         ctx, kind="pve_stage", battle=battle, capture=capture, reply=reply,
         battle_key=f"codex_{species.id}", battle_name=f"图鉴试炼·{species.name}",
     )
+    ctx.repo.record_duel_action(ctx.operation_id, ctx.user_id, ctx.now,
+        {"kind": "codex_trial", "species_id": species.id, "pet_id": pet.pet_id}, reply)
     return reply
 
 

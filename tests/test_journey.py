@@ -61,7 +61,7 @@ def test_page_lists_chapters_with_states_and_stories(game, play):
     assert "青岚林的风声里" in page.text()
     assert page.lines[-1] == f"共 {total} 章，已完成 0 章，尚有 0 章可领取。"
     assert page.commands == ("灵宠行纪 2", "灵宠主线", "灵宠目标")
-    assert page.inline_commands == ()
+    assert [(link.label, link.command) for link in page.inline_commands] == [("前往秘境", "灵宠秘境 青岚林")]
     assert play("journey", "3", now=NOW).title == "山海行纪 3/4"
     with pytest.raises(GameError, match="共 4 页"):
         play("journey", "5", now=NOW)
@@ -75,6 +75,15 @@ def test_first_chapter_waits_for_the_dungeon_win(game, play):
     page = play("journey", now=NOW)
     assert entry(page, "灵泉初醒") == "灵泉初醒 · 启灵 · 可领取"
     assert [link.command for link in page.inline_commands] == ["灵宠行纪领奖 灵泉初醒"]
+
+
+def test_current_discovery_chapter_links_to_its_real_route(game, play):
+    play("adopt", "青鸾", now=NOW)
+    sql(game[1], "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES ('u1',?,0,1)",
+        (journey.claim_id("journey_01"),))
+    page = play("journey", now=NOW)
+    assert "灵泉寻踪 · 启灵 · 进行中（0/1）" in page.text()
+    assert any(link.command == "灵宠历练 灵泉修行 伙伴 1" for link in page.inline_commands)
 
 
 def test_claim_grants_once_and_unlocks_the_next_chapter(game, play):
@@ -182,3 +191,24 @@ def test_unknown_target_is_rejected(tmp_path):
     target = edit_content(tmp_path, retarget)
     with pytest.raises(ValueError, match="unknown journey encounter"):
         Catalog.load(target)
+
+
+def test_journey_receipt_failure_rolls_back_reward_and_unlock(game, play, monkeypatch):
+    from .test_targeted_care import snapshot
+
+    play("adopt", "青鸾")
+    play("challenge", "青岚林")
+    before = snapshot(game[1])
+    original = Repository.record_duel_action
+
+    def fail(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError("journey receipt failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Repository, "record_duel_action", fail)
+        with pytest.raises(RuntimeError, match="journey receipt failure"):
+            play("journey_claim", "灵泉初醒", op="retry-journey")
+    assert snapshot(game[1]) == before
+    assert sql(game[1], "SELECT * FROM duel_actions WHERE operation_id='retry-journey'") == []
+    assert play("journey_claim", "灵泉初醒", op="retry-journey").title == "行纪奖励已领取"

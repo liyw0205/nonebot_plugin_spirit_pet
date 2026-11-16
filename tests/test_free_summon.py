@@ -43,7 +43,7 @@ def test_page_offers_the_free_pull_and_the_hub_reports_it(game, play):
     play("adopt", "青鸾", now=NOW)
     page = play("free_summon", now=NOW)
     assert page.lines[0] == "本周免费召唤：可领取。"
-    assert [link.command for link in page.inline_commands] == ["灵宠每周召唤领取"]
+    assert [link.command for link in page.inline_commands] == ["灵宠每周召唤领取 周 2027-01-11"]
     assert page.commands == ("灵宠列表", "我的灵宠", "灵宠图鉴")
     hub = next(text for text in play("objectives", now=NOW).lines if text.startswith("每周召唤："))
     assert hub == "每周召唤：可领取"

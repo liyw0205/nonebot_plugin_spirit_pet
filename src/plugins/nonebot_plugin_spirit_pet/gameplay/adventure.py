@@ -8,6 +8,7 @@ from .loadout import combatant, team_pets
 from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
+from .pet_targets import named_pet, split_selector, target_pet
 from . import battle_pass
 
 ADVENTURE_CODEX_PAGE_SIZE = 4
@@ -41,7 +42,7 @@ def _run_ambush(ctx: Context, route, pet, energy: int) -> Reply:
     ))
     if battle.winner == 0:
         lines.append("伏击者被击退，战利品落入你手中。")
-        lines.append(f"{player.uid_label}的{pet.name}：" + "，".join(grant(ctx, route.ambush_reward)))
+        lines.append(f"{player.uid_label}的{pet.name}：" + "，".join(grant(ctx, route.ambush_reward, pet_id=pet.pet_id)))
         from .farming import roll_seed_drop
         seed_id = roll_seed_drop(ctx, route.min_realm, "ambush")
         if seed_id:
@@ -53,22 +54,35 @@ def _run_ambush(ctx: Context, route, pet, energy: int) -> Reply:
         pet.energy -= lost
         lines.append(f"仓皇撤退，脱离了战斗；额外精力 -{lost}。")
         title = "历练伏击 · 败"
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     lines.append(f"精力 -{energy}。")
     reply = Reply(
         f"山海历练 · {route.name}", tuple(lines),
-        ("灵宠战报", "灵宠奇闻", "灵宠历练", "灵宠任务"),
+        ("灵宠战报", "灵宠奇闻", f"灵宠历练 伙伴 {pet.pet_id}", "灵宠任务"),
+        (InlineCommand(len(lines) - 1, "查看整备", f"灵宠整备 {pet.pet_id}"),),
     )
     record_battle(
         ctx, kind="pve", battle_key=f"ambush_{route.id}", battle_name=f"{route.name}伏击",
         battle=battle, capture=capture, reply=reply,
     )
+    _record_explore(ctx, route, pet, reply, ambush=True)
     return reply
 
 
+def _record_explore(ctx: Context, route, pet, reply: Reply, *, ambush: bool = False):
+    ctx.repo.record_duel_action(ctx.operation_id, ctx.user_id, ctx.now,
+        {"kind": "explore", "route_id": route.id, "pet_id": pet.pet_id, "ambush": ambush}, reply)
+
+
 def explore(ctx: Context, arg: str) -> Reply:
+    arg, selector = split_selector(arg)
     routes = tuple(ctx.content.exploration_routes.values())
     if not arg:
+        player = ctx.repo.player(ctx.user_id)
+        pet = named_pet(ctx, selector, "历练", refresh_energy=False) if selector else (
+            ctx.repo.pet(player.active_pet_id) if player and player.active_pet_id is not None else None
+        )
+        suffix = f" 伙伴 {pet.pet_id}" if pet else ""
         lines = []
         for route in routes:
             encounters = [ctx.content.encounters[key] for key in route.encounters]
@@ -99,7 +113,7 @@ def explore(ctx: Context, arg: str) -> Reply:
                           f"伏击概率：{ambush:.0%} · 胜利可获额外战利品，失利额外损失精力"))
         return Reply(
             "山海历练路线", tuple(lines),
-            tuple(f"灵宠历练 {route.name}" for route in routes)
+            tuple(f"灵宠历练 {route.name}{suffix}" for route in routes)
             + ("灵宠奇闻", "我的灵宠", "灵宠任务"),
         )
 
@@ -107,7 +121,7 @@ def explore(ctx: Context, arg: str) -> Reply:
     from . import adventure_travel
     if adventure_travel.state(ctx):
         raise GameError("山海远行进行中，请继续或退出当前行程后再历练。")
-    player, pet = ctx.player(), ctx.pet()
+    player, pet = ctx.player(), target_pet(ctx, selector, "历练")
     minimum = next(index for index, realm in enumerate(ctx.content.realms) if realm.id == route.min_realm)
     if pet.realm < minimum:
         realm = ctx.content.realms[minimum].name
@@ -116,7 +130,7 @@ def explore(ctx: Context, arg: str) -> Reply:
     ctx.check_action(player, pet, "explore", energy, ctx.config.spirit_pet_explore_cooldown)
     pet.energy -= energy
     player.last_explore = ctx.now
-    ctx.repo.invalidate_ready(ctx.user_id)
+    ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     advance(ctx, "explore")
     # One settlement per exploration: an ambush replaces the encounter roll
     # entirely, so discovery/echo semantics and task progress stay single-shot.
@@ -135,14 +149,17 @@ def explore(ctx: Context, arg: str) -> Reply:
     if discovered:
         lines.append("新奇闻已收入灵宠奇闻。")
         links.append(InlineCommand(len(lines) - 1, "查看收集奖励", "灵宠奇闻奖励"))
-    lines.extend(grant(ctx, encounter.reward))
+    lines.extend(grant(ctx, encounter.reward, pet_id=pet.pet_id))
     lines.append(f"精力 -{energy}。")
-    return Reply(
+    links.append(InlineCommand(len(lines) - 1, "查看整备", f"灵宠整备 {pet.pet_id}"))
+    reply = Reply(
         f"山海历练 · {route.name}",
         tuple(lines),
-        ("灵宠奇闻", "灵宠历练", "灵宠秘境", "灵宠任务"),
+        ("灵宠奇闻", f"灵宠历练 伙伴 {pet.pet_id}", "灵宠秘境", "灵宠任务"),
         tuple(links),
     )
+    _record_explore(ctx, route, pet, reply)
+    return reply
 
 
 def adventure_codex(ctx: Context, arg: str) -> Reply:

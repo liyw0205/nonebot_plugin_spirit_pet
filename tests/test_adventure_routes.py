@@ -37,7 +37,7 @@ def test_route_catalog_shows_choices_and_reward_ranges_without_spending_resource
     assert "奇遇概率：太虚观剑 43% · 幽庭渡魂 30% · 太虚残桥 27%" in reply.lines
     assert "奇遇概率：劫海采雷 28% · 天门问道 42% · 劫云古碑 31%" in reply.lines
     assert reply.commands[:3] == (
-        "灵宠历练 灵泉修行", "灵宠历练 星谷采集", "灵宠历练 古洞寻珍",
+        "灵宠历练 灵泉修行 伙伴 1", "灵宠历练 星谷采集 伙伴 1", "灵宠历练 古洞寻珍 伙伴 1",
     )
     assert player(game[1]) == before_player
     assert pet(game[1]) == before_pet

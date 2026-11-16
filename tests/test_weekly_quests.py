@@ -104,13 +104,14 @@ def seed_pvp_win(game, user, played_at, op, season_id="2027-01"):
         )
 
 
-def test_content_defines_fifteen_weekly_goals(game):
+def test_content_defines_seventeen_weekly_goals(game):
     quests = list(game[0].content.weekly_quests.values())
-    assert len(quests) == 15
+    assert len(quests) == 17
     assert {quest.metric for quest in quests} == {
         "weekly_pve_wins", "weekly_pvp_wins", "weekly_expedition_claims",
         "weekly_adventures", "weekly_stage_clears", "weekly_achievement_claims",
         "weekly_cuisine_orders", "weekly_cuisine_practice", "weekly_banquets",
+        "weekly_daily_claims", "weekly_active_days",
     }
     for quest in quests:
         assert quest.target > 0 and quest.description
@@ -128,13 +129,15 @@ def test_catalog_previews_without_an_account(game, play):
 def test_catalog_shows_the_week_and_zero_progress(game, play):
     account(game, play)
     listing = play("weekly_quests")
-    assert listing.title == "灵宠周常 1/3"
+    assert listing.title == "灵宠周常 1/4"
     assert listing.lines[0] == f"本周周期：{beijing_day(WEEK_START)} ~ {beijing_day(WEEK_END - 1)}（北京时间，周一 00:00 重置）"
     assert "秘境历练：0/5（未达成） · 灵石 800-800，锻灵矿 3-3" in listing.text()
     assert "论剑周赛：0/3（未达成） · 灵石 600-600，破境丹 1-1" in listing.text()
-    assert links(listing) == []
+    assert {command for _, _, command in links(listing)} == {
+        "灵宠秘境", "灵宠论剑榜", "灵宠行程", "灵宠历练", "灵宠关卡",
+    }
     assert listing.commands == ("灵宠周常 2", "灵宠任务", "灵宠周常赏")
-    assert play("weekly_quests", "2").title == "灵宠周常 2/3"
+    assert play("weekly_quests", "2").title == "灵宠周常 2/4"
 
 
 def test_weekly_metrics_count_only_the_current_week(game, play):
@@ -223,7 +226,7 @@ def test_real_food_activities_drive_weekly_claims_and_nine_goal_reward(game, pla
         parse_qs(urlparse(url).query)["command"][0]
         for url in re.findall(r"\]\((mqqapi://[^)]+)\)", markdown)
     }
-    assert "/灵宠周常领奖 膳房供货" in linked
+    assert f"/灵宠周常领奖 膳房供货 周 {week}" in linked
     assert not linked & buttons
     assert len(buttons) <= 4
 
@@ -272,7 +275,7 @@ def test_real_food_activities_drive_weekly_claims_and_nine_goal_reward(game, pla
         (WEEK_START,) * 6,
     )
     reward_page = play("weekly_rewards", now=banquet_time)
-    assert "已领取 9/15 项周常" in reward_page.lines[0]
+    assert "已领取 9/17 项周常" in reward_page.lines[0]
     assert "9 项 · 周行圆满" in reward_page.text()
     before_stones = player(game[1])["stones"]
     before_meal = items(game[1]).get("meal_lotus", 0)
@@ -301,7 +304,7 @@ def test_claim_grants_once_and_marks_the_week(game, play):
         seed_pve_win(game, "u1", NOW, f"wk-claim-{index}")
     listing = play("weekly_quests")
     assert "秘境历练：5/5（可领取）" in listing.text()
-    assert (1, "领取奖励", "灵宠周常领奖 秘境历练") in links(listing)
+    assert (1, "领取奖励", f"灵宠周常领奖 秘境历练 周 {beijing_day(WEEK_START)}") in links(listing)
 
     before = (player(game[1])["stones"], items(game[1]).get("forge_ore", 0))
     claimed = play("weekly_quest_claim", "秘境历练", op="wk-claim")

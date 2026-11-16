@@ -9,6 +9,8 @@ from .rewards import grant
 def refresh(ctx: Context, user_id: str | None = None):
     player = ctx.player(user_id)
     today = beijing_day(ctx.now)
+    if today < player.quest_day:
+        raise GameError("系统日期早于每日任务记录，请等待日期恢复。")
     if today > player.quest_day:
         # Only daily quests reset here: other one-time claim families share this table.
         daily = tuple(ctx.content.quests)
@@ -74,7 +76,13 @@ def _next_step(ctx: Context, event: str) -> tuple[str, str, str]:
 def quests(ctx: Context, arg: str) -> Reply:
     if arg:
         raise GameError("灵宠任务 不接受参数，直接发送即可。")
-    player = refresh(ctx)
+    player = ctx.repo.player(ctx.user_id)
+    if player is None:
+        return Reply("每日任务", ("尚未结契，先完成领养，再参加每日任务。",),
+                     ("灵宠帮助",), (InlineCommand(0, "开始领养", "灵宠领养 "),))
+    today = beijing_day(ctx.now)
+    if today < player.quest_day:
+        return Reply("每日任务", ("系统日期早于每日任务记录，请等待日期恢复。",), ("灵宠目标",))
     quest_ids = tuple(ctx.content.quests)
     placeholders = ",".join("?" for _ in quest_ids)
     rows = {
@@ -83,7 +91,7 @@ def quests(ctx: Context, arg: str) -> Reply:
             f" AND quest_id IN ({placeholders})",
             (player.user_id, *quest_ids),
         )
-    }
+    } if today == player.quest_day else {}
     lines = []
     links = []
     linked = set()
@@ -101,7 +109,7 @@ def quests(ctx: Context, arg: str) -> Reply:
             f" · 灵石 {reward.stones.minimum}-{reward.stones.maximum}，{items}"
         )
         if state == "可领取":
-            command = f"灵宠领奖 {quest.name}"
+            command = f"灵宠领奖 {quest.name} 日 {today}"
             links.append(InlineCommand(index, "领取奖励", command))
         elif state == "进行中":
             label, command, note = _next_step(ctx, quest.event)
@@ -114,20 +122,30 @@ def quests(ctx: Context, arg: str) -> Reply:
 
 
 def claim(ctx: Context, arg: str) -> Reply:
+    name, separator, day = arg.rpartition(" 日 ")
+    today = beijing_day(ctx.now)
+    if separator and day != today:
+        raise GameError("这条每日任务领取入口已经跨日，请重新查看灵宠任务。")
     player = refresh(ctx)
-    quest = named(ctx.content.quests, arg)
+    quest = named(ctx.content.quests, name if separator else arg)
     row = ctx.repo.conn.execute(
         "SELECT progress, claimed FROM quest_progress WHERE user_id=? AND quest_id=?",
         (player.user_id, quest.id),
     ).fetchone()
     if row is None or row["progress"] < quest.target:
         raise GameError("任务尚未完成。")
-    if row["claimed"]:
+    receipt_key = f"daily_claim_{today}_{quest.id}"
+    receipt = ctx.repo.conn.execute(
+        "SELECT 1 FROM quest_progress WHERE user_id=? AND quest_id=?", (player.user_id, receipt_key),
+    ).fetchone()
+    if row["claimed"] or receipt:
         raise GameError("该任务奖励今日已领取。")
     result = grant(ctx, quest.reward)
     ctx.repo.conn.execute(
         "UPDATE quest_progress SET claimed=1 WHERE user_id=? AND quest_id=?", (player.user_id, quest.id),
     )
+    ctx.repo.conn.execute("INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,1,1)",
+                          (player.user_id, receipt_key))
     # Battle pass EXP only once per day, when the whole daily board is claimed.
     daily = tuple(ctx.content.quests)
     placeholders = ", ".join("?" for _ in daily)
@@ -138,4 +156,7 @@ def claim(ctx: Context, arg: str) -> Reply:
     lines = [f"{quest.name}已完成。", *result]
     if done == len(daily) and battle_pass.claim_daily_clear(ctx, player.user_id):
         lines.append(f"今日任务全清，战令经验 +{battle_pass.ACTIVITY_EXP['daily_all_clear']}。")
-    return Reply("任务领奖", tuple(lines), ("灵宠任务", "灵宠主线", "灵宠目标"))
+    reply = Reply("任务领奖", tuple(lines), ("灵宠任务", "灵宠周常 4", "灵宠目标"))
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "daily_quest_claim", "day": today, "quest_id": quest.id}, reply)
+    return reply

@@ -8,6 +8,7 @@ WeeklyMetric = Literal[
     "weekly_pve_wins", "weekly_pvp_wins", "weekly_expedition_claims",
     "weekly_adventures", "weekly_stage_clears", "weekly_achievement_claims",
     "weekly_cuisine_orders", "weekly_cuisine_practice", "weekly_banquets",
+    "weekly_daily_claims", "weekly_active_days",
 ]
 
 

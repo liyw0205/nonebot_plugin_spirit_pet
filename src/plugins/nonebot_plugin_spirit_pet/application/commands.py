@@ -358,7 +358,7 @@ ACTIONS = {
     "arena_tier_claim": Command(tier_rewards.claim, True),
     "resonance": Command(resonance.resonance, True),
     "team_stage_challenge": Command(pve_stages.team_challenge, True),
-    "quests": Command(quests.quests),
+    "quests": Command(quests.quests, registered=False),
     "claim": Command(quests.claim, True),
     "expedition_catalog": Command(expeditions.catalog, True, registered=False),
     "expedition_history": Command(expedition_history.catalog, True, registered=False),

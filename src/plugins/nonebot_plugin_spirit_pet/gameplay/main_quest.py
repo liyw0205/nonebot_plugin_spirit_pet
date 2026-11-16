@@ -58,6 +58,10 @@ def _guidance(ctx: Context, quest):
         "pvp_wins": ("从论剑榜选择对手，积累真实胜场。", "灵宠论剑榜"),
         "expedition_claims": ("派遣伙伴并在归来后领取委托奖励。", "灵宠行程"),
         "tower_depth": ("查看万灵塔准入与下一层挑战。", "灵宠万灵塔"),
+        "journey_claims": ("完成行纪章节并领取本章奖励。", "灵宠行纪"),
+        "first_clear_claims": ("挑战不同秘境并领取首通奖励。", "灵宠秘境首通"),
+        "achievements_claimed": ("达成成就后领取一次性奖励。", "灵宠成就"),
+        "species_collected": ("收集不同种族，封存与归灵记录仍计入图鉴。", "灵宠每周召唤"),
     }
     if metric in routes:
         note, command = routes[metric]
@@ -216,8 +220,11 @@ def claim(ctx: Context, arg: str) -> Reply:
     lines.append(f"下一步：{following.name}。" if following else "主线已全部完成，感谢一路同行。")
     links = []
     if following:
-        value = _metric(ctx, player.user_id, following.metric)
-        lines.append(f"{following.description}（进度 {value}/{following.target}）")
+        following_value = _metric(ctx, player.user_id, following.metric)
+        lines.append(f"{following.description}（进度 {following_value}/{following.target}）")
         _append_guidance(ctx, following, lines, links)
     commands = ("灵宠主线", "灵宠任务") if following else ("灵宠周常", "灵宠目标")
-    return Reply("主线奖励已领取", tuple(lines), commands, tuple(links))
+    reply = Reply("主线奖励已领取", tuple(lines), commands, tuple(links))
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "main_quest_claim", "quest_id": quest.id, "value": value}, reply)
+    return reply

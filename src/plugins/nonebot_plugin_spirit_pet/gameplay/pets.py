@@ -52,6 +52,8 @@ def summon(ctx: Context, arg: str, free: bool = False) -> Reply:
     rare_drawn = False
     forced_guarantee = False
     draws = []
+    links = []
+    pet_ids = []
     for index in range(count):
         force_rare = guarantee_due and index == count - 1 and not rare_drawn
         entries = (
@@ -65,13 +67,20 @@ def summon(ctx: Context, arg: str, free: bool = False) -> Reply:
     for entry in draws:
         species = ctx.content.species[entry.species]
         pet = ctx.repo.create_pet(ctx.user_id, species.id, species.name, species.initial_affinity, ctx.now)
+        pet_ids.append(pet.pet_id)
         lines.append(f"编号 {pet.pet_id}：{pet.name}")
+        links.extend((InlineCommand(len(lines), "查看整备", f"灵宠整备 {pet.pet_id}"),
+                      InlineCommand(len(lines), "挑战同族幻影", f"灵宠图鉴试炼 挑战 {species.name} 伙伴 {pet.pet_id}")))
     if guarantee_due:
         lines.append(
             "十连珍稀保底触发。" if forced_guarantee else "本次十连已提前抽得珍稀灵宠，保底不追加。"
         )
     cost_line = "本次召唤不消耗灵石。" if free else f"灵石 -{cost}。"
-    return Reply("山海召唤", (cost_line, *lines), ("灵宠列表", "我的灵宠", "灵宠图鉴"))
+    reply = Reply("山海召唤", (cost_line, *lines), ("灵宠列表", "我的灵宠", "灵宠图鉴"), tuple(links))
+    if not free:
+        ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+            {"kind": "summon", "pet_ids": pet_ids, "stones": cost}, reply)
+    return reply
 
 
 def pet_list(ctx: Context, arg: str) -> Reply:

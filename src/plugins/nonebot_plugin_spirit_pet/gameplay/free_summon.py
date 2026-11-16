@@ -1,6 +1,6 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
-from ..utils.time import beijing_week
+from ..utils.time import beijing_day, beijing_week
 from . import weekly_quests
 from .pets import summon
 
@@ -15,6 +15,11 @@ def available(ctx: Context, user_id: str) -> bool:
 
 
 def _state(ctx: Context, user_id: str) -> str:
+    latest = ctx.repo.conn.execute(
+        "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id=?", (user_id, CLAIM),
+    ).fetchone()
+    if latest and latest["progress"] > beijing_week(ctx.now)[0]:
+        return "系统日期早于领取记录"
     return "可领取" if available(ctx, user_id) else "本周已领取"
 
 
@@ -22,7 +27,6 @@ def catalog(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("灵宠每周召唤 不接受参数，直接发送即可。")
     player = ctx.repo.player(ctx.user_id)
-    pool = ctx.content.pools["standard"]
     lines = [
         f"每周可免费召唤 {DRAW_COUNT} 只灵宠，不消耗灵石；标准池十连有珍稀保底。",
         "每周一 00:00（北京时间）重置，未领取不会累积。",
@@ -35,21 +39,29 @@ def catalog(ctx: Context, arg: str) -> Reply:
     state = _state(ctx, player.user_id)
     lines.insert(0, f"本周免费召唤：{state}。")
     links = ()
+    free_slots = ctx.config.spirit_pet_max_pets - ctx.repo.pet_counts(ctx.user_id)[0]
     if state == "可领取":
-        links = (InlineCommand(0, "领取免费十连", "灵宠每周召唤领取"),)
+        if free_slots < DRAW_COUNT:
+            lines.append(f"十连还差 {DRAW_COUNT - free_slots} 个空位，可先封存闲置伙伴。")
+            links = (InlineCommand(len(lines) - 1, "整理名册", "灵宠列表"),)
+        else:
+            links = (InlineCommand(0, "领取免费十连", f"灵宠每周召唤领取 周 {beijing_day(beijing_week(ctx.now)[0])}"),)
     lines.append(f"名册上限 {ctx.config.spirit_pet_max_pets} 只；召唤前请确认有空位。")
     return Reply("每周免费召唤", tuple(lines), PAGE_BUTTONS, links)
 
 
 def claim(ctx: Context, arg: str) -> Reply:
     player = ctx.player()
+    parts = arg.split()
+    if parts and (len(parts) != 2 or parts[0] != "周"):
+        raise GameError("格式：灵宠每周召唤领取 [周 日期]。")
+    weekly_quests.require_current_week(ctx, CLAIM, parts[1] if parts else "")
     if not available(ctx, player.user_id):
         raise GameError("本周免费召唤已领取，下周一再来。")
     reply = summon(ctx, str(DRAW_COUNT), free=True)
-    start, _ = beijing_week(ctx.now)
-    ctx.repo.conn.execute(
-        "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1) "
-        "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
-        (player.user_id, CLAIM, start),
-    )
-    return Reply("每周免费召唤", ("本周免费十连已领取。", *reply.lines), PAGE_BUTTONS)
+    weekly_quests.record_claim(ctx, CLAIM)
+    result = Reply("每周免费召唤", ("本周免费十连已领取。", *reply.lines), PAGE_BUTTONS,
+                   tuple(InlineCommand(link.line + 1, link.label, link.command) for link in reply.inline_commands))
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now,
+        {"kind": "free_summon", "week_start": beijing_week(ctx.now)[0]}, result)
+    return result

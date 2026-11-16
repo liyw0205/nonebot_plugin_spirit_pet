@@ -54,7 +54,7 @@ def split_selector(arg: str) -> tuple[str, str]:
     return text, ""
 
 
-def named_pet(ctx: Context, value: str, action: str):
+def named_pet(ctx: Context, value: str, action: str, *, refresh_energy: bool = True):
     """Resolve one in-roster pet by 编号 or exact name for a preparation action."""
     ctx.player()
     text = value.strip()
@@ -65,7 +65,8 @@ def named_pet(ctx: Context, value: str, action: str):
         target_id = pet_id(text)
         target = next((pet for pet in owned if pet.pet_id == target_id), None)
         if target is not None:
-            restore_energy(target, ctx.now, ctx.config.spirit_pet_energy_interval)
+            if refresh_energy:
+                restore_energy(target, ctx.now, ctx.config.spirit_pet_energy_interval)
             return target
         archived = ctx.repo.conn.execute(
             "SELECT name FROM pets WHERE user_id=? AND pet_id=? AND archived=1",
@@ -85,7 +86,8 @@ def named_pet(ctx: Context, value: str, action: str):
         if archived is not None:
             raise GameError(f"{archived['name']}已封存，请先复原后再{action}。")
         raise GameError(f"没有找到名为{text}的在册伙伴，请查看 灵宠列表。")
-    restore_energy(matches[0], ctx.now, ctx.config.spirit_pet_energy_interval)
+    if refresh_energy:
+        restore_energy(matches[0], ctx.now, ctx.config.spirit_pet_energy_interval)
     return matches[0]
 
 
