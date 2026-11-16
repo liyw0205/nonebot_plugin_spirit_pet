@@ -45,12 +45,55 @@ def test_catalog_preview_and_public_source_are_read_only(game, play):
     before = snapshot(game[1])
     reply = play("training")
     assert "观势破阵" in reply.text() and "灵粮" in reply.text()
+    unregistered = play("training", "预览 观势破阵", user="ghost")
+    assert "尚未结契" in unregistered.text()
+    assert any(link.command == "灵宠领养 " for link in unregistered.inline_commands)
+    assert sql(game[1], "SELECT * FROM players WHERE user_id='ghost'") == []
     assert snapshot(game[1]) == before
     prepare(play)
     before = snapshot(game[1])
     reply = play("training", "预览 观势破阵")
     assert "灵靶动作" in reply.text() and "风刃术" in reply.text()
     assert snapshot(game[1]) == before
+
+
+def test_training_prerequisites_keep_recovery_actions_and_message_contract(game, play):
+    play("adopt", "青鸾")
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+
+    page = play("training")
+    assert "尚未选择出战灵宠" in page.text()
+    assert {link.command for link in page.inline_commands} >= {"灵宠列表", "灵宠出战 "}
+    assert not any(command.startswith("灵宠连携演练 开始") for command in page.commands)
+
+    preview = play("training", "预览 观势破阵")
+    assert "尚未选择出战灵宠" in preview.text()
+    assert {link.command for link in preview.inline_commands} >= {"灵宠列表", "灵宠出战 "}
+    assert not any(command.startswith("灵宠连携演练 开始") for command in preview.commands)
+
+    plain, _ = _qq_segments(preview, Config(spirit_pet_qq_mode="text"))
+    assert "填写出战编号（/灵宠出战）" in plain
+    assert "mqqapi://" not in plain
+    _, native = _qq_segments(preview, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native["keyboard"]
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    links = {
+        parse_qs(urlparse(url).query)["command"][0].removeprefix("/")
+        for url in re.findall(r"\]\((mqqapi://[^)]+)\)", native["markdown"][0].data["markdown"].content)
+    }
+    assert buttons == set(preview.commands)
+    assert {"灵宠列表", "灵宠出战 "} <= links
+    assert not buttons & links
+
+    with pytest.raises(GameError, match="格式"):
+        play("training", "预览")
+    with pytest.raises(GameError, match="格式"):
+        play("training", "预览 观势破阵 多余")
 
 
 def test_catalog_requires_three_trials_and_real_shop_food(game):

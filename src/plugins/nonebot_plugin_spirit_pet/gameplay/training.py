@@ -220,6 +220,16 @@ def _sources(lines: list[str], links: list[InlineCommand]) -> None:
                   InlineCommand(len(lines) - 1, "携带灵术", "灵宠技能")))
 
 
+def _append_recovery(lines: list[str], links: list[InlineCommand], error: GameError) -> None:
+    """Keep prerequisite recovery actions when a read-only page cannot start."""
+    lines.append(str(error))
+    if error.reply is None:
+        return
+    line = len(lines) - 1
+    links.extend(InlineCommand(line, action.label, action.command)
+                 for action in error.reply.inline_commands)
+
+
 def page(ctx: Context) -> Reply:
     run = state(ctx)
     if run:
@@ -236,11 +246,17 @@ def page(ctx: Context) -> Reply:
         lines.append("尚未结契，先领养伙伴。")
         links.append(InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "))
     else:
+        player = ctx.repo.player(ctx.user_id)
         try:
             used = _quota(ctx)
             lines.append(f"今日演练已用{used}/{rule.daily_limit}局。")
         except GameError as exc:
             lines.append(str(exc))
+        if player.active_pet_id is None:
+            try:
+                ctx.pet()
+            except GameError as exc:
+                _append_recovery(lines, links, exc)
     return Reply(TITLE, tuple(lines), (TITLE + " 记录", "灵宠连携", "我的灵宠"), tuple(links))
 
 
@@ -267,7 +283,7 @@ def preview(ctx: Context, name: str) -> Reply:
             lines.append("携带灵术：" + ("、".join(s.name for s in player.skills) or "无（仍可普攻/护持）") + "。")
             _require_start(ctx)
         except GameError as exc:
-            lines.append(str(exc))
+            _append_recovery(lines, links, exc)
         else:
             commands.append(f"{TITLE} 开始 {trial.name}")
     return Reply(TITLE + " · " + trial.name, tuple(lines), (*commands, TITLE), tuple(links))
