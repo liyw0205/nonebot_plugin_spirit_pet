@@ -74,10 +74,45 @@ def _owned(ctx: Context, item_id: str) -> int:
     return int(row["quantity"]) if row else 0
 
 
+def overview(ctx: Context) -> Reply:
+    """Show every set's resonance state and keep the write action explicit."""
+    from . import equipment_set_rewards
+
+    player = ctx.repo.player(ctx.user_id)
+    user_id = player.user_id if player else ctx.user_id
+    active = equipment_set_rewards.active_set_ids(ctx, user_id)
+    lines = ("套装共鸣总览：已投入的阶数永久保留；只有当前出战伙伴穿齐时才生效。",)
+    links = []
+    for equipment_set in ctx.content.equipment_sets.values():
+        current = level(ctx, equipment_set.id, user_id)
+        if player is None:
+            state = "尚未结契"
+        elif current >= MAX_LEVEL:
+            state = "已满阶"
+        elif equipment_set.id in active:
+            tier = equipment_set.resonance[current]
+            state = f"可投入 · 下一阶 {_bonus_text(tier.bonuses.model_dump())} · 需要 {cost_text(ctx, tier)}"
+        else:
+            state = "需先由当前出战伙伴穿齐"
+        lines += (f"{equipment_set.name}：{current}/{MAX_LEVEL} 阶 · {state}",)
+        line = len(lines) - 1
+        links.append(InlineCommand(line, "查看套装", f"灵宠套装 {equipment_set.name}"))
+        if player is not None and equipment_set.id in active and current < MAX_LEVEL:
+            links.append(InlineCommand(
+                line, "投入共鸣", f"灵宠套装共鸣 {equipment_set.name}",
+            ))
+    if player is None:
+        commands = ("灵宠帮助",)
+        links = [InlineCommand(0, "开始领养", "灵宠领养 "), *links]
+    else:
+        commands = ("灵宠套装", "灵宠目标", "我的灵宠")
+    return Reply("套装共鸣", lines, commands, tuple(links))
+
+
 def resonate(ctx: Context, arg: str) -> Reply:
     value = arg.strip()
     if not value:
-        raise GameError("格式：灵宠套装共鸣 套装名。")
+        return overview(ctx)
     equipment_set = named(ctx.content.equipment_sets, value)
     player = ctx.player()
     pet = ctx.pet()

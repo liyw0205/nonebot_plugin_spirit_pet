@@ -126,6 +126,7 @@ def test_every_hub_link_points_at_its_own_row(game, play):
         "灵宠战令": "赛季战令",
         "灵宠排行奖励": "万灵榜奖励",
         "灵宠套装": "套装完成奖励",
+        "灵宠套装共鸣": "套装共鸣",
         "灵宠境界赏": "境界里程碑奖励",
     }
     for link in reply.inline_commands:

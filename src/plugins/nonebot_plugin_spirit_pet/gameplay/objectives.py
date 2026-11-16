@@ -683,7 +683,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_bloodline_milestone_line(ctx, player.user_id), "灵宠血脉赏"),
         (_lineage_awakening_line(ctx, player.user_id), "灵宠分支赏"),
         (_equipment_set_line(ctx, player.user_id), "灵宠套装"),
-        (_equipment_set_resonance_line(ctx, player.user_id), "灵宠套装"),
+        (_equipment_set_resonance_line(ctx, player.user_id), "灵宠套装共鸣"),
         (gear_words.objective_line(ctx, player.user_id), "灵宠词条重铸"),
         (_skill_mastery_line(ctx, player.user_id), "灵宠灵术赏"),
         (_affinity_milestone_line(ctx, player.user_id), "灵宠亲密赏"),

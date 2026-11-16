@@ -42,9 +42,48 @@ def equip_wind_set(play):
 def test_content_and_route_are_wired(game, play):
     assert all(len(entry.resonance) == 3 for entry in game[0].content.equipment_sets.values())
     assert handlers._parse("灵宠套装共鸣 青岚风铃") == ("equipment_set_resonate", "青岚风铃")
-    assert "灵宠套装共鸣 套装名：" in play("help", "灵物与灵术").text()
-    with pytest.raises(GameError, match="灵宠"):
+    help_text = play("help", "灵物与灵术").text()
+    assert "灵宠套装共鸣：" in help_text
+    assert "灵宠套装共鸣 套装名：" in help_text
+    with pytest.raises(GameError, match="还没有灵宠"):
         play("equipment_set_resonate", "", user="u9")
+    with pytest.raises(GameError, match="还没有灵宠"):
+        play("equipment_set_resonate", "青岚风铃", user="u9")
+
+
+def test_no_arg_overview_is_read_only_and_links_each_next_step(game, play):
+    account(game, play)
+    equip_wind_set(play)
+    page = play("equipment_set_resonate")
+
+    assert page.title == "套装共鸣"
+    assert "青岚风铃：0/3 阶 · 可投入" in page.text()
+    assert "山岳镇魂：0/3 阶 · 需先由当前出战伙伴穿齐" in page.text()
+    assert "灵宠套装共鸣 青岚风铃" in [link.command for link in page.inline_commands]
+    assert all(handlers._parse(link.command) is not None for link in page.inline_commands)
+    assert sql(game[1], "SELECT quest_id FROM quest_progress WHERE quest_id LIKE 'equipment_set_resonance_%'") == []
+
+
+def test_resonance_overview_keeps_qq_links_out_of_buttons_and_onebot_readable(game, play):
+    account(game, play)
+    equip_wind_set(play)
+    page = play("equipment_set_resonate")
+
+    rendered = _qq_segments(page, Config(spirit_pet_qq_mode="text"))[0]
+    assert "【套装共鸣】" in rendered
+    assert "投入共鸣（/灵宠套装共鸣 青岚风铃）" in rendered
+
+    _, native = _qq_segments(page, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native
+        if segment.type == "keyboard"
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    links = {link.command for link in page.inline_commands}
+    assert buttons == set(page.commands)
+    assert not buttons & links
 
 
 def test_unregistered_resonance_is_read_only(game, play):
