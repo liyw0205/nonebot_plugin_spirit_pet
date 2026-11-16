@@ -74,6 +74,39 @@ def test_catalog_shows_rewards_and_progress(game, play):
     assert not {command for _, _, command in links(listing)} & set(listing.commands)
 
 
+def test_catalog_recovers_a_registered_player_without_an_active_pet(game, play):
+    day = now_for(game, 0)
+    play("adopt", "青鸾", now=day)
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+
+    listing = play("daily_dungeon", now=day)
+    assert "尚未选择出战伙伴，请先从名册调整出战。" in listing.text()
+    assert (4, "填写出战编号", "灵宠出战 ") in links(listing)
+    assert not any(command.startswith("灵宠挑战") for _, _, command in links(listing))
+
+    plain, _ = _qq_segments(listing, Config(spirit_pet_qq_mode="text"))
+    assert "填写出战编号（/灵宠出战）" in plain
+    assert "mqqapi://" not in plain
+    _, native = _qq_segments(listing, Config(spirit_pet_qq_mode="native"))
+    buttons = {
+        button.action.data.removeprefix("/")
+        for segment in native
+        if segment.type == "keyboard"
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    }
+    inline = {link.command for link in listing.inline_commands}
+    assert buttons == set(listing.commands)
+    assert not buttons & inline
+
+
+def test_catalog_rejects_arguments_without_creating_an_account(game, play):
+    with pytest.raises(GameError, match="不接受参数"):
+        play("daily_dungeon", "多余", user="u9", now=NOW)
+    assert not sql(game[1], "SELECT * FROM players WHERE user_id='u9'")
+
+
 def test_first_win_unlocks_the_first_claim_and_claiming_pays_once(game, play):
     day = now_for(game, 0)
     play("adopt", "青鸾", now=day)

@@ -73,6 +73,8 @@ def _state(ctx: Context, user_id: str, claim_id: str, wins: int) -> str:
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
+    if arg.strip():
+        raise GameError("灵宠今日秘境不接受参数，请直接查看今日轮换。")
     dungeon = featured_dungeon(ctx.content, ctx.now)
     realm = next(item.name for item in ctx.content.realms if item.id == dungeon.min_realm)
     lines = [f"今日秘境：{dungeon.name} · {realm}起 · 精力 {dungeon.energy}"]
@@ -101,7 +103,11 @@ def catalog(ctx: Context, arg: str) -> Reply:
             ))
     lines.append("每日 00:00（北京时间）轮换一处单人秘境，达成后回到本页领奖。")
     minimum = next(index for index, item in enumerate(ctx.content.realms) if item.id == dungeon.min_realm)
-    if any(pet.realm >= minimum for pet in ctx.repo.active_pets(player.user_id)):
+    active = ctx.repo.active_pets(player.user_id)
+    if not active:
+        lines.append("尚未选择出战伙伴，请先从名册调整出战。")
+        links.insert(0, InlineCommand(len(lines) - 1, "填写出战编号", "灵宠出战 "))
+    elif any(pet.realm >= minimum for pet in active):
         links.insert(0, InlineCommand(0, "前往挑战", f"灵宠挑战 {dungeon.name}"))
     else:
         lines.append(f"出战伙伴尚未达到{realm}，可先提升境界，或查看其他秘境。")
