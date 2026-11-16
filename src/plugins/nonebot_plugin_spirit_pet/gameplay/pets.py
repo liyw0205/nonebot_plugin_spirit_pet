@@ -98,7 +98,9 @@ def pet_list(ctx: Context, arg: str) -> Reply:
             f"{ctx.content.realms[pet.realm].name} {pet.layer}层{activity}"
         )
         if pet.pet_id not in active_ids:
-            inline_commands.append(InlineCommand(len(lines) - 1, "设为出战", f"灵宠出战 {pet.pet_id}"))
+            inline_commands.append(InlineCommand(len(lines) - 1, "切换领队", f"灵宠切换 {pet.pet_id}"))
+        else:
+            inline_commands.append(InlineCommand(len(lines) - 1, "查看整备", f"灵宠整备 {pet.pet_id}"))
     co_training_partner = available_co_training_partner(ctx, expeditions, {pet.pet_id for pet in selected})
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")
@@ -246,11 +248,16 @@ def lineup(ctx: Context, arg: str) -> Reply:
     ctx.player()
     if not arg:
         active = ctx.repo.active_pets(ctx.user_id)
+        links = tuple(
+            InlineCommand(index - 1, "查看整备", f"灵宠整备 {pet.pet_id}")
+            for index, pet in enumerate(active, 1)
+        )
         return Reply(
             "灵宠出战阵容",
             tuple(f"{index}. {pet.name}（编号 {pet.pet_id} · {ctx.content.species[pet.species_id].name}）"
                   for index, pet in enumerate(active, 1)),
             (f"灵宠出战 {' '.join(str(pet.pet_id) for pet in active)}", "灵宠列表"),
+            links,
         )
     parts = [part for part in arg.replace("，", " ").replace(",", " ").split() if part]
     if not 1 <= len(parts) <= 3 or any(not part.isdecimal() for part in parts):
