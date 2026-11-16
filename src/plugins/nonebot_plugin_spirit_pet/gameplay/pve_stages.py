@@ -71,7 +71,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
             f"（每 {ctx.content.enemies[key].skill_every} 次行动施展）"
             for key in stage.enemies if ctx.content.enemies[key].signature_skill
         )
-        return Reply(f"关卡 {stage.order} · {stage.name}", (
+        lines = (
             stage.description,
             f"进度：{progress}",
             stage_stars.detail_line(ctx, ctx.user_id, stage),
@@ -82,7 +82,20 @@ def catalog(ctx: Context, arg: str) -> Reply:
             *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
               for key, bounds in reward.items.items()),
             "每位道友每关仅领取一次首通奖励；已通关者可组队助战。",
-        ), (f"{'灵宠组队关卡' if stage.team else '灵宠挑战关卡'} {stage.order}", "灵宠关卡"))
+        )
+        command = f"{'灵宠组队关卡' if stage.team else '灵宠挑战关卡'} {stage.order}"
+        if progress == "未解锁":
+            previous = ctx.content.stages.get(stage.previous_id)
+            lines += (f"请先通关前置关卡「{previous.name}」后再挑战。",) if previous else (
+                "该关卡尚未解锁，请先完成前置进度。",
+            )
+            return Reply(f"关卡 {stage.order} · {stage.name}", lines, ("灵宠关卡",))
+        if progress == "尚未结契":
+            return Reply(f"关卡 {stage.order} · {stage.name}", lines, ("灵宠关卡", "灵宠帮助"))
+        return Reply(
+            f"关卡 {stage.order} · {stage.name}", lines, (command, "灵宠关卡"),
+            (InlineCommand(1, "前往挑战", command),),
+        )
     page = paginate(entries, arg, "灵宠关卡", "灵宠关卡")
     progress = _progress_labels(ctx, entries)
     lines, links = [], []

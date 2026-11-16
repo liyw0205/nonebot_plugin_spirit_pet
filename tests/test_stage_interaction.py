@@ -5,7 +5,7 @@ import pytest
 
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
-from nonebot_plugin_spirit_pet.domain.models import GameError
+from nonebot_plugin_spirit_pet.domain.models import GameError, InlineCommand
 
 from .support import sql
 from .test_pve_stages import account
@@ -51,6 +51,31 @@ def test_fresh_account_links_only_openable_rows(game, play):
     button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
     assert button_commands == {"灵宠关卡 2"}
     assert markdown_links(message) == [("前往挑战", "/灵宠挑战关卡 1")]
+
+
+def test_locked_and_unregistered_stage_details_do_not_offer_challenge(game, play):
+    account(game, play, "u1")
+    locked = play("stage_catalog", "月影追猎", user="u1")
+    assert "进度：未解锁" in locked.text()
+    assert "请先通关前置关卡" in locked.text()
+    assert locked.commands == ("灵宠关卡",)
+    assert not locked.inline_commands
+
+    unregistered = play("stage_catalog", "青木试锋", user="u9")
+    assert "进度：尚未结契" in unregistered.text()
+    assert unregistered.commands == ("灵宠关卡", "灵宠帮助")
+    assert not unregistered.inline_commands
+
+
+def test_open_stage_detail_uses_blue_challenge_link_without_button_duplicate(game, play):
+    account(game, play, "u1")
+    detail = play("stage_catalog", "青木试锋", user="u1")
+    assert detail.commands[0] == "灵宠挑战关卡 1"
+    assert detail.inline_commands == (InlineCommand(1, "前往挑战", "灵宠挑战关卡 1"),)
+    _, message = _qq_segments(detail, Config(spirit_pet_qq_mode="native"))
+    assert markdown_links(message) == [("前往挑战", "/灵宠挑战关卡 1")]
+    button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
+    assert button_commands == {"灵宠关卡"}
 
 
 def test_cleared_and_newly_opened_rows_both_link_replay_runs(game, play):
