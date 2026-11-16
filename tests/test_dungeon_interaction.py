@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
 
+from .support import sql
 from .test_pve_stages import account
 
 
@@ -77,7 +78,30 @@ def test_detail_reply_still_offers_its_run_entry(game, play):
     detail = play("dungeons", dungeon.name)
     assert detail.title == dungeon.name
     assert detail.commands[0] == f"灵宠挑战 {dungeon.name}"
-    assert not detail.inline_commands
+    assert detail.inline_commands[0].command == f"灵宠挑战 {dungeon.name}"
+    _, message = _qq_segments(detail, Config(spirit_pet_qq_mode="native"))
+    assert markdown_links(message) == [("前往挑战", f"/灵宠挑战 {dungeon.name}")]
+    button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
+    assert button_commands == {"我的灵宠", "灵宠秘境"}
+
+
+def test_detail_recovery_entries_hide_challenge_for_unregistered_and_no_active(game, play):
+    dungeon = next(item for item in ordered_dungeons(game) if not item.team)
+    unregistered = play("dungeons", dungeon.name, user="u9")
+    assert "尚未结契" in unregistered.text()
+    assert unregistered.commands == ("灵宠帮助", "灵宠秘境")
+    assert [link.command for link in unregistered.inline_commands] == ["灵宠领养 "]
+
+    account(game, play, "u1")
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+    no_active = play("dungeons", dungeon.name, user="u1")
+    assert "尚未选择出战伙伴" in no_active.text()
+    assert no_active.commands == ("灵宠列表", "灵宠秘境")
+    assert [link.command for link in no_active.inline_commands] == ["灵宠出战 "]
+    _, message = _qq_segments(no_active, Config(spirit_pet_qq_mode="native"))
+    button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
+    assert button_commands == set(no_active.commands)
 
 
 def test_degraded_text_keeps_readable_detail_without_mqqapi(game, play):

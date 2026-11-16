@@ -198,14 +198,32 @@ def dungeons(ctx: Context, arg: str) -> Reply:
         reward = dungeon.reward
         realm = next(realm.name for realm in ctx.content.realms if realm.id == dungeon.min_realm)
         command = "灵宠组队挑战" if dungeon.team else "灵宠挑战"
-        return Reply(dungeon.name, (
+        lines = (
             f"{'组队' if dungeon.team else '单人'} · {realm}起 · 每只灵宠精力 {dungeon.energy}",
             *(_enemy_detail(ctx, key) for key in dungeon.enemies),
             f"胜利：修为 {reward.exp.minimum}-{reward.exp.maximum}"
             f" · 灵石 {reward.stones.minimum}-{reward.stones.maximum}",
             *(f"{ctx.content.items[key].name}：{bounds.minimum}-{bounds.maximum}"
               for key, bounds in reward.items.items()),
-        ), (f"{command} {dungeon.name}", "我的灵宠", "灵宠秘境"))
+        )
+        player = ctx.repo.player(ctx.user_id)
+        challenge = f"{command} {dungeon.name}"
+        if player is None:
+            lines += ("尚未结契，先完成领养后再挑战。",)
+            return Reply(
+                dungeon.name, lines, ("灵宠帮助", "灵宠秘境"),
+                (InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "),),
+            )
+        if not ctx.repo.active_pets(ctx.user_id):
+            lines += ("尚未选择出战伙伴，请先从名册调整出战。",)
+            return Reply(
+                dungeon.name, lines, ("灵宠列表", "灵宠秘境"),
+                (InlineCommand(len(lines) - 1, "填写出战编号", "灵宠出战 "),),
+            )
+        return Reply(
+            dungeon.name, lines, (challenge, "我的灵宠", "灵宠秘境"),
+            (InlineCommand(0, "前往挑战", challenge),),
+        )
     entries = sorted(ctx.content.dungeons.values(), key=lambda dungeon: (
         next(index for index, realm in enumerate(ctx.content.realms) if realm.id == dungeon.min_realm),
         dungeon.team, dungeon.id,
