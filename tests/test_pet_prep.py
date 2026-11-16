@@ -306,6 +306,40 @@ def test_unregistered_prep_never_creates_an_account(game, play):
     assert sql(game[1], "SELECT * FROM players WHERE user_id='u9'") == []
 
 
+def test_prep_without_an_active_pet_returns_recovery_links(game, play):
+    account(play)
+    sql(game[1], "DELETE FROM active_pet_slots WHERE user_id='u1'")
+    sql(game[1], "UPDATE players SET active_pet_id=NULL WHERE user_id='u1'")
+    before = state(game[1])
+
+    with pytest.raises(GameError) as rejected:
+        play("pet_prep", "", now=NOW)
+
+    reply = rejected.value.reply
+    assert reply is not None and reply.title == "选择伙伴"
+    assert [link.command for link in reply.inline_commands] == ["灵宠列表", "灵宠出战 "]
+    plain, _ = _qq_segments(reply, Config(spirit_pet_qq_mode="text"))
+    assert "查看灵宠名册（/灵宠列表）" in plain
+    assert "填写出战编号（/灵宠出战）" in plain
+    assert "mqqapi://" not in plain
+    _, native = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    assert not any(segment.type == "keyboard" for segment in native)
+    assert state(game[1]) == before
+    assert sql(game[1], "SELECT active_pet_id FROM players WHERE user_id='u1'") == [
+        {"active_pet_id": None},
+    ]
+
+
+def test_prep_rejects_an_invalid_target_without_writing(game, play):
+    account(play)
+    before = state(game[1])
+
+    with pytest.raises(GameError, match="没有找到名为不存在的在册伙伴"):
+        play("pet_prep", "不存在", now=NOW)
+
+    assert state(game[1]) == before
+
+
 def test_alias_parses_and_help_mentions_it():
     assert _parse("灵宠整备 3") == ("pet_prep", "3")
     assert _parse("灵宠整备") == ("pet_prep", "")
