@@ -64,6 +64,16 @@ def _command(run: dict, action: str) -> str:
     return f"{TITLE} {action} 局 {run['run_id']} 步 {len(run['history']) + 1}"
 
 
+def _append_recovery(lines: list[str], links: list[InlineCommand], error: GameError) -> None:
+    """Keep prerequisite recovery actions visible on read-only course pages."""
+    lines.append(str(error))
+    if error.reply is None:
+        return
+    line = len(lines) - 1
+    links.extend(InlineCommand(line, action.label, action.command)
+                 for action in error.reply.inline_commands)
+
+
 def _record(ctx: Context, run: dict, reply: Reply) -> Reply:
     ctx.repo.record_play_course_action(ctx.operation_id, ctx.user_id, ctx.now,
                                       {**run, "updated_at": ctx.now}, reply)
@@ -82,11 +92,12 @@ def _run_page(ctx: Context, run: dict, prefix: tuple[str, ...] = ()) -> Reply:
              "每段最多换到相邻一路；采果耐力-1，矮栏-1，高栏-2，草坪+2（不超过上限）。",
              *_map(run["course"])]
     commands = []
+    links = []
     try:
         _time(ctx, run)
         _partner(ctx, run)
     except GameError as exc:
-        lines.append(str(exc))
+        _append_recovery(lines, links, exc)
     else:
         lines.append(f"第 {index + 1} 段可达路线：")
         for lane, tile in enumerate(run["course"]["rows"][index]):
@@ -98,7 +109,7 @@ def _run_page(ctx: Context, run: dict, prefix: tuple[str, ...] = ()) -> Reply:
             lines.append(f"{LANES[lane]} · {TILES[tile]} · {effect}" + ("，采果得分 +15。" if tile == "fruit" else "。"))
             commands.append(_command(run, "前进 " + LANES[lane]))
     lines.append("已付开局精力；中途离线不自动结算，退出不退费、不获成长或精通。")
-    links = [InlineCommand(len(lines) - 1, "退出本局", _command(run, "退出"))]
+    links.append(InlineCommand(len(lines) - 1, "退出本局", _command(run, "退出")))
     lines.append("原伙伴派遣或封存时暂停；归来或复原后可继续。")
     links.extend((InlineCommand(len(lines) - 1, "查看行程", "灵宠行程"),
                   InlineCommand(len(lines) - 1, "查看封存库", "灵宠封存库")))
@@ -119,10 +130,16 @@ def page(ctx: Context) -> Reply:
         lines.append("尚未结契，先领养伙伴。")
         links.append(InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "))
     else:
+        player = ctx.repo.player(ctx.user_id)
         try:
             play_games.require_day(ctx)
         except GameError as exc:
             lines.append(str(exc))
+        if player.active_pet_id is None:
+            try:
+                ctx.pet()
+            except GameError as exc:
+                _append_recovery(lines, links, exc)
     return Reply(TITLE, tuple(lines), (TITLE + " 记录", "灵宠嬉戏", "我的灵宠"), tuple(links))
 
 
@@ -153,7 +170,7 @@ def preview(ctx: Context, name: str) -> Reply:
             if _energy(ctx, pet) < ENERGY:
                 raise GameError(f"{pet.name}精力不足：当前 {_energy(ctx, pet)}，开局需要 {ENERGY}。")
         except GameError as exc:
-            lines.append(str(exc))
+            _append_recovery(lines, links, exc)
         else:
             commands.append(f"{TITLE} 出发 {course.name}")
     return Reply(TITLE + " · " + course.name, tuple(lines), (*commands, TITLE, "我的灵宠"), tuple(links))
