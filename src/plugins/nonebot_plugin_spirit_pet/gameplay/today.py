@@ -24,6 +24,7 @@ from . import (
     checkin_rewards,
     codex_trials,
     daily_assignment,
+    daily_assignment_chain,
     daily_dungeon,
     daily_shop,
     drill,
@@ -98,6 +99,17 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         claimable.append(_entry(
             CLAIM, f"今日课题 {len(assignments)} 项已达标", "每天只能领其中一项", "灵宠课题领奖",
         ))
+    chain = daily_assignment_chain.active(ctx, owner)
+    if chain is not None:
+        if daily_assignment_chain._gap(chain, daily_assignment_chain.day_ordinal(ctx.now)):
+            pending.append(_entry(
+                TODO, "课题连章已断档", "打开连章页面结算失败或重新开始", "灵宠课题连章",
+            ))
+        elif chain["count"] < daily_assignment_chain.DAYS:
+            pending.append(_entry(
+                TODO, f"课题连章第 {chain['count'] + 1}/{daily_assignment_chain.DAYS} 日",
+                "完成今日课题后自动计入连章", "灵宠课题连章",
+            ))
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(
             TODO, "今日还没签到", "签到累计连续天数并给灵石与灵粮", "灵宠签到",

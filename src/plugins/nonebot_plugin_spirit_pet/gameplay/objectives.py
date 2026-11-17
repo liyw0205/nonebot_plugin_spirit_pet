@@ -1,7 +1,7 @@
 from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import beijing_day, season_bounds
-from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
+from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_assignment_chain, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
 from . import banquet, banquet_rewards, cooking_rewards, farm_progress
 from . import weekly_rewards
 from . import daily_shop_rewards
@@ -426,6 +426,10 @@ def _assignment_line(ctx: Context, user_id: str) -> str:
     return "今日课题：暂无可领 · 今日三项任选其一"
 
 
+def _assignment_chain_line(ctx: Context, user_id: str) -> str:
+    return daily_assignment_chain.objective_line(ctx, user_id)
+
+
 def _title_line(ctx: Context, user_id: str) -> str:
     held = titles.earned(ctx, user_id)
     holder = held[-1][0] if held else None
@@ -678,6 +682,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_adventure_collection_line(ctx, player.user_id), "灵宠奇闻奖励"),
         (_season_line(ctx, player.user_id), "灵宠赛季任务"),
         (_assignment_line(ctx, player.user_id), "灵宠课题"),
+        (_assignment_chain_line(ctx, player.user_id), "灵宠课题连章"),
         (_codex_line(ctx, player.user_id), "灵宠图鉴奖励"),
         (_stage_star_line(ctx, player.user_id), "灵宠关卡星级"),
         (stage_tactics.objective_line(ctx, player.user_id), "灵宠关卡战术"),

@@ -176,7 +176,10 @@ def claim(ctx: Context, arg: str) -> Reply:
         "ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress, claimed=1",
         (player.user_id, CLAIM, day_ordinal(ctx.now) * 10 + index),
     )
+    from . import daily_assignment_chain
+
+    chain_lines = daily_assignment_chain.record_claim(ctx, assignment)
     return Reply("今日课题奖励", (
-        f"{assignment.name} · {assignment.description}", *result,
+        f"{assignment.name} · {assignment.description}", *result, *chain_lines,
         "今日其余课题已作废，次日 00:00 换新。",
     ), ("灵宠课题", "灵宠任务", "灵宠目标"))

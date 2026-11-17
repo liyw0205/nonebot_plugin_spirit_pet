@@ -46,6 +46,12 @@ def _contracts_read_only(argument: str) -> bool:
     )
 
 
+def _assignment_chain_read_only(argument: str) -> bool:
+    """Only the catalogue and history views are safe deferred reads."""
+    parts = argument.split()
+    return not parts or parts[0] == "记录"
+
+
 class Game:
     def __init__(self, store: Store, config: Config, rng=None, content: Catalog | None = None):
         self.store = store
@@ -83,6 +89,8 @@ class Game:
             action == "market" and _market_read_only(argument)
         ) or (
             action == "contracts" and _contracts_read_only(argument)
+        ) or (
+            action == "daily_assignment_chain" and _assignment_chain_read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):
