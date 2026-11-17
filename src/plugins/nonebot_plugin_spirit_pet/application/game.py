@@ -32,6 +32,20 @@ def _market_read_only(argument: str) -> bool:
     )
 
 
+def _contracts_read_only(argument: str) -> bool:
+    """Keep contract discovery and previews out of the state-saving path."""
+    parts = argument.split()
+    if not parts:
+        return True
+    if parts[0] != "组合":
+        return False
+    if len(parts) == 1 or (len(parts) == 2 and parts[1].isdecimal()):
+        return True
+    return (len(parts) == 5 and parts[1] == "预览") or (
+        len(parts) == 2 and parts[1] == "记录"
+    )
+
+
 class Game:
     def __init__(self, store: Store, config: Config, rng=None, content: Catalog | None = None):
         self.store = store
@@ -67,6 +81,8 @@ class Game:
         timestamp = int(time.time()) if now is None else now
         read_only = action in READ_ONLY_ACTIONS or (
             action == "market" and _market_read_only(argument)
+        ) or (
+            action == "contracts" and _contracts_read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):
