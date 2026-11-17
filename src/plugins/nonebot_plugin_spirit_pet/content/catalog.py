@@ -1242,8 +1242,13 @@ class Catalog:
                 raise ValueError("convoy route reward value exceeds the 360-stone budget")
 
     def _validate_training(self):
-        if len(self.training_trials) != 3:
-            raise ValueError("training needs exactly three trials")
+        if sum(trial.rule is None for trial in self.training_trials.values()) != 3:
+            raise ValueError("training needs exactly three basic trials")
+        if sum(trial.rule is not None for trial in self.training_trials.values()) != 2:
+            raise ValueError("training needs exactly two advanced trials")
+        for trial in self.training_trials.values():
+            if trial.rule is not None and (trial.rule.ore != 1 or trial.rule.daily_limit != self.training_rule.daily_limit):
+                raise ValueError("advanced training needs ore and shares the daily quota")
         rhythms = [tuple(trial.moves) for trial in self.training_trials.values()]
         if len(set(rhythms)) != len(rhythms):
             raise ValueError("training trials need distinct rhythms")

@@ -411,7 +411,7 @@ def _choose_revisit(ctx: Context, run: dict, pet, option_id: str) -> Reply:
         reply = Reply("山海重游完成", tuple(lines), (TITLE, "灵宠背包"),
                       (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),
                        InlineCommand(0, "同心合练", "灵宠同心"),
-                       InlineCommand(0, "灵术演练", "灵宠连携演练")))
+                       InlineCommand(0, "灵术演练", f"灵宠连携演练 伙伴 {pet.pet_id}")))
     else:
         reply = _run_page(ctx, run, (scene.name + " · " + option.label, *rewards))
     return _record(ctx, run, reply)

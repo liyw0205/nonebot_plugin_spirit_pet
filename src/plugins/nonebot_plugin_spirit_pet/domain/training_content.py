@@ -7,6 +7,17 @@ from .content import Definition, Identifier, Name
 TrainingMove = Literal["probe", "strike", "brace", "charge", "burst"]
 
 
+class TrainingRule(Definition):
+    energy: Annotated[int, Field(ge=12, le=20)]
+    food: Annotated[int, Field(ge=1, le=2)]
+    ore: Annotated[int, Field(ge=0, le=1)] = 0
+    daily_limit: Annotated[int, Field(ge=1, le=2)]
+    proficiency_per_cast: Annotated[int, Field(ge=1, le=3)]
+    proficiency_cap: Annotated[int, Field(ge=1, le=12)]
+    win_bond: Annotated[int, Field(ge=1, le=6)]
+    loss_bond: Annotated[int, Field(ge=0, le=1)]
+
+
 class TrainingTrial(Definition):
     id: Identifier
     name: Name
@@ -15,6 +26,7 @@ class TrainingTrial(Definition):
     defense: Annotated[float, Field(ge=0.15, le=0.45)]
     pressure: Annotated[float, Field(ge=0.15, le=0.35)]
     moves: list[TrainingMove] = Field(min_length=5, max_length=5)
+    rule: TrainingRule | None = None
 
     @model_validator(mode="after")
     def rhythm(self):
@@ -28,13 +40,3 @@ class TrainingTrial(Definition):
         if not {"strike", "charge", "burst"}.issubset(self.moves):
             raise ValueError("training trial needs strike and a charge/burst pair")
         return self
-
-
-class TrainingRule(Definition):
-    energy: Annotated[int, Field(ge=12, le=20)]
-    food: Annotated[int, Field(ge=1, le=2)]
-    daily_limit: Annotated[int, Field(ge=1, le=2)]
-    proficiency_per_cast: Annotated[int, Field(ge=1, le=2)]
-    proficiency_cap: Annotated[int, Field(ge=1, le=8)]
-    win_bond: Annotated[int, Field(ge=1, le=4)]
-    loss_bond: Annotated[int, Field(ge=0, le=1)]

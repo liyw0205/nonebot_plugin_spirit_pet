@@ -16,5 +16,19 @@
     "description": "连续进攻消磨气血，蓄势时可反击或回春；治疗与伤害的顺序决定结果。",
     "health": 3.8, "defense": 0.3, "pressure": 0.28,
     "moves": ["strike", "strike", "charge", "burst", "strike"]
+  },
+  {
+    "id": "breach", "name": "穿隙破势",
+    "description": "进阶试题：先护持后蓄势，强攻空隙有限；选择灵术与护持的时机，避免重击后无力收尾。",
+    "health": 4.0, "defense": 0.35, "pressure": 0.32,
+    "moves": ["brace", "charge", "burst", "strike", "strike"],
+    "rule": {"energy": 18, "food": 1, "ore": 1, "daily_limit": 1, "proficiency_per_cast": 3, "proficiency_cap": 12, "win_bond": 6, "loss_bond": 1}
+  },
+  {
+    "id": "endure", "name": "守中求胜",
+    "description": "进阶试题：前段持续施压，末段护持压低输出；需在蓄势期安排治疗、攻击或防护。",
+    "health": 3.2, "defense": 0.3, "pressure": 0.3,
+    "moves": ["strike", "charge", "burst", "strike", "brace"],
+    "rule": {"energy": 18, "food": 1, "ore": 1, "daily_limit": 1, "proficiency_per_cast": 3, "proficiency_cap": 12, "win_bond": 6, "loss_bond": 1}
   }
 ]

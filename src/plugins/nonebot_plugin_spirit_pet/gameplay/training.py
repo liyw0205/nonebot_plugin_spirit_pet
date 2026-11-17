@@ -13,6 +13,7 @@ from ..utils.time import beijing_day
 from . import bond_levels, effects, mastery, talents
 from .combat import Fighter, _act
 from .loadout import combatant
+from .pet_targets import named_pet, split_selector
 from .fighter_state import pack as _pack, unpack as _unpack
 
 TITLE = "灵宠连携演练"
@@ -65,8 +66,12 @@ def _energy(ctx: Context, pet) -> int:
     return min(100, pet.energy + max(0, ctx.now - pet.energy_updated) // ctx.config.spirit_pet_energy_interval)
 
 
-def _partner(ctx: Context, run: dict | None = None):
+def _partner(ctx: Context, run: dict | None = None, selector: str = ""):
     owner = ctx.player()
+    if run is None and selector:
+        pet = named_pet(ctx, selector, "演练", refresh_energy=False)
+        ctx.require_idle_pet(pet)
+        return pet
     target = run["pet_id"] if run else owner.active_pet_id
     if target is None:
         raise ctx.missing_pet()
@@ -99,20 +104,22 @@ def _trial(ctx: Context, name: str):
     return trial
 
 
-def _require_start(ctx: Context):
+def _require_start(ctx: Context, trial=None, selector: str = ""):
     last = ctx.repo.latest_training_action(ctx.user_id)
     if last:
         _time(ctx, last["snapshot"])
         if last["snapshot"]["status"] == "active":
             raise GameError("已有连携演练进行中，请继续或退出原试题。")
-    rule = ctx.content.training_rule
-    pet = _partner(ctx)
-    if _quota(ctx) >= rule.daily_limit:
+    rule = trial.rule if trial is not None and trial.rule is not None else ctx.content.training_rule
+    pet = _partner(ctx, selector=selector)
+    if _quota(ctx) >= ctx.content.training_rule.daily_limit:
         raise GameError(f"今日连携演练名额已用尽（每日{rule.daily_limit}局，北京时间00:00刷新）。")
     if _energy(ctx, pet) < rule.energy:
         raise GameError(f"{pet.name}精力不足：开局需要{rule.energy}，当前{_energy(ctx, pet)}。")
     if _food(ctx) < rule.food:
         raise GameError(f"灵粮不足：开局需要{rule.food}份，当前{_food(ctx)}份；可在灵宠商店购买。")
+    if ctx.repo.inventory(ctx.user_id).get("forge_ore", 0) < rule.ore:
+        raise GameError("锻灵矿不足：进阶演练需要 1 份，可从山海重游取得。")
     return pet
 
 
@@ -213,11 +220,11 @@ def _run_page(ctx: Context, run: dict, prefix: tuple[str, ...] = ()) -> Reply:
     return Reply(TITLE + " · 第" + str(index + 1) + "回合", tuple(lines), tuple(commands), tuple(links))
 
 
-def _sources(lines: list[str], links: list[InlineCommand]) -> None:
+def _sources(lines: list[str], links: list[InlineCommand], suffix: str = "") -> None:
     lines.append("准备灵粮与伙伴适用的秘笈；灵术不是入场门槛，普攻和护持始终可选。")
     links.extend((InlineCommand(len(lines) - 1, "灵粮详情", "灵宠商店 灵粮"),
-                  InlineCommand(len(lines) - 1, "挑选灵术", "灵宠技能图鉴"),
-                  InlineCommand(len(lines) - 1, "携带灵术", "灵宠技能")))
+                  InlineCommand(len(lines) - 1, "挑选灵术", "灵宠技能图鉴" + suffix),
+                  InlineCommand(len(lines) - 1, "携带灵术", "灵宠技能" + suffix)))
 
 
 def _append_recovery(lines: list[str], links: list[InlineCommand], error: GameError) -> None:
@@ -230,18 +237,23 @@ def _append_recovery(lines: list[str], links: list[InlineCommand], error: GameEr
                  for action in error.reply.inline_commands)
 
 
-def page(ctx: Context) -> Reply:
+def page(ctx: Context, selector: str = "") -> Reply:
     run = state(ctx)
     if run:
         return _run_page(ctx, run)
     rule = ctx.content.training_rule
-    lines = [f"每局消耗{rule.energy}精力、灵粮{rule.food}份，每日{rule.daily_limit}局；五回合内击倒灵靶且存活才通过。",
-             f"通过：按实际施法每次+{rule.proficiency_per_cast}熟练度，全局最多{rule.proficiency_cap}，原伙伴羁绊+{rule.win_bond}；未通过仅羁绊+{rule.loss_bond}，退出无成长。"]
+    lines = [f"普通每局消耗{rule.energy}精力、灵粮{rule.food}份；普通与进阶共用每日{rule.daily_limit}局，五回合内击倒灵靶且存活才通过。",
+             f"普通通过：按实际施法每次+{rule.proficiency_per_cast}熟练度，全局最多{rule.proficiency_cap}，原伙伴羁绊+{rule.win_bond}；未通过仅羁绊+{rule.loss_bond}，退出无成长。"]
     links = []
+    player = ctx.repo.player(ctx.user_id)
+    pet = _partner(ctx, selector=selector) if selector and player else (
+        ctx.repo.pet(player.active_pet_id) if player and player.active_pet_id is not None else None)
+    suffix = f" 伙伴 {pet.pet_id}" if pet else ""
     for trial in ctx.content.training_trials.values():
-        lines.append(f"{trial.name}：{trial.description}")
-        links.append(InlineCommand(len(lines) - 1, "预览试题", f"{TITLE} 预览 {trial.name}"))
-    _sources(lines, links)
+        cost = f" · {trial.rule.energy}精力、灵粮{trial.rule.food}、锻灵矿{trial.rule.ore}" if trial.rule else ""
+        lines.append(f"{trial.name}：{trial.description}{cost}")
+        links.append(InlineCommand(len(lines) - 1, "预览试题", f"{TITLE} 预览 {trial.name}{suffix}"))
+    _sources(lines, links, suffix)
     if ctx.repo.player(ctx.user_id) is None:
         lines.append("尚未结契，先领养伙伴。")
         links.append(InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "))
@@ -252,51 +264,62 @@ def page(ctx: Context) -> Reply:
             lines.append(f"今日演练已用{used}/{rule.daily_limit}局。")
         except GameError as exc:
             lines.append(str(exc))
-        if player.active_pet_id is None:
+        if player.active_pet_id is None and not selector:
             try:
                 ctx.pet()
             except GameError as exc:
                 _append_recovery(lines, links, exc)
-    return Reply(TITLE, tuple(lines), (TITLE + " 记录", "灵宠连携", "我的灵宠"), tuple(links))
+    return Reply(TITLE, tuple(lines), (TITLE + " 记录", f"灵宠整备 {pet.pet_id}" if pet else "灵宠连携",
+                                      "灵宠山海远行"), tuple(links))
 
 
-def preview(ctx: Context, name: str) -> Reply:
+def preview(ctx: Context, name: str, selector: str = "") -> Reply:
     trial = _trial(ctx, name)
     lines = [trial.description, *table(("回合", "灵靶动作", "效果"),
                                       ((index, MOVES[move], MOVE_DETAIL[move]) for index, move in enumerate(trial.moves, 1))),
              f"灵靶气血=开局伙伴攻击×{trial.health}，防御=伙伴攻击×{trial.defense:.0%}，攻击=伙伴防御+伙伴气血×{trial.pressure:.0%}（取整）。",
              "按开局真实配装、灵术等级、连携与羁绊固定；伤害无随机浮动、不判闪避，伙伴先行。",
              "护持不攻击、承伤35%；同一灵术不能连续选择。五回合内击倒灵靶且存活才通过。"]
-    rule = ctx.content.training_rule
-    lines.append(f"开局{rule.energy}精力、灵粮{rule.food}份；通过按实际施法每次+{rule.proficiency_per_cast}熟练度（共至多{rule.proficiency_cap}）、羁绊+{rule.win_bond}；未通过仅羁绊+{rule.loss_bond}。退出不退费无成长。")
+    rule = trial.rule or ctx.content.training_rule
+    ore = f"、锻灵矿{rule.ore}份" if rule.ore else ""
+    lines.append(f"开局{rule.energy}精力、灵粮{rule.food}份{ore}；通过按实际施法每次+{rule.proficiency_per_cast}熟练度（共至多{rule.proficiency_cap}）、羁绊+{rule.win_bond}；未通过仅羁绊+{rule.loss_bond}。退出不退费无成长。")
     commands, links = [], []
-    _sources(lines, links)
+    player = ctx.repo.player(ctx.user_id)
+    selected = selector or (str(player.active_pet_id) if player and player.active_pet_id is not None else "")
+    if rule.ore:
+        lines.append("进阶与普通试题共用当日一次机会；锻灵矿来自重游采集与交易。")
+        links.append(InlineCommand(len(lines) - 1, "获取锻灵矿", "灵宠山海远行"))
     if ctx.repo.player(ctx.user_id) is None:
         lines.append("尚未结契，先领养伙伴。")
         links.append(InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "))
     else:
         try:
-            pet = _partner(ctx)
+            pet = _partner(ctx, selector=selector)
+            selected = str(pet.pet_id)
             player = combatant(ctx, pet_id=pet.pet_id, recover_energy=False)
             enemy = _target(player, trial)
             lines.append(f"{pet.name}（编号{pet.pet_id}）· 精力{_energy(ctx, pet)} · 灵粮{_food(ctx)}份 · 灵靶气血{enemy.hp}。")
             lines.append("携带灵术：" + ("、".join(s.name for s in player.skills) or "无（仍可普攻/护持）") + "。")
-            _require_start(ctx)
+            _require_start(ctx, trial, selector)
         except GameError as exc:
             _append_recovery(lines, links, exc)
         else:
-            commands.append(f"{TITLE} 开始 {trial.name}")
-    return Reply(TITLE + " · " + trial.name, tuple(lines), (*commands, TITLE), tuple(links))
+            commands.append(f"{TITLE} 开始 {trial.name} 日 {beijing_day(ctx.now)} 伙伴 {pet.pet_id}")
+        if selected:
+            links.append(InlineCommand(0, "查看整备", f"灵宠整备 {selected}"))
+    suffix = f" 伙伴 {selected}" if selected else ""
+    _sources(lines, links, suffix)
+    return Reply(TITLE + " · " + trial.name, tuple(lines), (*commands, TITLE + suffix), tuple(links))
 
 
-def start(ctx: Context, name: str) -> Reply:
+def start(ctx: Context, name: str, selector: str = "") -> Reply:
     ctx.player()
     trial = _trial(ctx, name)
-    pet = _require_start(ctx)
+    pet = _require_start(ctx, trial, selector)
     player = combatant(ctx, pet_id=pet.pet_id, recover_energy=False)
     enemy = _target(player, trial)
     initial = tuple(event for unit in (player, enemy) if (event := talents.initialize(unit)))
-    rule = ctx.content.training_rule
+    rule = trial.rule or ctx.content.training_rule
     run = {"status": "active", "run_id": sha256(ctx.operation_id.encode()).hexdigest()[:16],
            "trial": trial.model_dump(), "rule": rule.model_dump(), "pet_id": pet.pet_id,
            "pet_name": pet.name, "player": _pack(player), "enemy": _pack(enemy),
@@ -306,13 +329,16 @@ def start(ctx: Context, name: str) -> Reply:
     restore_energy(pet, ctx.now, ctx.config.spirit_pet_energy_interval)
     pet.energy -= rule.energy
     ctx.repo.consume_item(ctx.user_id, "spirit_food", rule.food)
+    if rule.ore:
+        ctx.repo.consume_item(ctx.user_id, "forge_ore", rule.ore)
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,?,1) "
         "ON CONFLICT(user_id,quest_id) DO UPDATE SET progress=excluded.progress",
         (ctx.user_id, DAY_PREFIX + beijing_day(ctx.now), used + 1),
     )
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
-    return _record(ctx, run, _run_page(ctx, run, (f"{pet.name}精力-{rule.energy}，灵粮-{rule.food}份；占用今日演练名额。", *initial)))
+    ore = f"，锻灵矿-{rule.ore}份" if rule.ore else ""
+    return _record(ctx, run, _run_page(ctx, run, (f"{pet.name}精力-{rule.energy}，灵粮-{rule.food}份{ore}；占用今日演练名额。", *initial)))
 
 
 def _active(ctx: Context, guard: list[str]) -> dict:
@@ -384,9 +410,11 @@ def advance(ctx: Context, action: str, guard: list[str]) -> Reply:
              *growth, f"原伙伴羁绊经验+{amount}；当前累计{bond_levels.exp(ctx, pet.pet_id)}，羁绊等级{bond_levels.current_level(ctx, pet.pet_id)}。",
              "气血仅用于本局，不改变伙伴真实精力或亲密。"]
     run["growth"] = growth
-    return _record(ctx, run, Reply("连携演练结算", tuple(lines), (TITLE, "我的灵宠", "灵宠背包"),
+    return _record(ctx, run, Reply("连携演练结算", tuple(lines), (f"{TITLE} 伙伴 {pet.pet_id}", "灵宠背包"),
                                   (InlineCommand(len(lines) - 2, "查看羁绊", "灵宠羁绊"),
-                                   InlineCommand(len(lines) - 2, "查看灵术成长", f"灵宠技能 伙伴 {pet.pet_id}"))))
+                                   InlineCommand(len(lines) - 2, "查看灵术成长", f"灵宠技能 伙伴 {pet.pet_id}"),
+                                   InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),
+                                   InlineCommand(0, "同心合练", "灵宠同心"))))
 
 
 def quit_run(ctx: Context, guard: list[str]) -> Reply:
@@ -418,13 +446,21 @@ def objective_line(ctx: Context, user_id: str) -> str:
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
+    arg, selector = split_selector(arg)
+    body, separator, day = arg.rpartition(" 日 ")
+    if separator:
+        if not body.startswith("开始 ") or day != beijing_day(ctx.now):
+            raise GameError("演练入口已过期，请重新查看试题。")
+        arg = body
     parts = arg.split()
+    if selector and parts and parts[0] not in ("预览", "开始"):
+        raise GameError("伙伴编号用于查看试题或开始演练，不能中途更换伙伴。")
     if not parts:
-        return page(ctx)
+        return page(ctx, selector)
     if parts == ["记录"]:
         return result(ctx)
     if len(parts) == 2 and parts[0] in ("预览", "开始"):
-        return preview(ctx, parts[1]) if parts[0] == "预览" else start(ctx, parts[1])
+        return preview(ctx, parts[1], selector) if parts[0] == "预览" else start(ctx, parts[1], selector)
     if len(parts) >= 2 and parts[0] == "出手":
         return advance(ctx, parts[1], parts[2:])
     if parts[0] == "退出":

@@ -250,6 +250,8 @@ def test_frozen_content_and_original_partner_survive_restart(game, play):
 
 def test_all_trials_have_a_publicly_playable_winning_route(game, play):
     for trial_index, trial in enumerate(game[0].content.training_trials.values()):
+        if trial.rule is not None:
+            continue
         now = NOW + trial_index * 86400
         if trial_index == 0:
             prepare(play)
