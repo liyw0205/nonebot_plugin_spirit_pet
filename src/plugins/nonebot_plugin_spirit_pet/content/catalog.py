@@ -59,6 +59,7 @@ from ..domain.merchant_standing_content import MerchantStanding
 from ..domain.play_game_content import PlayGame
 from ..domain.play_course_content import PlayCourse
 from ..domain.training_content import TrainingRule, TrainingTrial
+from ..domain.travel_content import TravelScene
 from ..domain.convoy_content import ConvoyRoute
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
@@ -221,6 +222,7 @@ class Catalog:
     play_courses: dict[str, PlayCourse]
     training_trials: dict[str, TrainingTrial]
     training_rule: TrainingRule
+    travel_revisits: dict[str, TravelScene]
     convoy_routes: dict[str, ConvoyRoute]
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
@@ -337,6 +339,7 @@ class Catalog:
             play_courses=_index(directory / "play_courses.json", PlayCourse),
             training_trials=_index(directory / "training_trials.json", TrainingTrial),
             training_rule=TrainingRule.model_validate(_read(directory / "training_rule.json")),
+            travel_revisits=_index(directory / "travel_revisits.json", TravelScene),
             convoy_routes=_index(directory / "convoy_routes.json", ConvoyRoute),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
@@ -374,6 +377,13 @@ class Catalog:
         return catalog
 
     def validate(self):
+        if len(self.travel_revisits) != 3:
+            raise ValueError("travel revisits need three scenes")
+        for scene in self.travel_revisits.values():
+            if len({choice.id for choice in scene.options}) != len(scene.options):
+                raise ValueError("travel revisit choices must be unique")
+            for choice in scene.options:
+                self._require([*choice.items, *choice.reward.items], self.items, "travel revisit items")
         self._validate_training()
         self._validate_nursery()
         if set(self.layers) != set(range(1, 11)):

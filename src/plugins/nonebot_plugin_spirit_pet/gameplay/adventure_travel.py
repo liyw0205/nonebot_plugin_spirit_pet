@@ -8,12 +8,14 @@ from ..domain.content import Encounter
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.energy import restore_energy
-from ..utils.time import BEIJING, cooldown_left
+from ..utils.time import BEIJING, beijing_day, cooldown_left
 from . import echoes
+from .pet_targets import named_pet, split_selector
 from .quests import advance
 
 TITLE = "灵宠山海远行"
 ENERGY_PER_SCENE = 25
+REVISIT_DAY = "travel_revisit_day_"
 
 
 def state(ctx: Context) -> dict | None:
@@ -45,8 +47,12 @@ def _realm_index(ctx: Context, realm_id: str) -> int:
     return next(index for index, realm in enumerate(ctx.content.realms) if realm.id == realm_id)
 
 
-def _partner(ctx: Context, run: dict | None = None, *, refresh_energy: bool = True):
+def _partner(ctx: Context, run: dict | None = None, *, refresh_energy: bool = True, selector: str = ""):
     player = ctx.player()
+    if run is None and selector:
+        pet = named_pet(ctx, selector, "远行", refresh_energy=refresh_energy)
+        ctx.require_idle_pet(pet)
+        return pet
     pet_id = run["pet_id"] if run else player.active_pet_id
     if pet_id is None:
         raise ctx.missing_pet()
@@ -95,6 +101,25 @@ def _check_rewards(ctx: Context, run: dict) -> None:
             raise GameError(f"{frozen['name']}当前不可结算，请稍后重试；行程保留。")
 
 
+def _revisit_quota(ctx: Context) -> None:
+    key = REVISIT_DAY + beijing_day(ctx.now)
+    row = ctx.repo.conn.execute(
+        "SELECT MAX(quest_id) AS latest FROM quest_progress WHERE user_id=? AND quest_id GLOB ? AND progress>0",
+        (ctx.user_id, REVISIT_DAY + "*"),
+    ).fetchone()
+    if row["latest"] and row["latest"] > key:
+        raise GameError("系统日期早于重游记录，请等待日期恢复。")
+    if row["latest"] == key:
+        raise GameError("今日重游机会已使用，明日再来；继续旧行程不占新日机会。")
+
+
+def _cost_summary(ctx: Context, option: dict, frozen: dict | None = None) -> str:
+    parts = [f"灵石 {option['stones']}"] if option.get("stones") else []
+    parts.extend(f"{frozen[key]['name'] if frozen is not None else ctx.content.items[key].name} {amount}"
+                 for key, amount in option.get("items", {}).items())
+    return "费用：" + ("、".join(parts) if parts else "无")
+
+
 def _command(run: dict, action: str, step: int | None = None) -> str:
     guard = f"局 {run['run_id']} 段 {step or len(run['history']) + 1}"
     return f"{TITLE} {action} {guard}"
@@ -128,11 +153,14 @@ def _run_page(ctx: Context, run: dict, prefix: tuple[str, ...] = ()) -> Reply:
     except GameError as exc:
         lines.append(str(exc))
     else:
-        lines.append("选择一项回响，结算本处奇闻并继续：")
+        lines.append("选择一项行动，结算本段收益并继续：" if run.get("mode") == "revisit"
+                     else "选择一项回响，结算本处奇闻并继续：")
         for option in scene["options"]:
             lines.append(f"{option['label']}：{option['text']}")
             reward = option["reward"]
             lines.append(_reward_summary(run, reward))
+            if run.get("mode") == "revisit":
+                lines[-1] += " · " + _cost_summary(ctx, option, run["items"])
             commands.append(_command(run, "选择", index + 1) + f" {option['id']}")
     lines.append("精力在启程时按待走场景数一次付清；退出不退款，已完成场景不会重复结算。")
     links = [InlineCommand(len(lines) - 1, "退出行程", _command(run, "退出", index + 1))]
@@ -157,10 +185,11 @@ def catalog(ctx: Context) -> Reply:
     elif player is None:
         lines.append("尚未结契，先完成领养，再与伙伴同行。")
         links.append(InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "))
+    lines.append("路线回响全部完成后可重游，每日一趟；三段采集、交易与参悟选择，收益各不相同。")
     return Reply(TITLE, tuple(lines), (f"{TITLE} 记录", "灵宠历练", "灵宠奇闻"), tuple(links))
 
 
-def preview(ctx: Context, name: str) -> Reply:
+def preview(ctx: Context, name: str, selector: str = "") -> Reply:
     route = _route(ctx, name)
     player = ctx.repo.player(ctx.user_id)
     user_id = player.user_id if player else None
@@ -187,12 +216,29 @@ def preview(ctx: Context, name: str) -> Reply:
             lines.append("已有行程进行中，先完成或退出当前行程。")
             commands = (TITLE,)
         elif not scenes:
-            lines.append("这条路线的奇闻都已回响，没有待走场景。")
-            commands = ("灵宠奇闻", TITLE)
+            lines.append("这条路线的奇闻都已回响，可重游采集；重游不再领取奇闻或回响奖励。")
+            for scene in ctx.content.travel_revisits.values():
+                lines.append(f"{scene.name}：{scene.text}")
+                for option in scene.options:
+                    lines.append(f"{option.label} · " + _cost_summary(ctx, option.model_dump()) + " · " + _reward_summary(
+                        {"items": {key: value.model_dump() for key, value in ctx.content.items.items()}}, option.reward.model_dump()))
+            try:
+                pet = _partner(ctx, refresh_energy=False, selector=selector)
+                if pet.realm < _realm_index(ctx, route.min_realm):
+                    raise GameError(f"{route.name}需要{realm}境界。")
+                _revisit_quota(ctx)
+                ctx.check_action(player, pet, "explore", 0, ctx.config.spirit_pet_explore_cooldown)
+                if _available_energy(ctx, pet) < 45:
+                    raise GameError("重游需要 45 精力。")
+                lines.append(f"重游伙伴：{pet.name}（编号 {pet.pet_id}），启程支付 45 精力。")
+                commands = (f"{TITLE} 重游 {route.name} 日 {beijing_day(ctx.now)} 伙伴 {pet.pet_id}",)
+            except GameError as exc:
+                lines.append(str(exc))
+                commands = (f"灵宠整备 {selector}" if selector else "灵宠列表",)
         else:
             energy = ENERGY_PER_SCENE * len(scenes)
             try:
-                pet = _partner(ctx, refresh_energy=False)
+                pet = _partner(ctx, refresh_energy=False, selector=selector)
                 minimum = _realm_index(ctx, route.min_realm)
                 if pet.realm < minimum:
                     raise GameError(f"{route.name}需要{ctx.content.realms[minimum].name}境界。")
@@ -205,7 +251,7 @@ def preview(ctx: Context, name: str) -> Reply:
                     raise GameError(f"{pet.name}尚需调息 {remaining} 秒。")
                 if available < energy:
                     raise GameError(f"{pet.name}精力不足，需要 {energy} 点。")
-                commands = (f"{TITLE} 启程 {route.name}",)
+                commands = (f"{TITLE} 启程 {route.name} 伙伴 {pet.pet_id}",)
             except GameError as exc:
                 lines.append(str(exc))
                 commands = ()
@@ -213,7 +259,7 @@ def preview(ctx: Context, name: str) -> Reply:
     return Reply(f"{TITLE} · {route.name}", tuple(lines), commands, links)
 
 
-def start(ctx: Context, name: str) -> Reply:
+def start(ctx: Context, name: str, selector: str = "", *, revisit: bool = False) -> Reply:
     player = ctx.player()
     route = _route(ctx, name)
     last = ctx.repo.latest_adventure_travel_action(ctx.user_id)
@@ -221,14 +267,19 @@ def start(ctx: Context, name: str) -> Reply:
         _time(ctx, last["snapshot"])
         if last["snapshot"]["status"] == "active":
             raise GameError("已有山海远行进行中，请继续或退出当前行程。")
-    pet = _partner(ctx)
+    pet = _partner(ctx, selector=selector)
     minimum = _realm_index(ctx, route.min_realm)
     if pet.realm < minimum:
         raise GameError(f"{route.name}需要{ctx.content.realms[minimum].name}境界。")
     scenes = _unresolved(ctx, route, player.user_id)
-    if not scenes:
+    if revisit:
+        if scenes:
+            raise GameError("先完成这条路线全部回响，才能重游。")
+        _revisit_quota(ctx)
+        scenes = list(ctx.content.travel_revisits.values())
+    elif not scenes:
         raise GameError("这条路线的奇闻都已回响，没有待走场景。")
-    energy = ENERGY_PER_SCENE * len(scenes)
+    energy = 15 * len(scenes) if revisit else ENERGY_PER_SCENE * len(scenes)
     ctx.check_action(player, pet, "explore", energy, ctx.config.spirit_pet_explore_cooldown)
     run = {
         "status": "active",
@@ -237,9 +288,11 @@ def start(ctx: Context, name: str) -> Reply:
         "scenes": [scene.model_dump() for scene in scenes],
         "items": {
             item_id: ctx.content.items[item_id].model_dump()
-            for scene in scenes for reward in (scene.reward, *(option.reward for option in scene.options))
-            for item_id in reward.items
+            for scene in scenes
+            for item_id in ({key for option in scene.options for key in (*option.reward.items, *getattr(option, "items", {}))}
+                            | (set(scene.reward.items) if not revisit else set()))
         },
+        "mode": "revisit" if revisit else "echo",
         "pet_id": pet.pet_id,
         "pet_name": pet.name,
         "energy": energy,
@@ -249,6 +302,9 @@ def start(ctx: Context, name: str) -> Reply:
     }
     pet.energy -= energy
     player.last_explore = ctx.now
+    if revisit:
+        ctx.repo.conn.execute("INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,1,1)",
+                              (ctx.user_id, REVISIT_DAY + beijing_day(ctx.now)))
     ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
     advance(ctx, "explore")
     return _record(ctx, run, _run_page(ctx, run, (f"{pet.name}精力 -{energy}；路线冷却已开始。",)))
@@ -277,6 +333,8 @@ def choose(ctx: Context, guard: list[str], option_id: str) -> Reply:
     run = _active(ctx, guard)
     pet = _partner(ctx, run)
     index = len(run["history"])
+    if run.get("mode") == "revisit":
+        return _choose_revisit(ctx, run, pet, option_id)
     encounter = Encounter.model_validate(run["scenes"][index])
     option = next((entry for entry in encounter.options if entry.id == option_id or entry.label == option_id), None)
     if option is None:
@@ -324,6 +382,41 @@ def choose(ctx: Context, guard: list[str], option_id: str) -> Reply:
     return _record(ctx, run, reply)
 
 
+def _choose_revisit(ctx: Context, run: dict, pet, option_id: str) -> Reply:
+    from ..domain.travel_content import TravelScene
+    scene = TravelScene.model_validate(run["scenes"][len(run["history"])])
+    option = next((choice for choice in scene.options if option_id in (choice.id, choice.label)), None)
+    if option is None:
+        raise GameError("没有这个重游选项，请查看当前行程。")
+    _check_rewards(ctx, run)
+    player = ctx.player()
+    if player.stones < option.stones:
+        raise GameError(f"灵石不足，需要 {option.stones}；可选择另一项，行程保留。")
+    inventory = ctx.repo.inventory(ctx.user_id)
+    if any(inventory.get(key, 0) < amount for key, amount in option.items.items()):
+        raise GameError("材料不足；可选择另一项或补齐材料，行程保留。")
+    player.stones -= option.stones
+    for key, amount in option.items.items():
+        ctx.repo.consume_item(ctx.user_id, key, amount)
+    rewards = _grant_reward(ctx, run, pet, option.reward)
+    if option.reward.exp.maximum:
+        ctx.repo.invalidate_pet_ready(ctx.user_id, pet.pet_id)
+    run["history"].append({"encounter_name": scene.name, "option_label": option.label,
+                           "discovered": False, "rewards": [_cost_summary(ctx, option.model_dump(), run["items"]), *rewards]})
+    if len(run["history"]) == len(run["scenes"]):
+        run["status"] = "finished"
+        lines = [f"{run['route']['name']} · {pet.name}（编号 {pet.pet_id}）重游完成。"]
+        for entry in run["history"]:
+            lines.extend((f"{entry['encounter_name']} · {entry['option_label']}", *entry["rewards"]))
+        reply = Reply("山海重游完成", tuple(lines), (TITLE, "灵宠背包"),
+                      (InlineCommand(0, "查看整备", f"灵宠整备 {pet.pet_id}"),
+                       InlineCommand(0, "同心合练", "灵宠同心"),
+                       InlineCommand(0, "灵术演练", "灵宠连携演练")))
+    else:
+        reply = _run_page(ctx, run, (scene.name + " · " + option.label, *rewards))
+    return _record(ctx, run, reply)
+
+
 def _reward_summary(run: dict, reward: dict) -> str:
     def interval(bounds):
         return str(bounds["minimum"]) if bounds["minimum"] == bounds["maximum"] else f"{bounds['minimum']}-{bounds['maximum']}"
@@ -366,6 +459,8 @@ def locked_encounter(ctx: Context, user_id: str, encounter_id: str) -> bool:
     if not last or last["snapshot"]["status"] != "active":
         return False
     run = last["snapshot"]
+    if run.get("mode") == "revisit":
+        return False
     completed = {entry["encounter_id"] for entry in run["history"]}
     return encounter_id not in completed and any(
         scene["id"] == encounter_id for scene in run["scenes"]
@@ -373,14 +468,22 @@ def locked_encounter(ctx: Context, user_id: str, encounter_id: str) -> bool:
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:
+    arg, selector = split_selector(arg)
+    body, separator, day = arg.rpartition(" 日 ")
+    if separator:
+        if not body.startswith("重游 ") or day != beijing_day(ctx.now):
+            raise GameError("重游入口已过期，请重新查看路线。")
+        arg = body
     parts = arg.split()
+    if selector and not (len(parts) in (1, 2) and parts[0] not in ("记录", "退出", "选择")):
+        raise GameError("伙伴编号用于预览、启程或重游路线。")
     if not parts:
         run = state(ctx)
         return _run_page(ctx, run) if run else catalog(ctx)
     if parts[0] == "预览" and len(parts) == 2:
-        return preview(ctx, parts[1])
-    if parts[0] == "启程" and len(parts) == 2:
-        return start(ctx, parts[1])
+        return preview(ctx, parts[1], selector)
+    if parts[0] in ("启程", "重游") and len(parts) == 2:
+        return start(ctx, parts[1], selector, revisit=parts[0] == "重游")
     if parts[0] == "记录" and len(parts) == 1:
         return record(ctx)
     if parts[0] == "选择" and len(parts) == 6:
@@ -388,7 +491,7 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if parts[0] == "退出" and len(parts) == 5:
         return quit_run(ctx, parts[1:5])
     if len(parts) == 1:
-        return preview(ctx, parts[0])
+        return preview(ctx, parts[0], selector)
     raise GameError(
         f"格式：{TITLE} [路线名|预览 路线名|启程 路线名|记录|选择 局 局号 段 处数 选项|退出 局 局号 段 处数]。"
     )

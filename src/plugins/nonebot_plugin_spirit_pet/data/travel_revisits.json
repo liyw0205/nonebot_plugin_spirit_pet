@@ -1,0 +1,23 @@
+[
+  {
+    "id": "roadside", "name": "歧路采集", "text": "沿旧路前行，一边是可采的灵穗，一边是裸露的矿脉。脚程只够探一处。",
+    "options": [
+      {"id": "food", "label": "采穗备粮", "text": "整理灵穗，为后续合练和演练准备口粮。", "reward": {"exp": {"minimum": 15, "maximum": 15}, "stones": {"minimum": 0, "maximum": 0}, "items": {"spirit_food": {"minimum": 2, "maximum": 2}}}},
+      {"id": "ore", "label": "开采浅矿", "text": "租用矿镐开采，换回锻造与合练所需的矿料。", "stones": 30, "reward": {"exp": {"minimum": 10, "maximum": 10}, "stones": {"minimum": 0, "maximum": 0}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}}
+    ]
+  },
+  {
+    "id": "camp", "name": "山间驿站", "text": "驿站收购沿途灵粮，也可借用静室让同行伙伴参悟。",
+    "options": [
+      {"id": "trade", "label": "交粮换矿", "text": "交出一份灵粮与加工费，换取两份锻灵矿。", "stones": 40, "items": {"spirit_food": 1}, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 0, "maximum": 0}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}},
+      {"id": "study", "label": "借室参悟", "text": "静坐梳理沿路感悟，只增长同行伙伴的修为。", "reward": {"exp": {"minimum": 90, "maximum": 90}, "stones": {"minimum": 0, "maximum": 0}}}
+    ]
+  },
+  {
+    "id": "return", "name": "归途护持", "text": "返程商队需要伙伴照看货物，也愿以珍材交换一路带回的矿石。",
+    "options": [
+      {"id": "escort", "label": "护送商队", "text": "平安将商队引回山口，结清报酬。", "reward": {"exp": {"minimum": 30, "maximum": 30}, "stones": {"minimum": 80, "maximum": 80}}},
+      {"id": "essence", "label": "以矿换髓", "text": "用两份锻灵矿与灵石换取一份血脉精华。", "stones": 60, "items": {"forge_ore": 2}, "reward": {"exp": {"minimum": 10, "maximum": 10}, "stones": {"minimum": 0, "maximum": 0}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ]
+  }
+]
