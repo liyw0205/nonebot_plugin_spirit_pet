@@ -112,6 +112,8 @@ def combatant(
         # A socket scales one base stat, exactly like a formation slot does, so the flat bonuses
         # documented for gear, words and sets keep their integers.
         stats[stat] = int(stats[stat] * (1 + rate) + 0.5)
+    from .battle_study import for_pet as battle_study_for_pet
+    study_branch, study_level = battle_study_for_pet(ctx, pet.pet_id, user_id or pet.user_id)
     from .intent import rates as intent_rates
     dealt, taken = intent_rates(ctx, user_id or ctx.user_id)
     from .battle_supplies import rates as supply_rates
@@ -126,6 +128,7 @@ def combatant(
         talent=ctx.content.talents[talent_id], skill_multipliers=skill_multipliers,
         resonance_name=resonance_name, affinity=pet.affinity,
         equipment_sets=tuple(equipment_set_names), dealt=dealt, taken=taken,
+        study_branch=study_branch, study_level=study_level,
     )
 
 

@@ -7,7 +7,7 @@ from ..application.context import Context
 from ..domain.content import Enemy, Reward
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import beijing_week
-from . import lineup_presets
+from . import battle_study, lineup_presets
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
@@ -212,6 +212,8 @@ def challenge(ctx: Context, parts: list[str]) -> Reply:
                               "paid_energy": entry["energy"] * len(pets)})
     if passed:
         lines.extend(_pay(ctx, state, state["stage"] + 1, entry["reward"]))
+        for pet in pets:
+            battle_study.qualify(ctx, pet.pet_id)
         advance(ctx, "pve")
         state["stage"] += 1
         if state["stage"] == 3:

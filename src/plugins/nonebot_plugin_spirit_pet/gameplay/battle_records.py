@@ -72,6 +72,7 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
         ],
         "equipment": [],
         "equipment_sets": list(fighter.equipment_sets),
+        "battle_study": None,
         "battle_dealt": fighter.dealt,
         "battle_taken": fighter.taken,
         "battle_supply": supply.name if supply else None,
@@ -82,6 +83,13 @@ def _fighter_snapshot(ctx: Context, fighter: Fighter, user_id: str | None) -> di
     }
     if fighter.pet_id is None:
         return member
+    if fighter.study_branch is not None:
+        branch_names = {"guard": "守御", "assault": "强袭"}
+        member["battle_study"] = {
+            "branch": fighter.study_branch,
+            "name": branch_names[fighter.study_branch],
+            "level": fighter.study_level,
+        }
     pet = ctx.repo.pet(fighter.pet_id)
     member["pet_name"] = pet.name
     member["species_id"] = pet.species_id
@@ -199,11 +207,13 @@ def _member_text(member: dict) -> str:
     resonance = f" · 共鸣 {member['resonance']}" if member.get("resonance") else ""
     affinity = f" · 亲密 {member['affinity']}/100" if isinstance(member.get("affinity"), int) else ""
     bond_protection = " · 心契护佑" if member.get("bond_protection") else ""
+    study = member.get("battle_study")
+    study_text = f" · 战研 {study['name']} {study['level']}级" if study else ""
     ascended = " · 飞升" if member.get("ascended") else ""
     title = f" · 称号 {member['title']}" if member.get("title") else ""
     return (
         f"{player}的{member.get('pet_name', '未知灵宠')}{title}{realm_text}{resonance}"
-        f"{affinity}{bond_protection}{ascended} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
+        f"{affinity}{bond_protection}{study_text}{ascended} · 主属性 {element} · 技能 {skills} · 装备 {equipment} · 套装 {equipment_sets}"
     )
 
 

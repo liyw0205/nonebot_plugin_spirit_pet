@@ -46,6 +46,7 @@ from . import formation
 from . import pair_bond
 from . import lineup_presets
 from . import roster_relay
+from . import battle_study
 from . import release
 from . import herbalism_rewards
 from . import contracts
@@ -636,6 +637,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (pair_bond.objective_line(ctx, player.user_id), "灵宠同心"),
         (lineup_presets.objective_line(ctx, player.user_id), "灵宠出战预设"),
         (roster_relay.objective_line(ctx, player.user_id), "灵宠轮战"),
+        (battle_study.objective_line(ctx, player.user_id), "灵宠战研"),
         (release.objective_line(ctx, player.user_id), "灵宠归灵"),
         (contracts.objective_line(ctx, player.user_id), "灵宠契约"),
         (hybrid.objective_line(ctx, player.user_id), "灵宠杂交"),

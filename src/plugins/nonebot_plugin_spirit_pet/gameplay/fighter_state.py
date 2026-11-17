@@ -18,6 +18,8 @@ def pack(unit: Fighter) -> dict:
 
 def unpack(value: dict) -> Fighter:
     data = dict(value)
+    data.setdefault("study_branch", None)
+    data.setdefault("study_level", 0)
     data["stats"] = Stats.model_validate(data["stats"])
     data["skills"] = tuple(Skill.model_validate(skill) for skill in data["skills"])
     data["talent"] = Talent.model_validate(data["talent"]) if data["talent"] else None

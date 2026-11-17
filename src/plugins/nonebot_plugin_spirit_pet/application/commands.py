@@ -62,6 +62,7 @@ from ..gameplay import formation
 from ..gameplay import pair_bond
 from ..gameplay import lineup_presets
 from ..gameplay import roster_relay
+from ..gameplay import battle_study
 from ..gameplay import release
 from ..gameplay import contracts
 from ..gameplay import hybrid
@@ -297,6 +298,7 @@ ACTIONS = {
     "pair_bond": Command(pair_bond.dispatch, True, registered=False),
     "lineup_presets": Command(lineup_presets.dispatch, True, registered=False),
     "roster_relay": Command(roster_relay.dispatch, True, registered=False),
+    "battle_study": Command(battle_study.dispatch, True, registered=False),
     "pet_release": Command(release.dispatch, True, registered=False),
     "contracts": Command(contracts.dispatch, True, registered=False),
     "hybrid": Command(hybrid.dispatch, True, registered=False),
@@ -521,6 +523,7 @@ COMMANDS = {
     "灵宠同心": "pair_bond",
     "灵宠出战预设": "lineup_presets",
     "灵宠轮战": "roster_relay",
+    "灵宠战研": "battle_study",
     "灵宠归灵": "pet_release",
     "灵宠契约": "contracts",
     "灵宠杂交": "hybrid",

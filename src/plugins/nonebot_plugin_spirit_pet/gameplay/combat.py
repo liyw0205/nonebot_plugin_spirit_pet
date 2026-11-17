@@ -38,6 +38,8 @@ class Fighter:
     primary_element: str | None = None
     pet_id: int | None = None
     talent: Talent | None = None
+    study_branch: str | None = None
+    study_level: int = 0
     skill_multipliers: dict[str, float] = field(default_factory=dict)
     skill_uses: dict[str, int] = field(default_factory=dict)
     attacks: int = 0
@@ -58,7 +60,7 @@ class Fighter:
     def create(
         cls, name: str, stats: Stats, elements=(), skills=(), *, primary_element=None,
         pet_id=None, talent=None, skill_multipliers=None, resonance_name=None, skill_interval=1,
-        affinity=None, equipment_sets=(), dealt=1.0, taken=1.0,
+        affinity=None, equipment_sets=(), dealt=1.0, taken=1.0, study_branch=None, study_level=0,
     ):
         if type(skill_interval) is not int or skill_interval < 1:
             raise ValueError("skill interval must be a positive integer")
@@ -67,10 +69,15 @@ class Fighter:
                 raise ValueError(f"{label} multiplier must be between 0.25 and 2.5")
         if affinity is not None and (type(affinity) is not int or not 0 <= affinity <= 100):
             raise ValueError("affinity must be between 0 and 100")
+        if type(study_level) is not int or not 0 <= study_level <= 3:
+            raise ValueError("battle study level must be between 0 and 3")
+        if (study_branch is None) != (study_level == 0) or study_branch not in (None, "guard", "assault"):
+            raise ValueError("invalid battle study branch and level")
         return cls(
             name, stats, stats.hp, tuple(elements), tuple(skills),
             primary_element=primary_element,
-            pet_id=pet_id, talent=talent, skill_multipliers=dict(skill_multipliers or {}),
+            pet_id=pet_id, talent=talent, study_branch=study_branch, study_level=study_level,
+            skill_multipliers=dict(skill_multipliers or {}),
             resonance_name=resonance_name, equipment_sets=tuple(equipment_sets),
             skill_interval=skill_interval, affinity=affinity, dealt=dealt, taken=taken,
         )

@@ -11,10 +11,19 @@ if TYPE_CHECKING:
 
 
 def initialize(unit: Fighter) -> str | None:
+    events = []
     if unit.talent and unit.talent.kind == "shield":
         unit.shield = max(1, int(unit.stats.hp * unit.talent.power))
-        return f"{unit.name}以天赋{unit.talent.name}凝聚 {unit.shield} 护盾。"
-    return None
+        events.append(f"{unit.name}以天赋{unit.talent.name}凝聚 {unit.shield} 护盾。")
+    if unit.study_branch == "guard":
+        amount = max(1, int(unit.stats.hp * 0.05 * unit.study_level))
+        unit.effects.ward = effects.TimedEffect(amount, 2, unit.turns)
+        events.append(f"{unit.name}以守御战研获得开场护盾 {amount}，持续最初两次行动。")
+    elif unit.study_branch == "assault":
+        rate = 0.04 * unit.study_level
+        unit.effects.empower = effects.TimedEffect(rate, 2, unit.turns)
+        events.append(f"{unit.name}以强袭战研获得开场攻击增幅 {rate:.0%}，持续最初两次行动。")
+    return " ".join(events) or None
 
 
 def before_action(unit: Fighter) -> tuple[str, ...]:
