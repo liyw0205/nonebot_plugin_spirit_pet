@@ -1,6 +1,8 @@
 """Lineup presets: save/apply/clear three rosters, with every eligibility rule re-checked."""
 
 import re
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -11,6 +13,7 @@ from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.gameplay import lineup_presets
+from nonebot_plugin_spirit_pet.gameplay.compatibility import check_requirements
 from nonebot_plugin_spirit_pet.storage.repository import Repository
 
 from .support import sql
@@ -51,6 +54,65 @@ def slot_rows(game, slot):
     ))
 
 
+def first_pet_id(game):
+    return sql(game[1], "SELECT active_pet_id FROM players WHERE user_id='u1'")[0]["active_pet_id"]
+
+
+def compatible_gear(game, pet_id):
+    ctx = ctx_of(game)
+    pet = ctx.repo.pet(pet_id)
+    for slot in ("weapon", "armor", "charm"):
+        for item in ctx.content.items.values():
+            if item.kind != "equipment" or item.equipment_id is None:
+                continue
+            gear = ctx.content.equipment.get(item.equipment_id)
+            if gear is None or gear.slot != slot:
+                continue
+            try:
+                check_requirements(ctx, pet, gear.requirements)
+            except GameError:
+                continue
+            return slot, item
+    pytest.fail("the starter companion needs at least one compatible equipment item")
+
+
+def compatible_skill(game, pet_id):
+    ctx = ctx_of(game)
+    pet = ctx.repo.pet(pet_id)
+    for skill in ctx.content.skills.values():
+        try:
+            check_requirements(ctx, pet, skill.requirements)
+        except GameError:
+            continue
+        return skill
+    pytest.fail("the starter companion needs at least one compatible skill")
+
+
+def seed_tactical_plan(game, play):
+    second, third = ready(game, play)
+    first = first_pet_id(game)
+    play("lineup", f"{first} {second}", op="tactical-pair")
+    slot, original = compatible_gear(game, first)
+    sql(game[1], "INSERT INTO equipment(pet_id, slot, item_id, enhancement) VALUES (?, ?, ?, 0)",
+        (first, slot, original.id))
+    skill = compatible_skill(game, first)
+    sql(game[1], "INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, ?, 1)",
+        (first, skill.id))
+    play("formation", f"{first} 后援", op="tactical-rear")
+    play("lineup_presets", "保存 1", op="tactical-save")
+    return first, second, third, slot, original, skill
+
+
+def switch_to_ungeared_configuration(game, play, first, third, slot, original, skill):
+    sql(game[1], "DELETE FROM equipment WHERE pet_id=? AND slot=?", (first, slot))
+    sql(game[1], "INSERT INTO inventory(user_id, item_id, quantity) VALUES ('u1', ?, 1) "
+        "ON CONFLICT(user_id, item_id) DO UPDATE SET quantity=excluded.quantity", (original.id,))
+    sql(game[1], "UPDATE learned_skills SET equipped=0 WHERE pet_id=? AND skill_id=?",
+        (first, skill.id))
+    play("formation", f"{first} 前锋", op="tactical-front")
+    play("lineup", str(third), op="tactical-away")
+
+
 def test_page_without_a_pet_is_read_only(game, play):
     page = play("lineup_presets", user="ghost")
     assert "尚未结契" in page.text()
@@ -74,6 +136,19 @@ def test_saving_snapshots_the_roster_without_switching(game, play):
     assert reply.title == "预设已保存"
     assert lineup_presets.stored(ctx_of(game), 2) == current
     assert roster(game) == current
+
+
+def test_new_preset_restores_the_players_member_order(game, play):
+    second, _ = ready(game, play)
+    first = first_pet_id(game)
+    play("lineup", f"{second} {first}", op="order-save-lineup")
+    play("lineup_presets", "保存 1", op="order-save-plan")
+    assert lineup_presets.stored(ctx_of(game), 1) == (second, first)
+
+    play("lineup", str(first), op="order-change")
+    play("lineup_presets", "应用 1", op="order-apply-plan")
+
+    assert roster(game) == (second, first)
 
 
 def test_saving_refuses_an_empty_roster_and_bad_slots(game, play):
@@ -158,6 +233,8 @@ def test_clearing_removes_only_that_slot(game, play):
     assert reply.title == "预设已清除"
     assert slot_rows(game, 1) == []
     assert slot_rows(game, 2)
+    assert not lineup_presets._tactic_exists(ctx_of(game), 1)
+    assert lineup_presets._tactic_exists(ctx_of(game), 2)
     assert roster(game) == before
     with pytest.raises(GameError, match="尚未保存"):
         play("lineup_presets", "清除 1")
@@ -203,6 +280,7 @@ def test_state_survives_a_restart(game, play):
     play("lineup_presets", "保存 3", op="restart")
     assert "可应用" in play("lineup_presets").text()
     assert lineup_presets.stored(ctx_of(game), 3) == (second, third)
+    assert lineup_presets._tactic_snapshot(ctx_of(game), 3, (second, third)) is not None
 
 
 def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
@@ -225,3 +303,130 @@ def test_native_payload_keeps_buttons_and_links_disjoint(game, play):
     assert linked == {f"/{link.command}" for link in page.inline_commands}
     assert not linked & buttons
     assert len(page.commands) <= 4
+
+
+def test_tactical_snapshot_restores_formation_skills_and_real_gear(game, play):
+    first, second, third, slot, original, skill = seed_tactical_plan(game, play)
+    switch_to_ungeared_configuration(game, play, first, third, slot, original, skill)
+
+    reply = play("lineup_presets", "应用 1", op="tactical-apply")
+
+    assert "已恢复阵位、携带灵术与真实装备" in reply.text()
+    assert roster(game) == (first, second)
+    ctx = ctx_of(game)
+    assert lineup_presets.formation.position_of(ctx, first) == "rear"
+    assert ctx.repo.conn.execute(
+        "SELECT equipped FROM learned_skills WHERE pet_id=? AND skill_id=?", (first, skill.id),
+    ).fetchone()[0] == 1
+    assert lineup_presets.equipment.loadout(ctx, first)[slot] == (original.id, 0)
+    quantities = dict((row["item_id"], row["quantity"]) for row in sql(
+        game[1], "SELECT item_id, quantity FROM inventory WHERE user_id='u1' AND item_id=?",
+        (original.id,),
+    ))
+    assert quantities == {original.id: 0}
+
+
+def test_tactical_snapshot_round_trips_enhanced_equipment(game, play):
+    ready(game, play)
+    first = first_pet_id(game)
+    play("lineup", str(first), op="enhanced-gear-lineup")
+    slot, item = compatible_gear(game, first)
+    sql(game[1], "INSERT INTO equipment(pet_id, slot, item_id, enhancement) VALUES (?, ?, ?, 1)",
+        (first, slot, item.id))
+    play("lineup_presets", "保存 2", op="enhanced-gear-save")
+    sql(game[1], "DELETE FROM equipment WHERE pet_id=? AND slot=?", (first, slot))
+    sql(game[1], "INSERT INTO unequipped_equipment(user_id, item_id, enhancement, quantity) "
+        "VALUES ('u1', ?, 1, 1)", (item.id,))
+
+    reply = play("lineup_presets", "应用 2", op="enhanced-gear-apply")
+
+    assert "已恢复阵位" in reply.text()
+    assert lineup_presets.equipment.loadout(ctx_of(game), first)[slot] == (item.id, 1)
+    assert sql(game[1], "SELECT quantity FROM unequipped_equipment WHERE user_id='u1' AND item_id=? "
+        "AND enhancement=1", (item.id,))[0]["quantity"] == 0
+
+
+def test_tactical_plan_rejects_missing_gear_before_switching_anything(game, play):
+    first, second, third, slot, original, skill = seed_tactical_plan(game, play)
+    switch_to_ungeared_configuration(game, play, first, third, slot, original, skill)
+    sql(game[1], "UPDATE inventory SET quantity=0 WHERE user_id='u1' AND item_id=?", (original.id,))
+    before_roster = roster(game)
+    before_gear = sql(game[1], "SELECT pet_id, slot, item_id FROM equipment ORDER BY pet_id, slot")
+    before_skill = sql(game[1], "SELECT pet_id, skill_id, equipped FROM learned_skills ORDER BY pet_id, skill_id")
+
+    with pytest.raises(GameError, match="战术装备不足"):
+        play("lineup_presets", "应用 1")
+
+    assert roster(game) == before_roster
+    assert sql(game[1], "SELECT pet_id, slot, item_id FROM equipment ORDER BY pet_id, slot") == before_gear
+    assert sql(game[1], "SELECT pet_id, skill_id, equipped FROM learned_skills ORDER BY pet_id, skill_id") == before_skill
+
+
+def test_tactical_apply_rolls_back_roster_skills_formation_and_inventory_on_write_failure(game, play):
+    first, second, third, slot, original, skill = seed_tactical_plan(game, play)
+    switch_to_ungeared_configuration(game, play, first, third, slot, original, skill)
+    before_roster = roster(game)
+    before_gear = sql(game[1], "SELECT pet_id, slot, item_id FROM equipment ORDER BY pet_id, slot")
+    before_inventory = sql(game[1], "SELECT item_id, quantity FROM inventory WHERE user_id='u1' ORDER BY item_id")
+    before_skills = sql(game[1], "SELECT pet_id, skill_id, equipped FROM learned_skills ORDER BY pet_id, skill_id")
+    sql(game[1], "CREATE TRIGGER fail_tactical_gear BEFORE INSERT ON equipment "
+        "BEGIN SELECT RAISE(ABORT, 'injected tactical failure'); END")
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected tactical failure"):
+        play("lineup_presets", "应用 1", op="tactical-failed-apply")
+
+    assert roster(game) == before_roster
+    assert sql(game[1], "SELECT pet_id, slot, item_id FROM equipment ORDER BY pet_id, slot") == before_gear
+    assert sql(game[1], "SELECT item_id, quantity FROM inventory WHERE user_id='u1' ORDER BY item_id") == before_inventory
+    assert sql(game[1], "SELECT pet_id, skill_id, equipped FROM learned_skills ORDER BY pet_id, skill_id") == before_skills
+    assert lineup_presets.formation.position_of(ctx_of(game), first) == "vanguard"
+
+
+def test_old_roster_only_preset_remains_applicable_without_changing_pet_builds(game, play):
+    second, third = ready(game, play)
+    first = first_pet_id(game)
+    play("formation", f"{first} 后援", op="legacy-position")
+    skill = compatible_skill(game, first)
+    sql(game[1], "INSERT INTO learned_skills(pet_id, skill_id, equipped) VALUES (?, ?, 1)",
+        (first, skill.id))
+    sql(game[1], "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) "
+        "VALUES ('u1', 'lineup_preset_1', 2, 0), ('u1', ?, 1, 0), ('u1', ?, 1, 0)",
+        (f"lineup_preset_1_{second}", f"lineup_preset_1_{third}"))
+
+    reply = play("lineup_presets", "应用 1", op="legacy-apply")
+
+    assert "旧版阵容预设" in reply.text()
+    assert roster(game) == (second, third)
+    assert lineup_presets.formation.position_of(ctx_of(game), first) == "rear"
+    assert sql(game[1], "SELECT equipped FROM learned_skills WHERE pet_id=? AND skill_id=?",
+        (first, skill.id))[0]["equipped"] == 1
+    assert "旧式阵容" in play("lineup_presets").text()
+
+
+def test_tactical_apply_replay_returns_receipt_without_reapplying_later_state(game, play):
+    first, _, third, slot, original, skill = seed_tactical_plan(game, play)
+    switch_to_ungeared_configuration(game, play, first, third, slot, original, skill)
+    first_reply = play("lineup_presets", "应用 1", op="tactical-replay")
+    play("lineup", str(third), op="after-tactical-replay")
+
+    replay = play("lineup_presets", "应用 1", op="tactical-replay")
+
+    assert replay.text() == first_reply.text()
+    assert roster(game) == (third,)
+
+
+def test_two_concurrent_tactical_applies_leave_one_complete_persisted_plan(game, play):
+    first, second, third, _, _, _ = seed_tactical_plan(game, play)
+    play("lineup", str(third), op="concurrent-away")
+
+    def apply(op):
+        return game[0].execute("u1", "lineup_presets", "应用 1", op, NOW)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        replies = list(pool.map(apply, ("concurrent-plan-a", "concurrent-plan-b")))
+
+    assert all(reply.title == "预设已应用" for reply in replies)
+    assert roster(game) == (first, second)
+    ctx = ctx_of(game)
+    snapshot = lineup_presets._tactic_snapshot(ctx, 1, (first, second))
+    assert lineup_presets._tactic_matches_current(ctx, (first, second), snapshot)
