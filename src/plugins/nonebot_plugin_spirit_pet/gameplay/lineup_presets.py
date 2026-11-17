@@ -1,4 +1,4 @@
-"""Lineup presets: three stored rosters the player can switch to in one command.
+"""Three ordered tactical presets with legacy roster-only compatibility.
 
 Switching rosters is the most repeated pre-fight action in the game, and every switch currently
 means retyping the pet ids of the current trio. A preset snapshots the roster; applying one validates
@@ -339,6 +339,46 @@ def slots_of(ctx: Context) -> dict[int, tuple[int, ...]]:
 
 def stored(ctx: Context, slot: int) -> tuple[int, ...]:
     return slots_of(ctx).get(slot, ())
+
+
+def export_plan(ctx: Context, slot: int) -> dict:
+    members = stored(ctx, slot)
+    problems = _problems(ctx, members)
+    if problems:
+        raise GameError(f"预设 {slot} 暂时不能应用：{problems[0]}。")
+    snapshot = _tactic_snapshot(ctx, slot, members)
+    if snapshot is None:
+        raise GameError(f"预设 {slot} 是旧版阵容，请重新保存完整战术。")
+    _validate_tactic(ctx, members, snapshot)
+    return {
+        "slot": slot, "members": list(members),
+        "formations": {str(key): value for key, value in snapshot["formations"].items()},
+        "skills": {str(key): sorted(value) for key, value in snapshot["skills"].items()},
+        "gear": {str(key): value for key, value in snapshot["gear"].items()},
+    }
+
+
+def validate_plan(ctx: Context, plan: dict) -> tuple[tuple[int, ...], dict]:
+    """Revalidate an immutable exported plan against current ownership and inventory."""
+    members = tuple(plan["members"])
+    problems = _problems(ctx, members)
+    if problems:
+        raise GameError(f"冻结战术暂不可用：{problems[0]}；可放弃本轮后重新安排。")
+    snapshot = {
+        "formations": {int(key): value for key, value in plan["formations"].items()},
+        "skills": {int(key): set(value) for key, value in plan["skills"].items()},
+        "gear": {int(key): {slot: tuple(gear) for slot, gear in value.items()}
+                 for key, value in plan["gear"].items()},
+    }
+    _validate_tactic(ctx, members, snapshot)
+    return members, snapshot
+
+
+def apply_plan(ctx: Context, plan: dict) -> tuple[int, ...]:
+    members, snapshot = validate_plan(ctx, plan)
+    _apply_tactic(ctx, members, snapshot)
+    ctx.repo.invalidate_ready(ctx.user_id)
+    return members
 
 
 def _problems(ctx: Context, pet_ids: tuple[int, ...]) -> list[str]:
