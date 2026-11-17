@@ -226,7 +226,7 @@ def test_unknown_and_same_pets_are_refused(game, play):
     name = sql(game[1], "SELECT name FROM pets WHERE pet_id=?", (first,))[0]["name"]
     with pytest.raises(GameError, match="不同的伙伴"):
         play("pair_bond", f"结契 {name} {name}")
-    with pytest.raises(GameError, match="没有找到这只伙伴"):
+    with pytest.raises(GameError, match="没有找到名为无名"):
         play("pair_bond", "结契 无名 青鸾")
     with pytest.raises(GameError, match="格式"):
         play("pair_bond", "结契 只有一个")

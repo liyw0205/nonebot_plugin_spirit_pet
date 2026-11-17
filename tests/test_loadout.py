@@ -56,7 +56,7 @@ def test_equipment_set_requires_all_pieces_and_adds_combat_bonus(game, play):
     assert full.attack == single.attack + 4
     assert full.speed == single.speed + 2 + 8
     assert "套装：青岚风铃 2/2 · 已激活" in play("equipment").text()
-    assert "灵宠套装" in play("equipment").commands
+    assert "灵宠套装共鸣 青岚风铃" in {link.command for link in play("equipment").inline_commands}
 
     play("unequip", "饰品")
     assert stats(game) == single

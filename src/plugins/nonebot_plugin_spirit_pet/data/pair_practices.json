@@ -1,0 +1,4 @@
+[
+  {"id": "wood_pair", "name": "双傀协守", "description": "两只林间傀儡同时压上，优先击倒一只，减少对方出手。胜利默契加一。", "enemies": ["wood_guard", "wood_guard"], "progress": 1},
+  {"id": "guard_wolf", "name": "殿卫狼阵", "description": "古殿守卫承伤、月影狼王抢攻；防护与集火都要顾及。胜利默契加二。", "enemies": ["ancient_guard", "moon_wolf"], "progress": 2}
+]

@@ -60,6 +60,7 @@ from ..domain.play_game_content import PlayGame
 from ..domain.play_course_content import PlayCourse
 from ..domain.training_content import TrainingRule, TrainingTrial
 from ..domain.travel_content import TravelScene
+from ..domain.pair_practice_content import PairPractice
 from ..domain.convoy_content import ConvoyRoute
 from ..domain.outing_content import OutingScene
 from ..domain.tracking_content import TrackingMap
@@ -223,6 +224,7 @@ class Catalog:
     training_trials: dict[str, TrainingTrial]
     training_rule: TrainingRule
     travel_revisits: dict[str, TravelScene]
+    pair_practices: dict[str, PairPractice]
     convoy_routes: dict[str, ConvoyRoute]
     outings: dict[str, OutingScene]
     fishing_spots: dict[str, FishingSpot]
@@ -340,6 +342,7 @@ class Catalog:
             training_trials=_index(directory / "training_trials.json", TrainingTrial),
             training_rule=TrainingRule.model_validate(_read(directory / "training_rule.json")),
             travel_revisits=_index(directory / "travel_revisits.json", TravelScene),
+            pair_practices=_index(directory / "pair_practices.json", PairPractice),
             convoy_routes=_index(directory / "convoy_routes.json", ConvoyRoute),
             outings=_index(directory / "outing_scenes.json", OutingScene),
             fishing_spots=_index(directory / "fishing_spots.json", FishingSpot),
@@ -377,6 +380,10 @@ class Catalog:
         return catalog
 
     def validate(self):
+        if len(self.pair_practices) != 2:
+            raise ValueError("pair practice needs two formations")
+        for practice in self.pair_practices.values():
+            self._require(practice.enemies, self.enemies, "pair practice enemies")
         if len(self.travel_revisits) != 3:
             raise ValueError("travel revisits need three scenes")
         for scene in self.travel_revisits.values():
