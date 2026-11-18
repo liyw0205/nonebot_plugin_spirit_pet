@@ -37,6 +37,7 @@ from . import training
 from . import convoy
 from . import vein_expedition
 from . import ruin_expedition
+from . import cave_coop
 from . import pill_furnace
 from . import pill_furnace_rewards
 from . import angling
@@ -637,6 +638,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (convoy.objective_line(ctx, player.user_id), "灵宠护航"),
         (vein_expedition.objective_line(ctx, player.user_id), "灵宠灵脉"),
         (ruin_expedition.objective_line(ctx, player.user_id), "灵宠遗迹"),
+        (cave_coop.objective_line(ctx, player.user_id), cave_coop.COMMAND),
         (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (sigils.objective_line(ctx, player.user_id), "灵宠符印"),
         (escort.objective_line(ctx, player.user_id), "灵宠护送"),

@@ -23,6 +23,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "cooking": 13,
     "vein_expedition": 14,
     "ruin_expedition": 15,
+    "cave_coop": 16,
     "stage_tactic": 15,
 }
 
@@ -725,6 +726,34 @@ class Repository:
         self.record_duel_action(
             operation_id, user_id, created_at, {**snapshot, "kind": "ruin_expedition"}, reply,
         )
+
+    def latest_cave_coop_action(self, user_id: str, active_only: bool = False) -> dict | None:
+        status = " AND json_extract(current.snapshot,'$.status') IN ('pending','ready')" if active_only else ""
+        row = self.conn.execute(
+            "SELECT current.snapshot,current.reply FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='cave_coop' "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?)" + status +
+            " AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='cave_coop' "
+            "AND json_extract(newer.snapshot,'$.project_id')=json_extract(current.snapshot,'$.project_id') "
+            "AND newer.action_id>current.action_id)" +
+            " ORDER BY action_id DESC LIMIT 1", (user_id, user_id),
+        ).fetchone()
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} if row else None
+
+    def cave_coop_history(self, user_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE json_extract(snapshot,'$.kind')='cave_coop' "
+            "AND (user_id=? OR json_extract(snapshot,'$.owner_id')=? OR json_extract(snapshot,'$.helper_id')=?) "
+            "AND json_extract(snapshot,'$.status') NOT IN ('pending','ready') ORDER BY action_id DESC",
+            (user_id, user_id, user_id),
+        )
+        return [{"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} for row in rows]
+
+    def record_cave_coop_action(
+        self, operation_id: str, actor_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(operation_id, actor_id, created_at, {**snapshot, "kind": "cave_coop"}, reply)
 
     def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:
         row = self.conn.execute(

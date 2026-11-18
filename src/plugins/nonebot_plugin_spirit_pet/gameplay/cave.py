@@ -188,6 +188,7 @@ def page(ctx: Context, arg: str) -> Reply:
     if not offered_today(ctx):
         links.append(InlineCommand(len(lines) - 1, "供奉", "灵宠洞府 供奉"))
     links.append(InlineCommand(len(lines) - 2, "供奉记录", "灵宠洞府 记录"))
+    links.append(InlineCommand(len(lines) - 2, "洞府共建", "灵宠洞府 共建"))
     for facility in facilities(ctx):
         current = level_of(ctx, facility)
         state = "今日已用" if used_today(ctx, facility) else "今日可用"
@@ -387,6 +388,9 @@ def record(ctx: Context, arg: str) -> Reply:
 
 def dispatch(ctx: Context, arg: str) -> Reply:
     parts = arg.split()
+    if parts and parts[0] == "共建":
+        from . import cave_coop
+        return cave_coop.dispatch(ctx, " ".join(parts[1:]))
     if not parts:
         return page(ctx, "")
     if parts[0] == "升级":
@@ -397,7 +401,7 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return offer(ctx, " ".join(parts[1:]))
     if parts[0] == "记录":
         return record(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠洞府 [升级|使用|供奉|记录] [设施|页码] [灵宠名]。")
+    raise GameError("格式：灵宠洞府 [升级|使用|供奉|记录|共建] [设施|页码] [灵宠名]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:

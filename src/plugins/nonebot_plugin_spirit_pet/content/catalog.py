@@ -107,6 +107,7 @@ from ..domain.content import (
 )
 from ..domain.vein_content import VeinRoute
 from ..domain.ruin_content import RuinSite
+from ..domain.cave_coop_content import CaveCoopProject
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -251,6 +252,7 @@ class Catalog:
     nursery: NurseryRule
     vein_routes: dict[str, VeinRoute]
     ruins: dict[str, RuinSite]
+    cave_coop: dict[str, CaveCoopProject]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -381,6 +383,7 @@ class Catalog:
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
             vein_routes=_index(directory / "vein_routes.json", VeinRoute),
             ruins=_index(directory / "ruins.json", RuinSite),
+            cave_coop=_index(directory / "cave_coop.json", CaveCoopProject),
         )
         catalog.validate()
         return catalog
@@ -392,6 +395,8 @@ class Catalog:
             raise ValueError("vein expeditions need exactly three routes")
         if len(self.ruins) != 3:
             raise ValueError("ruin expeditions need exactly three sites")
+        if len(self.cave_coop) != len(self.cave):
+            raise ValueError("cave co-op needs one project per facility")
         realm_ids = {realm.id for realm in self.realms}
         for route in self.vein_routes.values():
             if route.min_realm not in realm_ids:
@@ -413,6 +418,19 @@ class Catalog:
                     raise ValueError(f"ruin hall treasure cannot be a skill book or egg: {hall.treasure}")
             for reward in (ruin.reward, ruin.rich_reward):
                 self._require(reward.items, self.items, "ruin reward items")
+        for project in self.cave_coop.values():
+            if project.facility not in self.cave:
+                raise ValueError(f"unknown cave co-op facility: {project.facility}")
+            if project.min_level != 1:
+                raise ValueError(f"cave co-op project {project.id} must start at level 1")
+            if project.min_level >= self.cave[project.facility].max_level:
+                raise ValueError(f"cave co-op project {project.id} starts at a full facility")
+            self._require(project.owner_cost.items, self.items, "cave co-op owner items")
+            self._require(project.helper_items, self.items, "cave co-op helper items")
+            self._require(project.owner_reward.items, self.items, "cave co-op owner reward")
+            self._require(project.helper_reward.items, self.items, "cave co-op helper reward")
+        if {project.facility for project in self.cave_coop.values()} != set(self.cave):
+            raise ValueError("cave co-op projects must cover each facility exactly once")
         for practice in self.pair_practices.values():
             self._require(practice.enemies, self.enemies, "pair practice enemies")
         if len(self.travel_revisits) != 3:

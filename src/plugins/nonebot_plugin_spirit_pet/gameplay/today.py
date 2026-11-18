@@ -44,6 +44,7 @@ from . import (
     weekly_quests,
     vein_expedition,
     ruin_expedition,
+    cave_coop,
 )
 
 TITLE = "灵宠今日"
@@ -125,6 +126,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             TODO, f"遗迹探秘第 {len(ruin['actions']) + 1}/3 厅",
             f"{ruin['site']['name']} · 局号 {ruin['run_id']}，取宝或稳行后继续",
             "灵宠遗迹",
+        ))
+    coop = cave_coop.state(ctx, owner)
+    if coop is not None:
+        pending.append(_entry(
+            TODO, f"洞府共建项目 {coop['project_id']} 待处理",
+            f"{coop['project_name']} · {cave_coop.STAGES[coop['stage']]}",
+            cave_coop.COMMAND,
         ))
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(

@@ -77,6 +77,18 @@ def test_cuisine_orders_require_real_single_meal_recipes(content_dir):
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize(("changes", "message"), [
+    ({"facility": "pen"}, "cover each facility"),
+    ({"min_level": 5}, "must start at level 1"),
+    ({"helper_items": {"unknown_material": 1}}, "helper items"),
+    ({"hours": 0}, "greater than or equal to 1"),
+])
+def test_cave_coop_rejects_invalid_content(content_dir, changes, message):
+    edit(content_dir, "cave_coop.json", lambda data: data[0].update(changes))
+    with pytest.raises(ValueError, match=message):
+        Catalog.load(content_dir)
+
+
 def test_exploration_encounter_requires_a_display_name(content_dir):
     edit(content_dir, "adventures.json", lambda data: data[0].pop("name"))
     with pytest.raises(ValidationError, match="name"):
