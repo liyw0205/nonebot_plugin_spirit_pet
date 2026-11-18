@@ -1,0 +1,44 @@
+[
+  {
+    "id": "azure_root",
+    "name": "青木灵脉",
+    "description": "青木灵脉温养万物，适合稳步采集与护脉。",
+    "min_realm": "qiling",
+    "nodes": [
+      {"name": "回春浅滩", "description": "灵泉沿根须汇成浅滩。", "material": "forge_ore"},
+      {"name": "青藤石窟", "description": "青藤缠住一块温润矿石。", "material": "forge_ore"},
+      {"name": "木灵终点", "description": "终点的木灵结晶正在吐纳。", "material": "bloodline_essence"}
+    ],
+    "reward": {"exp": {"minimum": 40, "maximum": 40}, "stones": {"minimum": 80, "maximum": 80}, "items": {"seed_spirit_rice": {"minimum": 1, "maximum": 1}}},
+    "guarded_reward": {"exp": {"minimum": 60, "maximum": 60}, "stones": {"minimum": 120, "maximum": 120}, "items": {"seed_spirit_rice": {"minimum": 1, "maximum": 1}, "forge_ore": {"minimum": 1, "maximum": 1}}},
+    "bond": 8
+  },
+  {
+    "id": "crimson_flame",
+    "name": "赤炎灵脉",
+    "description": "赤炎灵脉灵火旺盛，护住节点才能带回更多终章灵石。",
+    "min_realm": "ningqi",
+    "nodes": [
+      {"name": "赤砂谷口", "description": "赤砂里埋着熔火留下的矿屑。", "material": "gem_flame"},
+      {"name": "炎心断桥", "description": "断桥下的炎心石随灵潮闪烁。", "material": "forge_ore"},
+      {"name": "焚风终点", "description": "焚风把最后一枚灵晶送到崖边。", "material": "bloodline_essence"}
+    ],
+    "reward": {"exp": {"minimum": 60, "maximum": 60}, "stones": {"minimum": 110, "maximum": 110}, "items": {"gem_flame": {"minimum": 1, "maximum": 1}}},
+    "guarded_reward": {"exp": {"minimum": 90, "maximum": 90}, "stones": {"minimum": 170, "maximum": 170}, "items": {"gem_flame": {"minimum": 1, "maximum": 1}, "bloodline_essence": {"minimum": 1, "maximum": 1}}},
+    "bond": 10
+  },
+  {
+    "id": "quiet_water",
+    "name": "玄水灵脉",
+    "description": "玄水灵脉深处潮声不绝，绕行也能把伙伴平安带到终点。",
+    "min_realm": "zhuji",
+    "nodes": [
+      {"name": "澄水湾", "description": "澄水湾有水灵石沉在湾底。", "material": "gem_vital"},
+      {"name": "寒潮洞", "description": "寒潮洞壁挂着一串凝露。", "material": "forge_ore"},
+      {"name": "玄水终点", "description": "终点浮出一枚完整的水灵晶。", "material": "gem_vital"}
+    ],
+    "reward": {"exp": {"minimum": 80, "maximum": 80}, "stones": {"minimum": 140, "maximum": 140}, "items": {"gem_vital": {"minimum": 1, "maximum": 1}}},
+    "guarded_reward": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 210, "maximum": 210}, "items": {"gem_vital": {"minimum": 1, "maximum": 1}, "water_prism": {"minimum": 1, "maximum": 1}}},
+    "bond": 12
+  }
+]

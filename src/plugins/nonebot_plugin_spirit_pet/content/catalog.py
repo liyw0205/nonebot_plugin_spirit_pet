@@ -105,6 +105,7 @@ from ..utils.elements import element_ancestors, expand_elements
 from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
 )
+from ..domain.vein_content import VeinRoute
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -247,6 +248,7 @@ class Catalog:
     world_boss_rank_rewards: dict[int, WorldBossRankReward]
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
+    vein_routes: dict[str, VeinRoute]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -375,6 +377,7 @@ class Catalog:
             ),
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
+            vein_routes=_index(directory / "vein_routes.json", VeinRoute),
         )
         catalog.validate()
         return catalog
@@ -382,6 +385,20 @@ class Catalog:
     def validate(self):
         if len(self.pair_practices) != 2:
             raise ValueError("pair practice needs two formations")
+        if len(self.vein_routes) != 3:
+            raise ValueError("vein expeditions need exactly three routes")
+        realm_ids = {realm.id for realm in self.realms}
+        for route in self.vein_routes.values():
+            if route.min_realm not in realm_ids:
+                raise ValueError(f"unknown vein minimum realm: {route.min_realm}")
+            for node in route.nodes:
+                if node.material not in self.items:
+                    raise ValueError(f"unknown vein node material: {node.material}")
+                if self.items[node.material].kind != "material":
+                    raise ValueError(f"vein node must use a material item: {node.material}")
+            for reward in (route.reward, route.guarded_reward):
+                if set(reward.items) - set(self.items):
+                    raise ValueError(f"unknown vein reward item in {route.id}")
         for practice in self.pair_practices.values():
             self._require(practice.enemies, self.enemies, "pair practice enemies")
         if len(self.travel_revisits) != 3:

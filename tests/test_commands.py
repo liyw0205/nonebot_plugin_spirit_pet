@@ -56,6 +56,8 @@ def test_parse_only_recognizes_exact_commands():
     assert handlers._parse("灵宠历练 星谷采集") == ("explore", "星谷采集")
     assert handlers._parse("灵宠山海远行") == ("adventure_travel", "")
     assert handlers._parse("灵宠山海远行 启程 星谷采集") == ("adventure_travel", "启程 星谷采集")
+    assert handlers._parse("灵宠灵脉") == ("vein_expedition", "")
+    assert handlers._parse("/灵宠灵脉 前进 123 护脉") == ("vein_expedition", "前进 123 护脉")
     assert handlers._parse("灵宠奇闻") == ("adventure_codex", "")
     assert handlers._parse("灵宠奇闻 2") == ("adventure_codex", "2")
     assert handlers._parse("灵宠奇闻榜") == ("adventure_rank", "")

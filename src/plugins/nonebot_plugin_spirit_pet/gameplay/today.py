@@ -42,6 +42,7 @@ from . import (
     research,
     sects,
     weekly_quests,
+    vein_expedition,
 )
 
 TITLE = "灵宠今日"
@@ -110,6 +111,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
                 TODO, f"课题连章第 {chain['count'] + 1}/{daily_assignment_chain.DAYS} 日",
                 "完成今日课题后自动计入连章", "灵宠课题连章",
             ))
+    vein = vein_expedition.state(ctx)
+    if vein is not None:
+        pending.append(_entry(
+            TODO, f"灵脉探勘第 {len(vein['actions']) + 1}/3 段",
+            f"{vein['route']['name']} · 局号 {vein['run_id']}，完成后结算终章奖励",
+            "灵宠灵脉",
+        ))
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(
             TODO, "今日还没签到", "签到累计连续天数并给灵石与灵粮", "灵宠签到",

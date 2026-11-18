@@ -35,6 +35,7 @@ from . import race_prizes
 from . import research
 from . import training
 from . import convoy
+from . import vein_expedition
 from . import pill_furnace
 from . import pill_furnace_rewards
 from . import angling
@@ -633,6 +634,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
         (training.objective_line(ctx, player.user_id), "灵宠连携演练"),
         (convoy.objective_line(ctx, player.user_id), "灵宠护航"),
+        (vein_expedition.objective_line(ctx, player.user_id), "灵宠灵脉"),
         (gauntlet.objective_line(ctx, player.user_id), "灵宠擂台"),
         (sigils.objective_line(ctx, player.user_id), "灵宠符印"),
         (escort.objective_line(ctx, player.user_id), "灵宠护送"),
