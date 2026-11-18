@@ -43,6 +43,7 @@ from . import (
     sects,
     weekly_quests,
     vein_expedition,
+    ruin_expedition,
 )
 
 TITLE = "灵宠今日"
@@ -117,6 +118,13 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             TODO, f"灵脉探勘第 {len(vein['actions']) + 1}/3 段",
             f"{vein['route']['name']} · 局号 {vein['run_id']}，完成后结算终章奖励",
             "灵宠灵脉",
+        ))
+    ruin = ruin_expedition.state(ctx)
+    if ruin is not None:
+        pending.append(_entry(
+            TODO, f"遗迹探秘第 {len(ruin['actions']) + 1}/3 厅",
+            f"{ruin['site']['name']} · 局号 {ruin['run_id']}，取宝或稳行后继续",
+            "灵宠遗迹",
         ))
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(

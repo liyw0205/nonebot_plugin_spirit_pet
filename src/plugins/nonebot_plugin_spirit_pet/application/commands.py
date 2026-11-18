@@ -88,7 +88,7 @@ from ..gameplay import tracking
 from ..gameplay import tracking_codex
 from ..gameplay import herbalism, herbalism_rewards
 from ..gameplay import skill_presets
-from ..gameplay import daily_assignment, daily_assignment_chain, vein_expedition
+from ..gameplay import daily_assignment, daily_assignment_chain, vein_expedition, ruin_expedition
 from ..gameplay import achievements, resonance
 from ..gameplay import codex
 from ..gameplay import expedition_history
@@ -240,6 +240,7 @@ ACTIONS = {
     "daily_assignment_claim": Command(daily_assignment.claim, True),
     "daily_assignment_chain": Command(daily_assignment_chain.dispatch, True, registered=False),
     "vein_expedition": Command(vein_expedition.dispatch, True, registered=False),
+    "ruin_expedition": Command(ruin_expedition.dispatch, True, registered=False),
     "breakthrough": Command(cultivation.breakthrough, True),
     "evolve": Command(cultivation.evolve, True),
     "lineage_catalog": Command(lineage.catalog, True, registered=False),
@@ -467,6 +468,7 @@ COMMANDS = {
     "灵宠连携演练": "training",
     "灵宠护航": "convoy",
     "灵宠灵脉": "vein_expedition",
+    "灵宠遗迹": "ruin_expedition",
     "灵宠强化继承": "inheritance",
     "灵宠称号": "titles", "灵宠称号佩戴": "title_equip", "灵宠目标": "objectives",
     "灵宠扫荡": "sweep", "灵宠秘境首通": "first_clear", "灵宠秘境首通领奖": "first_clear_claim", "灵宠每周召唤": "free_summon", "灵宠每周召唤领取": "free_summon_claim", "灵宠行纪": "journey", "灵宠行纪领奖": "journey_claim", "灵宠回响": "echoes", "灵宠回响选择": "echo_choose", "灵宠赛季任务": "season_missions", "灵宠赛季任务领奖": "season_mission_claim", "灵宠课题": "daily_assignment", "灵宠课题领奖": "daily_assignment_claim", "灵宠课题连章": "daily_assignment_chain",

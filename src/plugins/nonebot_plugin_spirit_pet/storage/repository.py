@@ -22,6 +22,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "tracking": 12,
     "cooking": 13,
     "vein_expedition": 14,
+    "ruin_expedition": 15,
     "stage_tactic": 15,
 }
 
@@ -699,6 +700,30 @@ class Repository:
     ) -> None:
         self.record_duel_action(
             operation_id, user_id, created_at, {**snapshot, "kind": "vein_expedition"}, reply,
+        )
+
+    def latest_ruin_expedition_action(self, user_id: str, active_only: bool = False) -> dict | None:
+        status = " AND json_extract(snapshot,'$.status')='active'" if active_only else ""
+        row = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? "
+            "AND json_extract(snapshot,'$.kind')='ruin_expedition'" + status +
+            " ORDER BY action_id DESC LIMIT 1", (user_id,),
+        ).fetchone()
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} if row else None
+
+    def ruin_expedition_history(self, user_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? "
+            "AND json_extract(snapshot,'$.kind')='ruin_expedition' "
+            "AND json_extract(snapshot,'$.status')!='active' ORDER BY action_id DESC", (user_id,),
+        )
+        return [{"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} for row in rows]
+
+    def record_ruin_expedition_action(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(
+            operation_id, user_id, created_at, {**snapshot, "kind": "ruin_expedition"}, reply,
         )
 
     def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:

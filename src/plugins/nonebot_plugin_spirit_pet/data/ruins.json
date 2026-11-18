@@ -1,0 +1,44 @@
+[
+  {
+    "id": "moon_gate",
+    "name": "月门遗迹",
+    "description": "残月照着三重石厅，取宝要在贪念与安稳之间作出取舍。",
+    "min_realm": "qiling",
+    "halls": [
+      {"name": "照影厅", "description": "石壁映出一枚尚未冷却的灵晶。", "treasure": "forge_ore", "risk": 1},
+      {"name": "回声厅", "description": "回声深处藏着古修留下的灵粮。", "treasure": "spirit_food", "risk": 2},
+      {"name": "月魄厅", "description": "月魄凝成一线，正是遗迹的终宝。", "treasure": "bloodline_essence", "risk": 3}
+    ],
+    "reward": {"exp": {"minimum": 50, "maximum": 50}, "stones": {"minimum": 100, "maximum": 100}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}},
+    "rich_reward": {"exp": {"minimum": 80, "maximum": 80}, "stones": {"minimum": 180, "maximum": 180}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}, "bloodline_essence": {"minimum": 1, "maximum": 1}}},
+    "bond": 8
+  },
+  {
+    "id": "wind_archive",
+    "name": "听风遗库",
+    "description": "风声穿过空库，谨慎前行才能完整带走遗库的灵材。",
+    "min_realm": "ningqi",
+    "halls": [
+      {"name": "鸣风廊", "description": "风铃下悬着一枚温热的灵石。", "treasure": "spirit_food", "risk": 1},
+      {"name": "断简室", "description": "残简夹着可用的锻灵矿。", "treasure": "forge_ore", "risk": 2},
+      {"name": "藏锋台", "description": "藏锋台的血脉精华尚未散尽。", "treasure": "bloodline_essence", "risk": 3}
+    ],
+    "reward": {"exp": {"minimum": 70, "maximum": 70}, "stones": {"minimum": 130, "maximum": 130}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}},
+    "rich_reward": {"exp": {"minimum": 110, "maximum": 110}, "stones": {"minimum": 220, "maximum": 220}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}, "bloodline_essence": {"minimum": 1, "maximum": 1}}},
+    "bond": 10
+  },
+  {
+    "id": "sea_temple",
+    "name": "沉潮古殿",
+    "description": "古殿沉在潮声里，稳住心神才能打开最后的水灵匣。",
+    "min_realm": "zhuji",
+    "halls": [
+      {"name": "潮痕门", "description": "潮痕下生出一颗澄澈灵珠。", "treasure": "gem_vital", "risk": 1},
+      {"name": "沉钟殿", "description": "沉钟旁的灵粮仍然完整。", "treasure": "spirit_food", "risk": 2},
+      {"name": "归潮台", "description": "归潮台托起一枚水灵晶。", "treasure": "water_prism", "risk": 3}
+    ],
+    "reward": {"exp": {"minimum": 90, "maximum": 90}, "stones": {"minimum": 160, "maximum": 160}, "items": {"gem_vital": {"minimum": 1, "maximum": 1}}},
+    "rich_reward": {"exp": {"minimum": 140, "maximum": 140}, "stones": {"minimum": 260, "maximum": 260}, "items": {"gem_vital": {"minimum": 1, "maximum": 1}, "water_prism": {"minimum": 1, "maximum": 1}}},
+    "bond": 12
+  }
+]

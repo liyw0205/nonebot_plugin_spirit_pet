@@ -57,6 +57,11 @@ def _vein_read_only(argument: str) -> bool:
     return not parts or parts[0] in {"预览", "记录"}
 
 
+def _ruin_read_only(argument: str) -> bool:
+    parts = argument.split()
+    return not parts or parts[0] in {"预览", "记录"}
+
+
 class Game:
     def __init__(self, store: Store, config: Config, rng=None, content: Catalog | None = None):
         self.store = store
@@ -98,6 +103,8 @@ class Game:
             action == "daily_assignment_chain" and _assignment_chain_read_only(argument)
         ) or (
             action == "vein_expedition" and _vein_read_only(argument)
+        ) or (
+            action == "ruin_expedition" and _ruin_read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

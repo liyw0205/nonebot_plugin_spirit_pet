@@ -106,6 +106,7 @@ from ..domain.content import (
     Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
 )
 from ..domain.vein_content import VeinRoute
+from ..domain.ruin_content import RuinSite
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -249,6 +250,7 @@ class Catalog:
     battle_supplies: dict[str, BattleSupply]
     nursery: NurseryRule
     vein_routes: dict[str, VeinRoute]
+    ruins: dict[str, RuinSite]
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
@@ -378,6 +380,7 @@ class Catalog:
             battle_supplies=_index(directory / "battle_supplies.json", BattleSupply),
             nursery=NurseryRule.model_validate(_read(directory / "nursery.json")),
             vein_routes=_index(directory / "vein_routes.json", VeinRoute),
+            ruins=_index(directory / "ruins.json", RuinSite),
         )
         catalog.validate()
         return catalog
@@ -387,6 +390,8 @@ class Catalog:
             raise ValueError("pair practice needs two formations")
         if len(self.vein_routes) != 3:
             raise ValueError("vein expeditions need exactly three routes")
+        if len(self.ruins) != 3:
+            raise ValueError("ruin expeditions need exactly three sites")
         realm_ids = {realm.id for realm in self.realms}
         for route in self.vein_routes.values():
             if route.min_realm not in realm_ids:
@@ -399,6 +404,15 @@ class Catalog:
             for reward in (route.reward, route.guarded_reward):
                 if set(reward.items) - set(self.items):
                     raise ValueError(f"unknown vein reward item in {route.id}")
+        for ruin in self.ruins.values():
+            if ruin.min_realm not in realm_ids:
+                raise ValueError(f"unknown ruin minimum realm: {ruin.min_realm}")
+            for hall in ruin.halls:
+                self._require([hall.treasure], self.items, "ruin hall treasure")
+                if self.items[hall.treasure].kind in {"skill_book", "pet_egg"}:
+                    raise ValueError(f"ruin hall treasure cannot be a skill book or egg: {hall.treasure}")
+            for reward in (ruin.reward, ruin.rich_reward):
+                self._require(reward.items, self.items, "ruin reward items")
         for practice in self.pair_practices.values():
             self._require(practice.enemies, self.enemies, "pair practice enemies")
         if len(self.travel_revisits) != 3:
