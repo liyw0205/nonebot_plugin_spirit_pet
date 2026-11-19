@@ -47,6 +47,7 @@ from . import (
     cave_coop,
     farm_contracts,
     item_trade,
+    cuisine_coop,
 )
 
 TITLE = "灵宠今日"
@@ -141,6 +142,12 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         pending.append(_entry(
             TODO, item_trade.objective_line(ctx, owner),
             "查看完整约定后确认成交，或处理托管退款", item_trade.TITLE,
+        ))
+    cooking = cuisine_coop.active(ctx, owner)
+    if cooking is not None:
+        pending.append(_entry(
+            TODO, cuisine_coop.objective_line(ctx, owner),
+            "查看双方投入与指定伙伴，完成合膳或处理退款", cuisine_coop.TITLE,
         ))
     farm_run = farm_contracts.active(ctx, owner)
     if farm_run is not None:

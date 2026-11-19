@@ -72,6 +72,11 @@ def _farm_contract_read_only(argument: str) -> bool:
     return not parts or (parts[0] == "记录" and len(parts) <= 2)
 
 
+def _cuisine_coop_read_only(argument: str) -> bool:
+    parts = argument.split()
+    return not parts or parts[0] in {"预览", "详情", "记录"}
+
+
 class Game:
     def __init__(self, store: Store, config: Config, rng=None, content: Catalog | None = None):
         self.store = store
@@ -123,6 +128,8 @@ class Game:
             action == "item_trade" and (
                 not argument.split() or argument.split()[0] in {"预览", "详情", "记录"}
             )
+        ) or (
+            action == "cuisine_coop" and _cuisine_coop_read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

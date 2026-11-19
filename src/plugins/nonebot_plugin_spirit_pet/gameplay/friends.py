@@ -167,6 +167,9 @@ def page(ctx: Context, arg: str = "") -> Reply:
     else:
         lines.append("暂时还没有好友。用 灵宠好友 添加 <UID> 向其他修士发起结交。")
     lines.append("添加好友：灵宠好友 添加 <UID>。")
+    if roster:
+        lines.append("与好友合膳：双方各选一只伙伴，投入相同单膳成本。")
+        links.append(InlineCommand(len(lines) - 1, "发起合膳", "灵宠合膳"))
     return Reply(
         "灵宠好友",
         tuple(lines),
