@@ -1,10 +1,12 @@
 import pytest
 
+from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 
-from .support import sql
+from .support import player, sql
+from .test_targeted_training import add_pet
 
 WEAPON = "青岚翎"
 
@@ -45,10 +47,18 @@ def test_batch_enhance_charges_the_whole_ladder(game, play):
         f"青鸾的{WEAPON}强化至 +5。",
         "消耗 1000 灵石、锻灵矿 15；装备属性倍率 2。",
     )
-    assert reply.commands == ("灵宠装备", "灵宠背包")
+    original_pet = player(game[1])["active_pet_id"]
+    assert reply.commands == (f"灵宠装备 伙伴 {original_pet}", f"灵宠整备 {original_pet}", "灵宠背包")
     assert level(game) == 5
     assert stones(game) == before - 1000
     assert ore(game) == 1000 - 15
+    reserve = add_pet(game[1])
+    play("switch", str(reserve))
+    gear = play(*handlers._parse(reply.commands[0]))
+    preparation = play(*handlers._parse(reply.commands[1]))
+    assert "青鸾" in gear.text() and f"{WEAPON} +5" in gear.text()
+    assert "青鸾" in preparation.text()
+    assert player(game[1])["active_pet_id"] == reserve
 
 
 def test_single_step_is_unchanged(game, play):

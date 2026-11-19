@@ -2,8 +2,11 @@
 
 import pytest
 
+from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.domain.models import GameError
-from .support import sql
+
+from .support import player, sql
+from .test_targeted_training import add_pet
 
 NOW = 1_800_000_000
 
@@ -112,4 +115,14 @@ def test_page_shows_rank_and_refine_link(game, play):
     unlock_first(game, play)
     page = play("sigils", now=NOW + 1, op="page")
     assert any("初光符" in line and "精炼 1/3" in line for line in page.lines)
-    assert "灵宠符印 精炼 初光符" in [link.command for link in page.inline_commands]
+    original_pet = player(game[1])["active_pet_id"]
+    assert [link.command for link in page.inline_commands] == [
+        f"灵宠符印 装备 初光符 伙伴 {original_pet}",
+        f"灵宠符印 精炼 初光符 伙伴 {original_pet}",
+    ]
+    reserve = add_pet(game[1])
+    play("switch", str(reserve), now=NOW + 1)
+    reply = play(*handlers._parse(page.inline_commands[1].command), now=NOW + 2)
+    assert "精炼到 2 阶" in reply.text()
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE quest_id='sigil_rank_first_light'") == [{"progress": 2}]
+    assert player(game[1])["active_pet_id"] == reserve

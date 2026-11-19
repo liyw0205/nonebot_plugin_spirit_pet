@@ -9,6 +9,7 @@ import pytest
 from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.core.config import Config
+from nonebot_plugin_spirit_pet.domain.models import InlineCommand
 
 from .support import sql
 from .test_commands import onebot_event
@@ -109,7 +110,9 @@ def test_expedition_status_links_match_state_and_replay_stays_consistent(game, p
     assert play("expedition_start", "采灵药", now=NOW, op="dispatch-herb") == started
 
     claimed = play("expedition_claim", key, now=job["finishes_at"])
-    assert claimed.inline_commands == ()
+    assert claimed.inline_commands == (InlineCommand(0, "查看整备", f"灵宠整备 {job['pet_id']}"),)
+    assert handlers._parse(claimed.inline_commands[0].command) == ("pet_prep", str(job["pet_id"]))
+    assert "青鸾" in play(*handlers._parse(claimed.inline_commands[0].command), now=job["finishes_at"]).text()
     after = dispatch(play, key, job["finishes_at"])
     assert after.inline_commands[0].label == "查看委托目录"
     assert after.inline_commands[0].command == "灵宠委托"

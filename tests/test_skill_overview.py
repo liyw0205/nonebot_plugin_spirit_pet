@@ -99,6 +99,15 @@ def test_skills_page_links_overview_and_native_keyboard_clean(game, play):
     play("adopt", "青鸾", now=NOW)
     view = play("skills", now=NOW)
     assert "灵宠万法总览" in view.commands
+    assert view.commands == ("灵宠技能图鉴 伙伴 1", "灵宠整备 1", "灵宠商店", "灵宠万法总览")
+    _, view_message = _qq_segments(view, Config(spirit_pet_qq_mode="native"))
+    view_buttons = [
+        button.action.data.removeprefix("/")
+        for segment in view_message["keyboard"]
+        for row in segment.data["keyboard"].content.rows
+        for button in row.buttons
+    ]
+    assert view_buttons == list(view.commands)
     sql(game[1], "UPDATE players SET stones=10000")
     play("buy", "风刃术诀 1", now=NOW)
     play("learn", "风刃术", now=NOW + 1)
