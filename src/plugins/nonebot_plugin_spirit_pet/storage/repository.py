@@ -26,6 +26,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "cave_coop": 16,
     "stage_tactic": 15,
     "farm_contract": 6,
+    "item_trade": 16,
 }
 
 
@@ -755,6 +756,32 @@ class Repository:
         self, operation_id: str, actor_id: str, created_at: int, snapshot: dict, reply: Reply,
     ) -> None:
         self.record_duel_action(operation_id, actor_id, created_at, {**snapshot, "kind": "cave_coop"}, reply)
+
+    def item_trade(self, user_id: str, trade_id: int | None = None) -> dict | None:
+        by_id = " AND json_extract(snapshot,'$.trade_id')=?" if trade_id is not None else ""
+        params = (user_id, user_id, trade_id) if trade_id is not None else (user_id, user_id)
+        row = self.conn.execute(
+            "SELECT snapshot FROM duel_actions WHERE json_extract(snapshot,'$.kind')='item_trade' "
+            "AND (json_extract(snapshot,'$.owner_id')=? OR json_extract(snapshot,'$.target_id')=?)"
+            + by_id + " ORDER BY action_id DESC LIMIT 1", params,
+        ).fetchone()
+        return json.loads(row["snapshot"]) if row else None
+
+    def item_trade_history(self, user_id: str, page: int, size: int) -> tuple[int, list[dict]]:
+        where = (
+            " FROM duel_actions WHERE json_extract(snapshot,'$.kind')='item_trade' "
+            "AND json_extract(snapshot,'$.status')!='pending' "
+            "AND (json_extract(snapshot,'$.owner_id')=? OR json_extract(snapshot,'$.target_id')=?)"
+        )
+        count = int(self.conn.execute("SELECT COUNT(*)" + where, (user_id, user_id)).fetchone()[0])
+        rows = self.conn.execute(
+            "SELECT snapshot" + where + " ORDER BY action_id DESC LIMIT ? OFFSET ?",
+            (user_id, user_id, size, (page - 1) * size),
+        )
+        return count, [json.loads(row["snapshot"]) for row in rows]
+
+    def record_item_trade(self, operation_id: str, actor_id: str, now: int, snapshot: dict, reply: Reply) -> None:
+        self.record_duel_action(operation_id, actor_id, now, snapshot, reply)
 
     def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:
         row = self.conn.execute(

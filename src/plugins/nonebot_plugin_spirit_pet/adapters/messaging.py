@@ -83,6 +83,14 @@ _ACTION_LABELS = {
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
     parts = visible.split()
+    if parts and parts[0] == "灵宠换物":
+        if len(parts) == 3 and parts[1] == "记录":
+            return f"换物第 {parts[2]} 页"
+        return {
+            "预览": "填写换物约定", "发起": "确认托管发起", "同意": "确认交换",
+            "拒绝": "拒绝并退回", "取消": "取消并取回", "退款": "到期退款",
+            "详情": "查看换物邀约", "记录": "换物记录",
+        }.get(parts[1] if len(parts) > 1 else "", "好友换物")
     if parts[:2] == ["灵宠队伍", "秘境"]:
         return f"秘境第 {parts[2]} 页" if len(parts) == 3 else "选择组队秘境"
     if parts and parts[0] == "灵宠护航":

@@ -170,7 +170,7 @@ def page(ctx: Context, arg: str = "") -> Reply:
     return Reply(
         "灵宠好友",
         tuple(lines),
-        (*paged.navigation, "灵宠好友 申请", "灵宠目标")[:4],
+        (*paged.navigation, "灵宠好友 申请", "灵宠换物", "灵宠目标")[:4],
         tuple(links),
     )
 

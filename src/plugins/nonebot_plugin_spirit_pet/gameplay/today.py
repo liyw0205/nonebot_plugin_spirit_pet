@@ -46,6 +46,7 @@ from . import (
     ruin_expedition,
     cave_coop,
     farm_contracts,
+    item_trade,
 )
 
 TITLE = "灵宠今日"
@@ -134,6 +135,12 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             TODO, f"洞府共建项目 {coop['project_id']} 待处理",
             f"{coop['project_name']} · {cave_coop.STAGES[coop['stage']]}",
             cave_coop.COMMAND,
+        ))
+    trade = item_trade.active(ctx, owner)
+    if trade is not None:
+        pending.append(_entry(
+            TODO, item_trade.objective_line(ctx, owner),
+            "查看完整约定后确认成交，或处理托管退款", item_trade.TITLE,
         ))
     farm_run = farm_contracts.active(ctx, owner)
     if farm_run is not None:

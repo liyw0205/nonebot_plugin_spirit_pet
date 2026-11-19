@@ -105,6 +105,7 @@ from ..gameplay import collection_rank_rewards, collection_exchange
 from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay import friends
+from ..gameplay import item_trade
 from ..gameplay import shares
 from ..gameplay import share_board
 from ..gameplay import share_rank_rewards
@@ -318,6 +319,7 @@ ACTIONS = {
     "market": Command(market.dispatch, True, registered=False),
     "mail": Command(mailbox.dispatch, True, registered=False),
     "friends": Command(friends.dispatch, True, registered=False),
+    "item_trade": Command(item_trade.dispatch, True, registered=False),
     "visits": Command(visits.dispatch, True, registered=False),
     "visits_rewards": Command(visits_rewards.dispatch, True, registered=False),
     "checkin_full": Command(checkin_full.dispatch, True, registered=False),
@@ -511,6 +513,7 @@ COMMANDS = {
     "灵宠商会": "merchant",
     "灵宠集市": "market",
     "灵宠信箱": "mail",
+    "灵宠换物": "item_trade",
     "灵宠好友": "friends", "灵宠串门": "visits", "灵宠串门礼": "visits_rewards", "灵宠串门领奖": "visits_rewards", "灵宠签到全勤": "checkin_full", "灵宠全勤": "checkin_full",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",

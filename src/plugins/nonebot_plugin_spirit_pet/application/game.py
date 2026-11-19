@@ -119,6 +119,10 @@ class Game:
             action == "cave" and _cave_read_only(argument)
         ) or (
             action == "farm_contracts" and _farm_contract_read_only(argument)
+        ) or (
+            action == "item_trade" and (
+                not argument.split() or argument.split()[0] in {"预览", "详情", "记录"}
+            )
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):
