@@ -119,7 +119,7 @@ def page(ctx: Context, arg: str) -> Reply:
         links.append(InlineCommand(len(lines) - 1, "全部领取", "灵宠农事 领奖"))
     return Reply(
         "灵宠农事", tuple(lines),
-        ("灵宠农事", "灵宠灵田", "灵宠目标", "灵宠帮助"), tuple(links),
+        ("灵宠农契", "灵宠灵田", "灵宠目标", "灵宠帮助"), tuple(links),
     )
 
 

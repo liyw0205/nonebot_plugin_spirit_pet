@@ -36,6 +36,7 @@
 | dungeons.json | 秘境准入境界、敌人列表、精力消耗、奖励、是否组队、一次性首通奖励 |
 | quests.json | 每日任务的事件、目标次数、奖励 |
 | daily_assignments.json | 今日课题的指标、目标值与一次性奖励，按自然日轮换三项 |
+| farm_contracts.json | 三份两季农契的农事门槛、押金、不同作物顺序、真实交付物与奖励；交付量不得超过两季最低产物总量 |
 | daily_encounters.json | 每日路边际遇的名字、描述、2-3 个带成本/回报的选项，以及可引出次日续篇的 `next` |
 | daily_followups.json | 由普通际遇选项引出的次日续篇，形状同际遇并带 `trigger` 回指来源际遇 |
 | codex_rewards.json | 每个种族的一份一次性图鉴收集奖励，按稀有度递增 |
@@ -72,6 +73,10 @@
 `weekly_quests.json` 的 `metric` 由 `WeeklyMetric` 严格限定。膳房相关目标按已有成功记录派生：`weekly_cuisine_orders` 只计本周有效订单目录中的已交付回执；`weekly_cuisine_practice` 只计 `duel_actions` 中本周 `kind=cuisine_practice` 且 `status=finished` 的终态记录；`weekly_banquets` 只认 `banquet_<本周起点>` 开席凭证。不得把烹制、研修中间步骤、放弃或失败请求当作完成。`weekly_rewards.json` 的累计门槛固定为 2/4/6/9，统计本周已领取的周常目标数；领取与该周凭证、奖励同事务保存。
 
 冷却间隔、精力恢复间隔属于运行配置，放在 `.env`；某玩家的最后修炼时间、准备状态属于 SQLite。静态的“进化需要 3 个血脉精华”是成本，不是库存。
+
+## 灵田农契合同
+
+农契冻结田位、两季作物、押金、材料、奖励与规则版本；真实收获记录单调季号和不重叠的种植/收获时间。快照与永久回执复用 `duel_actions`，养苗收获共用一个写入点；进行中契约的不计进度收获也保存回执。目录/历史只读，交付材料、押金退还、奖励与终态同事务，不改存档 schema。
 
 ## 灵宠跃障合同
 

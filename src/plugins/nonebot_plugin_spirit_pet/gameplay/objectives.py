@@ -2,7 +2,7 @@ from ..application.context import Context
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.time import beijing_day, season_bounds
 from . import adventure_collection_rewards, adventure_travel, daily_assignment, daily_assignment_chain, daily_dungeon, duel, echoes, farming, first_clear, free_summon, journey, main_quest, season_missions, titles, weekly_quests, world_boss, world_boss_rank_rewards
-from . import banquet, banquet_rewards, cooking_rewards, farm_progress
+from . import banquet, banquet_rewards, cooking_rewards, farm_progress, farm_contracts
 from . import weekly_rewards
 from . import daily_shop_rewards
 from . import codex
@@ -608,6 +608,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (visits.objective_line(ctx, player.user_id), "灵宠串门"),
         (visits_rewards.objective_line(ctx, player.user_id), "灵宠串门礼"),
         (farm_progress.objective_line(ctx, player.user_id), "灵宠农事"),
+        (farm_contracts.objective_line(ctx, player.user_id), farm_contracts.TITLE),
         (daily_shop_rewards.objective_line(ctx, player.user_id), "灵宠特供赏"),
         (cuisine.objective_line(ctx, player.user_id), "灵宠膳房"),
         (cooking.objective_line(ctx, player.user_id), "灵宠掌勺"),

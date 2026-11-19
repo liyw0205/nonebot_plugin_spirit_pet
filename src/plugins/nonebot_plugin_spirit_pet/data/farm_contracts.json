@@ -1,0 +1,32 @@
+[
+  {
+    "id": "green_pair",
+    "name": "青禾双季",
+    "min_farm_level": 1,
+    "deposit": 100,
+    "crops": ["spirit_rice", "ore_sprout"],
+    "delivery": {"spirit_food": 3, "forge_ore": 1},
+    "reward_stones": 200,
+    "reward_items": {"spirit_food": 2}
+  },
+  {
+    "id": "ore_rotation",
+    "name": "灵矿轮作",
+    "min_farm_level": 2,
+    "deposit": 250,
+    "crops": ["twin_grain", "frost_wheat"],
+    "delivery": {"spirit_food": 5, "forge_ore": 5},
+    "reward_stones": 600,
+    "reward_items": {"forge_ore": 2}
+  },
+  {
+    "id": "flower_union",
+    "name": "灵蕊互生",
+    "min_farm_level": 3,
+    "deposit": 500,
+    "crops": ["crimson_lotus", "void_lotus"],
+    "delivery": {"bloodline_essence": 4},
+    "reward_stones": 1200,
+    "reward_items": {"bloodline_essence": 1}
+  }
+]

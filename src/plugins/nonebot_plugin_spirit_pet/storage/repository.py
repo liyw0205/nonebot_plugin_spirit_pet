@@ -25,6 +25,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "ruin_expedition": 15,
     "cave_coop": 16,
     "stage_tactic": 15,
+    "farm_contract": 6,
 }
 
 
@@ -789,6 +790,48 @@ class Repository:
         if row["user_id"] != user_id:
             raise GameError("operation ID reused by a different user")
         return json.loads(row["reply"])
+
+    def latest_farm_contract(self, user_id: str) -> dict | None:
+        rows = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? AND ("
+            "json_extract(snapshot,'$.kind')='farm_contract' OR "
+            "(json_extract(snapshot,'$.kind')='farm_care' AND "
+            "json_type(snapshot,'$.contract')='object')) ORDER BY action_id DESC",
+            (user_id,),
+        )
+        row = next(iter(rows), None)
+        if row is None:
+            return None
+        snapshot = json.loads(row["snapshot"])
+        contract = snapshot.get("contract")
+        if contract is None:
+            contract = {key: value for key, value in snapshot.items() if key != "kind"}
+        return {"snapshot": contract, "reply": json.loads(row["reply"])}
+
+    def farm_contract_history(self, user_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT snapshot,reply FROM duel_actions WHERE user_id=? AND ("
+            "json_extract(snapshot,'$.kind')='farm_contract' OR "
+            "(json_extract(snapshot,'$.kind')='farm_care' AND "
+            "json_type(snapshot,'$.contract')='object')) ORDER BY action_id DESC",
+            (user_id,),
+        )
+        latest: dict[int, dict] = {}
+        for row in rows:
+            snapshot = json.loads(row["snapshot"])
+            contract = snapshot.get("contract")
+            if contract is None:
+                contract = {key: value for key, value in snapshot.items() if key != "kind"}
+            contract_id = int(contract["contract_id"])
+            latest.setdefault(contract_id, {"snapshot": contract, "reply": json.loads(row["reply"])})
+        return list(latest.values())
+
+    def record_farm_contract_action(
+        self, operation_id: str, user_id: str, created_at: int, contract: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(
+            operation_id, user_id, created_at, {"kind": "farm_contract", "contract": contract}, reply,
+        )
 
     def latest_convoy_action(self, user_id: str, finished_only: bool = False) -> dict | None:
         status = " AND json_extract(snapshot,'$.status') != 'active'" if finished_only else ""

@@ -36,6 +36,7 @@ from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
 from ..domain.race_prize_content import RacePrize
 from ..domain.farm_level_content import FarmLevel
+from ..domain.farm_contract_content import FarmContractPlan
 from ..domain.cave_offering_content import CaveOffering
 from ..domain.gauntlet_content import Gauntlet
 from ..domain.sigil_content import Sigil
@@ -177,6 +178,7 @@ class Catalog:
     daily_followups: dict[str, DailyFollowup]
     codex_rewards: dict[str, CodexReward]
     crops: dict[str, Crop]
+    farm_contracts: dict[str, FarmContractPlan]
     stage_star_rewards: dict[int, StageStarReward]
     arena_tier_rewards: dict[str, ArenaTierReward]
     gear_words: dict[str, GearWord]
@@ -298,6 +300,7 @@ class Catalog:
             daily_followups=_index(directory / "daily_followups.json", DailyFollowup),
             codex_rewards=_index(directory / "codex_rewards.json", CodexReward, "species"),
             crops=_index(directory / "crops.json", Crop),
+            farm_contracts=_index(directory / "farm_contracts.json", FarmContractPlan),
             gear_words=_index(directory / "gear_words.json", GearWord),
             ascension=_index(directory / "ascension.json", AscensionStage),
             shop_offers=_index(directory / "shop_rotation.json", ShopOffer),
@@ -397,6 +400,8 @@ class Catalog:
             raise ValueError("ruin expeditions need exactly three sites")
         if len(self.cave_coop) != len(self.cave):
             raise ValueError("cave co-op needs one project per facility")
+        if len(self.farm_contracts) != 3:
+            raise ValueError("farm contracts need exactly three plans")
         realm_ids = {realm.id for realm in self.realms}
         for route in self.vein_routes.values():
             if route.min_realm not in realm_ids:
@@ -418,6 +423,19 @@ class Catalog:
                     raise ValueError(f"ruin hall treasure cannot be a skill book or egg: {hall.treasure}")
             for reward in (ruin.reward, ruin.rich_reward):
                 self._require(reward.items, self.items, "ruin reward items")
+        for plan in self.farm_contracts.values():
+            self._require(plan.crops, self.crops, "farm contract crops")
+            self._require(plan.delivery, self.items, "farm contract delivery")
+            self._require(plan.reward_items, self.items, "farm contract rewards")
+            guaranteed: dict[str, int] = {}
+            for crop_id in plan.crops:
+                crop = self.crops[crop_id]
+                for item_id, bounds in crop.reward_items.items():
+                    guaranteed[item_id] = guaranteed.get(item_id, 0) + bounds.minimum
+            if any(amount > guaranteed.get(item_id, 0) for item_id, amount in plan.delivery.items()):
+                raise ValueError(f"farm contract {plan.id} asks for output not guaranteed by its crops")
+            if any(self.items[item_id].kind not in {"material", "consumable"} for item_id in plan.delivery):
+                raise ValueError(f"farm contract {plan.id} delivery must use consumable or material items")
         for project in self.cave_coop.values():
             if project.facility not in self.cave:
                 raise ValueError(f"unknown cave co-op facility: {project.facility}")

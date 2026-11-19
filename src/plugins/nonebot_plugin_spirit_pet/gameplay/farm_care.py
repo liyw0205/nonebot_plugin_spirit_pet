@@ -42,10 +42,21 @@ def bonus(ctx: Context, plot: int) -> int:
     return value(ctx, f"{PREFIX}yield_{plot}")
 
 
-def receipt(ctx: Context, plot: int, reply: Reply) -> Reply:
-    ctx.repo.record_duel_action(ctx.operation_id, ctx.user_id, ctx.now,
-        {"kind": "farm_care", "plot": plot, "cycle": value(ctx, f"{CYCLE}{plot}"),
-         "status": "harvested"}, reply)
+def receipt(
+    ctx: Context, plot: int, reply: Reply, *, cycle: int | None = None,
+    contract: dict | None = None, cared: bool = True,
+) -> Reply:
+    if not cared and contract is None:
+        return reply
+    snapshot = {
+        "kind": "farm_care" if cared else "farm_contract",
+        "plot": plot,
+        "cycle": cycle if cycle is not None else value(ctx, f"{CYCLE}{plot}"),
+        "status": "harvested",
+    }
+    if contract is not None:
+        snapshot["contract"] = contract
+    ctx.repo.record_duel_action(ctx.operation_id, ctx.user_id, ctx.now, snapshot, reply)
     return reply
 
 

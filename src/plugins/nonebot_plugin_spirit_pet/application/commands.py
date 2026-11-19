@@ -100,7 +100,7 @@ from ..gameplay import affinity_milestone_rewards
 from ..gameplay import bloodline_milestone_rewards
 from ..gameplay import lineage_awakening_rewards
 from ..gameplay import adventure_collection_rewards, adventure_stats, adventure_travel, battle_merits, battle_records, collection_rank, dungeon_stats, farming, gear_words, help, pet_compare, fishing, angling, pet_outing, play_games, rank_rewards, reforge, skill_overview, checkin_full, spar_board, spar_goals, spar_stats, visits, stage_stats, talent_reforge, weekly_report, world_boss, world_boss_rank_rewards
-from ..gameplay import banquet, banquet_rewards, farm_progress, visits_rewards, daily_shop_rewards
+from ..gameplay import banquet, banquet_rewards, farm_progress, farm_contracts, visits_rewards, daily_shop_rewards
 from ..gameplay import collection_rank_rewards, collection_exchange
 from ..gameplay import bond_levels
 from ..gameplay import gifting
@@ -342,6 +342,7 @@ ACTIONS = {
     "stage_stats": Command(stage_stats.catalog, True, registered=False),
     "skill_overview": Command(skill_overview.catalog, True, registered=False),
     "farm": Command(farming.catalog, True, registered=False),
+    "farm_contracts": Command(farm_contracts.dispatch, True, registered=False),
     "farm_care": Command(farm_care.dispatch, True, registered=False),
     "farm_open": Command(farming.open_plot, True),
     "farm_plant": Command(farming.plant, True),
@@ -441,6 +442,7 @@ COMMANDS = {
     "灵宠出战": "lineup", "灵宠阵容": "lineup", "灵宠签到": "sign", "灵宠签到奖励": "checkin_rewards",
     "灵宠签到领奖": "checkin_reward_claim", "灵宠签到月历": "checkin_calendar", "灵宠背包": "bag", "灵宠商店": "shop",
     "灵宠养苗": "farm_care",
+    "灵宠农契": "farm_contracts",
     "灵宠灵田": "farm", "灵宠开垦": "farm_open", "灵宠播种": "farm_plant", "灵宠收获": "farm_harvest", "灵宠翻新": "farm_renew", "灵宠升级": "farm_upgrade", "灵宠浇水": "farm_water",
     "灵宠嬉戏": "play_game", "灵宠垂钓": "fishing", "灵宠出游": "pet_outing", "灵宠游历赏": "pet_outing_board", "灵宠游历领奖": "pet_outing_claim",
     "灵宠重铸": "reforge",

@@ -333,7 +333,7 @@ def catalog(ctx: Context, arg: str) -> Reply:
         if opened and _tier(ctx, plot) < len(TIER_COST):
             lines.append(f"  可升级：{TIER_COST[_tier(ctx, plot)]} 灵石缩短该田 15% 生长时长")
             links.append(InlineCommand(len(lines) - 1, "升级灵田", f"灵宠升级 {plot}"))
-    return Reply("灵宠灵田", tuple(lines), ("灵宠商店", "灵宠背包", "灵宠目标"), tuple(links))
+    return Reply("灵宠灵田", tuple(lines), ("灵宠商店", "灵宠背包", "灵宠目标", "灵宠农契"), tuple(links))
 
 
 def open_plot(ctx: Context, arg: str) -> Reply:
@@ -386,6 +386,9 @@ def plant(ctx: Context, arg: str) -> Reply:
 
 def _sow(ctx: Context, plot: int, crop) -> None:
     """Consume one seed and start a growth row on the plot."""
+    from . import farm_contracts
+
+    farm_contracts.check_plant_time(ctx, plot)
     ctx.repo.consume_item(ctx.user_id, crop.seed_item, 1)
     farm_care.reset(ctx, plot)
     cycle_key = f"{farm_care.CYCLE}{plot}"
@@ -434,6 +437,7 @@ def harvest(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{crop.name}还在生长，剩余 {duration - elapsed} 秒。")
     care_bonus = farm_care.bonus(ctx, plot)
     cared = farm_care.value(ctx, f"farm_care_step_{plot}") > 0
+    harvest_cycle = farm_care.value(ctx, f"{farm_care.CYCLE}{plot}") or planted
     farm_care.reset(ctx, plot)
     ctx.repo.conn.execute(
         "DELETE FROM quest_progress WHERE user_id=? AND quest_id IN (?, ?, ?)",
@@ -454,7 +458,7 @@ def harvest(ctx: Context, arg: str) -> Reply:
             f"田位 {plot} 的{crop.name}已枯萎，只返还了种子。",
             "下次记得及时收获。",
         ), ("灵宠灵田", "灵宠背包"))
-        return farm_care.receipt(ctx, plot, result) if cared else result
+        return _harvest_receipt(ctx, plot, crop, harvest_cycle, planted, True, result, cared)
     multiplier = reward_multiplier(ctx, plot)
     gained = _grant_reward(ctx, crop, round(multiplier + care_bonus / 100, 2))
     bonus = f"轮作加成 +{ctx.content.rules.farm_rotation.rate_percent}%" if multiplier > 1 else ""
@@ -472,13 +476,24 @@ def harvest(ctx: Context, arg: str) -> Reply:
             f"已消耗 1 个{ctx.content.items[replant.seed_item].name}，"
             f"{_effective_duration(ctx, plot, replant.duration)} 秒后成熟。",
         ), ("灵宠灵田", "灵宠背包"))
-        return farm_care.receipt(ctx, plot, result) if cared else result
+        return _harvest_receipt(ctx, plot, crop, harvest_cycle, planted, False, result, cared)
     result = Reply("灵田收获", (
         f"田位 {plot} 的{crop.name}成熟收获。",
         *([bonus] if bonus else []),
         *gained,
     ), ("灵宠灵田", "灵宠背包"))
-    return farm_care.receipt(ctx, plot, result) if cared else result
+    return _harvest_receipt(ctx, plot, crop, harvest_cycle, planted, False, result, cared)
+
+
+def _harvest_receipt(ctx, plot, crop, cycle, planted, wilted, reply, cared):
+    from . import farm_contracts
+
+    reply, contract = farm_contracts.advance_on_harvest(
+        ctx, plot, crop.id, cycle, planted, ctx.now, wilted=wilted, reply=reply,
+    )
+    return farm_care.receipt(
+        ctx, plot, reply, cycle=cycle, contract=contract, cared=cared,
+    )
 
 
 def renew(ctx: Context, arg: str) -> Reply:

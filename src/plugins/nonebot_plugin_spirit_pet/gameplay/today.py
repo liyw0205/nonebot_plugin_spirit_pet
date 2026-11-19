@@ -45,6 +45,7 @@ from . import (
     vein_expedition,
     ruin_expedition,
     cave_coop,
+    farm_contracts,
 )
 
 TITLE = "灵宠今日"
@@ -134,6 +135,30 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             f"{coop['project_name']} · {cave_coop.STAGES[coop['stage']]}",
             cave_coop.COMMAND,
         ))
+    farm_run = farm_contracts.active(ctx, owner)
+    if farm_run is not None:
+        owned = {
+            row["item_id"]: int(row["quantity"])
+            for row in ctx.repo.conn.execute("SELECT item_id,quantity FROM inventory WHERE user_id=?", (owner,))
+        }
+        deliverable = len(farm_run["seasons"]) == 2 and all(
+            owned.get(item_id, 0) >= amount for item_id, amount in farm_run["delivery"].items()
+        )
+        if deliverable:
+            claimable.append(_entry(
+                CLAIM, f"农契 {farm_run['contract_id']} 可交付",
+                "两季已完成，交付真实库存材料后退还押金并结算奖励", "灵宠农契",
+            ))
+        elif len(farm_run["seasons"]) == 2:
+            pending.append(_entry(
+                TODO, f"农契 {farm_run['contract_id']} 待备齐交付",
+                "两季已完成，准备好真实库存材料后提交交付", "灵宠农契",
+            ))
+        else:
+            pending.append(_entry(
+                TODO, f"农契 {farm_run['contract_id']} 已完成 {len(farm_run['seasons'])}/2 季",
+                f"田位 {farm_run['plot']} · 按冻结作物顺序成熟收获", "灵宠农契",
+            ))
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(
             TODO, "今日还没签到", "签到累计连续天数并给灵石与灵粮", "灵宠签到",

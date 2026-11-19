@@ -67,6 +67,11 @@ def _cave_read_only(argument: str) -> bool:
     return parts[:1] == ["共建"] and (len(parts) == 1 or parts[1] == "记录")
 
 
+def _farm_contract_read_only(argument: str) -> bool:
+    parts = argument.split()
+    return not parts or (parts[0] == "记录" and len(parts) <= 2)
+
+
 class Game:
     def __init__(self, store: Store, config: Config, rng=None, content: Catalog | None = None):
         self.store = store
@@ -112,6 +117,8 @@ class Game:
             action == "ruin_expedition" and _ruin_read_only(argument)
         ) or (
             action == "cave" and _cave_read_only(argument)
+        ) or (
+            action == "farm_contracts" and _farm_contract_read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):
