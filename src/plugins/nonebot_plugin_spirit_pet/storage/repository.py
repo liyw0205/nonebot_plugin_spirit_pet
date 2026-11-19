@@ -28,6 +28,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "farm_contract": 6,
     "item_trade": 16,
     "cuisine_coop": 16,
+    "friend_relay": 15,
 }
 
 
@@ -834,6 +835,26 @@ class Repository:
         self.record_duel_action(
             operation_id, user_id, created_at, {**snapshot, "kind": "cuisine_coop"}, reply,
         )
+
+    def friend_relay_runs(self, user_id: str, *, run_id: int | None = None, active_only: bool = False) -> list[dict]:
+        filters = ""
+        params: list = [user_id, user_id]
+        if run_id is not None:
+            filters += " AND json_extract(current.snapshot,'$.run_id')=?"
+            params.append(run_id)
+        if active_only:
+            filters += " AND json_extract(current.snapshot,'$.status') IN ('pending','first','second')"
+        rows = self.conn.execute(
+            "SELECT current.snapshot FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='friend_relay' "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?)"
+            + filters +
+            " AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='friend_relay' "
+            "AND json_extract(newer.snapshot,'$.run_id')=json_extract(current.snapshot,'$.run_id') "
+            "AND newer.action_id>current.action_id) ORDER BY current.action_id DESC", params,
+        )
+        return [json.loads(row['snapshot']) for row in rows]
 
     def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:
         row = self.conn.execute(

@@ -91,6 +91,14 @@ def _action_label(command: str) -> str:
             "拒绝": "拒绝并退回", "取消": "取消并取回", "退款": "到期退款",
             "详情": "查看换物邀约", "记录": "换物记录",
         }.get(parts[1] if len(parts) > 1 else "", "好友换物")
+    if parts and parts[0] == "灵宠接力":
+        if len(parts) == 3 and parts[1] == "记录":
+            return f"接力第 {parts[2]} 页"
+        return {
+            "预览": "填写接力约定", "邀请": "确认接力邀请", "同意": "选伙伴同意",
+            "出战": "本人出战接棒", "退出": "退出本局", "拒绝": "拒绝邀请",
+            "详情": "查看接力详情", "记录": "接力记录",
+        }.get(parts[1] if len(parts) > 1 else "", "双人接力")
     if parts and parts[0] == "灵宠合膳":
         if len(parts) == 3 and parts[1] == "记录":
             return f"合膳第 {parts[2]} 页"

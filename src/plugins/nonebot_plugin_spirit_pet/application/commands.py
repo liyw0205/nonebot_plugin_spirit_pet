@@ -106,6 +106,7 @@ from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay import friends
 from ..gameplay import item_trade
+from ..gameplay import friend_relay
 from ..gameplay import shares
 from ..gameplay import share_board
 from ..gameplay import share_rank_rewards
@@ -260,6 +261,7 @@ ACTIONS = {
     "forbidden_challenge": Command(forbidden.challenge, True),
     "cuisine": Command(cuisine.entry, True, registered=False),
     "cuisine_coop": Command(cuisine_coop.dispatch, True, registered=False),
+    "friend_relay": Command(friend_relay.dispatch, True, registered=False),
     "cooking": Command(cooking.dispatch, True, registered=False),
     "cooking_rewards": Command(cooking_rewards.dispatch, True, registered=False),
     "cooking_reward_claim": Command(cooking_rewards.claim, True),
@@ -489,6 +491,7 @@ COMMANDS = {
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
     "灵宠合膳": "cuisine_coop",
+    "灵宠接力": "friend_relay",
     "灵宠掌勺": "cooking",
     "灵宠掌勺成品赏": "cooking_rewards", "灵宠掌勺成品领奖": "cooking_reward_claim",
     "灵宠膳房订单": "cuisine_orders", "灵宠订单交付": "cuisine_order_deliver",

@@ -170,6 +170,8 @@ def page(ctx: Context, arg: str = "") -> Reply:
     if roster:
         lines.append("与好友合膳：双方各选一只伙伴，投入相同单膳成本。")
         links.append(InlineCommand(len(lines) - 1, "发起合膳", "灵宠合膳"))
+        lines.append("与好友接力：各派一位伙伴，依序迎战单人秘境。")
+        links.append(InlineCommand(len(lines) - 1, "双人接力", "灵宠接力"))
     return Reply(
         "灵宠好友",
         tuple(lines),

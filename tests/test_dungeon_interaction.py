@@ -44,11 +44,11 @@ def test_every_listed_dungeon_links_its_own_detail_row(game, play):
     ]
     for link, dungeon in zip(listing.inline_commands, selected):
         assert link.line < len(listing.lines) and dungeon.name in listing.lines[link.line]
-    # Row details leave the button set; only next-page navigation remains.
-    assert listing.commands == ("灵宠秘境 2",)
+    # Details stay on their own rows; buttons expose pagination and friend relay.
+    assert listing.commands == ("灵宠秘境 2", "灵宠接力")
     _, message = _qq_segments(listing, Config(spirit_pet_qq_mode="native"))
     button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
-    assert button_commands == {"灵宠秘境 2"}
+    assert button_commands == {"灵宠秘境 2", "灵宠接力"}
     assert markdown_links(message) == [
         ("查看详情", f"/灵宠秘境 {dungeon.name}") for dungeon in selected
     ]
@@ -63,10 +63,10 @@ def test_second_page_links_its_own_rows_and_keeps_pagination(game, play):
     assert [link.command for link in listing.inline_commands] == [
         f"灵宠秘境 {dungeon.name}" for dungeon in selected
     ]
-    assert listing.commands == ("灵宠秘境 1", "灵宠秘境 3")
+    assert listing.commands == ("灵宠秘境 1", "灵宠秘境 3", "灵宠接力")
     _, message = _qq_segments(listing, Config(spirit_pet_qq_mode="native"))
     button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
-    assert button_commands == {"灵宠秘境 1", "灵宠秘境 3"}
+    assert button_commands == {"灵宠秘境 1", "灵宠秘境 3", "灵宠接力"}
     linked = {command for _, command in markdown_links(message)}
     assert linked == {f"/灵宠秘境 {dungeon.name}" for dungeon in selected}
     assert not linked & button_commands
@@ -82,7 +82,7 @@ def test_detail_reply_still_offers_its_run_entry(game, play):
     _, message = _qq_segments(detail, Config(spirit_pet_qq_mode="native"))
     assert markdown_links(message) == [("前往挑战", f"/灵宠挑战 {dungeon.name}")]
     button_commands = {button.action.data.removeprefix("/") for button in keyboard_buttons(message)}
-    assert button_commands == {"我的灵宠", "灵宠秘境"}
+    assert button_commands == {"我的灵宠", "灵宠秘境", "灵宠接力"}
 
 
 def test_detail_recovery_entries_hide_challenge_for_unregistered_and_no_active(game, play):

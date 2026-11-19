@@ -130,6 +130,10 @@ class Game:
             )
         ) or (
             action == "cuisine_coop" and _cuisine_coop_read_only(argument)
+        ) or (
+            action == "friend_relay" and (
+                not argument.split() or argument.split()[0] in {"预览", "详情", "记录"}
+            )
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

@@ -249,7 +249,7 @@ def dungeons(ctx: Context, arg: str) -> Reply:
                 InlineCommand(0, "查看队伍挑战条件", "灵宠队伍 秘境"),
             ))
         return Reply(
-            dungeon.name, lines, (challenge, "我的灵宠", "灵宠秘境"),
+            dungeon.name, lines, (challenge, "我的灵宠", "灵宠秘境", "灵宠接力"),
             (InlineCommand(0, "前往挑战", challenge),),
         )
     entries = sorted(ctx.content.dungeons.values(), key=lambda dungeon: (
@@ -278,7 +278,7 @@ def dungeons(ctx: Context, arg: str) -> Reply:
         InlineCommand(index, "查看详情", f"灵宠秘境 {dungeon.name}")
         for index, dungeon in enumerate(selected)
     )
-    return Reply(f"山海秘境 {page}/{pages}", lines, tuple(navigation), links)
+    return Reply(f"山海秘境 {page}/{pages}", lines, (*navigation, "灵宠接力"), links)
 
 
 def challenge(ctx: Context, arg: str) -> Reply:

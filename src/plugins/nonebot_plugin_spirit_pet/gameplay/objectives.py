@@ -72,6 +72,7 @@ from . import mailbox
 from . import friends
 from . import item_trade
 from . import cuisine_coop
+from . import friend_relay
 from . import shares
 from . import drill
 from . import sockets
@@ -672,6 +673,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (friends.objective_line(ctx, player.user_id), "灵宠好友"),
         (item_trade.objective_line(ctx, player.user_id), item_trade.TITLE),
         (cuisine_coop.objective_line(ctx, player.user_id), cuisine_coop.TITLE),
+        (friend_relay.objective_line(ctx, player.user_id), friend_relay.TITLE),
         (shares.objective_line(ctx, player.user_id), "灵宠分享"),
         (drill.objective_line(ctx, player.user_id), "灵宠演武"),
         (cave.objective_line(ctx, player.user_id), "灵宠洞府"),
