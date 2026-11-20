@@ -82,7 +82,7 @@ from ..gameplay import team_trial
 from ..gameplay import cuisine
 from ..gameplay import cooking
 from ..gameplay import cooking_rewards
-from ..gameplay import cuisine_orders, cuisine_practice
+from ..gameplay import cuisine_orders, cuisine_practice, cuisine_coop
 from ..gameplay import cuisine_mastery
 from ..gameplay import tracking
 from ..gameplay import tracking_codex
@@ -105,6 +105,8 @@ from ..gameplay import collection_rank_rewards, collection_exchange
 from ..gameplay import bond_levels
 from ..gameplay import gifting
 from ..gameplay import friends
+from ..gameplay import item_trade
+from ..gameplay import friend_relay
 from ..gameplay import shares
 from ..gameplay import share_board
 from ..gameplay import share_rank_rewards
@@ -258,6 +260,8 @@ ACTIONS = {
     "forbidden": Command(forbidden.catalog, True, registered=False),
     "forbidden_challenge": Command(forbidden.challenge, True),
     "cuisine": Command(cuisine.entry, True, registered=False),
+    "cuisine_coop": Command(cuisine_coop.dispatch, True, registered=False),
+    "friend_relay": Command(friend_relay.dispatch, True, registered=False),
     "cooking": Command(cooking.dispatch, True, registered=False),
     "cooking_rewards": Command(cooking_rewards.dispatch, True, registered=False),
     "cooking_reward_claim": Command(cooking_rewards.claim, True),
@@ -318,6 +322,7 @@ ACTIONS = {
     "market": Command(market.dispatch, True, registered=False),
     "mail": Command(mailbox.dispatch, True, registered=False),
     "friends": Command(friends.dispatch, True, registered=False),
+    "item_trade": Command(item_trade.dispatch, True, registered=False),
     "visits": Command(visits.dispatch, True, registered=False),
     "visits_rewards": Command(visits_rewards.dispatch, True, registered=False),
     "checkin_full": Command(checkin_full.dispatch, True, registered=False),
@@ -485,6 +490,8 @@ COMMANDS = {
     "灵宠万灵塔": "tower_catalog", "灵宠挑战万灵塔": "tower_challenge",
     "灵宠禁地": "forbidden", "灵宠挑战禁地": "forbidden_challenge",
     "灵宠膳房": "cuisine", "灵宠烹饪": "cuisine_cook",
+    "灵宠合膳": "cuisine_coop",
+    "灵宠接力": "friend_relay",
     "灵宠掌勺": "cooking",
     "灵宠掌勺成品赏": "cooking_rewards", "灵宠掌勺成品领奖": "cooking_reward_claim",
     "灵宠膳房订单": "cuisine_orders", "灵宠订单交付": "cuisine_order_deliver",
@@ -511,6 +518,7 @@ COMMANDS = {
     "灵宠商会": "merchant",
     "灵宠集市": "market",
     "灵宠信箱": "mail",
+    "灵宠换物": "item_trade",
     "灵宠好友": "friends", "灵宠串门": "visits", "灵宠串门礼": "visits_rewards", "灵宠串门领奖": "visits_rewards", "灵宠签到全勤": "checkin_full", "灵宠全勤": "checkin_full",
     "灵宠图鉴试炼": "codex_trials",
     "灵宠淬魂": "temper",

@@ -36,6 +36,9 @@
 | dungeons.json | 秘境准入境界、敌人列表、精力消耗、奖励、是否组队、一次性首通奖励 |
 | quests.json | 每日任务的事件、目标次数、奖励 |
 | daily_assignments.json | 今日课题的指标、目标值与一次性奖励，按自然日轮换三项 |
+| vein_routes.json | 三条灵脉的境界、三个不同节点、材料、基础/护脉终奖与原伙伴羁绊 |
+| ruins.json | 三处遗迹的境界、三个不同厅室、宝物与风险、基础/富集终奖及原伙伴羁绊 |
+| cave_coop.json | 五处洞府设施各一份双人共建计划，冻结等级、双方投入/奖励与有效期 |
 | farm_contracts.json | 三份两季农契的农事门槛、押金、不同作物顺序、真实交付物与奖励；交付量不得超过两季最低产物总量 |
 | daily_encounters.json | 每日路边际遇的名字、描述、2-3 个带成本/回报的选项，以及可引出次日续篇的 `next` |
 | daily_followups.json | 由普通际遇选项引出的次日续篇，形状同际遇并带 `trigger` 回指来源际遇 |
@@ -56,7 +59,7 @@
 | shop_rotation.json | 灵坊每日特供池：物品、折扣百分比与当日库存；按北京时间日期轮换三件 |
 | resonances.json | 双种族共鸣组合、说明文字与四项战斗属性倍率；21 组覆盖全部 27 族，含跨系配对 |
 | rules.json | 初始资源、签到奖励、训练收益、精力消耗、队伍人数、共鸣启用成本、灵宠培育成本、今日秘境奖励、强化继承成本、关卡星级回合门槛、灵坊回收比例、灵田互助浇水（缩短秒数/每日次数/灵石）、信箱邮寄（保存天数/每日封数/单封上限/信箱容量/可寄种类）、好友（名册上限/申请有效小时数）、战报分享（每日次数/分享码有效天数/每页条数）、演武场（每日次数）与借力（借出比例/保留天数） |
-| dao_names.json | 随机道号的定宽词段、组合模板，不保存已占用道号 |
+| dao_names.json | 历史随机道号素材，当前 Catalog 不加载，也没有玩家改名入口 |
 | categories.json | 羽、兽、龙、甲、虫、植、蛇、灵八类定义 |
 | elements.json | 五行、分支的父系引用、风雷毒及克制关系 |
 | equipment.json | 装备槽位、固定属性、元素/类别/境界门槛 |
@@ -68,7 +71,7 @@
 | lineages.json | 各种族两条血脉分支、最低血脉、选择成本与四维成长倍率 |
 | recipes.json | 每件装备的打造灵石/材料、基础分解回收、强化材料回收比例 |
 
-除 `rules.json`、`dao_names.json`、`arena.json`、`nursery.json` 等规则对象外，目录文件为对象数组。不要往这些文件写 `created_at`、`last_train`、`sign_day`、`expires_at`、`timestamp`、`cooldown`、玩家 ID 或库存数量。
+除 `rules.json`、`arena.json`、`nursery.json`、`training_rule.json` 等规则对象外，目录文件为对象数组。不要往这些文件写 `created_at`、`last_train`、`sign_day`、`expires_at`、`timestamp`、`cooldown`、玩家 ID 或库存数量。
 
 `weekly_quests.json` 的 `metric` 由 `WeeklyMetric` 严格限定。膳房相关目标按已有成功记录派生：`weekly_cuisine_orders` 只计本周有效订单目录中的已交付回执；`weekly_cuisine_practice` 只计 `duel_actions` 中本周 `kind=cuisine_practice` 且 `status=finished` 的终态记录；`weekly_banquets` 只认 `banquet_<本周起点>` 开席凭证。不得把烹制、研修中间步骤、放弃或失败请求当作完成。`weekly_rewards.json` 的累计门槛固定为 2/4/6/9，统计本周已领取的周常目标数；领取与该周凭证、奖励同事务保存。
 
@@ -77,6 +80,44 @@
 ## 灵田农契合同
 
 农契冻结田位、两季作物、押金、材料、奖励与规则版本；真实收获记录单调季号和不重叠的种植/收获时间。快照与永久回执复用 `duel_actions`，养苗收获共用一个写入点；进行中契约的不计进度收获也保存回执。目录/历史只读，交付材料、押金退还、奖励与终态同事务，不改存档 schema。
+
+## 灵脉与遗迹合同
+
+`vein_routes.json` 必须恰有三条路线，`VeinRoute` 限定三个不同名称节点、境界引用、材料和不同的基础/护脉奖励。`ruins.json` 必须恰有三处遗迹，`RuinSite` 限定三个不同名称厅室、至少两种宝物、每厅风险 1-3、精力/灵粮费用及不同的基础/富集奖励。Catalog 校验所有境界与物品引用。
+
+两种玩法分别以 `duel_actions` 的 `kind=vein_expedition`、`kind=ruin_expedition` 隔离持久状态与回执；开局冻结原伙伴、节点/厅室、规则和奖励，推进必须匹配局号/步骤，旧局、时钟回退和伙伴占用在写入前拒绝。逐步材料、终章资源与原伙伴羁绊同事务。详情/预览/历史只读，跨日重启沿原快照继续，不从当前内容重算历史。
+
+## 洞府共建合同
+
+`cave_coop.json` 的 `CaveCoopProject` 对五处设施各定义一项共建：最低等级、主人灵石/材料、共建者材料、双方奖励和小时期限；Catalog 校验覆盖设施且物品存在。`CaveCoopSnapshot` 校验阶段、身份、已付成本、设施等级与期限一致性。
+
+双方共用一项项目的永久快照与回执，沿 `duel_actions` 独立 kind 隔离，不复制好友关系。发起/贡献/完工按角色与当前状态检查，设施升级和双方奖励同事务；拒绝/取消/到期退款只在实际操作执行，目录与历史只读。已贡献项目不主动取消，设施等级改变时终止并退回双方投入。恢复与回滚合同见 `tests/test_cave_coop.py`。
+
+## 好友换物合同
+
+换物复用好友关系与背包/灵石，不改静态内容和 schema。严格的 `ItemTrade`/`TradeAsset` 快照冻结双方 UID、稳定邀约号、资产 ID/显示名/数量、24 小时期限、状态与更新时间；仅接受消耗品、材料和有限灵石。每人同时仅能参与一份待处理邀约，发起时只托管发起者付出，受邀者同意时在同一事务校验好友仍有效、扣除对价并互换；拒绝、取消和到期退款只返托管，不代扣受邀者。
+
+快照和每步原回复写入 schema 28 `duel_actions` 独立 `kind=item_trade`，使用通用永久操作回放并隔离旧斗法消费者。并发状态竞争、对向邀约、跨日重启、时钟高水位、角色授权、解除好友、双边物资与每个写入故障点均有合同；预览、详情、页面和记录为 deferred 只读事务，不自动结算。合同见 `tests/test_item_trade.py`。
+
+## 好友合膳合同
+
+合膳只引用会产出单人份消耗品的既有菜谱，不复制菜谱或家宴。严格的 `CuisineCoopSnapshot` 冻结菜名/成品、配料及显示名、灵石/灶火成本、实际食用效果、双方 UID/指定伙伴、24 小时期限、阶段和退款/成长回执。双方各支付一人份材料与灵石：发起时托管主人部分，受邀者选宠同意时支付自己的部分；完成时必须双方指定伙伴均仍归原主人、在册且未派遣，双方当日灶火够用后才扣灶火并各作用一次食用效果与菜谱厨艺进度。灶火只在完成日入账，故取消/拒绝/超时只退款实际扣除的材料与灵石，不跨日返还灶火。
+
+状态与每步原回复写入 schema 28 `duel_actions` 独立 `kind=cuisine_coop`；期限、时钟高水位、双方占用、角色授权、指定伙伴归属/封存/派遣、好友解除、跨日、缓存清理重放、并发终态竞争及成长/灶火/回执回滚见 `tests/test_cuisine_coop.py`。预览、页面、详情和历史使用 deferred 只读事务；不增 schema，不更改单人烹饪、掌勺、研修、普通家宴或好友关系语义。
+
+## 双人接力合同
+
+接力只选已有单人秘境，不复制普通秘境结算或组队同场战斗。`FriendRelaySnapshot`/`RelayFighter` 严格保存双方身份及指定伙伴、邀请冻结的秘境门槛/精力/调息/敌手完整技能/属性克制表/普通奖励与名称、同意时双方 `loadout.combatant` 属性/技能/倍率/天赋及战报展示快照、棒次、原始周名额、逐棒精力与调息前值、熟练度、战报号、终态及双边实际所得。邀请 24 小时，未同意不扣费；同意时按北京时间周一 00:00 将双方每周一次名额写入 `quest_progress(friend_relay_week_<周起点>)`，与快照同事务。开局后不因换周过期，未结束时不能另开局。
+
+每棒必须由对应玩家本人操作，当前好友关系及双方原宠归属/境界/封存/派遣均重新检查；只恢复并扣该棒伙伴精力，沿用玩家共享 `last_pve` 调息。`combat.fight` 使用冻结的完整输入独立执行两场真实战斗，每棒只给原宠实际技能使用的熟练度，换下冻结技能仍正确入账。第一棒获胜只推进棒次，第二棒获胜才通过 `rewards.grant(..., pet_id=原宠)` 给双方各一份冻结普通秘境奖励；不叠加首通、种子、任务、赛季或关卡推进。战败/平局立即终止，任一方可退出，已付精力/调息/周名额与实战熟练度保留，无终章奖。
+
+状态和完整回复使用 schema 28 `duel_actions(kind=friend_relay)` 永久保存，重放优先返回活动回执以保留按钮/蓝字。每棒战报沿 `battle_records` 保存冻结展示数据及完整日志，双方有查看权限，第三人无权；历史只展示每局最新终态。预览、页面、详情、历史为 deferred 只读事务；同意/出战/退出在既有 immediate 事务中串行执行。跨周重启、旧按钮、并发、好友解除、原宠不可用、时钟回退、损坏快照与名额/战报/熟练度/双边奖励/伙伴/回执写入故障回滚见 `tests/test_friend_relay.py`。不增 schema，不改变普通秘境、单人轮战、队伍准备或好友关系语义。
+
+## 课题七日连章合同
+
+`daily_assignment_chain.py` 沿用真实课题领奖作为唯一推进点，每天三选一与原奖励不变；押金 300 灵石，连续七个北京时间自然日后退押金并发灵石 700、灵粮 7、锻灵矿 2。漏日或放弃不退押金，不补做历史。
+
+进度、日期高水位、每日课题快照和终态凭证复用 `quest_progress`；领奖、连章推进、退押金与终章奖同事务，读页不结算断档。跨日、重启、并发与永久重投合同见 `tests/test_daily_assignment_chain.py`。
 
 ## 灵宠跃障合同
 
@@ -88,7 +129,7 @@
 
 ## 灵宠连携演练合同
 
-`training_trials.json` 的每份试题恰有五回合；`charge` 后必须紧邻 `burst`，并显式定义基于伙伴开局攻击/防御/气血缩放的灵靶生命、护甲与压力。三份试题节奏必须不同，静态内容模型拒绝未知字段与非法参数。`training_rule.json` 限制每日局数、开局精力/灵粮和单局技能熟练度/羁绊收益；Catalog 仅引用灵坊可购买的灵粮，不新造物资。
+`training_trials.json` 的每份试题恰有五回合；`charge` 后必须紧邻 `burst`，并显式定义基于伙伴开局攻击/防御/气血缩放的灵靶生命、护甲与压力。当前为三份普通、两份携带独立 `rule` 的进阶试题，五份节奏不同；静态内容模型拒绝未知字段与非法参数。`training_rule.json` 给普通规则，进阶 `rule` 覆盖开局精力/灵粮/锻灵矿和有限熟练度/羁绊收益，两档共用每日名额；Catalog 校验既有物资来源，不新造物资。
 
 逐回合沿用真实战斗 `Fighter`、灵术效果、天赋、已快照的连携/羁绊/装备/技能倍率和战斗特效；所有伤害固定，不掷骰。动作、目标与初始战斗快照写入 schema28 `duel_actions(kind=training)`，旧斗法消费者排除该类型。以 `training_day_<北京时间日期>` 记录每日名额，字典序高水位拒绝时钟回退。起局扣精力/灵粮、成长写熟练度/羁绊、逐回合永久回执必须同一事务；旧消息永久重放、局号/步号阻止旧控件重做，跨日/离线/重启继续原快照。原宠派遣/封存暂停可恢复，归灵可退出；读页/预览/拒绝零业务写。成功只按实战有效施法成长且总熟练度有界，失败只加有限羁绊，退出无成长不退款；没有携带技能的伙伴仍可进场使用普攻/护持。
 
@@ -661,6 +702,8 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 契约不新增秘境、不缩放敌手、不改基础奖励：挑战走 `adventure.run_dungeon`，仅在 `return_state=True` 时额外返回战斗与玩家侧 `Fighter` 供条件判定（`satisfied` 读 `battle.winner`、`battle.rounds` 与各 `hp`）。达成后额外发放的奖励按该秘境 `reward` 的百分比取整计算，再叠加固定物品，因此基础与契约两部分互不影响、可以分别核对。
 
+复合契约沿用同一目录，选择两项不同条件，并冻结秘境、有序伙伴、押金、条件与精确追加奖励。预览只读，每人北京时间每周最多三次签约；挑战、押金退回/没收、基础与追加奖励、终态回执同事务，状态复用 `duel_actions`，不增 schema。既有单条件挑战保持原语义。
+
 ## 轮作规则
 
 轮作数值写在 `rules.json` 的 `farm_rotation`，由 `domain/content.py` 的 `FarmRotationRule` 校验：`rate_percent` 必须在 1-100 之间（低于 1 没有意义，高于 100 会让加成翻倍失控）。
@@ -1132,7 +1175,7 @@ ID、名称、说明、`min_realm` 和 `encounters` 均必填，不接受额外�
 修改委托定义后运行：
 
 ```bash
-$HOME/myenv/bin/python -m pytest tests/test_expedition_content.py -q
+flock -w 600 /tmp/nonebot-project-validation.lock timeout 180 /home/nonebot-shared-venv/bin/python -B -m pytest -q -p no:cacheprovider tests/test_expedition_content.py
 ```
 
 ## 论剑赛季定义
@@ -1197,7 +1240,7 @@ $HOME/myenv/bin/python -m pytest tests/test_expedition_content.py -q
 修改赛季定义后运行：
 
 ```bash
-$HOME/myenv/bin/python -m pytest tests/test_arena_content.py -q
+flock -w 600 /tmp/nonebot-project-validation.lock timeout 180 /home/nonebot-shared-venv/bin/python -B -m pytest -q -p no:cacheprovider tests/test_arena_content.py
 ```
 
 ## 论剑战勋兑换定义
@@ -1218,7 +1261,7 @@ $HOME/myenv/bin/python -m pytest tests/test_arena_content.py -q
 内容错误会在插件导入加载时报告，不等到玩家随机抽中错误条目才暴露。测试运行：
 
 ```bash
-$HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py -q
+flock -w 600 /tmp/nonebot-project-validation.lock timeout 180 /home/nonebot-shared-venv/bin/python -B -m pytest -q -p no:cacheprovider tests/test_content.py tests/test_progression.py
 ```
 
 新增字段时同时更新模型、调用方与对应测试；不要关闭 extra 校验或给错误引用兜底成某个默认物品。
@@ -1255,15 +1298,9 @@ $HOME/myenv/bin/python -m pytest tests/test_content.py tests/test_progression.py
 
 学习、携带、穿戴以及构建战斗单位时均执行适用条件检查。只在图鉴显示限制但实际战斗不检查，或者只限制学习却允许借其他宠物携带，都是不允许的实现。
 
-### 随机道号
+### 玩家身份
 
-`dao_names.json` 包含 `fields` 词段字典和 `templates` 字段名数组。例如一个模板 `["qualities", "images", "paths", "titles"]` 依次拼接气质、意象、修行和称谓，得到“玄云问道真人”；`["origins", "aspirations", "paths", "titles"]` 得到“青云听雪御剑散人”。JSON 只定义静态词库，不保存已占用道号或玩家数据。
-
-每个词段只允许 1-4 个汉字、ASCII 字母或数字。同一字段内的词段必须等长，并按 SQLite `NOCASE` 规则去重；每个模板的总长度为 2-12 字，且不同模板的总长度必须不同。定宽保证同一模板的拼接边界唯一，异长保证不同模板没有相同输出，因此候选数是**真正不同的道号数量**，不是可能重名的组合数。加载时拒绝无法满足这些条件或总容量不足 10,000,000 的数据。
-
-默认六个字段：`qualities` 与 `images` 各 64 个单字；`paths`、`origins`、`aspirations` 各 64 个双字词；`titles` 为 40 个双字称谓。两个模板分别生成 6 字和 8 字道号，每个模板有 `64 × 64 × 64 × 40 = 10,485,760` 个唯一输出，总计 **20,971,520** 个。扩充词库时保留字段定宽和模板异长约束，不必枚举全部结果。
-
-`DaoNames.name_at(index)` 按混合进制把序号解码为一个道号，不构建候选全集。取名最多随机抽取 16 次序号，随机阶段不重复查询同一序号；碰撞后从玩家总数对应的序号开始循环查找，每批最多查询 128 个候选，至多检查“玩家总数 + 1”个不同序号或完整候选空间，以先到者为准。道号占用使用数据库唯一索引查询，不加载玩家对象或全表名字；事务和 SQLite 唯一约束负责并发安全。候选全部用尽时明确报错，不拼接数字或用户 ID。改名保持存档归属不变，运行中的占用状态始终仅保存于 SQLite。
+当前身份为 `player_identity.id + 9999` 派生的固定 UID，首次领养建立，`identity.py` 只读展示 UID、注册时间与账户。`dao_names.json` 是未加载的历史素材，不能据此声称有随机取名、占用池或玩家改名功能；旧名字只作历史展示。身份与迁移合同见 `tests/test_identity.py`、`tests/test_registration_migration.py`。
 
 ## 主动效果
 

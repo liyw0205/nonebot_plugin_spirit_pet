@@ -137,7 +137,7 @@ def bag(ctx: Context, arg: str) -> Reply:
             ))
     if len(lines) == 1:
         lines.append("乾坤袋空空如也，先去灵坊看看。")
-    return Reply("乾坤袋", tuple(lines), ("灵宠商店", "灵宠喂养", "灵宠进化"), tuple(links))
+    return Reply("乾坤袋", tuple(lines), ("灵宠商店", "灵宠喂养", "灵宠进化", "灵宠换物"), tuple(links))
 
 
 def shop(ctx: Context, arg: str) -> Reply:

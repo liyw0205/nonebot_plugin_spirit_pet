@@ -83,6 +83,30 @@ _ACTION_LABELS = {
 def _action_label(command: str) -> str:
     visible = command.strip().removeprefix("/")
     parts = visible.split()
+    if parts and parts[0] == "灵宠换物":
+        if len(parts) == 3 and parts[1] == "记录":
+            return f"换物第 {parts[2]} 页"
+        return {
+            "预览": "填写换物约定", "发起": "确认托管发起", "同意": "确认交换",
+            "拒绝": "拒绝并退回", "取消": "取消并取回", "退款": "到期退款",
+            "详情": "查看换物邀约", "记录": "换物记录",
+        }.get(parts[1] if len(parts) > 1 else "", "好友换物")
+    if parts and parts[0] == "灵宠接力":
+        if len(parts) == 3 and parts[1] == "记录":
+            return f"接力第 {parts[2]} 页"
+        return {
+            "预览": "填写接力约定", "邀请": "确认接力邀请", "同意": "选伙伴同意",
+            "出战": "本人出战接棒", "退出": "退出本局", "拒绝": "拒绝邀请",
+            "详情": "查看接力详情", "记录": "接力记录",
+        }.get(parts[1] if len(parts) > 1 else "", "双人接力")
+    if parts and parts[0] == "灵宠合膳":
+        if len(parts) == 3 and parts[1] == "记录":
+            return f"合膳第 {parts[2]} 页"
+        return {
+            "预览": "填写合膳约定", "发起": "确认托管邀请", "同意": "选择伙伴同意",
+            "拒绝": "拒绝并退款", "取消": "取消并退款", "完成": "完成合膳",
+            "退款": "处理到期退款", "详情": "查看合膳项目", "记录": "合膳记录",
+        }.get(parts[1] if len(parts) > 1 else "", "好友合膳")
     if parts[:2] == ["灵宠队伍", "秘境"]:
         return f"秘境第 {parts[2]} 页" if len(parts) == 3 else "选择组队秘境"
     if parts and parts[0] == "灵宠护航":

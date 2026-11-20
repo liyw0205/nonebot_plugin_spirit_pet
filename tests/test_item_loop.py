@@ -102,8 +102,8 @@ def test_bag_groups_items_with_purpose_and_gated_actions(game, play):
     assert bag.lines[food_line] == f"灵粮：{amount} · 精力 +20，修为 +10，亲密 +5。"
     assert links(bag) == [(food_line, "喂养", "灵宠喂养")]
     # The page button for feeding is deduplicated into the row link on the keyboard.
-    assert bag.commands == ("灵宠商店", "灵宠喂养", "灵宠进化")
-    assert keyboard_commands(bag) == ["灵宠商店", "灵宠进化"]
+    assert bag.commands == ("灵宠商店", "灵宠喂养", "灵宠进化", "灵宠换物")
+    assert keyboard_commands(bag) == ["灵宠商店", "灵宠进化", "灵宠换物"]
 
 
 def test_bag_hides_consumable_action_while_the_pet_is_away(game, play):
@@ -112,7 +112,7 @@ def test_bag_hides_consumable_action_while_the_pet_is_away(game, play):
     play("expedition_start", "采灵药")
     bag = play("bag")
     assert links(bag) == []
-    assert keyboard_commands(bag) == ["灵宠商店", "灵宠喂养", "灵宠进化"]
+    assert keyboard_commands(bag) == ["灵宠商店", "灵宠喂养", "灵宠进化", "灵宠换物"]
     with pytest.raises(GameError):
         play("feed")
 
@@ -128,7 +128,7 @@ def test_bag_hides_energy_pill_action_while_energy_is_full(game, play):
     pill_line = next(index for index, line in enumerate(bag.lines) if line.startswith("回元丹："))
     assert (pill_line, "使用", "灵宠使用 回元丹 1") in links(bag)
     # The row action is reachable as a link; the keyboard keeps only page actions.
-    assert keyboard_commands(bag) == ["灵宠商店", "灵宠进化"]
+    assert keyboard_commands(bag) == ["灵宠商店", "灵宠进化", "灵宠换物"]
     _, message = _qq_segments(bag, Config(spirit_pet_qq_mode="native"))
     assert ("使用", "/灵宠使用 回元丹 1") in markdown_links(message)
 

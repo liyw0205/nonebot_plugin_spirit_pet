@@ -26,6 +26,9 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "cave_coop": 16,
     "stage_tactic": 15,
     "farm_contract": 6,
+    "item_trade": 16,
+    "cuisine_coop": 16,
+    "friend_relay": 15,
 }
 
 
@@ -755,6 +758,103 @@ class Repository:
         self, operation_id: str, actor_id: str, created_at: int, snapshot: dict, reply: Reply,
     ) -> None:
         self.record_duel_action(operation_id, actor_id, created_at, {**snapshot, "kind": "cave_coop"}, reply)
+
+    def item_trade(self, user_id: str, trade_id: int | None = None) -> dict | None:
+        by_id = " AND json_extract(snapshot,'$.trade_id')=?" if trade_id is not None else ""
+        params = (user_id, user_id, trade_id) if trade_id is not None else (user_id, user_id)
+        row = self.conn.execute(
+            "SELECT snapshot FROM duel_actions WHERE json_extract(snapshot,'$.kind')='item_trade' "
+            "AND (json_extract(snapshot,'$.owner_id')=? OR json_extract(snapshot,'$.target_id')=?)"
+            + by_id + " ORDER BY action_id DESC LIMIT 1", params,
+        ).fetchone()
+        return json.loads(row["snapshot"]) if row else None
+
+    def item_trade_history(self, user_id: str, page: int, size: int) -> tuple[int, list[dict]]:
+        where = (
+            " FROM duel_actions WHERE json_extract(snapshot,'$.kind')='item_trade' "
+            "AND json_extract(snapshot,'$.status')!='pending' "
+            "AND (json_extract(snapshot,'$.owner_id')=? OR json_extract(snapshot,'$.target_id')=?)"
+        )
+        count = int(self.conn.execute("SELECT COUNT(*)" + where, (user_id, user_id)).fetchone()[0])
+        rows = self.conn.execute(
+            "SELECT snapshot" + where + " ORDER BY action_id DESC LIMIT ? OFFSET ?",
+            (user_id, user_id, size, (page - 1) * size),
+        )
+        return count, [json.loads(row["snapshot"]) for row in rows]
+
+    def record_item_trade(self, operation_id: str, actor_id: str, now: int, snapshot: dict, reply: Reply) -> None:
+        self.record_duel_action(operation_id, actor_id, now, snapshot, reply)
+
+    def latest_cuisine_coop_action(self, user_id: str, active_only: bool = False) -> dict | None:
+        status = " AND json_extract(current.snapshot,'$.status') IN ('pending','ready')" if active_only else ""
+        row = self.conn.execute(
+            "SELECT current.snapshot,current.reply FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='cuisine_coop' "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?)" + status +
+            " AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='cuisine_coop' "
+            "AND json_extract(newer.snapshot,'$.project_id')=json_extract(current.snapshot,'$.project_id') "
+            "AND newer.action_id>current.action_id) ORDER BY current.action_id DESC LIMIT 1",
+            (user_id, user_id),
+        ).fetchone()
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} if row else None
+
+    def cuisine_coop_project(self, user_id: str, project_id: int) -> dict | None:
+        row = self.conn.execute(
+            "SELECT current.snapshot,current.reply FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='cuisine_coop' "
+            "AND json_extract(current.snapshot,'$.project_id')=? "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?) "
+            "AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='cuisine_coop' "
+            "AND json_extract(newer.snapshot,'$.project_id')=json_extract(current.snapshot,'$.project_id') "
+            "AND json_extract(newer.snapshot,'$.owner_id')=json_extract(current.snapshot,'$.owner_id') "
+            "AND json_extract(newer.snapshot,'$.helper_id')=json_extract(current.snapshot,'$.helper_id') "
+            "AND newer.action_id>current.action_id) ORDER BY current.action_id DESC LIMIT 1",
+            (project_id, user_id, user_id),
+        ).fetchone()
+        return {"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} if row else None
+
+    def cuisine_coop_history(self, user_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT current.snapshot,current.reply FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='cuisine_coop' "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?) "
+            "AND json_extract(current.snapshot,'$.status') NOT IN ('pending','ready') "
+            "AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='cuisine_coop' "
+            "AND json_extract(newer.snapshot,'$.project_id')=json_extract(current.snapshot,'$.project_id') "
+            "AND newer.action_id>current.action_id) ORDER BY current.action_id DESC",
+            (user_id, user_id),
+        )
+        return [{"snapshot": json.loads(row["snapshot"]), "reply": json.loads(row["reply"])} for row in rows]
+
+    def record_cuisine_coop_action(
+        self, operation_id: str, user_id: str, created_at: int, snapshot: dict, reply: Reply,
+    ) -> None:
+        self.record_duel_action(
+            operation_id, user_id, created_at, {**snapshot, "kind": "cuisine_coop"}, reply,
+        )
+
+    def friend_relay_runs(self, user_id: str, *, run_id: int | None = None, active_only: bool = False) -> list[dict]:
+        filters = ""
+        params: list = [user_id, user_id]
+        if run_id is not None:
+            filters += " AND json_extract(current.snapshot,'$.run_id')=?"
+            params.append(run_id)
+        if active_only:
+            filters += " AND json_extract(current.snapshot,'$.status') IN ('pending','first','second')"
+        rows = self.conn.execute(
+            "SELECT current.snapshot FROM duel_actions AS current "
+            "WHERE json_extract(current.snapshot,'$.kind')='friend_relay' "
+            "AND (json_extract(current.snapshot,'$.owner_id')=? OR json_extract(current.snapshot,'$.helper_id')=?)"
+            + filters +
+            " AND NOT EXISTS (SELECT 1 FROM duel_actions AS newer "
+            "WHERE json_extract(newer.snapshot,'$.kind')='friend_relay' "
+            "AND json_extract(newer.snapshot,'$.run_id')=json_extract(current.snapshot,'$.run_id') "
+            "AND newer.action_id>current.action_id) ORDER BY current.action_id DESC", params,
+        )
+        return [json.loads(row['snapshot']) for row in rows]
 
     def adventure_travel_choice(self, user_id: str, encounter_id: str) -> dict | None:
         row = self.conn.execute(
