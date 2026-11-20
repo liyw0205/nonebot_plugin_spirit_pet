@@ -156,7 +156,7 @@ def test_settlement_lists_last_week_and_links_the_claim(game, play):
     assert [link.command for link in page.inline_commands] == [
         "灵宠竞速领奖", "灵宠竞速奖励 往期",
     ]
-    assert page.commands == ("灵宠竞速", "灵宠竞速榜", "灵宠帮助")
+    assert page.commands == ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "灵宠帮助")
     assert handlers._parse(page.inline_commands[0].command) == ("race_prize_claim", "")
 
 

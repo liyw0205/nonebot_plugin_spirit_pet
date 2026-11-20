@@ -123,6 +123,29 @@ CREATE TABLE sect_week_contributions (
     contribution INTEGER NOT NULL CHECK (contribution > 0),
     PRIMARY KEY(week_start, sect_id, user_id)
 );
+CREATE TABLE race_league_config (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    enabled_at INTEGER NOT NULL CHECK (enabled_at >= 0),
+    first_week_start INTEGER NOT NULL CHECK (first_week_start >= enabled_at),
+    latest_week_start INTEGER CHECK (latest_week_start IS NULL OR latest_week_start >= first_week_start)
+);
+CREATE TABLE race_track_bests (
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    week_start INTEGER NOT NULL CHECK (week_start >= 0),
+    track_id TEXT NOT NULL CHECK (length(track_id) > 0),
+    best_tenths INTEGER NOT NULL CHECK (best_tenths > 0),
+    PRIMARY KEY(user_id, week_start, track_id)
+);
+CREATE INDEX race_track_week_board
+    ON race_track_bests(week_start, track_id, best_tenths, user_id);
+CREATE TABLE race_league_claims (
+    season_start INTEGER NOT NULL CHECK (season_start >= 0),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    rank INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 3),
+    claimed_at INTEGER NOT NULL CHECK (claimed_at >= 0),
+    reward_snapshot TEXT NOT NULL,
+    PRIMARY KEY(season_start, user_id)
+);
 CREATE TABLE teams (
     team_id INTEGER PRIMARY KEY AUTOINCREMENT,
     leader_id TEXT NOT NULL UNIQUE REFERENCES players(user_id)

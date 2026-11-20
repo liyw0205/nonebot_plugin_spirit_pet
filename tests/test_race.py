@@ -142,7 +142,7 @@ def test_terrain_stat_counts_at_its_multiplier(game, play):
 def test_page_without_a_pet_is_read_only(game, play):
     page = play("race", user="ghost")
     assert "尚未结契" in page.text()
-    assert page.commands == ("灵宠帮助",)
+    assert page.commands == ("灵宠帮助", "灵宠竞速联赛")
     assert sql(game[1], "SELECT * FROM quest_progress WHERE user_id='ghost'") == []
 
 
@@ -156,7 +156,7 @@ def test_page_lists_track_rules_and_projections(game, play):
     assert "青鸾（编号 1）· 预计" in page.text()
     assert "可报名" in page.text()
     assert [link.command for link in page.inline_commands] == ["灵宠竞速 报名 1"]
-    assert page.commands == ("灵宠竞速", "灵宠竞速榜", "我的灵宠")
+    assert page.commands == ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "我的灵宠")
 
 
 def test_entering_records_time_energy_and_daily_charge(game, play):
@@ -170,6 +170,11 @@ def test_entering_records_time_energy_and_daily_charge(game, play):
     assert best_row(game) == expected
     assert runs_row(game) == 1
     assert pet(game[1])["energy"] == 80
+    track_best = sql(
+        game[1], "SELECT best_tenths FROM race_track_bests WHERE user_id='u1' AND track_id=?",
+        (race.track(ctx_of(game)).id,),
+    )
+    assert track_best == [{"best_tenths": expected}]
 
 
 def test_a_slow_run_does_not_overwrite_the_best(game, play):
@@ -285,7 +290,7 @@ def test_board_handles_an_empty_week(game, play):
 def test_board_without_a_pet_is_read_only(game, play):
     board = play("race_board", user="ghost")
     assert "本周尚无人留下成绩" in board.text()
-    assert board.commands == ("灵宠帮助",)
+    assert board.commands == ("灵宠帮助", "灵宠竞速联赛")
 
 
 def test_objective_help_and_parse(game, play):
@@ -297,6 +302,8 @@ def test_objective_help_and_parse(game, play):
     assert handlers._parse("灵宠竞速") == ("race", "")
     assert handlers._parse("灵宠竞速 报名 1") == ("race", "报名 1")
     assert handlers._parse("灵宠竞速榜") == ("race_board", "")
+    assert handlers._parse("灵宠竞速联赛") == ("race_league", "")
+    assert handlers._parse("灵宠联赛领奖") == ("race_league_claim", "")
 
 
 def test_state_survives_a_restart(game, play):

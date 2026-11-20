@@ -52,7 +52,7 @@ from ..gameplay import achievement_shop, combos
 from ..gameplay import specialization
 from ..gameplay import mood
 from ..gameplay import race
-from ..gameplay import race_prizes
+from ..gameplay import race_league, race_prizes
 from ..gameplay import research
 from ..gameplay import gauntlet
 from ..gameplay import sigils
@@ -294,6 +294,8 @@ ACTIONS = {
     "specialization": Command(specialization.dispatch, True, registered=False),
     "mood": Command(mood.dispatch, True, registered=False),
     "race": Command(race.dispatch, True, registered=False),
+    "race_league": Command(race_league.dispatch, True, registered=False),
+    "race_league_claim": Command(race_league.claim, True),
     "race_prizes": Command(race_prizes.catalog, True, registered=False),
     "race_prize_claim": Command(race_prizes.claim, True),
     "research": Command(research.dispatch, True, registered=False),
@@ -530,6 +532,7 @@ COMMANDS = {
     "灵宠连携": "combos",
     "灵宠专精": "specialization",
     "灵宠心境": "mood", "灵宠竞速": "race", "灵宠竞速榜": "race_board",
+    "灵宠竞速联赛": "race_league", "灵宠联赛领奖": "race_league_claim",
     "灵宠竞速奖励": "race_prizes", "灵宠竞速领奖": "race_prize_claim",
     "灵宠研习": "research", "灵宠擂台": "gauntlet", "灵宠符印": "sigils",
     "灵宠护送": "escort",

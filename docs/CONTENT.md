@@ -52,6 +52,9 @@
 | main_quests.json | 主线步骤的序号、前置、目标指标与一次性奖励，按序解锁 |
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
 | weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置；既有指标有轻量/进阶难度，近期膳房活动按成功回执计入 |
+| races.json | 每日轮换的三条竞速赛道、长度与地形属性 |
+| race_prizes.json | 单周竞速前三名奖励，独立于四周联赛结算 |
+| race_league_prizes.json | 四周联赛前三名固定赛季奖励 |
 | cuisine_mastery_rewards.json | 单膳菜谱 1/3/6 份精通档位、奖励名称与既有物品；每道可产出单膳的菜谱必须完整定义三档 |
 | season_missions.json | 赛季目标的指标、目标值与每赛季一次性奖励，按自然月重置；每个指标 1-2 个难度 |
 | titles.json | 称号的名称、条件指标、目标值与优先级，全部由存档即时派生；可统计五阶灵术精进奖励的永久领取凭证与飞升周目 |
@@ -832,11 +835,11 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
  "terrain": {"stat": "speed", "multiplier": 1.25}}
 ```
 
-数值在 `rules.json` 的 `race`：`energy`（每次报名精力）、`daily_limit`（1-20）与 `weights`（四维权重，必须覆盖四项且合计为 1）。`Catalog._validate_races` 校验赛道非空、id 唯一，且每条赛道的地形属性都必须是权重表里的属性——因此不会出现「地形加成算不进去」的赛道。
+数值在 `rules.json` 的 `race`：`energy`（每次报名精力）、`daily_limit`（1-20）与 `weights`（四维权重，必须覆盖四项且合计为 1）。`Catalog._validate_races` 强制恰好三条每日轮换赛道、id 唯一，且每条赛道的地形属性都必须是权重表里的属性——因此不会出现「地形加成算不进去」的赛道。
 
 用时是派生值，不模拟战斗：把四维按权重求和，地形属性乘上该赛道的倍率，再以 `round(长度 × 100 / 加权总和)` 取整（最少 1，即 0.1 秒）。因为属性来自 `loadout.combatant`，所有既有成长系统都自动计入竞速成绩。
 
-只有两行状态，都在 `quest_progress`：`race_best_<北京周起点>` 存本周最好用时（十分之一秒），`race_day_<北京日期>` 存当日已报名次数（`progress` 为整数，恰好适配）。换日换 key 自动重置次数，换周换 key 自动重置最好成绩，旧行保留在库中但不再参与排名；不写 `players.last_*` 冷却列，也不写战报或 `pve_stage_progress`。
+旧竞速周榜与报名次数继续使用 `quest_progress` 两行：`race_best_<北京周起点>` 存每周混合赛道的最好用时（十分之一秒），`race_day_<北京日期>` 存当日已报名次数（`progress` 为整数，恰好适配）。换日换 key 自动重置次数，换周换 key 自动重置旧周榜最好成绩，旧行保留在库中但不再参与当前周排名；不写 `players.last_*` 冷却列，也不写战报或 `pve_stage_progress`。联赛每周逐赛道账本和启用锚点见下方 schema 30 合同。
 
 ### 竞速周奖励定义
 
@@ -847,6 +850,14 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 ```
 
 `Catalog._validate_races` 强制名次恰为 1、2、3；奖励物品必须存在且为 `consumable`/`material`；高名次不得低于低名次——`stones` 与每个出现的物品逐项比较，低名次有而高名次缺的物品按 0 计。因此奖励表倒挂会在启动时被拒绝。领取标记 `race_prize_<北京周起点>` 也写在 `quest_progress`，`progress` 保存最终名次、`claimed=1`；不新增表或列。
+
+### 四周竞速联赛数据
+
+`race_league_prizes.json` 由 `RaceLeaguePrize` 按名次声明固定 `rank`（1-3）、灵石和物品。校验与单周奖品相同：奖励非空、物品必须存在且为消耗品/材料、高名次的灵石及各物品数量不得低于低名次。三档分别为 800/500/300 灵石、4/2/1 锻灵矿和 3/2/1 灵粮。首名联赛奖约为四次既有单周首奖总量的三分之一，控制与周奖叠加后的材料/灵石增量。
+
+schema 30 新增三个隔离结构：单例 `race_league_config` 固定启用时间、启用后的首个完整北京时间周和已观察的最高计分周；`race_track_bests(user_id, week_start, track_id, best_tenths)` 以玩家/周/赛道为唯一键，保存报名事务中的真实最低用时并有周赛道排名索引；`race_league_claims(season_start, user_id, rank, claimed_at, reward_snapshot)` 永久保存每季一次的领奖凭证与实际奖励快照。成绩有正整数约束并外键关联玩家，周起点和启用锚点非负，周期单例不可重复。名次与每周/赛季积分均从 PB 账本查询派生，不维护可能漂移的计分汇总。
+
+schema 29→30 在验证并备份后只创建空表、索引和启用锚点，不改写或导入任何 `race_best_*` 与 `race_prize_*`。周成绩首写/更快成绩 upsert 与旧成绩、精力、报名次数、操作回执同事务；已观察到后续赛周后，拒绝回写更早的联赛周。单季领奖发奖与唯一凭证同事务，重复操作通过永久操作回执返回原答复，其他新操作稳定拒绝重复领奖。
 
 ### 商会兑换定义
 

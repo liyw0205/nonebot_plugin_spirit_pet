@@ -5,10 +5,12 @@ entry, the weighted total becomes speed, and the track length divides it into a 
 a second. Because the stats come from ``loadout.combatant``, every other system (mood, sect,
 tempering, gear, combos, specialization, ascension) feeds the race for free.
 
-Only two rows are stored, both in ``quest_progress``:
+The published weekly best and daily counter remain in ``quest_progress``:
 
-* ``race_best_<week_start>`` — this week's best time in tenths of a second
+* ``race_best_<week_start>`` — the legacy all-track weekly best, in tenths of a second
 * ``race_day_<beijing date>`` — runs used today
+
+The four-week league records real per-track weekly bests in ``race_track_bests``.
 """
 
 from datetime import date
@@ -138,7 +140,7 @@ def board(ctx: Context, arg: str) -> Reply:
         lines.append("本周尚无人留下成绩，成为第一个上板的伙伴主人吧。")
     player = ctx.repo.player(ctx.user_id)
     if player is None:
-        return Reply("灵宠竞速榜", tuple(lines), ("灵宠帮助",), (
+        return Reply("灵宠竞速榜", tuple(lines), ("灵宠帮助", "灵宠竞速联赛"), (
             InlineCommand(0, "开始领养", "灵宠领养 "),
         ))
     best = weekly_best(ctx)
@@ -148,7 +150,7 @@ def board(ctx: Context, arg: str) -> Reply:
     else:
         lines.append(f"你的最好成绩 {time_text(best)}，本周第 {rank} 名。")
     lines.append("每周一按北京时间重置，上周成绩留在档案里不再参与排名。")
-    return Reply("灵宠竞速榜", tuple(lines), ("灵宠竞速", "灵宠目标"), ())
+    return Reply("灵宠竞速榜", tuple(lines), ("灵宠竞速", "灵宠目标", "灵宠竞速联赛"), ())
 
 
 def page(ctx: Context, arg: str) -> Reply:
@@ -161,7 +163,7 @@ def page(ctx: Context, arg: str) -> Reply:
                 "尚未结契，先完成领养，才能带伙伴参赛。",
                 "竞速不看运气：伙伴的最终四维决定用时，速度权重最高。",
             ),
-            ("灵宠帮助",),
+            ("灵宠帮助", "灵宠竞速联赛"),
             (InlineCommand(0, "开始领养", "灵宠领养 "),),
         )
     entry = track(ctx)
@@ -191,7 +193,10 @@ def page(ctx: Context, arg: str) -> Reply:
         if state == "可报名":
             links.append(InlineCommand(len(lines) - 1, "报名", f"灵宠竞速 报名 {pet.pet_id}"))
     lines.append("格式：灵宠竞速 报名 <伙伴编号>。")
-    return Reply("灵宠竞速", tuple(lines), ("灵宠竞速", "灵宠竞速榜", "我的灵宠"), tuple(links))
+    return Reply(
+        "灵宠竞速", tuple(lines),
+        ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "我的灵宠"), tuple(links),
+    )
 
 
 def enter(ctx: Context, arg: str) -> Reply:
@@ -229,6 +234,32 @@ def enter(ctx: Context, arg: str) -> Reply:
             " ON CONFLICT(user_id, quest_id) DO UPDATE SET progress=excluded.progress",
             (ctx.user_id, _best_key(ctx), tenths),
         )
+    week_start = beijing_week(ctx.now)[0]
+    league = ctx.repo.conn.execute(
+        "SELECT first_week_start, latest_week_start FROM race_league_config WHERE singleton=1"
+    ).fetchone()
+    league_best = None
+    if league is not None and week_start >= league["first_week_start"]:
+        latest_week_start = league["latest_week_start"]
+        if latest_week_start is not None and week_start < latest_week_start:
+            raise GameError("竞速联赛赛周已经结束，不能回写已结算成绩。")
+        ctx.repo.conn.execute(
+            "UPDATE race_league_config SET latest_week_start=? WHERE singleton=1 "
+            "AND (latest_week_start IS NULL OR latest_week_start<?)",
+            (week_start, week_start),
+        )
+        before = ctx.repo.conn.execute(
+            "SELECT best_tenths FROM race_track_bests "
+            "WHERE user_id=? AND week_start=? AND track_id=?",
+            (ctx.user_id, week_start, entry.id),
+        ).fetchone()
+        ctx.repo.conn.execute(
+            "INSERT INTO race_track_bests(user_id, week_start, track_id, best_tenths) "
+            "VALUES (?, ?, ?, ?) ON CONFLICT(user_id, week_start, track_id) "
+            "DO UPDATE SET best_tenths=MIN(race_track_bests.best_tenths, excluded.best_tenths)",
+            (ctx.user_id, week_start, entry.id, tenths),
+        )
+        league_best = min(tenths, int(before["best_tenths"])) if before else tenths
     ctx.repo.invalidate_ready(ctx.user_id)
     best_now = weekly_best(ctx)
     assert best_now is not None
@@ -238,7 +269,12 @@ def enter(ctx: Context, arg: str) -> Reply:
         + (f"，比上次快 {time_text(previous - tenths)}。" if improved and previous is not None else "。" if improved else "，本次未超越，不计入最好成绩。"),
         f"本次名次：本周第 {_rank(ctx)} 名；今日剩余 {remaining_today(ctx)} 次。",
     ]
-    return Reply("竞速成绩", tuple(lines), ("灵宠竞速", "灵宠竞速榜", "我的灵宠"))
+    if league_best is not None:
+        lines.append(f"联赛赛道周最佳 {time_text(league_best)}（{entry.name}）。")
+    return Reply(
+        "竞速成绩", tuple(lines),
+        ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "我的灵宠"),
+    )
 
 
 def dispatch(ctx: Context, arg: str) -> Reply:

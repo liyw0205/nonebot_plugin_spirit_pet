@@ -4,9 +4,9 @@ Each track weights the four stats and boosts one of them through its ``terrain``
 same pet can be fast on one track and slow on another. Race time is derived, never simulated:
 the weighted stat total becomes speed, and the track length divides it.
 
-Nothing is stored per run except the weekly best and the daily counter, both in
-``quest_progress`` (``race_best_<week_start>`` in tenths of a second and
-``race_day_<beijing date>`` as the number of runs used today).
+Nothing is stored per run except the published weekly best and daily counter in
+``quest_progress``. The four-week league separately retains each player's best time per
+Beijing week and track in ``race_track_bests``.
 """
 
 from typing import Annotated, Literal

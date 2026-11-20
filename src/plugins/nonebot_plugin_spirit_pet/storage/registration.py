@@ -8,6 +8,8 @@ import sqlite3
 import tempfile
 from contextlib import closing
 
+from ..utils.time import beijing_week
+
 REGISTRATION_COLUMN = "    registered_at INTEGER CHECK (registered_at >= 0),\n"
 RUNTIME_INDEXES = (
     "CREATE INDEX quest_progress_user_status ON quest_progress(user_id, quest_id, progress, claimed)",
@@ -148,8 +150,18 @@ def validate_schema27(conn: sqlite3.Connection, current_schema: str) -> None:
 
 def legacy_schema28(current_schema: str) -> str:
     return re.sub(
-        r"CREATE TABLE sect_week_contributions \([\s\S]*?\n\);\n", "", current_schema, count=1,
+        r"CREATE TABLE sect_week_contributions \([\s\S]*?\n\);\n",
+        "",
+        legacy_schema29(current_schema),
+        count=1,
     )
+
+
+def legacy_schema29(current_schema: str) -> str:
+    schema = current_schema
+    for table in ("race_league_config", "race_track_bests", "race_league_claims"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    return re.sub(r"CREATE INDEX race_track_week_board[\s\S]*?;\n", "", schema, count=1)
 
 
 def legacy_schema27(current_schema: str) -> str:
@@ -169,7 +181,11 @@ def validate_schema28(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def validate_schema29(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 29, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, legacy_schema29(current_schema), 29, optional_indexes=RUNTIME_INDEXES)
+
+
+def validate_schema30(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 30, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -180,12 +196,40 @@ def backup_schema28(path: Path) -> Path:
     return _backup_schema(path, 28)
 
 
+def backup_schema29(path: Path) -> Path:
+    return _backup_schema(path, 29)
+
+
 def migrate_sect_week_contributions(conn: sqlite3.Connection) -> None:
     schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
     match = re.search(r"CREATE TABLE sect_week_contributions \([\s\S]*?\n\);", schema)
     if match is None:
         raise RuntimeError("Current schema is missing sect weekly contribution ledger")
     conn.execute(match.group(0))
+
+
+def initialize_race_league(conn: sqlite3.Connection, now: int) -> None:
+    week_start, _ = beijing_week(now)
+    first_week_start = week_start if week_start == now else week_start + 7 * 86_400
+    conn.execute(
+        "INSERT INTO race_league_config(singleton, enabled_at, first_week_start) VALUES (1, ?, ?)",
+        (now, first_week_start),
+    )
+
+
+def migrate_race_league(conn: sqlite3.Connection, now: int) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE race_league_config \([\s\S]*?\n\);",
+        r"CREATE TABLE race_track_bests \([\s\S]*?\n\);",
+        r"CREATE INDEX race_track_week_board[\s\S]*?;",
+        r"CREATE TABLE race_league_claims \([\s\S]*?\n\);",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing race league definitions")
+        conn.execute(match.group(0))
+    initialize_race_league(conn, now)
 
 
 def migrate_duel_table(conn: sqlite3.Connection) -> None:

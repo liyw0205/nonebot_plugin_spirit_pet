@@ -41,7 +41,7 @@ READ_ONLY_PAGES = (
     "duel", "merchant", "market", "mail", "friends", "shares", "drill", "borrow", "card", "today", "spar_request", "mentorship", "farm", "first_clear", "gauntlet", "forbidden", "free_summon", "identity", "journey", "lineage_catalog",
     "lineage_awakening_rewards", "main_quests", "objectives", "pet_archive_list",
     "pet_list", "pet_outing", "pet_outing_board", "play_game", "tracking", "herbalism", "pvp_rank", "quests",
-    "race", "race_board", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
+    "race", "race_board", "race_league", "race_prizes", "rank", "rank_rewards", "research", "realm_milestone_rewards", "recipe_catalog", "reforge",
     "collection_rank_rewards",
     "adventure_stats", "training", "convoy", "farm_care", "pill_furnace", "adventure_travel",
     "share_board",

@@ -1,13 +1,17 @@
 import json
 import sqlite3
 from contextlib import closing
+from datetime import datetime
 
 import pytest
 
 from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.storage import database
 from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
-from nonebot_plugin_spirit_pet.storage.registration import _legacy_schema, legacy_schema28
+from nonebot_plugin_spirit_pet.storage.registration import (
+    _legacy_schema, legacy_schema28, legacy_schema29,
+)
+from nonebot_plugin_spirit_pet.utils.time import BEIJING, beijing_week
 
 
 def schema19_store(tmp_path):
@@ -61,6 +65,62 @@ def schema28_store(tmp_path):
     return store
 
 
+def schema29_store(tmp_path):
+    store = Store(tmp_path / "schema29.db")
+    schema = legacy_schema29(database.SCHEMA_PATH.read_text(encoding="utf-8"))
+    with closing(sqlite3.connect(store.path)) as conn:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(schema)
+        conn.execute("PRAGMA user_version=29")
+        conn.execute("INSERT INTO players(user_id, stones) VALUES ('old-user', 321)")
+        conn.execute("INSERT INTO player_identity(user_id, legacy_dao_name) VALUES ('old-user', '旧道号')")
+        conn.execute(
+            "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('old-user','spirit_food',7)",
+        )
+        conn.execute(
+            "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) "
+            "VALUES ('old-user','race_best_1799798400',88,1)",
+        )
+        conn.execute(
+            "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) "
+            "VALUES ('old-user','race_prize_1799798400',1,1)",
+        )
+        conn.commit()
+    return store
+
+
+def test_empty_database_initializes_schema30_anchor(tmp_path, monkeypatch):
+    store = Store(tmp_path / "empty.db")
+    activation = 1_800_000_000
+    monkeypatch.setattr(database.time, "time", lambda: activation)
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 30
+        week_start, _ = beijing_week(activation)
+        expected_first = week_start if activation == week_start else week_start + 7 * 86_400
+        assert tuple(conn.execute(
+            "SELECT enabled_at,first_week_start,latest_week_start FROM race_league_config"
+        ).fetchone()) == (activation, expected_first, None)
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+
+def test_empty_database_enabled_exactly_at_beijing_monday_uses_that_week(tmp_path, monkeypatch):
+    activation = int(datetime(2026, 11, 23, tzinfo=BEIJING).timestamp())
+    store = Store(tmp_path / "monday.db")
+    monkeypatch.setattr(database.time, "time", lambda: activation)
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        anchor = conn.execute(
+            "SELECT enabled_at,first_week_start FROM race_league_config"
+        ).fetchone()
+        assert tuple(anchor) == (activation, activation)
+
+
 def test_schema19_fixture_matches_alter_table_registration_column_order(tmp_path):
     store = schema19_store(tmp_path)
     with closing(sqlite3.connect(store.path)) as conn:
@@ -78,7 +138,7 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 29
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 30
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -93,6 +153,58 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
         assert "sect_week_contributions" not in {
             row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
+    schema29_backups = list(tmp_path.glob("schema28.db.schema29-backup-*.db"))
+    assert len(schema29_backups) == 1
+
+
+def test_schema29_migration_preserves_legacy_race_records_and_initializes_anchor(tmp_path, monkeypatch):
+    store = schema29_store(tmp_path)
+    activation = 1_800_000_000
+    monkeypatch.setattr(database.time, "time", lambda: activation)
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 30
+        anchor = conn.execute(
+            "SELECT enabled_at, first_week_start FROM race_league_config WHERE singleton=1"
+        ).fetchone()
+        week_start, _ = beijing_week(activation)
+        expected_first = week_start if activation == week_start else week_start + 7 * 86_400
+        assert tuple(anchor) == (activation, expected_first)
+        assert conn.execute(
+            "SELECT progress, claimed FROM quest_progress WHERE quest_id='race_best_1799798400'"
+        ).fetchone()[:] == (88, 1)
+        assert conn.execute(
+            "SELECT progress, claimed FROM quest_progress WHERE quest_id='race_prize_1799798400'"
+        ).fetchone()[:] == (1, 1)
+        assert conn.execute("SELECT COUNT(*) FROM race_track_bests").fetchone()[0] == 0
+        assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
+        assert conn.execute("SELECT quantity FROM inventory WHERE user_id='old-user'").fetchone()[0] == 7
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+    backups = list(tmp_path.glob("schema29.db.schema29-backup-*.db"))
+    assert len(backups) == 1
+
+
+def test_failed_schema30_migration_rolls_back_new_tables_and_anchor(tmp_path, monkeypatch):
+    store = schema29_store(tmp_path)
+    original_migration = database.migrate_race_league
+
+    def fail_after_create(conn, now):
+        original_migration(conn, now)
+        raise RuntimeError("injected schema 30 failure")
+
+    monkeypatch.setattr(database, "migrate_race_league", fail_after_create)
+    with pytest.raises(RuntimeError, match="injected schema 30 failure"):
+        store.initialize()
+
+    with closing(sqlite3.connect(store.path)) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 29
+        names = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert not names.intersection({"race_league_config", "race_track_bests", "race_league_claims"})
+        assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
+    assert len(list(tmp_path.glob("schema29.db.schema29-backup-*.db"))) == 1
 
 
 def test_schema28_failed_migration_rolls_back_and_preserves_backup(tmp_path, monkeypatch):

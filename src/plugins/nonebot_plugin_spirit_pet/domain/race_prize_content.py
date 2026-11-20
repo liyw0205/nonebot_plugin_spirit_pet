@@ -19,3 +19,7 @@ class RacePrize(Definition):
         if self.stones == 0 and not self.items:
             raise ValueError("race prize must not be empty")
         return self
+
+
+class RaceLeaguePrize(RacePrize):
+    """One four-week league rank's fixed settlement reward."""

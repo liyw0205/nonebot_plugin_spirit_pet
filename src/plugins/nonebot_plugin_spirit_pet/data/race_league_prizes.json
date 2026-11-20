@@ -1,0 +1,5 @@
+[
+  {"rank": 1, "stones": 800, "items": {"forge_ore": 4, "spirit_food": 3}},
+  {"rank": 2, "stones": 500, "items": {"forge_ore": 2, "spirit_food": 2}},
+  {"rank": 3, "stones": 300, "items": {"forge_ore": 1, "spirit_food": 1}}
+]

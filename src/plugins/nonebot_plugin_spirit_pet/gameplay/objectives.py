@@ -31,6 +31,7 @@ from . import achievement_shop, collection_exchange
 from . import specialization
 from . import mood
 from . import race
+from . import race_league
 from . import race_prizes
 from . import research
 from . import training
@@ -637,6 +638,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (specialization.objective_line(ctx, player.user_id), "灵宠专精"),
         (mood.objective_line(ctx, player.user_id), "灵宠心境"),
         (_race_line(ctx, player.user_id)),
+        (race_league.objective_line(ctx, player.user_id), "灵宠竞速联赛"),
         (research.objective_line(ctx, player.user_id), "灵宠研习"),
         (training.objective_line(ctx, player.user_id), "灵宠连携演练"),
         (convoy.objective_line(ctx, player.user_id), "灵宠护航"),

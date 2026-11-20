@@ -34,7 +34,7 @@ from ..domain.achievement_shop_content import AchievementOffer
 from ..domain.specialization_content import Specialization, skill_archetype
 from ..domain.mood_content import MoodLevel
 from ..domain.race_content import RaceTrack
-from ..domain.race_prize_content import RacePrize
+from ..domain.race_prize_content import RaceLeaguePrize, RacePrize
 from ..domain.farm_level_content import FarmLevel
 from ..domain.farm_contract_content import FarmContractPlan
 from ..domain.cave_offering_content import CaveOffering
@@ -204,6 +204,7 @@ class Catalog:
     moods: dict[str, MoodLevel]
     races: dict[str, RaceTrack]
     race_prizes: dict[int, RacePrize]
+    race_league_prizes: dict[int, RaceLeaguePrize]
     farm_levels: dict[int, FarmLevel]
     cave_offerings: dict[int, CaveOffering]
     gauntlets: dict[str, Gauntlet]
@@ -326,6 +327,7 @@ class Catalog:
             moods=_index(directory / "moods.json", MoodLevel, "id"),
             races=_index(directory / "races.json", RaceTrack),
             race_prizes=_index(directory / "race_prizes.json", RacePrize, "rank"),
+            race_league_prizes=_index(directory / "race_league_prizes.json", RaceLeaguePrize, "rank"),
             farm_levels=_index(directory / "farm_levels.json", FarmLevel, "level"),
             cave_offerings=_index(directory / "cave_offerings.json", CaveOffering, "tier"),
             gauntlets=_index(directory / "gauntlets.json", Gauntlet),
@@ -1208,8 +1210,8 @@ class Catalog:
             )
 
     def _validate_races(self):
-        if not self.races:
-            raise ValueError("races must not be empty")
+        if len(self.races) != 3:
+            raise ValueError("races must define exactly three daily rotation tracks")
         for track in self.races.values():
             weighted = set(self.rules.race.weights)
             if track.terrain.stat not in weighted:
@@ -1228,6 +1230,23 @@ class Catalog:
                 if higher.items.get(item_id, 0) < amount:
                     raise ValueError(
                         f"race prize {item_id} must not fall as the rank improves"
+                    )
+        if set(self.race_league_prizes) != {1, 2, 3}:
+            raise ValueError("race league prizes must cover ranks 1, 2 and 3")
+        league_ordered = [self.race_league_prizes[rank] for rank in (1, 2, 3)]
+        for prize in league_ordered:
+            self._require(prize.items, self.items, f"race league rank {prize.rank} prize items")
+            if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in prize.items):
+                raise ValueError(
+                    f"race league rank {prize.rank} prize items must be consumable or material"
+                )
+        for higher, lower in ((league_ordered[0], league_ordered[1]), (league_ordered[1], league_ordered[2])):
+            if higher.stones < lower.stones:
+                raise ValueError("race league prize stones must not fall as the rank improves")
+            for item_id, amount in lower.items.items():
+                if higher.items.get(item_id, 0) < amount:
+                    raise ValueError(
+                        f"race league prize {item_id} must not fall as the rank improves"
                     )
 
     def _validate_gauntlets(self):

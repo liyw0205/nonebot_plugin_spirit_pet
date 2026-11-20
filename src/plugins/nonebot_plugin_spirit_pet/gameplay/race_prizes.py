@@ -182,7 +182,7 @@ def _unregistered(ctx: Context, argument: str) -> Reply:
     )
     lines.append("尚未结契，先完成领养；上周的榜单仍可公开查看。")
     return Reply(
-        "灵宠竞速奖励", tuple(lines), ("灵宠帮助",),
+        "灵宠竞速奖励", tuple(lines), ("灵宠帮助", "灵宠竞速联赛"),
         (InlineCommand(len(lines) - 1, "开始领养", "灵宠领养 "),),
     )
 
@@ -228,7 +228,10 @@ def _settlement(ctx: Context, argument: str) -> Reply:
         links.append(InlineCommand(len(lines) - 1, "查看往期", "灵宠竞速奖励 往期"))
     else:
         lines.append("还没有更早的已结算周。")
-    return Reply("灵宠竞速奖励", tuple(lines), ("灵宠竞速", "灵宠竞速榜", "灵宠帮助"), tuple(links))
+    return Reply(
+        "灵宠竞速奖励", tuple(lines),
+        ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "灵宠帮助"), tuple(links),
+    )
 
 
 def _archive(ctx: Context, argument: str) -> Reply:
@@ -275,7 +278,10 @@ def _archive(ctx: Context, argument: str) -> Reply:
             links.append(InlineCommand(len(lines) - 1, "上一页", f"灵宠竞速奖励 往期 {page - 1}"))
         if page < pages:
             links.append(InlineCommand(len(lines) - 1, "下一页", f"灵宠竞速奖励 往期 {page + 1}"))
-    return Reply("灵宠竞速奖励 · 往期", tuple(lines), ("灵宠竞速奖励", "灵宠竞速", "灵宠帮助"), tuple(links))
+    return Reply(
+        "灵宠竞速奖励 · 往期", tuple(lines),
+        ("灵宠竞速奖励", "灵宠竞速", "灵宠竞速联赛", "灵宠帮助"), tuple(links),
+    )
 
 
 def _detail(ctx: Context, argument: str) -> Reply:
@@ -311,7 +317,10 @@ def _detail(ctx: Context, argument: str) -> Reply:
     lines.append("返回本周结算页或查看往期周榜。")
     links.append(InlineCommand(len(lines) - 1, "返回结算", "灵宠竞速奖励"))
     links.append(InlineCommand(len(lines) - 1, "查看往期", "灵宠竞速奖励 往期"))
-    return Reply("灵宠竞速奖励", tuple(lines), ("灵宠竞速", "灵宠竞速榜", "灵宠帮助"), tuple(links))
+    return Reply(
+        "灵宠竞速奖励", tuple(lines),
+        ("灵宠竞速", "灵宠竞速榜", "灵宠竞速联赛", "灵宠帮助"), tuple(links),
+    )
 
 
 def catalog(ctx: Context, arg: str) -> Reply:
