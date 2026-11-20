@@ -4,13 +4,13 @@
 
 ## 当前唯一进度
 
-- 发布基线：正式 Release [v0.1.68](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.68) 已包含 `project.tar.gz`，tag 源码为 `7b5199d27b4a38695fc86e9835cb7620dbe2b0e3`，存档 schema 29。develop CI [44796130956](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44796130956)、main CI [44797729998](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44797729998) 与 tag/Release CI [44798882337](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44798882337) 均通过 Python 3.10/3.13 全量测试、编译、Shell 检查和安装冒烟。Release 资产 SHA256 `bebc5aefa0506caa58df85f1ea7b27ec5dfa1e06d020b03d26ce5fb8e42f5e92` 与 tag 源码归档一致；发布与部署分开记录。
-- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复，以及 v0.1.68 的好友换物、好友合膳、双人接力试炼和师门共修课题。完整范围以变更记录为准。
-- 代码与验收依据：近期交付覆盖 `contracts.py`/`test_composite_contracts.py`、`daily_assignment_chain.py`/`test_daily_assignment_chain.py`、`vein_expedition.py`/`test_vein_expedition.py`、`ruin_expedition.py`/`test_ruin_expedition.py`、`cave_coop.py`/`test_cave_coop.py`、`farm_contracts.py`/`test_farm_contracts.py`、`sect_community.py`/`test_sect_community.py` 与 schema 28→29 迁移。共修切片本地 189 项聚焦测试通过；各远端完整 CI 均通过。
+- 发布基线：正式 Release [v0.1.69](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.69) 已包含 `project.tar.gz`，tag 源码 SHA `455592a71ac0b54756b9a977374ab96414e2de51`，存档 schema 30。develop CI [44836524332](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44836524332)、main CI [44837800618](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44837800618) 与 tag/Release CI [44837972888](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44837972888) 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。Release 资产 SHA256 `821e920c1253a3cee45bddfca7facfd1d9b21f4d29d9ecac7ed6c670a2f13a67` 与该 tag 的本地 `git archive` 逐字节一致；发布与部署分开记录。
+- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复、v0.1.68 的好友换物/合膳/双人接力与师门共修，以及 v0.1.69 的灵宠竞速四周联赛。完整范围以变更记录为准。
+- 代码与验收依据：v0.1.69 覆盖 `race_league.py`、`race_track_bests` 及 schema 29→30 迁移、竞速报名同事务 PB、派生赛周/赛季积分、往期分页、限时一次领奖和 QQ/OneBot 共用命令。新增联赛合同及受影响的竞速、单周奖励、迁移、命令、只读审计本地共 95 项通过；main 与 tag CI 均通过完整测试与安装冒烟。
 - 部署：最近独立核验的 QQ 测试实例仍为 v0.1.2，SHA `8616455e6e1f5ec76d532d778d809133f8d9ef9f`、schema 20；本阶段未访问部署账号、更新实例或发送真实 QQ 消息。
 - 连接与呈现：旧实例 QQ 连接/鉴权已核验；QQ 客户端 Markdown、按钮、蓝字和 Termux 设备呈现仍需独立实测，不能由 CI 或 mock 替代。
-- 活动阶段：好友换物、好友合膳、双人接力试炼与师门共修均已普通推送 `develop`、经实时 GitHub 指针核验后快进推送 `main`，并随 v0.1.68 发布。main 与 develop 当前同步于 `7b5199d27b4a38695fc86e9835cb7620dbe2b0e3`；此前 main 独有历史已保留，无需产生额外合并提交。此阶段未部署、未访问真实存档或发送真实 QQ 消息。
-- 下一有限任务：实现灵宠竞速四周联赛，复用既有周成绩建立连续赛季积分、排行、往期回顾和一次性结算奖励；现有单周竞速及奖励语义保持稳定，具体数据、边界与验收见本地 `.codex-goal.md`（不进入仓库）。
+- 活动阶段：灵宠竞速四周联赛以普通提交 `a303d8a`、`455592a` 推送 develop，经实时核对 main 无独有提交后，将 develop 从 `d3612239` 普通快进到 `455592a71ac0b54756b9a977374ab96414e2de51` 并发布 v0.1.69；main 与 develop 现同步于该提交，未创建额外合并提交、未移动既有 tag。当前仅完成代码、CI 与 Release 验证，未部署、未访问真实存档或发送真实 QQ 消息。
+- 下一有限任务：实现「师门共讨首领」完整多人异步玩法：同门参与独立的周常共享首领战，真实战斗伤害原子累计到本门共享血量，展示参与/战报与周结算，按个人参与和全门派里程碑派发一次性奖励；保留现有个人师门试炼、周俸与共修课题语义。完整状态机、持久化、交互和验收见本地 `.codex-goal-next.md`，不进入仓库。
 
 ## 道友协作阶段
 
