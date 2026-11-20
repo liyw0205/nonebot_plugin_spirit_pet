@@ -4,13 +4,13 @@
 
 ## 当前唯一进度
 
-- 发布基线：正式 Release [v0.1.67](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.67) 已包含 `project.tar.gz`，tag 源码为 `b81e4e96640f8127fa3b44ae5cdff8f032f6c227`，存档 schema 28。发布验证提交 `ac658ee20468a3936fdf2f4a496fef88cd2d63d7` 的 main/develop CI 均成功；发布与部署分开记录。
-- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复。更早的玩法保持已发布状态，完整范围以变更记录为准。
-- 代码与验收依据：上述玩法分别对应 `contracts.py`/`test_composite_contracts.py`、`daily_assignment_chain.py`/`test_daily_assignment_chain.py`、`vein_expedition.py`/`test_vein_expedition.py`、`ruin_expedition.py`/`test_ruin_expedition.py`、`cave_coop.py`/`test_cave_coop.py`、`farm_contracts.py`/`test_farm_contracts.py`。均已有 QQ/OneBot 共用命令、事务、重放和恢复合同；复用已通过的发布 CI，不为文档整理重跑全量。
+- 发布基线：正式 Release [v0.1.68](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.68) 已包含 `project.tar.gz`，tag 源码为 `7b5199d27b4a38695fc86e9835cb7620dbe2b0e3`，存档 schema 29。develop CI [44796130956](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44796130956)、main CI [44797729998](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44797729998) 与 tag/Release CI [44798882337](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44798882337) 均通过 Python 3.10/3.13 全量测试、编译、Shell 检查和安装冒烟。Release 资产 SHA256 `bebc5aefa0506caa58df85f1ea7b27ec5dfa1e06d020b03d26ce5fb8e42f5e92` 与 tag 源码归档一致；发布与部署分开记录。
+- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复，以及 v0.1.68 的好友换物、好友合膳、双人接力试炼和师门共修课题。完整范围以变更记录为准。
+- 代码与验收依据：近期交付覆盖 `contracts.py`/`test_composite_contracts.py`、`daily_assignment_chain.py`/`test_daily_assignment_chain.py`、`vein_expedition.py`/`test_vein_expedition.py`、`ruin_expedition.py`/`test_ruin_expedition.py`、`cave_coop.py`/`test_cave_coop.py`、`farm_contracts.py`/`test_farm_contracts.py`、`sect_community.py`/`test_sect_community.py` 与 schema 28→29 迁移。共修切片本地 189 项聚焦测试通过；各远端完整 CI 均通过。
 - 部署：最近独立核验的 QQ 测试实例仍为 v0.1.2，SHA `8616455e6e1f5ec76d532d778d809133f8d9ef9f`、schema 20；本阶段未访问部署账号、更新实例或发送真实 QQ 消息。
 - 连接与呈现：旧实例 QQ 连接/鉴权已核验；QQ 客户端 Markdown、按钮、蓝字和 Termux 设备呈现仍需独立实测，不能由 CI 或 mock 替代。
-- 活动阶段：下列三项目标均已在 `develop` 实现并定向验证。好友换物已由 `dc0f2d2`、好友合膳已由 `86e63cd`、双人接力试炼已由 `d8201bb` 普通提交推送。接力新增 29 项合同，最近一组 135 项定向验证全绿；战报、轮战、今日、目标、好友及共用命令回归亦已通过。`d8201bb9ec05438f6b04fcf1299a3d8c4d0b3621` 的 [CI 44611901149](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44611901149) 中 Python 3.10/3.13 测试、编译、Shell 检查与安装冒烟全部成功。随后从实时 `main=ac658ee20468a3936fdf2f4a496fef88cd2d63d7` 与 `develop=2c833368835add2aac8f6a2a4b0b50c27ffa039a` 建立普通合并提交 `cdba1a7fb4b621082dc4f6d372d3854949b3474e` 并推送 `main`；[main CI 44722547483](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44722547483) 的 Python 3.10/3.13 测试、编译、Shell 检查及安装冒烟全部成功。Release job 因非 tag 推送跳过，正式 Release 仍为 `v0.1.67`；本次未升版本、未部署。
-- 下一有限任务：三项目标已交付并合入 `main`，当前没有待执行玩法切片。后续版本安排及下一开发目标等待审查与明确范围，不追加第四个玩法目标，也不将文档整理计作玩法完成。
+- 活动阶段：好友换物、好友合膳、双人接力试炼与师门共修均已普通推送 `develop`、经实时 GitHub 指针核验后快进推送 `main`，并随 v0.1.68 发布。main 与 develop 当前同步于 `7b5199d27b4a38695fc86e9835cb7620dbe2b0e3`；此前 main 独有历史已保留，无需产生额外合并提交。此阶段未部署、未访问真实存档或发送真实 QQ 消息。
+- 下一有限任务：实现灵宠竞速四周联赛，复用既有周成绩建立连续赛季积分、排行、往期回顾和一次性结算奖励；现有单周竞速及奖励语义保持稳定，具体数据、边界与验收见本地 `.codex-goal.md`（不进入仓库）。
 
 ## 道友协作阶段
 
