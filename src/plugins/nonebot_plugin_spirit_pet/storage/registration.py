@@ -9,6 +9,17 @@ import tempfile
 from contextlib import closing
 
 REGISTRATION_COLUMN = "    registered_at INTEGER CHECK (registered_at >= 0),\n"
+RUNTIME_INDEXES = (
+    "CREATE INDEX quest_progress_user_status ON quest_progress(user_id, quest_id, progress, claimed)",
+    "CREATE INDEX pets_owner_species ON pets(user_id, archived, species_id, pet_id)",
+    "CREATE INDEX market_listing_expiry ON market_listings(state, expires_at, listing_id)",
+    "CREATE INDEX market_sales_seller_time ON market_sales(seller_id, sold_at DESC, listing_id DESC)",
+    "CREATE INDEX market_sales_trend ON market_sales(sold_at, item_id, unit_price, quantity)",
+    "CREATE INDEX market_bid_expiry ON market_bids(state, expires_at, bid_id)",
+    "CREATE INDEX market_bid_sales_buyer_time ON market_bid_sales(buyer_id, sold_at DESC, bid_id DESC)",
+    "CREATE INDEX market_bid_sales_seller_time ON market_bid_sales(seller_id, sold_at DESC, bid_id DESC)",
+    "CREATE INDEX market_bid_sales_trend ON market_bid_sales(sold_at, item_id, unit_price, quantity)",
+)
 
 
 def _legacy_schema(current_schema: str, version: int) -> str:
@@ -36,7 +47,10 @@ def _legacy_schema(current_schema: str, version: int) -> str:
     return schema[:match.start(1)] + body + schema[match.end(1):]
 
 
-def _validate_schema(conn: sqlite3.Connection, expected_schema: str, version: int) -> None:
+def _validate_schema(
+    conn: sqlite3.Connection, expected_schema: str, version: int,
+    *, optional_indexes: tuple[str, ...] = (),
+) -> None:
     def normalize(sql: str) -> str:
         sql = re.sub(r'"([A-Za-z_][A-Za-z0-9_]*)"', r"\1", sql.strip())
         return re.sub(r"\s+", " ", sql)
@@ -51,7 +65,20 @@ def _validate_schema(conn: sqlite3.Connection, expected_schema: str, version: in
 
     with closing(sqlite3.connect(":memory:")) as expected:
         expected.executescript(expected_schema)
-        if definitions(conn) != definitions(expected):
+        actual_definitions = definitions(conn)
+        expected_definitions = definitions(expected)
+        for statement in optional_indexes:
+            expected.execute(statement)
+            index_row = expected.execute(
+                "SELECT type, name, sql FROM sqlite_master WHERE name=?",
+                (statement.split()[2],),
+            ).fetchone()
+            if index_row is None:
+                raise RuntimeError(f"Invalid optional schema index for version {version}")
+            existing = actual_definitions.pop((index_row[0], index_row[1]), None)
+            if existing is not None and existing != normalize(index_row[2]):
+                raise RuntimeError(f"Schema {version} has a malformed optional index {index_row[1]}")
+        if actual_definitions != expected_definitions:
             raise RuntimeError(f"Unsupported spirit pet schema version: {version} (structure mismatch)")
     if conn.execute("PRAGMA integrity_check").fetchall()[0][0] != "ok" or conn.execute("PRAGMA foreign_key_check").fetchone():
         raise RuntimeError(f"Schema {version} integrity/foreign key check failed; database preserved")
@@ -119,17 +146,46 @@ def validate_schema27(conn: sqlite3.Connection, current_schema: str) -> None:
     _validate_schema(conn, legacy_schema27(current_schema), 27)
 
 
+def legacy_schema28(current_schema: str) -> str:
+    return re.sub(
+        r"CREATE TABLE sect_week_contributions \([\s\S]*?\n\);\n", "", current_schema, count=1,
+    )
+
+
 def legacy_schema27(current_schema: str) -> str:
-    schema = re.sub(r"CREATE TABLE duel_actions \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(
+        r"CREATE TABLE duel_actions \([\s\S]*?\n\);\n", "", legacy_schema28(current_schema), count=1,
+    )
     return re.sub(r"CREATE INDEX duel_action_history [^;]*;\n", "", schema, count=1)
 
 
 def validate_schema28(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 28)
+    _validate_schema(
+        conn,
+        legacy_schema28(current_schema),
+        28,
+        optional_indexes=RUNTIME_INDEXES,
+    )
+
+
+def validate_schema29(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 29, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
     return _backup_schema(path, 27)
+
+
+def backup_schema28(path: Path) -> Path:
+    return _backup_schema(path, 28)
+
+
+def migrate_sect_week_contributions(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    match = re.search(r"CREATE TABLE sect_week_contributions \([\s\S]*?\n\);", schema)
+    if match is None:
+        raise RuntimeError("Current schema is missing sect weekly contribution ledger")
+    conn.execute(match.group(0))
 
 
 def migrate_duel_table(conn: sqlite3.Connection) -> None:

@@ -184,6 +184,10 @@ def page(ctx: Context, arg: str) -> Reply:
         + "（灵宠师门 周俸）。"
     )
     links.append(InlineCommand(len(lines) - 1, "查看周俸", "灵宠师门 周俸"))
+    from . import sect_community
+
+    lines.append(f"本周共修：{sect_community.summary_line(ctx, member)}。")
+    links.append(InlineCommand(len(lines) - 1, "查看共修", "灵宠师门 共修"))
     from . import sect_trial
 
     trial = sect_trial.trial_for(ctx, member)
@@ -249,6 +253,9 @@ def practice(ctx: Context, arg: str) -> Reply:
         f"{WEEK_CONTRIB}{beijing_week(ctx.now)[0]}",
         week_contribution(ctx) + rules.daily_contribution,
     )
+    from . import sect_community
+
+    sect_community.record_contribution(ctx, sect, rules.daily_contribution)
     _set(ctx, f"{DAY}{beijing_day(ctx.now)}", 1)
     counters.bump(ctx, "sect_practice")
     ctx.repo.invalidate_ready(ctx.user_id)
@@ -443,6 +450,9 @@ def submit(ctx: Context, arg: str) -> Reply:
     total = contribution(ctx, sect) + mission.contribution
     _set(ctx, f"{CONTRIB}{sect.id}", total)
     _set(ctx, f"{WEEK_CONTRIB}{beijing_week(ctx.now)[0]}", week_contribution(ctx) + mission.contribution)
+    from . import sect_community
+
+    sect_community.record_contribution(ctx, sect, mission.contribution)
     _set(ctx, mission_key(ctx.now, mission), progress)
     lines = [
         f"{mission.name}已交差：{'，'.join(result)}。",
@@ -532,10 +542,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return weekly_page(ctx)
     if parts[0] == "领俸":
         return claim_weekly(ctx, " ".join(parts[1:]))
+    if parts[0] == "共修":
+        from . import sect_community
+        return sect_community.dispatch(ctx, " ".join(parts[1:]))
     if parts[0] == "试炼":
         from . import sect_trial
         return sect_trial.dispatch(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠师门 [拜入|修行|领赏|任务|交差|周俸|领俸|试炼] [目标]。")
+    raise GameError("格式：灵宠师门 [拜入|修行|领赏|任务|交差|周俸|领俸|共修|试炼] [目标]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
@@ -554,6 +567,17 @@ def objective_line(ctx: Context, user_id: str) -> str:
     trial = sect_trial.trial_for(ctx, sect)
     if trial is not None and not sect_trial.cleared(ctx, trial, user_id):
         extra += " · 试炼未过"
+    from . import sect_community
+
+    community_total = sect_community.total_contribution(ctx, sect)
+    community_next = next(
+        (tier for tier in sect_community.tiers(ctx) if community_total < tier.total_contribution),
+        None,
+    )
+    extra += (
+        f" · 共修 {community_total}/{community_next.total_contribution}"
+        if community_next is not None else " · 共修已达最高档"
+    )
     return (
         f"师门：{sect.name} {entry.rank} 阶"
         f" · {_progress_text(sect, entry, contribution(ctx, sect, user_id))}{extra}"

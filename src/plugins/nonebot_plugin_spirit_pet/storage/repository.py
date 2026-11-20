@@ -1067,6 +1067,37 @@ class Repository:
             (user_id, achievement_id, operation_id, claimed_at, reward_snapshot, reply),
         )
 
+    def add_sect_week_contribution(
+        self, *, week_start: int, sect_id: str, user_id: str, amount: int,
+    ) -> None:
+        if amount <= 0:
+            raise ValueError("sect contribution increment must be positive")
+        self.conn.execute(
+            "INSERT INTO sect_week_contributions(week_start, sect_id, user_id, contribution) "
+            "VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(week_start, sect_id, user_id) DO UPDATE "
+            "SET contribution=sect_week_contributions.contribution + excluded.contribution",
+            (week_start, sect_id, user_id, amount),
+        )
+
+    def sect_week_contribution(
+        self, *, week_start: int, sect_id: str, user_id: str,
+    ) -> int:
+        row = self.conn.execute(
+            "SELECT contribution FROM sect_week_contributions "
+            "WHERE week_start=? AND sect_id=? AND user_id=?",
+            (week_start, sect_id, user_id),
+        ).fetchone()
+        return int(row["contribution"]) if row else 0
+
+    def sect_week_total(self, *, week_start: int, sect_id: str) -> int:
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(contribution), 0) AS total "
+            "FROM sect_week_contributions WHERE week_start=? AND sect_id=?",
+            (week_start, sect_id),
+        ).fetchone()
+        return int(row["total"])
+
     def save(self) -> None:
         for pet in self.pets.values():
             self.conn.execute(

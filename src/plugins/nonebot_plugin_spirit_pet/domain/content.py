@@ -420,6 +420,15 @@ class SectWeeklyTier(Definition):
     reward: Reward
 
 
+class SectCommunityTier(Definition):
+    """A shared weekly sect milestone with an individual participation gate."""
+
+    tier: int = Field(ge=1, le=6)
+    total_contribution: Positive
+    member_contribution: Positive
+    reward: Reward
+
+
 class SectRule(Definition):
     daily_contribution: Positive
     practice_energy: Positive
@@ -427,6 +436,9 @@ class SectRule(Definition):
     switch_stones: NonNegative
     mission_offers: int = Field(ge=1, le=4)
     weekly_tiers: list[SectWeeklyTier] = Field(min_length=1, max_length=6)
+    community_title: Name
+    community_description: str
+    community_tiers: list[SectCommunityTier] = Field(min_length=3, max_length=6)
 
 
 class DuelStance(Definition):

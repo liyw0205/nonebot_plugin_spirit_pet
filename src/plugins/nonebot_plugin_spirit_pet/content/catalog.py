@@ -1147,6 +1147,30 @@ class Catalog:
                 raise ValueError(f"sect weekly tier {tier.tier} must pay something")
             self._require(tier.reward.items, self.items, f"sect weekly tier {tier.tier} items")
 
+        community_tiers = sorted(
+            self.rules.sect.community_tiers, key=lambda tier: tier.tier,
+        )
+        if [tier.tier for tier in community_tiers] != list(range(1, len(community_tiers) + 1)):
+            raise ValueError("sect community tiers must be contiguous from 1")
+        previous_total = previous_member = 0
+        for tier in community_tiers:
+            if tier.total_contribution <= previous_total:
+                raise ValueError("sect community total contribution must strictly increase")
+            if tier.member_contribution <= previous_member:
+                raise ValueError("sect community member contribution must strictly increase")
+            if tier.member_contribution > tier.total_contribution:
+                raise ValueError("sect community member contribution cannot exceed its total")
+            previous_total = tier.total_contribution
+            previous_member = tier.member_contribution
+            has_reward = (
+                tier.reward.exp.maximum > 0
+                or tier.reward.stones.maximum > 0
+                or any(bounds.maximum > 0 for bounds in tier.reward.items.values())
+            )
+            if not has_reward:
+                raise ValueError(f"sect community tier {tier.tier} must pay something")
+            self._require(tier.reward.items, self.items, f"sect community tier {tier.tier} items")
+
         trial_sects = set()
         for trial in self.sect_trials.values():
             if trial.sect not in self.sects:

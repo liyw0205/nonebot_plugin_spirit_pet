@@ -116,6 +116,13 @@ CREATE TABLE quest_progress (
     claimed INTEGER NOT NULL DEFAULT 0 CHECK (claimed IN (0, 1)),
     PRIMARY KEY(user_id, quest_id)
 );
+CREATE TABLE sect_week_contributions (
+    week_start INTEGER NOT NULL CHECK (week_start >= 0),
+    sect_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    contribution INTEGER NOT NULL CHECK (contribution > 0),
+    PRIMARY KEY(week_start, sect_id, user_id)
+);
 CREATE TABLE teams (
     team_id INTEGER PRIMARY KEY AUTOINCREMENT,
     leader_id TEXT NOT NULL UNIQUE REFERENCES players(user_id)

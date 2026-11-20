@@ -181,6 +181,9 @@ def challenge(ctx: Context, arg: str) -> Reply:
             f"{sects.WEEK_CONTRIB}{beijing_week(ctx.now)[0]}",
             sects.week_contribution(ctx) + trial.contribution,
         )
+        from . import sect_community
+
+        sect_community.record_contribution(ctx, sect, trial.contribution)
         sects._set(ctx, _key(ctx.now, trial), 1)
         lines.extend((
             f"试炼奖励：{'，'.join(result)}。",

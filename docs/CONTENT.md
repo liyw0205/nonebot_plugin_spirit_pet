@@ -969,7 +969,13 @@ schema 23 新增单表 `mail_messages`：`sender_id`/`recipient_id` 外键指向
 
 校验规则：阶位号从 1 连续、第一阶贡献必须为 0、贡献阈值严格递增、被动比率严格递增且不超过 50%、奖励物品必须存在。当前四派共用 0/60/160/320/560 的阶位曲线，加成 2%→10%，奖励灵石 120/240/480/900/1600 与各派材料 1/2/3/5/8 份。
 
-每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。运行状态全部存 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`），不新增表列；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
+每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。个人运行状态使用 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`）；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
+
+师门共修规则在 `rules.json.sect` 中定义标题、说明及至少三档共享里程碑。档位从 1 连续，门派总贡献阈值和个人参与阈值分别为正且严格递增，个人阈值不能超过门派阈值；奖励必须非空且引用已有物品。四派共用同一组档位以保持公平。
+
+schema 29 新增 `sect_week_contributions(week_start, sect_id, user_id, contribution)`，主键为门派/北京时间周一零点/成员，成员正增量原子 upsert。该表是唯一事实源，总进度由 `SUM(contribution)` 派生；历史周不清理，换派后旧记录仍归旧门派。只从成功修行、每日任务交差和试炼胜利的既有贡献发放点入账，并与同操作的个人贡献/周俸同事务，失败及永久操作重放不入账。领取凭证使用 `quest_progress` 的 `sect_community_claim_<周起点>_<门派>_<档位>`，和奖励同事务；只允许本周当前门派、总进度与个人参与均达标的玩家领取。
+
+schema 28 到 29 迁移先校验并备份旧库，再事务创建空账本，不回填个人周俸或历史贡献；玩家、物品和任务进度保持原样。迁移后执行 schema、SQLite integrity 与 foreign-key 校验，迁移失败保留 schema 28 数据与备份。
 
 ## 劫境定义
 

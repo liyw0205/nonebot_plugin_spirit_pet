@@ -7,7 +7,7 @@ import pytest
 from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.storage import database
 from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
-from nonebot_plugin_spirit_pet.storage.registration import _legacy_schema
+from nonebot_plugin_spirit_pet.storage.registration import _legacy_schema, legacy_schema28
 
 
 def schema19_store(tmp_path):
@@ -41,11 +41,79 @@ def schema19_store(tmp_path):
     return store
 
 
+def schema28_store(tmp_path):
+    store = Store(tmp_path / "schema28.db")
+    schema = legacy_schema28(database.SCHEMA_PATH.read_text(encoding="utf-8"))
+    with closing(sqlite3.connect(store.path)) as conn:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(schema)
+        conn.execute("PRAGMA user_version=28")
+        conn.execute("INSERT INTO players(user_id, stones) VALUES ('old-user', 321)")
+        conn.execute("INSERT INTO player_identity(user_id, legacy_dao_name) VALUES ('old-user', '旧道号')")
+        conn.execute(
+            "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('old-user','spirit_food',7)",
+        )
+        conn.execute(
+            "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) "
+            "VALUES ('old-user','sect_week_contrib_1799798400',123,1)",
+        )
+        conn.commit()
+    return store
+
+
 def test_schema19_fixture_matches_alter_table_registration_column_order(tmp_path):
     store = schema19_store(tmp_path)
     with closing(sqlite3.connect(store.path)) as conn:
         columns = [row[1] for row in conn.execute("PRAGMA table_info(players)")]
     assert columns[-1] == "registered_at"
+
+
+def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp_path):
+    store = schema28_store(tmp_path)
+    with closing(sqlite3.connect(store.path)) as conn:
+        original_players = conn.execute("SELECT * FROM players").fetchall()
+        original_inventory = conn.execute("SELECT * FROM inventory").fetchall()
+        original_progress = conn.execute("SELECT * FROM quest_progress").fetchall()
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 29
+        assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
+        assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
+        assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
+        assert conn.execute("SELECT COUNT(*) FROM sect_week_contributions").fetchone()[0] == 0
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+    backups = list(tmp_path.glob("schema28.db.schema28-backup-*.db"))
+    assert len(backups) == 1
+    with closing(sqlite3.connect(backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 28
+        assert "sect_week_contributions" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+
+
+def test_schema28_failed_migration_rolls_back_and_preserves_backup(tmp_path, monkeypatch):
+    store = schema28_store(tmp_path)
+    original_migration = database.migrate_sect_week_contributions
+
+    def fail_after_create(conn):
+        original_migration(conn)
+        raise RuntimeError("injected schema 29 failure")
+
+    monkeypatch.setattr(database, "migrate_sect_week_contributions", fail_after_create)
+    with pytest.raises(RuntimeError, match="injected schema 29 failure"):
+        store.initialize()
+
+    with closing(sqlite3.connect(store.path)) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 28
+        assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
+        assert "sect_week_contributions" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+    assert len(list(tmp_path.glob("schema28.db.schema28-backup-*.db"))) == 1
 
 
 def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_path):

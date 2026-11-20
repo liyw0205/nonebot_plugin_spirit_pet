@@ -216,11 +216,14 @@ def test_trial_guards_rank_realm_and_repeat(game, play):
 def test_help_parse_and_native_payload(game, play):
     join(play)
     guide = play("help", "成长", now=NOW)
-    for command in ("灵宠师门 任务", "灵宠师门 交差", "灵宠师门 周俸", "灵宠师门 试炼"):
+    for command in (
+        "灵宠师门 任务", "灵宠师门 交差", "灵宠师门 周俸", "灵宠师门 共修", "灵宠师门 试炼",
+    ):
         assert command in guide.text()
     assert handlers._parse("灵宠师门 任务") == ("sect", "任务")
     assert handlers._parse("灵宠师门 试炼 挑战") == ("sect", "试炼 挑战")
     assert handlers._parse("灵宠师门 领俸 2") == ("sect", "领俸 2")
+    assert handlers._parse("灵宠师门 共修 领奖 2") == ("sect", "共修 领奖 2")
 
     page = play("sect", "任务", now=NOW)
     _, message = _qq_segments(page, Config(spirit_pet_qq_mode="native"))

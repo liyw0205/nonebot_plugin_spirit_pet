@@ -77,6 +77,40 @@ def test_cuisine_orders_require_real_single_meal_recipes(content_dir):
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("field", ["total_contribution", "member_contribution"])
+def test_sect_community_thresholds_must_ascend(content_dir, field):
+    def change(data):
+        tiers = data["sect"]["community_tiers"]
+        tiers[1][field] = tiers[0][field]
+
+    edit(content_dir, "rules.json", change)
+    with pytest.raises(ValueError, match=f"{field.replace('_', ' ')} must strictly increase"):
+        Catalog.load(content_dir)
+
+
+def test_sect_community_rewards_must_reference_real_items(content_dir):
+    def change(data):
+        data["sect"]["community_tiers"][0]["reward"]["items"]["missing_item"] = {
+            "minimum": 1, "maximum": 1,
+        }
+
+    edit(content_dir, "rules.json", change)
+    with pytest.raises(ValueError, match="unknown sect community tier 1 items"):
+        Catalog.load(content_dir)
+
+
+def test_sect_community_tier_must_have_a_nonempty_reward(content_dir):
+    def change(data):
+        reward = data["sect"]["community_tiers"][0]["reward"]
+        reward["exp"] = {"minimum": 0, "maximum": 0}
+        reward["stones"] = {"minimum": 0, "maximum": 0}
+        reward["items"] = {"spirit_food": {"minimum": 0, "maximum": 0}}
+
+    edit(content_dir, "rules.json", change)
+    with pytest.raises(ValueError, match="sect community tier 1 must pay something"):
+        Catalog.load(content_dir)
+
+
 @pytest.mark.parametrize(("changes", "message"), [
     ({"facility": "pen"}, "cover each facility"),
     ({"min_level": 5}, "must start at level 1"),
