@@ -37,11 +37,12 @@ def test_schema35_migration_preserves_every_existing_row_and_verified_backup(tmp
         validate_schema35(conn, SCHEMA_PATH.read_text(encoding="utf-8"))
     store.initialize()
     after = snapshot(store)
-    for table in ("family_trial_runs", "family_trial_members", "family_trial_stages", "family_trial_rewards"):
+    for table in ("family_trial_runs", "family_trial_members", "family_trial_stages", "family_trial_rewards",
+                  "family_tutelage_courses", "family_tutelage_lessons", "family_tutelage_exams", "family_tutelage_graduations"):
         assert after.pop(table) == []
     assert before == after
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 36
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
     backups = list(tmp_path.glob("schema35.db.schema35-backup-*.db"))

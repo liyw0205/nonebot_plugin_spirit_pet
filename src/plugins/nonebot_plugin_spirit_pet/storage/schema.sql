@@ -644,3 +644,61 @@ CREATE TABLE family_trial_rewards (
     FOREIGN KEY(user_id,run_id) REFERENCES family_trial_runs(user_id,run_id) ON DELETE CASCADE
 );
 CREATE INDEX family_trial_reward_history ON family_trial_rewards(user_id,granted_at DESC);
+CREATE TABLE family_tutelage_courses (
+    course_id TEXT PRIMARY KEY CHECK(length(course_id)>0),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    parent_id INTEGER NOT NULL,
+    child_id INTEGER NOT NULL CHECK(child_id<>parent_id),
+    egg_record_id INTEGER NOT NULL REFERENCES pet_lineage_eggs(egg_record_id),
+    skill_id TEXT NOT NULL CHECK(length(skill_id)>0),
+    week_start INTEGER NOT NULL CHECK(week_start>=0),
+    start_operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    status TEXT NOT NULL CHECK(status IN ('active','completed','failed','cancelled','expired')),
+    lessons_done INTEGER NOT NULL DEFAULT 0 CHECK(lessons_done BETWEEN 0 AND 2),
+    attempts_used INTEGER NOT NULL DEFAULT 0 CHECK(attempts_used BETWEEN 0 AND 3),
+    started_at INTEGER NOT NULL CHECK(started_at>=week_start AND started_at<week_start+604800),
+    updated_at INTEGER NOT NULL CHECK(updated_at>=started_at),
+    expires_at INTEGER NOT NULL CHECK(expires_at=started_at+604800),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    UNIQUE(user_id,course_id),
+    FOREIGN KEY(user_id,parent_id) REFERENCES pets(user_id,pet_id),
+    FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id),
+    CHECK(status<>'completed' OR (lessons_done=2 AND attempts_used>=1)),
+    CHECK(attempts_used=0 OR lessons_done=2)
+);
+CREATE UNIQUE INDEX family_tutelage_one_active ON family_tutelage_courses(user_id) WHERE status='active';
+CREATE INDEX family_tutelage_history ON family_tutelage_courses(user_id,started_at DESC,course_id);
+CREATE INDEX family_tutelage_weekly ON family_tutelage_courses(user_id,week_start);
+CREATE TABLE family_tutelage_lessons (
+    course_id TEXT NOT NULL REFERENCES family_tutelage_courses(course_id),
+    lesson_no INTEGER NOT NULL CHECK(lesson_no BETWEEN 1 AND 2),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    taught_at INTEGER NOT NULL CHECK(taught_at>=0),
+    cost_snapshot TEXT NOT NULL,
+    PRIMARY KEY(course_id,lesson_no)
+);
+CREATE TABLE family_tutelage_exams (
+    course_id TEXT NOT NULL REFERENCES family_tutelage_courses(course_id),
+    attempt_no INTEGER NOT NULL CHECK(attempt_no BETWEEN 1 AND 3),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    battle_id INTEGER NOT NULL UNIQUE REFERENCES battle_records(battle_id),
+    outcome TEXT NOT NULL CHECK(outcome IN ('passed','unused','lost','draw','timeout')),
+    rounds INTEGER NOT NULL CHECK(rounds>=0),
+    target_uses INTEGER NOT NULL CHECK(target_uses>=0),
+    examined_at INTEGER NOT NULL CHECK(examined_at>=0),
+    PRIMARY KEY(course_id,attempt_no)
+);
+CREATE TABLE family_tutelage_graduations (
+    user_id TEXT NOT NULL,
+    child_id INTEGER NOT NULL,
+    skill_id TEXT NOT NULL CHECK(length(skill_id)>0),
+    course_id TEXT NOT NULL UNIQUE,
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    proficiency INTEGER NOT NULL CHECK(proficiency BETWEEN 0 AND 20),
+    graduated_at INTEGER NOT NULL CHECK(graduated_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    PRIMARY KEY(child_id,skill_id),
+    FOREIGN KEY(user_id,course_id) REFERENCES family_tutelage_courses(user_id,course_id),
+    FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id)
+);

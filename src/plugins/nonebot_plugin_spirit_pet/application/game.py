@@ -10,6 +10,7 @@ from ..gameplay import wild_capture
 from ..gameplay import wild_habitat
 from ..gameplay import pedigree
 from ..gameplay import family_trial
+from ..gameplay import family_tutelage
 from ..storage.database import Store
 from ..storage.repository import Repository
 from .commands import ACTIONS
@@ -146,6 +147,8 @@ class Game:
             action == "pedigree" and pedigree.read_only(argument)
         ) or (
             action == "family_trial" and family_trial.read_only(argument)
+        ) or (
+            action == "family_tutelage" and family_tutelage.read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

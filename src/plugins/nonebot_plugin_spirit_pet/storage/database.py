@@ -22,9 +22,10 @@ from .registration import (
     validate_schema33, backup_schema32, migrate_wild_habitat, validate_schema34, backup_schema33,
     validate_schema35, backup_schema34, migrate_pedigree,
     validate_schema36, backup_schema35, migrate_family_trials,
+    validate_schema37, backup_schema36, migrate_family_tutelage,
 )
 
-SCHEMA_VERSION = 36
+SCHEMA_VERSION = 37
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -576,6 +577,31 @@ class Store:
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Family trial migration foreign key check failed; database preserved")
                     conn.execute("PRAGMA user_version=36")
+                    self._ensure_performance_indexes(conn)
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 36
+            if version == 36:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 36:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema36(conn, schema)
+                    backup_schema36(self.path)
+                    migrate_family_tutelage(conn)
+                    validate_schema37(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Family tutelage migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Family tutelage migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=37")
                     self._ensure_performance_indexes(conn)
                     conn.commit()
                 except BaseException:

@@ -98,6 +98,7 @@ from . import wild_capture
 from . import wild_habitat
 from . import pedigree
 from . import family_trial
+from . import family_tutelage
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
@@ -633,6 +634,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (tempering.objective_line(ctx, player.user_id), "灵宠淬魂"),
         (pedigree.objective_line(ctx, player.user_id), "灵宠谱系"),
         (family_trial.objective_line(ctx, player.user_id), family_trial.TITLE),
+        (family_tutelage.objective_line(ctx, player.user_id), family_tutelage.TITLE),
         (survival.objective_line(ctx, player.user_id), "灵宠守关"),
         (arcs.objective_line(ctx, player.user_id), "灵宠奇缘"),
         (support.objective_line(ctx, player.user_id), "灵宠助战"),

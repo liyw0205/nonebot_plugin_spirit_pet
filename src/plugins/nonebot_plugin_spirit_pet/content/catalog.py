@@ -78,6 +78,7 @@ from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.pedigree_content import PedigreeMilestone
 from ..domain.family_trial_content import FamilyTrial, FamilyTrialCatalog
+from ..domain.family_tutelage_content import FamilyTutelageCatalog, FamilyTutelageCourse, FamilyTutelageRules
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -156,6 +157,8 @@ class Catalog:
     pedigree_milestones: dict[str, PedigreeMilestone]
     family_trials: dict[str, FamilyTrial]
     family_trial_rotation: tuple[str, ...]
+    family_tutelage: dict[str, FamilyTutelageCourse]
+    family_tutelage_rules: FamilyTutelageRules
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -273,6 +276,7 @@ class Catalog:
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
         family_trial_catalog = FamilyTrialCatalog.model_validate(_read(directory / "family_trials.json"))
+        tutelage = FamilyTutelageCatalog.model_validate(_read(directory / "family_tutelage.json"))
         catalog = cls(
             species=_index(directory / "pets.json", Species),
             realms=tuple(_index(directory / "realms.json", Realm).values()),
@@ -287,6 +291,8 @@ class Catalog:
             pedigree_milestones=_index(directory / "pedigree_milestones.json", PedigreeMilestone),
             family_trials={trial.id: trial for trial in family_trial_catalog.trials},
             family_trial_rotation=tuple(family_trial_catalog.rotation),
+            family_tutelage={course.id: course for course in tutelage.courses},
+            family_tutelage_rules=tutelage.rules,
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -553,6 +559,7 @@ class Catalog:
         self._validate_wild_habitat_events()
         self._validate_pedigree_milestones()
         self._validate_family_trials()
+        self._validate_family_tutelage()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -947,6 +954,25 @@ class Catalog:
                         raise ValueError(
                             f"family trial {trial.id} reward item {item_id} must be consumable or material"
                         )
+
+    def _validate_family_tutelage(self) -> None:
+        for course in self.family_tutelage.values():
+            self._require([course.skill], self.skills, f"family tutelage {course.id} skill")
+            self._require([course.enemy], self.enemies, f"family tutelage {course.id} enemy")
+            self._require(course.lesson_materials, self.items, f"family tutelage {course.id} materials")
+            if any(self.items[key].kind != "material" for key in course.lesson_materials):
+                raise ValueError("family tutelage costs must use existing materials")
+            if course.parent_level not in self.skill_levels or self.skill_levels[course.parent_level].required_proficiency is None:
+                raise ValueError("family tutelage parent level must be attainable below the cap")
+            if sum(course.lesson_materials.values()) * self.family_tutelage_rules.lessons > 30:
+                raise ValueError("family tutelage material budget exceeds limit")
+            skill = self.skills[course.skill]
+            if not any(
+                (not skill.requirements.categories or species.category in skill.requirements.categories)
+                and set(skill.requirements.elements).issubset(expand_elements(species.elements, self.elements))
+                for species in self.species.values()
+            ):
+                raise ValueError("family tutelage skill has no eligible species")
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

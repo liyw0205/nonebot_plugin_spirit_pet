@@ -236,6 +236,7 @@ def validate_schema33(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def _without_pedigree(schema: str) -> str:
+    schema = _without_family_tutelage(schema)
     for table in ("pet_pedigree_operations", "pet_lineage_eggs", "pet_pedigree_claims"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in (
@@ -250,6 +251,7 @@ def _without_pedigree(schema: str) -> str:
 
 
 def _without_family_trials(schema: str) -> str:
+    schema = _without_family_tutelage(schema)
     for table in ("family_trial_runs", "family_trial_members", "family_trial_stages", "family_trial_rewards"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in ("family_trial_history", "family_trial_reward_history"):
@@ -282,7 +284,21 @@ def validate_schema35(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def validate_schema36(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 36, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, _without_family_tutelage(current_schema), 36, optional_indexes=RUNTIME_INDEXES)
+
+
+def _without_family_tutelage(schema: str) -> str:
+    for table in ("courses", "lessons", "exams", "graduations"):
+        schema = re.sub(rf"CREATE TABLE family_tutelage_{table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in ("one_active", "history", "weekly"):
+        schema = re.sub(rf"CREATE (?:UNIQUE )?INDEX family_tutelage_{index} [^;]*;\n", "", schema, count=1)
+    if "family_tutelage_" in schema:
+        raise RuntimeError("Could not reconstruct schema without family tutelage definitions")
+    return schema
+
+
+def validate_schema37(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 37, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -319,6 +335,25 @@ def backup_schema34(path: Path) -> Path:
 
 def backup_schema35(path: Path) -> Path:
     return _backup_schema(path, 35)
+
+
+def backup_schema36(path: Path) -> Path:
+    return _backup_schema(path, 36)
+
+
+def migrate_family_tutelage(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    patterns = [
+        *(rf"CREATE TABLE family_tutelage_{table} \([\s\S]*?\n\);" for table in
+          ("courses", "lessons", "exams", "graduations")),
+        *(rf"CREATE (?:UNIQUE )?INDEX family_tutelage_{index} [^;]*;" for index in
+          ("one_active", "history", "weekly")),
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing family tutelage definitions")
+        conn.execute(match.group(0))
 
 
 def migrate_wild_survey_claims(conn: sqlite3.Connection) -> None:

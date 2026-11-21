@@ -22,6 +22,7 @@ def schema34_store(path):
         conn.execute("INSERT INTO inventory(user_id,item_id,quantity) VALUES ('legacy','egg_qingluan',4)")
         conn.execute("PRAGMA foreign_keys=OFF")
         for table in (
+            "family_tutelage_graduations", "family_tutelage_exams", "family_tutelage_lessons", "family_tutelage_courses",
             "family_trial_rewards", "family_trial_stages", "family_trial_members", "family_trial_runs",
             "pet_pedigree_claims", "pet_lineage_eggs", "pet_pedigree_operations",
         ):
@@ -47,7 +48,7 @@ def test_schema34_migration_preserves_unknown_egg_stock_and_creates_verified_bac
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 36
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
         assert _legacy_state(conn) == before
         assert not conn.execute("SELECT * FROM pet_lineage_eggs").fetchall()
         assert not conn.execute("SELECT * FROM pet_pedigree_operations").fetchall()

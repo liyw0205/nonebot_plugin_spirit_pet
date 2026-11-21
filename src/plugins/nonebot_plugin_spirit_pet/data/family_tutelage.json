@@ -1,0 +1,9 @@
+{
+  "rules": {"lessons": 2, "interval": 600, "duration": 604800, "weekly_starts": 2, "attempts": 3},
+  "courses": [
+    {"id": "wind_lesson", "name": "风刃传习", "skill": "wind_slash", "enemy": "ancient_guard", "lesson_materials": {"forge_ore": 1}},
+    {"id": "fire_lesson", "name": "赤焰传习", "skill": "fireball", "enemy": "ancient_guard", "lesson_materials": {"forge_ore": 1}},
+    {"id": "water_lesson", "name": "水箭传习", "skill": "water_arrow", "enemy": "ancient_guard", "lesson_materials": {"forge_ore": 1}},
+    {"id": "wood_lesson", "name": "回春传习", "skill": "wood_heal", "enemy": "ancient_guard", "lesson_materials": {"forge_ore": 1}}
+  ]
+}

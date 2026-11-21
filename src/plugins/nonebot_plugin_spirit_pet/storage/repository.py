@@ -32,6 +32,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "wild_survey_claim": 17,
     "pedigree": 18,
     "family_trial": 15,
+    "family_tutelage": 15,
 }
 
 
