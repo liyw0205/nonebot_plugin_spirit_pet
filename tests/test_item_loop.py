@@ -38,7 +38,13 @@ def links(reply):
 
 
 def priced(game):
-    return [item for item in game[0].content.items.values() if item.price is not None]
+    limited_only = {
+        offer.item for offer in game[0].content.shop_offers.values() if offer.limited_only
+    }
+    return [
+        item for item in game[0].content.items.values()
+        if item.price is not None and item.id not in limited_only
+    ]
 
 
 def shop_pages(game):

@@ -18,7 +18,12 @@ LISTS = (
 
 def entries(game, collection):
     values = list(getattr(game[0].content, collection).values())
-    return [entry for entry in values if entry.price is not None] if collection == "items" else values
+    if collection != "items":
+        return values
+    limited_only = {
+        offer.item for offer in game[0].content.shop_offers.values() if offer.limited_only
+    }
+    return [entry for entry in values if entry.price is not None and entry.id not in limited_only]
 
 
 @pytest.mark.parametrize("action,command,title,collection,separator", LISTS)
