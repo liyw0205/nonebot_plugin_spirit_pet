@@ -45,10 +45,12 @@ def price_of(game, offer):
     return daily_shop.discounted_price(offer, item)
 
 
-def test_content_defines_nine_distinct_priced_offers(game):
+def test_content_defines_ten_distinct_priced_offers_including_capture_supply(game):
     offers = list(game[0].content.shop_offers.values())
-    assert len(offers) == 9
-    assert len({offer.item for offer in offers}) == 9
+    assert len(offers) == 10
+    assert len({offer.item for offer in offers}) == 10
+    capture_offer = next(offer for offer in offers if offer.item == "spirit_snare")
+    assert capture_offer.stock == 2
     for offer in offers:
         item = game[0].content.items[offer.item]
         assert item.price is not None
@@ -200,7 +202,7 @@ def test_next_day_restores_stock_under_a_new_credential(game, play):
     assert len(rows) == 2
     assert rows[0]["quest_id"] != rows[1]["quest_id"]
     page = play("daily_shop", now=NOW + DAY)
-    assert f"{item.name} · 原价 {item.price} → 特供 {price_of(game, overlapping)} 灵石 · 今日 {overlapping.stock} 件，剩 {overlapping.stock - 1} 件 · 已购 1" in page.text()
+    assert f"{item.name} · 原价 {item.price} → 特供 {price_of(game, overlapping)} 灵石 · 今日 {overlapping.stock} 件，售罄 · 已购 1" in page.text()
 
 
 def test_bought_stock_persists_across_restart(game, play):

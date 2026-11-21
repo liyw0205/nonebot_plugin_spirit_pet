@@ -60,6 +60,14 @@
     "effects": {}
   },
   {
+    "id": "spirit_snare",
+    "name": "缚灵索",
+    "description": "野外灵宠捕获道具；尝试一次消耗一枚。",
+    "kind": "material",
+    "price": 120,
+    "effects": {}
+  },
+  {
     "id": "wind_feather",
     "name": "青岚翎",
     "description": "装备灵物，适用条件见灵宠装备图鉴。",

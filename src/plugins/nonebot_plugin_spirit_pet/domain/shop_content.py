@@ -12,3 +12,4 @@ class ShopOffer(Definition):
     item: Identifier
     discount: Annotated[int, Field(ge=1, le=50)]
     stock: Annotated[int, Field(ge=1, le=9)]
+    limited_only: bool = False

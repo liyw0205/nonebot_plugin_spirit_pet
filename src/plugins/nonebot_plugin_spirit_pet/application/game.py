@@ -6,6 +6,7 @@ import time
 from ..content.catalog import Catalog
 from ..core.config import Config
 from ..domain.models import GameError, Reply
+from ..gameplay import wild_capture
 from ..storage.database import Store
 from ..storage.repository import Repository
 from .commands import ACTIONS
@@ -134,6 +135,8 @@ class Game:
             action == "friend_relay" and (
                 not argument.split() or argument.split()[0] in {"预览", "详情", "记录"}
             )
+        ) or (
+            action == "wild_capture" and wild_capture.read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

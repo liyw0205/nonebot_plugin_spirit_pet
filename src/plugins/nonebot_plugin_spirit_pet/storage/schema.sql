@@ -454,3 +454,52 @@ CREATE TABLE sect_boss_claims (
     FOREIGN KEY(week_start, sect_id) REFERENCES sect_boss_weeks(week_start, sect_id)
 );
 CREATE INDEX sect_boss_claim_history ON sect_boss_claims(user_id, claimed_at DESC);
+CREATE TABLE wild_capture_runs (
+    run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    route_id TEXT NOT NULL CHECK(length(route_id)>0),
+    route_name TEXT NOT NULL CHECK(length(route_name)>0),
+    day_key TEXT NOT NULL CHECK(length(day_key)=10),
+    species_id TEXT NOT NULL CHECK(length(species_id)>0),
+    species_name TEXT NOT NULL CHECK(length(species_name)>0),
+    rarity TEXT NOT NULL CHECK(rarity IN ('common', 'uncommon', 'rare')),
+    enemy_id TEXT NOT NULL CHECK(length(enemy_id)>0),
+    enemy_name TEXT NOT NULL CHECK(length(enemy_name)>0),
+    enemy_snapshot TEXT NOT NULL,
+    capture_item_id TEXT NOT NULL CHECK(length(capture_item_id)>0),
+    capture_item_name TEXT NOT NULL CHECK(length(capture_item_name)>0),
+    capture_rate REAL NOT NULL CHECK(capture_rate>0 AND capture_rate<=1),
+    max_attempts INTEGER NOT NULL CHECK(max_attempts BETWEEN 1 AND 5),
+    same_species_limit INTEGER NOT NULL CHECK(same_species_limit BETWEEN 1 AND 10),
+    state TEXT NOT NULL CHECK(state IN ('pending', 'captured', 'released', 'escaped')),
+    terminal_reason TEXT CHECK(terminal_reason IN ('caught', 'released', 'battle_lost', 'battle_draw', 'expired')),
+    attempt_count INTEGER NOT NULL DEFAULT 0 CHECK(attempt_count BETWEEN 0 AND 5),
+    battle_id INTEGER NOT NULL UNIQUE REFERENCES battle_records(battle_id),
+    captured_pet_id INTEGER,
+    started_at INTEGER NOT NULL CHECK(started_at>=0),
+    expires_at INTEGER NOT NULL CHECK(expires_at>started_at),
+    finished_at INTEGER,
+    CHECK((state='pending' AND terminal_reason IS NULL AND captured_pet_id IS NULL AND finished_at IS NULL)
+        OR (state='captured' AND terminal_reason='caught' AND captured_pet_id IS NOT NULL AND finished_at>=started_at)
+        OR (state='released' AND terminal_reason='released' AND captured_pet_id IS NULL AND finished_at>=started_at)
+        OR (state='escaped' AND terminal_reason IN ('battle_lost', 'battle_draw', 'expired')
+            AND captured_pet_id IS NULL AND finished_at>=started_at)),
+    FOREIGN KEY(user_id, captured_pet_id) REFERENCES pets(user_id, pet_id)
+);
+CREATE UNIQUE INDEX wild_capture_one_pending ON wild_capture_runs(user_id) WHERE state='pending';
+CREATE INDEX wild_capture_history ON wild_capture_runs(user_id, run_id DESC);
+CREATE INDEX wild_capture_daily ON wild_capture_runs(user_id, day_key, run_id);
+CREATE TABLE wild_capture_attempts (
+    attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL REFERENCES wild_capture_runs(run_id),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    attempt_no INTEGER NOT NULL CHECK(attempt_no BETWEEN 1 AND 5),
+    item_id TEXT NOT NULL CHECK(length(item_id)>0),
+    catch_rate REAL NOT NULL CHECK(catch_rate>0 AND catch_rate<=1),
+    roll REAL NOT NULL CHECK(roll>=0 AND roll<=1),
+    succeeded INTEGER NOT NULL CHECK(succeeded IN (0, 1)),
+    attempted_at INTEGER NOT NULL CHECK(attempted_at>=0),
+    UNIQUE(run_id, attempt_no)
+);
+CREATE INDEX wild_capture_attempt_history ON wild_capture_attempts(run_id, attempt_no);

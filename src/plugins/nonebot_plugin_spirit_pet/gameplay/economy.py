@@ -141,7 +141,11 @@ def bag(ctx: Context, arg: str) -> Reply:
 
 
 def shop(ctx: Context, arg: str) -> Reply:
-    available = {key: item for key, item in ctx.content.items.items() if item.price is not None}
+    limited_only = {offer.item for offer in ctx.content.shop_offers.values() if offer.limited_only}
+    available = {
+        key: item for key, item in ctx.content.items.items()
+        if item.price is not None and key not in limited_only
+    }
     if arg and not arg.isdecimal():
         item = named(available, arg)
         commands = [f"灵宠购买 {item.name}"]
@@ -183,6 +187,8 @@ def buy(ctx: Context, arg: str) -> Reply:
     item = named(ctx.content.items, name)
     if item.price is None:
         raise GameError("该道具不在商店出售。")
+    if any(offer.item == item.id and offer.limited_only for offer in ctx.content.shop_offers.values()):
+        raise GameError("该道具仅在限量特供出售，请查看 灵宠特供。")
     cost = item.price * amount
     if player.stones < cost:
         raise GameError("灵石不足。")

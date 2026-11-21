@@ -1,0 +1,71 @@
+{
+  "capture_item": "spirit_snare",
+  "daily_encounters": 2,
+  "capture_attempts": 3,
+  "capture_window_seconds": 21600,
+  "rare_pity": 8,
+  "same_species_limit": 3,
+  "capture_rates": {
+    "common": 0.8,
+    "uncommon": 0.55,
+    "rare": 0.3
+  },
+  "routes": [
+    {
+      "route": "spirit_spring",
+      "entries": [
+        {"species": "sanlinglu", "enemy": "wood_guard", "rarity": "common", "weight": 6},
+        {"species": "lingxi", "enemy": "ice_guard", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.5},
+        {"species": "xuehu", "enemy": "venom_guard", "rarity": "rare", "weight": 1, "enemy_scale": 0.45}
+      ]
+    },
+    {
+      "route": "starfall_valley",
+      "entries": [
+        {"species": "hanying", "enemy": "moon_wolf", "rarity": "common", "weight": 6},
+        {"species": "bizhu", "enemy": "ancient_guard", "rarity": "uncommon", "weight": 3},
+        {"species": "jinyu", "enemy": "tide_sentinel", "rarity": "rare", "weight": 1, "enemy_scale": 0.45}
+      ]
+    },
+    {
+      "route": "ancient_cave",
+      "entries": [
+        {"species": "chiyanhu", "enemy": "ancient_guard", "rarity": "common", "weight": 6},
+        {"species": "tielin", "enemy": "venom_guard", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.65},
+        {"species": "shiou", "enemy": "tide_sentinel", "rarity": "rare", "weight": 1, "enemy_scale": 0.55}
+      ]
+    },
+    {
+      "route": "ember_vein",
+      "entries": [
+        {"species": "rongyanjia", "enemy": "venom_guard", "rarity": "common", "weight": 6},
+        {"species": "leize", "enemy": "abyss_guard", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.45},
+        {"species": "molian", "enemy": "ember_wraith", "rarity": "rare", "weight": 1, "enemy_scale": 0.35}
+      ]
+    },
+    {
+      "route": "primordial_ruins",
+      "entries": [
+        {"species": "tengling", "enemy": "tide_sentinel", "rarity": "common", "weight": 6},
+        {"species": "duman", "enemy": "frost_monarch", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.45},
+        {"species": "xuanwu", "enemy": "wood_colossus", "rarity": "rare", "weight": 1, "enemy_scale": 0.35}
+      ]
+    },
+    {
+      "route": "void_frontier",
+      "entries": [
+        {"species": "daotang", "enemy": "void_blade", "rarity": "common", "weight": 6, "enemy_scale": 0.55},
+        {"species": "mohe", "enemy": "nether_emperor", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.35},
+        {"species": "fenghu", "enemy": "starfall_warden", "rarity": "rare", "weight": 1, "enemy_scale": 0.32}
+      ]
+    },
+    {
+      "route": "tribulation_clouds",
+      "entries": [
+        {"species": "leitingdiao", "enemy": "tribulation_avatar", "rarity": "common", "weight": 6, "enemy_scale": 0.55},
+        {"species": "bizhu", "enemy": "sky_gate_guard", "rarity": "uncommon", "weight": 3, "enemy_scale": 0.5},
+        {"species": "baize", "enemy": "ascension_heaven", "rarity": "rare", "weight": 1, "enemy_scale": 0.4}
+      ]
+    }
+  ]
+}

@@ -52,5 +52,12 @@
     "item": "book_meditation",
     "discount": 15,
     "stock": 1
+  },
+  {
+    "id": "offer_spirit_snare",
+    "item": "spirit_snare",
+    "discount": 20,
+    "stock": 2,
+    "limited_only": true
   }
 ]

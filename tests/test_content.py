@@ -207,6 +207,27 @@ def test_exploration_routes_reject_unknown_and_duplicate_encounters(content_dir)
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("change,error", [
+    (lambda rules: rules.update(capture_item="missing_material"), "wild capture item must reference a material"),
+    (lambda rules: rules["capture_rates"].update(rare=1), "wild capture rates must be between zero and one"),
+    (lambda rules: rules["routes"][0]["entries"][0].update(species="missing_species"), "unknown wild capture route"),
+    (lambda rules: rules["routes"][0]["entries"][0].update(enemy="missing_enemy"), "unknown wild capture route"),
+    (lambda rules: rules["routes"][0]["entries"].append(dict(rules["routes"][0]["entries"][0])), "repeats a species"),
+    (lambda rules: [entry.update(rarity="common") for entry in rules["routes"][0]["entries"]], "needs every rarity"),
+    (lambda rules: rules["routes"].append(dict(rules["routes"][0])), "cover each exploration route exactly once"),
+])
+def test_wild_capture_content_rejects_invalid_references_and_rules(content_dir, change, error):
+    edit(content_dir, "wild_captures.json", change)
+    with pytest.raises(ValueError, match=error):
+        Catalog.load(content_dir)
+
+
+def test_wild_capture_supply_requires_a_daily_limited_offer(content_dir):
+    edit(content_dir, "shop_rotation.json", lambda data: data[-1].update({"limited_only": False}))
+    with pytest.raises(ValueError, match="needs a limited shop source"):
+        Catalog.load(content_dir)
+
+
 def test_exploration_route_rejects_unknown_realm(content_dir):
     edit(content_dir, "exploration_routes.json", lambda data: data[0].update({"min_realm": "unknown"}))
     with pytest.raises(ValueError, match="unknown exploration route realm"):

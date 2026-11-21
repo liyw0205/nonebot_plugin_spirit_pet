@@ -9,7 +9,7 @@ from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.storage import database
 from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
 from nonebot_plugin_spirit_pet.storage.registration import (
-    _legacy_schema, legacy_schema28, legacy_schema29, legacy_schema30,
+    _legacy_schema, legacy_schema28, legacy_schema29, legacy_schema30, legacy_schema31,
 )
 from nonebot_plugin_spirit_pet.utils.time import BEIJING, beijing_week
 
@@ -109,7 +109,27 @@ def schema30_store(tmp_path):
     return store
 
 
-def test_empty_database_initializes_schema31_anchor(tmp_path, monkeypatch):
+def schema31_store(tmp_path):
+    store = Store(tmp_path / "schema31.db")
+    schema = legacy_schema31(database.SCHEMA_PATH.read_text(encoding="utf-8"))
+    with closing(sqlite3.connect(store.path)) as conn:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(schema)
+        conn.execute("PRAGMA user_version=31")
+        conn.execute("INSERT INTO players(user_id, stones) VALUES ('old-user', 321)")
+        conn.execute("INSERT INTO player_identity(user_id, legacy_dao_name) VALUES ('old-user', '旧道号')")
+        conn.execute(
+            "INSERT INTO inventory(user_id,item_id,quantity) VALUES ('old-user','spirit_food',7)",
+        )
+        conn.execute(
+            "INSERT INTO quest_progress(user_id,quest_id,progress,claimed) "
+            "VALUES ('old-user','sect_week_contrib_1799798400',123,1)",
+        )
+        conn.commit()
+    return store
+
+
+def test_empty_database_initializes_schema32_anchor(tmp_path, monkeypatch):
     store = Store(tmp_path / "empty.db")
     activation = 1_800_000_000
     monkeypatch.setattr(database.time, "time", lambda: activation)
@@ -117,7 +137,9 @@ def test_empty_database_initializes_schema31_anchor(tmp_path, monkeypatch):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"wild_capture_runs", "wild_capture_attempts"} <= tables
         week_start, _ = beijing_week(activation)
         expected_first = week_start if activation == week_start else week_start + 7 * 86_400
         assert tuple(conn.execute(
@@ -158,7 +180,7 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 31
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 32
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -177,6 +199,8 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
     assert len(schema29_backups) == 1
     schema30_backups = list(tmp_path.glob("schema28.db.schema30-backup-*.db"))
     assert len(schema30_backups) == 1
+    schema31_backups = list(tmp_path.glob("schema28.db.schema31-backup-*.db"))
+    assert len(schema31_backups) == 1
 
 
 def test_schema29_migration_preserves_legacy_race_records_and_initializes_anchor(tmp_path, monkeypatch):
@@ -187,7 +211,7 @@ def test_schema29_migration_preserves_legacy_race_records_and_initializes_anchor
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
         anchor = conn.execute(
             "SELECT enabled_at, first_week_start FROM race_league_config WHERE singleton=1"
         ).fetchone()
@@ -219,12 +243,15 @@ def test_schema30_migration_adds_isolated_ledgers_and_preserves_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"} <= tables
+        assert {
+            "sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims",
+            "wild_capture_runs", "wild_capture_attempts",
+        } <= tables
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
 
@@ -233,7 +260,17 @@ def test_schema30_migration_adds_isolated_ledgers_and_preserves_player_state(tmp
     with closing(sqlite3.connect(backups[0])) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == 30
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert not {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"}.intersection(tables)
+        assert not {
+            "sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims",
+            "wild_capture_runs", "wild_capture_attempts",
+        }.intersection(tables)
+    schema31_backups = list(tmp_path.glob("schema30.db.schema31-backup-*.db"))
+    assert len(schema31_backups) == 1
+    with closing(sqlite3.connect(schema31_backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"} <= tables
+        assert not {"wild_capture_runs", "wild_capture_attempts"}.intersection(tables)
 
 
 def test_failed_schema31_migration_rolls_back_new_tables_and_version(tmp_path, monkeypatch):
@@ -254,6 +291,62 @@ def test_failed_schema31_migration_rolls_back_new_tables_and_version(tmp_path, m
         assert not {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"}.intersection(tables)
         assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_schema31_migration_adds_wild_capture_ledgers_and_preserves_player_state(tmp_path):
+    store = schema31_store(tmp_path)
+    with closing(sqlite3.connect(store.path)) as conn:
+        original_players = conn.execute("SELECT * FROM players").fetchall()
+        original_inventory = conn.execute("SELECT * FROM inventory").fetchall()
+        original_progress = conn.execute("SELECT * FROM quest_progress").fetchall()
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 32
+        assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
+        assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
+        assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"} <= tables
+        assert {"wild_capture_runs", "wild_capture_attempts"} <= tables
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+    backups = list(tmp_path.glob("schema31.db.schema31-backup-*.db"))
+    assert len(backups) == 1
+    with closing(sqlite3.connect(backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert "sect_boss_weeks" in tables
+        assert "wild_capture_runs" not in tables
+
+
+def test_failed_schema32_migration_rolls_back_new_tables_and_version(tmp_path, monkeypatch):
+    store = schema31_store(tmp_path)
+    original_migration = database.migrate_wild_capture
+
+    def fail_after_create(conn):
+        original_migration(conn)
+        raise RuntimeError("injected schema 32 failure")
+
+    monkeypatch.setattr(database, "migrate_wild_capture", fail_after_create)
+    with pytest.raises(RuntimeError, match="injected schema 32 failure"):
+        store.initialize()
+
+    with closing(sqlite3.connect(store.path)) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert not {"wild_capture_runs", "wild_capture_attempts"}.intersection(tables)
+        assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    backups = list(tmp_path.glob("schema31.db.schema31-backup-*.db"))
+    assert len(backups) == 1
+    with closing(sqlite3.connect(backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 31
+        assert "wild_capture_runs" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
 
 
 def test_failed_schema30_migration_rolls_back_new_tables_and_anchor(tmp_path, monkeypatch):
@@ -310,7 +403,7 @@ def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_p
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
         assert [tuple(row) for row in conn.execute(
             "SELECT rowid,user_id,stones,active_pet_id,registered_at FROM players ORDER BY rowid"
         )] == original_players

@@ -49,6 +49,7 @@ from . import (
     item_trade,
     cuisine_coop,
     friend_relay,
+    wild_capture,
 )
 
 TITLE = "灵宠今日"
@@ -183,6 +184,12 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     if not checkin_rewards.signed_today(ctx, owner):
         pending.append(_entry(
             TODO, "今日还没签到", "签到累计连续天数并给灵石与灵粮", "灵宠签到",
+        ))
+
+    wild_line = wild_capture.today_line(ctx, owner)
+    if wild_line:
+        pending.append(_entry(
+            TODO, wild_line, "沿既有历练路线寻找野生灵宠，或处理待收服遭遇", "灵宠野外",
         ))
 
     rows = expeditions.running_rows(ctx, owner)

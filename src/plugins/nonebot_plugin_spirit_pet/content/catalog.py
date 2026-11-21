@@ -73,6 +73,7 @@ from ..domain.pill_furnace_reward_content import PillFurnaceReward
 from ..domain.cooking_reward_content import CookingReward
 from ..domain.daily_shop_reward_content import DailyShopReward
 from ..domain.world_boss_rank_reward_content import WorldBossRankReward
+from ..domain.wild_capture_content import WildCaptureRules
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -145,6 +146,7 @@ class Catalog:
     items: dict[str, Item]
     encounters: dict[str, Encounter]
     exploration_routes: dict[str, ExplorationRoute]
+    wild_capture: WildCaptureRules
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -269,6 +271,7 @@ class Catalog:
             items=_index(directory / "items.json", Item),
             encounters=_index(directory / "adventures.json", Encounter),
             exploration_routes=_index(directory / "exploration_routes.json", ExplorationRoute),
+            wild_capture=WildCaptureRules.model_validate(_read(directory / "wild_captures.json")),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -529,6 +532,8 @@ class Catalog:
         self._require(route_encounters, self.encounters, "exploration route encounters")
         if set(route_encounters) != set(self.encounters) or len(route_encounters) != len(set(route_encounters)):
             raise ValueError("each exploration encounter must belong to exactly one route")
+        self._validate_shop_rotation()
+        self._validate_wild_captures()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -659,7 +664,6 @@ class Catalog:
         self._validate_mentor()
         self._validate_main_quests()
         self._validate_ascension()
-        self._validate_shop_rotation()
         self._validate_journey(realm_ids)
         self._validate_season_missions()
         self._validate_weekly_rewards()
@@ -781,6 +785,37 @@ class Catalog:
             self._require([offer.item], self.items, "shop offer item")
             if self.items[offer.item].price is None:
                 raise ValueError(f"shop offer {offer.id} item has no price")
+
+    def _validate_wild_captures(self) -> None:
+        rules = self.wild_capture
+        item = self.items.get(rules.capture_item)
+        if item is None or item.kind != "material":
+            raise ValueError("wild capture item must reference a material")
+        if not any(
+            offer.item == rules.capture_item and offer.limited_only
+            for offer in self.shop_offers.values()
+        ):
+            raise ValueError("wild capture item needs a limited shop source")
+        if set(rules.capture_rates) != {"common", "uncommon", "rare"}:
+            raise ValueError("wild capture rates must define every rarity")
+        if any(not 0 < rate < 1 for rate in rules.capture_rates.values()):
+            raise ValueError("wild capture rates must be between zero and one")
+        route_ids = [route.route for route in rules.routes]
+        if set(route_ids) != set(self.exploration_routes) or len(route_ids) != len(set(route_ids)):
+            raise ValueError("wild capture routes must cover each exploration route exactly once")
+        for route in rules.routes:
+            if sum(entry.weight for entry in route.entries) > 1_000_000:
+                raise ValueError(f"wild capture route {route.route} weight total exceeds limit")
+            if not {entry.rarity for entry in route.entries} >= {"common", "uncommon", "rare"}:
+                raise ValueError(f"wild capture route {route.route} needs every rarity")
+            species_ids = [entry.species for entry in route.entries]
+            if len(species_ids) != len(set(species_ids)):
+                raise ValueError(f"wild capture route {route.route} repeats a species")
+            self._require(species_ids, self.species, f"wild capture route {route.route} species")
+            self._require(
+                [entry.enemy for entry in route.entries], self.enemies,
+                f"wild capture route {route.route} enemies",
+            )
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

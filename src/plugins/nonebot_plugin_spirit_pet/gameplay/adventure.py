@@ -9,7 +9,7 @@ from .mastery import award_mastery
 from .quests import advance
 from .rewards import grant
 from .pet_targets import named_pet, split_selector, target_pet
-from . import battle_pass
+from . import battle_pass, wild_capture
 
 ADVENTURE_CODEX_PAGE_SIZE = 4
 
@@ -75,6 +75,14 @@ def _record_explore(ctx: Context, route, pet, reply: Reply, *, ambush: bool = Fa
 
 
 def explore(ctx: Context, arg: str) -> Reply:
+    parts = arg.split()
+    if "野外" in parts:
+        if parts.count("野外") != 1:
+            raise GameError("格式：灵宠历练 路线 野外 [伙伴 编号]。")
+        parts.remove("野外")
+        route_arg, wild_selector = split_selector(" ".join(parts))
+        route = named(ctx.content.exploration_routes, route_arg)
+        return wild_capture.start_from_exploration(ctx, route, wild_selector)
     arg, selector = split_selector(arg)
     routes = tuple(ctx.content.exploration_routes.values())
     if not arg:
@@ -84,6 +92,7 @@ def explore(ctx: Context, arg: str) -> Reply:
         )
         suffix = f" 伙伴 {pet.pet_id}" if pet else ""
         lines = []
+        links = []
         for route in routes:
             encounters = [ctx.content.encounters[key] for key in route.encounters]
             realm = next(realm.name for realm in ctx.content.realms if realm.id == route.min_realm)
@@ -109,12 +118,17 @@ def explore(ctx: Context, arg: str) -> Reply:
                 f"{entry.name} {entry.weight / total_weight:.0%}" for entry in encounters
             )
             ambush = ctx.content.rules.explore_ambush_chance
+            route_line = len(lines)
             lines.extend((f"{route.name}：{route.description} · {realm}起", reward, odds,
                           f"伏击概率：{ambush:.0%} · 胜利可获额外战利品，失利额外损失精力"))
+            links.append(InlineCommand(
+                route_line, "野外寻宠", f"灵宠历练 {route.name} 野外{suffix}",
+            ))
         return Reply(
             "山海历练路线", tuple(lines),
             tuple(f"灵宠历练 {route.name}{suffix}" for route in routes)
             + ("灵宠奇闻", "我的灵宠", "灵宠任务"),
+            tuple(links),
         )
 
     route = named(ctx.content.exploration_routes, arg)
