@@ -31,6 +31,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "friend_relay": 15,
     "wild_survey_claim": 17,
     "pedigree": 18,
+    "family_trial": 15,
 }
 
 

@@ -249,8 +249,18 @@ def _without_pedigree(schema: str) -> str:
     return schema
 
 
+def _without_family_trials(schema: str) -> str:
+    for table in ("family_trial_runs", "family_trial_members", "family_trial_stages", "family_trial_rewards"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in ("family_trial_history", "family_trial_reward_history"):
+        schema = re.sub(rf"CREATE INDEX {index} [^;]*;\n", "", schema, count=1)
+    if "family_trial_" in schema:
+        raise RuntimeError("Could not reconstruct schema without family trial definitions")
+    return schema
+
+
 def _without_wild_habitat(schema: str) -> str:
-    schema = _without_pedigree(schema)
+    schema = _without_family_trials(_without_pedigree(schema))
     for table in ("wild_habitat_weeks", "wild_habitat_contributions", "wild_habitat_claims"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in ("wild_habitat_contribution_progress", "wild_habitat_claim_history"):
@@ -261,11 +271,18 @@ def _without_wild_habitat(schema: str) -> str:
 
 
 def validate_schema34(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, _without_pedigree(current_schema), 34, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(
+        conn, _without_family_trials(_without_pedigree(current_schema)),
+        34, optional_indexes=RUNTIME_INDEXES,
+    )
 
 
 def validate_schema35(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 35, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, _without_family_trials(current_schema), 35, optional_indexes=RUNTIME_INDEXES)
+
+
+def validate_schema36(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 36, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -298,6 +315,10 @@ def backup_schema33(path: Path) -> Path:
 
 def backup_schema34(path: Path) -> Path:
     return _backup_schema(path, 34)
+
+
+def backup_schema35(path: Path) -> Path:
+    return _backup_schema(path, 35)
 
 
 def migrate_wild_survey_claims(conn: sqlite3.Connection) -> None:
@@ -344,6 +365,22 @@ def migrate_pedigree(conn: sqlite3.Connection) -> None:
         match = re.search(pattern, schema)
         if match is None:
             raise RuntimeError("Current schema is missing pedigree definitions")
+        conn.execute(match.group(0))
+
+
+def migrate_family_trials(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE family_trial_runs \([\s\S]*?\n\);",
+        r"CREATE INDEX family_trial_history [^;]*;",
+        r"CREATE TABLE family_trial_members \([\s\S]*?\n\);",
+        r"CREATE TABLE family_trial_stages \([\s\S]*?\n\);",
+        r"CREATE TABLE family_trial_rewards \([\s\S]*?\n\);",
+        r"CREATE INDEX family_trial_reward_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing family trial definitions")
         conn.execute(match.group(0))
 
 

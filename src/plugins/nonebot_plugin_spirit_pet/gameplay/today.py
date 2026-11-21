@@ -52,6 +52,7 @@ from . import (
     wild_capture,
     wild_habitat,
     pedigree,
+    family_trial,
 )
 
 TITLE = "灵宠今日"
@@ -200,6 +201,9 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         ))
 
     habitat_claim, habitat_pending = wild_habitat.today_state(ctx, owner)
+    family_pending = family_trial.today_state(ctx, owner)
+    if family_pending:
+        pending.append(_entry(TODO, family_pending, "同一家族阵容连续作战，逐阶保留剩余气血", family_trial.TITLE))
     if habitat_claim:
         claimable.append(_entry(CLAIM, habitat_claim, "查看并领取本周已解锁档位", wild_habitat.TITLE))
     elif habitat_pending:

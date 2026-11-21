@@ -1,0 +1,90 @@
+{
+  "rotation": ["root_echo", "branch_guard", "ancestral_rift"],
+  "trials": [
+    {
+      "id": "root_echo",
+      "name": "初枝回响",
+      "description": "循着同族留下的灵息，守住初生家园。",
+      "energy": 12,
+      "minimum_members": 2,
+      "maximum_members": 3,
+      "bonus": {
+        "exp": {"minimum": 120, "maximum": 120},
+        "stones": {"minimum": 180, "maximum": 180},
+        "items": {"spirit_food": {"minimum": 2, "maximum": 2}}
+      },
+      "stages": [
+        {
+          "enemy": "wood_guard", "max_rounds": 30,
+          "hp_scale": 0.8, "attack_scale": 0.85, "defense_scale": 0.8, "speed_scale": 0.9,
+          "reward": {"exp": {"minimum": 50, "maximum": 50}, "stones": {"minimum": 60, "maximum": 60}, "items": {}}
+        },
+        {
+          "enemy": "moon_wolf", "max_rounds": 30,
+          "hp_scale": 0.8, "attack_scale": 0.9, "defense_scale": 0.8, "speed_scale": 1,
+          "reward": {"exp": {"minimum": 70, "maximum": 70}, "stones": {"minimum": 90, "maximum": 90}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}
+        }
+      ]
+    },
+    {
+      "id": "branch_guard",
+      "name": "枝脉守望",
+      "description": "沿着家族分枝前行，击退侵入祖庭的守卫。",
+      "energy": 14,
+      "minimum_members": 2,
+      "maximum_members": 3,
+      "bonus": {
+        "exp": {"minimum": 180, "maximum": 180},
+        "stones": {"minimum": 260, "maximum": 260},
+        "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+      },
+      "stages": [
+        {
+          "enemy": "ancient_guard", "max_rounds": 28,
+          "hp_scale": 0.85, "attack_scale": 0.9, "defense_scale": 0.85, "speed_scale": 0.9,
+          "reward": {"exp": {"minimum": 65, "maximum": 65}, "stones": {"minimum": 75, "maximum": 75}, "items": {}}
+        },
+        {
+          "enemy": "ice_guard", "max_rounds": 28,
+          "hp_scale": 0.85, "attack_scale": 0.95, "defense_scale": 0.9, "speed_scale": 0.95,
+          "reward": {"exp": {"minimum": 85, "maximum": 85}, "stones": {"minimum": 110, "maximum": 110}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}
+        },
+        {
+          "enemy": "thunder_dragon", "max_rounds": 28,
+          "hp_scale": 0.7, "attack_scale": 0.9, "defense_scale": 0.8, "speed_scale": 1,
+          "reward": {"exp": {"minimum": 100, "maximum": 100}, "stones": {"minimum": 130, "maximum": 130}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}
+        }
+      ]
+    },
+    {
+      "id": "ancestral_rift",
+      "name": "祖庭裂隙",
+      "description": "深入祖庭裂隙，接连迎战失序的灵息幻影。",
+      "energy": 16,
+      "minimum_members": 2,
+      "maximum_members": 3,
+      "bonus": {
+        "exp": {"minimum": 240, "maximum": 240},
+        "stones": {"minimum": 360, "maximum": 360},
+        "items": {"exp_pill": {"minimum": 1, "maximum": 1}}
+      },
+      "stages": [
+        {
+          "enemy": "void_blade", "max_rounds": 26,
+          "hp_scale": 0.8, "attack_scale": 0.9, "defense_scale": 0.8, "speed_scale": 1,
+          "reward": {"exp": {"minimum": 80, "maximum": 80}, "stones": {"minimum": 95, "maximum": 95}, "items": {}}
+        },
+        {
+          "enemy": "wood_colossus", "max_rounds": 26,
+          "hp_scale": 0.8, "attack_scale": 0.9, "defense_scale": 0.85, "speed_scale": 0.9,
+          "reward": {"exp": {"minimum": 100, "maximum": 100}, "stones": {"minimum": 125, "maximum": 125}, "items": {"forge_ore": {"minimum": 2, "maximum": 2}}}
+        },
+        {
+          "enemy": "nether_emperor", "max_rounds": 26,
+          "hp_scale": 0.7, "attack_scale": 0.85, "defense_scale": 0.75, "speed_scale": 0.9,
+          "reward": {"exp": {"minimum": 120, "maximum": 120}, "stones": {"minimum": 155, "maximum": 155}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}
+        }
+      ]
+    }
+  ]
+}

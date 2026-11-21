@@ -77,6 +77,7 @@ from ..domain.wild_capture_content import WildCaptureRules
 from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.pedigree_content import PedigreeMilestone
+from ..domain.family_trial_content import FamilyTrial, FamilyTrialCatalog
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -153,6 +154,8 @@ class Catalog:
     wild_surveys: dict[str, WildSurveyRoute]
     wild_habitat_events: dict[str, WildHabitatEvent]
     pedigree_milestones: dict[str, PedigreeMilestone]
+    family_trials: dict[str, FamilyTrial]
+    family_trial_rotation: tuple[str, ...]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -269,6 +272,7 @@ class Catalog:
 
     @classmethod
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
+        family_trial_catalog = FamilyTrialCatalog.model_validate(_read(directory / "family_trials.json"))
         catalog = cls(
             species=_index(directory / "pets.json", Species),
             realms=tuple(_index(directory / "realms.json", Realm).values()),
@@ -281,6 +285,8 @@ class Catalog:
             wild_surveys=_index(directory / "wild_surveys.json", WildSurveyRoute, "route"),
             wild_habitat_events=_index(directory / "wild_habitat_events.json", WildHabitatEvent),
             pedigree_milestones=_index(directory / "pedigree_milestones.json", PedigreeMilestone),
+            family_trials={trial.id: trial for trial in family_trial_catalog.trials},
+            family_trial_rotation=tuple(family_trial_catalog.rotation),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -546,6 +552,7 @@ class Catalog:
         self._validate_wild_surveys()
         self._validate_wild_habitat_events()
         self._validate_pedigree_milestones()
+        self._validate_family_trials()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -912,6 +919,34 @@ class Catalog:
             for item_id in reward.items:
                 if self.items[item_id].kind not in {"consumable", "material"}:
                     raise ValueError(f"pedigree reward item {item_id} must be consumable or material")
+
+    def _validate_family_trials(self) -> None:
+        if len(self.family_trial_rotation) != len(set(self.family_trial_rotation)):
+            raise ValueError("family trial rotation must include every trial exactly by id")
+        if set(self.family_trial_rotation) != set(self.family_trials):
+            raise ValueError("family trial rotation must reference every configured trial")
+        for trial in self.family_trials.values():
+            self._require([stage.enemy for stage in trial.stages], self.enemies, f"family trial {trial.id} enemies")
+            rewards = [trial.bonus, *(stage.reward for stage in trial.stages)]
+            if sum(reward.stones.maximum + reward.exp.maximum + sum(
+                bounds.maximum for bounds in reward.items.values()
+            ) for reward in rewards) > 20_000:
+                raise ValueError(f"family trial {trial.id} total reward exceeds limit")
+            for reward in rewards:
+                if reward.stones.minimum + reward.exp.minimum + sum(
+                    bounds.minimum for bounds in reward.items.values()
+                ) <= 0:
+                    raise ValueError(f"family trial {trial.id} reward must be nonempty")
+                if reward.stones.maximum + reward.exp.maximum + sum(
+                    bounds.maximum for bounds in reward.items.values()
+                ) > 10_000:
+                    raise ValueError(f"family trial {trial.id} reward exceeds limit")
+                self._require(reward.items, self.items, f"family trial {trial.id} reward items")
+                for item_id in reward.items:
+                    if self.items[item_id].kind not in {"consumable", "material"}:
+                        raise ValueError(
+                            f"family trial {trial.id} reward item {item_id} must be consumable or material"
+                        )
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

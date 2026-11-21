@@ -76,6 +76,24 @@ def _families(ctx: Context, user_id: str) -> dict:
     }
 
 
+def family_members(ctx: Context, user_id: str) -> list[dict]:
+    """Private, read-only family components derived only from hatched lineage evidence."""
+    graph = _families(ctx, user_id)
+    result = []
+    for family in graph["families"]:
+        result.append({
+            "key": family["key"],
+            "members": tuple(sorted(family["members"])),
+            "generations": family["generations"],
+            "edges": [row for row in graph["rows"] if row["child_pet_id"] in family["members"]],
+            "details": {
+                pet_id: graph["details"].get(pet_id, ("未知", ""))
+                for pet_id in family["members"]
+            },
+        })
+    return sorted(result, key=lambda family: family["key"])
+
+
 def _milestone_state(ctx: Context, user_id: str, graph: dict) -> tuple[set[str], list[str]]:
     rows = ctx.repo.conn.execute(
         "SELECT milestone_id FROM pet_pedigree_claims WHERE user_id=?", (user_id,),
@@ -153,7 +171,7 @@ def _overview(ctx: Context, arg: str = "1") -> Reply:
         unknown += item_unknown
         known += item_known
     lines.append(f"背包灵卵来源：未知 {unknown} 枚 · 可追溯 {known} 枚。")
-    commands = (*page.navigation, "灵宠列表", "灵宠培育", "灵宠背包")
+    commands = (*page.navigation, "灵宠家族试炼", "灵宠列表", "灵宠培育", "灵宠背包")
     return Reply(f"灵宠谱系 {page.number}/{page.total}", tuple(lines), commands, tuple(links))
 
 

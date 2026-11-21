@@ -9,6 +9,7 @@ from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages
 from ..gameplay import companionship_rewards
 from ..gameplay import breeding
 from ..gameplay import pedigree
+from ..gameplay import family_trial
 from ..gameplay import nursery
 from ..gameplay import play_courses
 from ..gameplay import training
@@ -187,6 +188,7 @@ ACTIONS = {
     "co_train": Command(cultivation.co_train, True),
     "breeding": Command(breeding.breeding, True, registered=False),
     "pedigree": Command(pedigree.dispatch, True, registered=False),
+    "family_trial": Command(family_trial.dispatch, True, registered=False),
     "nursery": Command(nursery.dispatch, True, registered=False),
     "play_course": Command(play_courses.dispatch, True, registered=False),
     "training": Command(training.dispatch, True, registered=False),
@@ -467,6 +469,7 @@ COMMANDS = {
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
     "灵宠谱系": "pedigree",
+    "灵宠家族试炼": "family_trial",
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
     "灵宠今日秘境": "daily_dungeon", "灵宠今日秘境领奖": "daily_dungeon_claim",
     "灵宠首领": "world_boss", "灵宠挑战首领": "world_boss_challenge", "灵宠首领领奖": "world_boss_claim",

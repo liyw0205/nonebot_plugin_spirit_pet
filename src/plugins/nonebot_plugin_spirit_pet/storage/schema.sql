@@ -597,3 +597,50 @@ CREATE TABLE pet_pedigree_claims (
     PRIMARY KEY(user_id,milestone_id)
 );
 CREATE INDEX pet_pedigree_claim_history ON pet_pedigree_claims(user_id,claimed_at DESC);
+CREATE TABLE family_trial_runs (
+    run_id TEXT PRIMARY KEY CHECK(length(run_id)>0),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    week_start INTEGER NOT NULL CHECK(week_start>=0),
+    trial_id TEXT NOT NULL CHECK(length(trial_id)>0),
+    start_operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    status TEXT NOT NULL CHECK(status IN ('active','completed','defeated','abandoned','expired')),
+    current_stage INTEGER NOT NULL CHECK(current_stage>=1),
+    started_at INTEGER NOT NULL CHECK(started_at>=week_start AND started_at<week_start+604800),
+    updated_at INTEGER NOT NULL CHECK(updated_at>=started_at),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    UNIQUE(user_id,week_start),
+    UNIQUE(user_id,run_id)
+);
+CREATE INDEX family_trial_history ON family_trial_runs(user_id,week_start DESC,run_id DESC);
+CREATE TABLE family_trial_members (
+    run_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    slot INTEGER NOT NULL CHECK(slot BETWEEN 1 AND 3),
+    pet_id INTEGER NOT NULL,
+    PRIMARY KEY(run_id,slot),
+    UNIQUE(run_id,pet_id),
+    FOREIGN KEY(user_id,run_id) REFERENCES family_trial_runs(user_id,run_id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id,pet_id) REFERENCES pets(user_id,pet_id)
+);
+CREATE TABLE family_trial_stages (
+    run_id TEXT NOT NULL REFERENCES family_trial_runs(run_id) ON DELETE CASCADE,
+    stage_no INTEGER NOT NULL CHECK(stage_no>=1),
+    battle_id INTEGER NOT NULL UNIQUE REFERENCES battle_records(battle_id),
+    outcome TEXT NOT NULL CHECK(outcome IN ('won','lost','draw','timeout')),
+    rounds INTEGER NOT NULL CHECK(rounds>=0),
+    remaining_hp TEXT NOT NULL,
+    played_at INTEGER NOT NULL CHECK(played_at>=0),
+    PRIMARY KEY(run_id,stage_no)
+);
+CREATE TABLE family_trial_rewards (
+    run_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    reward_key TEXT NOT NULL CHECK(length(reward_key)>0),
+    operation_id TEXT NOT NULL REFERENCES duel_actions(operation_id),
+    granted_at INTEGER NOT NULL CHECK(granted_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    PRIMARY KEY(run_id,reward_key),
+    FOREIGN KEY(user_id,run_id) REFERENCES family_trial_runs(user_id,run_id) ON DELETE CASCADE
+);
+CREATE INDEX family_trial_reward_history ON family_trial_rewards(user_id,granted_at DESC);
