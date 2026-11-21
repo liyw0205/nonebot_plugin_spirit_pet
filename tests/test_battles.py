@@ -5,9 +5,33 @@ import pytest
 from nonebot_plugin_spirit_pet.domain.battle_content import Skill, Talent
 from nonebot_plugin_spirit_pet.domain.content import Stats
 from nonebot_plugin_spirit_pet.domain.models import GameError
-from nonebot_plugin_spirit_pet.gameplay.combat import Fighter, enemy_fighter, fight
+from nonebot_plugin_spirit_pet.gameplay.combat import Battle, Fighter, enemy_fighter, fight
 
 from .support import items, pet, player, sql, uid_label
+
+
+class FixedCombatRng:
+    def random(self):
+        return 0.5
+
+    def randint(self, start, stop):
+        return start
+
+
+def test_battle_exposes_ordered_structured_remaining_hp_for_draws():
+    left = Fighter.create("左", Stats(hp=20, attack=1, defense=0, speed=2))
+    right = Fighter.create("右", Stats(hp=20, attack=1, defense=0, speed=1))
+
+    result = fight([left], [right], FixedCombatRng(), max_rounds=1)
+
+    assert result.winner == -1
+    assert result.remaining_hp == ((19,), (19,))
+
+
+def test_legacy_battle_construction_keeps_empty_structured_hp_default():
+    result = Battle(0, 1, (), ({}, {}))
+
+    assert result.remaining_hp == ((), ())
 
 
 def test_enemy_signature_skill_uses_configured_interval(game):

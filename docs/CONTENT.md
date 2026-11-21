@@ -53,6 +53,7 @@
 | journey.json | 行纪章节的境界、前置章节、故事文案、任务类型与目标、一次性奖励 |
 | weekly_quests.json | 周常目标的指标、目标值与每周一次性奖励，按自然周重置；既有指标有轻量/进阶难度，近期膳房活动按成功回执计入 |
 | races.json | 每日轮换的三条竞速赛道、长度与地形属性 |
+| sect_bosses.json | 四派各一个共讨首领、固定共享气血、每日挑战次数及个人/全门派奖励门槛 |
 | race_prizes.json | 单周竞速前三名奖励，独立于四周联赛结算 |
 | race_league_prizes.json | 四周联赛前三名固定赛季奖励 |
 | cuisine_mastery_rewards.json | 单膳菜谱 1/3/6 份精通档位、奖励名称与既有物品；每道可产出单膳的菜谱必须完整定义三档 |
@@ -987,6 +988,10 @@ schema 29→30 在验证并备份后只创建空表、索引和启用锚点，�
 schema 29 新增 `sect_week_contributions(week_start, sect_id, user_id, contribution)`，主键为门派/北京时间周一零点/成员，成员正增量原子 upsert。该表是唯一事实源，总进度由 `SUM(contribution)` 派生；历史周不清理，换派后旧记录仍归旧门派。只从成功修行、每日任务交差和试炼胜利的既有贡献发放点入账，并与同操作的个人贡献/周俸同事务，失败及永久操作重放不入账。领取凭证使用 `quest_progress` 的 `sect_community_claim_<周起点>_<门派>_<档位>`，和奖励同事务；只允许本周当前门派、总进度与个人参与均达标的玩家领取。
 
 schema 28 到 29 迁移先校验并备份旧库，再事务创建空账本，不回填个人周俸或历史贡献；玩家、物品和任务进度保持原样。迁移后执行 schema、SQLite integrity 与 foreign-key 校验，迁移失败保留 schema 28 数据与备份。
+
+`sect_bosses.json` 必须覆盖 `sects.json` 中的每个门派且恰好各一个。`SectBoss` 定义 `enemy`、首领名称/描述、正整数 `max_hp`、每次每只出战伙伴的精力和每日有限挑战数；全门派 `milestones` 与个人 `personal_tiers` 从 1 连续编号，各自伤害门槛严格递增且不超过总气血。全门派奖励另定义总门派伤害和个人参与伤害门槛，个人门槛不得超过门派门槛。所有奖励必须固定、非空，只能引用既有消耗品/材料和灵石，且灵石奖励随档位严格增加。Catalog 启动时校验首领引用、覆盖率、范围与奖励。
+
+schema 31 新增隔离的 `sect_boss_weeks`、`sect_boss_attacks` 和 `sect_boss_claims`。周实例保存完整门派首领规则、描述与敌人/招式快照、`max_hp/current_hp`、终态和关闭时间；静态内容后续调整不会改写已开始周的挑战次数、精力开销或奖励门槛。攻击明细以门派/周/玩家/北京时间日期/次数唯一，关联操作号与永久战报，并约束 `damage = hp_before - hp_after >= 0`；领奖凭证按周/门派/玩家/范围/档位唯一，保留奖励快照和原回复。HP、明细、战报、玩家成本和操作回执必须在同一个写事务更新；排名与汇总只从明细查询派生，不维护可漂移计数。schema 30→31 在验证旧结构并创建一致性备份后原子建表，再运行 schema、integrity 与 foreign-key 校验；失败回滚并保留 schema 30 数据。
 
 ## 劫境定义
 

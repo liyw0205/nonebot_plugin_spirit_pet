@@ -79,6 +79,7 @@ DOCUMENTED_COUNTS = {
     "cave_offerings": 5,
     "sect_missions": 12,
     "sect_trials": 4,
+    "sect_bosses": 4,
     "merchant_contracts": 4,
     "merchant_standings": 5,
     "play_games": 3,

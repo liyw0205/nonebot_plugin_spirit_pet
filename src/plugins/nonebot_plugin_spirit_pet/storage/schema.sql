@@ -405,3 +405,52 @@ CREATE TABLE duel_actions (
     reply TEXT NOT NULL
 );
 CREATE INDEX duel_action_history ON duel_actions(user_id, action_id DESC);
+CREATE TABLE sect_boss_weeks (
+    week_start INTEGER NOT NULL CHECK(week_start>=0),
+    sect_id TEXT NOT NULL CHECK(sect_id IN ('jian_ge', 'xuan_men', 'dan_ding', 'yu_shou')),
+    enemy_id TEXT NOT NULL CHECK(length(enemy_id)>0),
+    boss_name TEXT NOT NULL CHECK(length(boss_name)>0),
+    description TEXT NOT NULL,
+    combat_snapshot TEXT NOT NULL,
+    max_hp INTEGER NOT NULL CHECK(max_hp>0),
+    current_hp INTEGER NOT NULL CHECK(current_hp BETWEEN 0 AND max_hp),
+    state TEXT NOT NULL CHECK(state IN ('active', 'defeated', 'expired')),
+    started_at INTEGER NOT NULL CHECK(started_at>=week_start),
+    closed_at INTEGER,
+    PRIMARY KEY(week_start, sect_id),
+    CHECK((state='active' AND current_hp>0 AND closed_at IS NULL)
+        OR (state='defeated' AND current_hp=0 AND closed_at IS NOT NULL)
+        OR (state='expired' AND current_hp>0 AND closed_at>=week_start+604800))
+);
+CREATE TABLE sect_boss_attacks (
+    attack_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    week_start INTEGER NOT NULL,
+    sect_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    battle_day TEXT NOT NULL CHECK(length(battle_day)=10),
+    attempt INTEGER NOT NULL CHECK(attempt BETWEEN 1 AND 3),
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    battle_id INTEGER NOT NULL UNIQUE REFERENCES battle_records(battle_id),
+    hp_before INTEGER NOT NULL CHECK(hp_before>0),
+    hp_after INTEGER NOT NULL CHECK(hp_after>=0 AND hp_after<=hp_before),
+    damage INTEGER NOT NULL CHECK(damage=hp_before-hp_after),
+    created_at INTEGER NOT NULL CHECK(created_at>=week_start),
+    UNIQUE(week_start, sect_id, user_id, battle_day, attempt),
+    FOREIGN KEY(week_start, sect_id) REFERENCES sect_boss_weeks(week_start, sect_id)
+);
+CREATE INDEX sect_boss_attack_rank ON sect_boss_attacks(week_start, sect_id, user_id, damage);
+CREATE INDEX sect_boss_attack_history ON sect_boss_attacks(user_id, week_start DESC, attack_id DESC);
+CREATE TABLE sect_boss_claims (
+    week_start INTEGER NOT NULL,
+    sect_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    scope TEXT NOT NULL CHECK(scope IN ('sect', 'personal')),
+    tier INTEGER NOT NULL CHECK(tier BETWEEN 1 AND 6),
+    operation_id TEXT NOT NULL CHECK(length(operation_id)>0),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(week_start, sect_id, user_id, scope, tier),
+    FOREIGN KEY(week_start, sect_id) REFERENCES sect_boss_weeks(week_start, sect_id)
+);
+CREATE INDEX sect_boss_claim_history ON sect_boss_claims(user_id, claimed_at DESC);

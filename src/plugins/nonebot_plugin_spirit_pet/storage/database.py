@@ -17,9 +17,10 @@ from .registration import (
     validate_schema28, backup_schema27, migrate_duel_table, backup_schema28,
     migrate_sect_week_contributions, validate_schema29,
     backup_schema29, migrate_race_league, validate_schema30, initialize_race_league,
+    backup_schema30, migrate_sect_boss, validate_schema31,
 )
 
-SCHEMA_VERSION = 30
+SCHEMA_VERSION = 31
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -420,6 +421,31 @@ class Store:
                         raise RuntimeError("Race league migration integrity check failed; database preserved")
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Race league migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=30")
+                    self._ensure_performance_indexes(conn)
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 30
+            if version == 30:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 30:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema30(conn, schema)
+                    backup_schema30(self.path)
+                    migrate_sect_boss(conn)
+                    validate_schema31(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Sect boss migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Sect boss migration foreign key check failed; database preserved")
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     self._ensure_performance_indexes(conn)
                     conn.commit()

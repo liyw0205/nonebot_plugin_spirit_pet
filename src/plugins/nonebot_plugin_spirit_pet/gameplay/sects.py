@@ -195,6 +195,10 @@ def page(ctx: Context, arg: str) -> Reply:
         state = "本周已过" if sect_trial.cleared(ctx, trial) else "本周未过"
         lines.append(f"师门试炼：{trial.name} · {state}（灵宠师门 试炼）。")
         links.append(InlineCommand(len(lines) - 1, "查看试炼", "灵宠师门 试炼"))
+    from . import sect_boss
+
+    lines.append(f"师门共讨：{sect_boss.objective_line(ctx, ctx.user_id) or '本周未开启'}。")
+    links.append(InlineCommand(len(lines) - 1, "查看共讨", "灵宠师门 共讨"))
     return Reply("灵宠师门", tuple(lines), ("灵宠师门", "我的灵宠", "灵宠目标"), tuple(links))
 
 
@@ -548,7 +552,10 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if parts[0] == "试炼":
         from . import sect_trial
         return sect_trial.dispatch(ctx, " ".join(parts[1:]))
-    raise GameError("格式：灵宠师门 [拜入|修行|领赏|任务|交差|周俸|领俸|共修|试炼] [目标]。")
+    if parts[0] == "共讨":
+        from . import sect_boss
+        return sect_boss.dispatch(ctx, " ".join(parts[1:]))
+    raise GameError("格式：灵宠师门 [拜入|修行|领赏|任务|交差|周俸|领俸|共修|试炼|共讨] [目标]。")
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
@@ -578,6 +585,11 @@ def objective_line(ctx: Context, user_id: str) -> str:
         f" · 共修 {community_total}/{community_next.total_contribution}"
         if community_next is not None else " · 共修已达最高档"
     )
+    from . import sect_boss
+
+    boss_line = sect_boss.objective_line(ctx, user_id)
+    if boss_line:
+        extra += f" · {boss_line}"
     return (
         f"师门：{sect.name} {entry.rank} 阶"
         f" · {_progress_text(sect, entry, contribution(ctx, sect, user_id))}{extra}"

@@ -101,6 +101,8 @@ class Battle:
     # Full event history is persisted in battle reports; old callers may still
     # construct Battle with the original four positional fields.
     history: tuple[str, ...] = ()
+    # Remaining HP mirrors the left/right fighter order supplied to fight().
+    remaining_hp: tuple[tuple[int, ...], tuple[int, ...]] = ((), ())
 
 
 class _BattleLog(list[str]):
@@ -260,10 +262,11 @@ def _record(log: list[str], *events: str):
 
 
 def _result(winner, rounds, teams, log):
+    remaining_hp = tuple(tuple(unit.hp for unit in team) for team in teams)
     remaining = tuple(
         f"{'我方' if side == 0 else '对方'} {unit.name}：气血 {unit.hp}/{unit.stats.hp}"
         for side, team in enumerate(teams) for unit in team
     )
     uses = tuple({unit.pet_id: dict(unit.skill_uses) for unit in team if unit.pet_id is not None} for team in teams)
     history = tuple(getattr(log, "history", log)) + remaining
-    return Battle(winner, rounds, (*log, *remaining), uses, history)
+    return Battle(winner, rounds, (*log, *remaining), uses, history, remaining_hp)

@@ -111,6 +111,34 @@ def test_sect_community_tier_must_have_a_nonempty_reward(content_dir):
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("scope", ["milestones", "personal_tiers"])
+@pytest.mark.parametrize("field", ["stones", "items"])
+def test_sect_boss_reward_quantities_have_content_caps(content_dir, scope, field):
+    def change(data):
+        reward = data[0][scope][0]["reward"]
+        if field == "stones":
+            reward["stones"] = {"minimum": 10_001, "maximum": 10_001}
+        else:
+            reward["items"] = {"spirit_food": {"minimum": 21, "maximum": 21}}
+
+    edit(content_dir, "sect_bosses.json", change)
+    with pytest.raises(ValueError, match="reward exceeds content limits"):
+        Catalog.load(content_dir)
+
+
+@pytest.mark.parametrize("scope", ["milestones", "personal_tiers"])
+def test_sect_boss_rewards_must_increase_by_tier(content_dir, scope):
+    def change(data):
+        data[0][scope][1]["reward"]["stones"] = {
+            "minimum": 100 if scope == "milestones" else 60,
+            "maximum": 100 if scope == "milestones" else 60,
+        }
+
+    edit(content_dir, "sect_bosses.json", change)
+    with pytest.raises(ValueError, match="rewards must increase by tier"):
+        Catalog.load(content_dir)
+
+
 @pytest.mark.parametrize(("changes", "message"), [
     ({"facility": "pen"}, "cover each facility"),
     ({"min_level": 5}, "must start at level 1"),

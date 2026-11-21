@@ -174,9 +174,14 @@ def page(ctx: Context, arg: str) -> Reply:
     if member is None:
         lines.append("尚未组队：先建立小队并邀请同伴，试炼需要 2-3 名已准备的玩家。")
         lines.append(f"下周：{upcoming.name}（回合上限 {upcoming.round_limit}）。")
+        lines.append("师门共讨另按本门共享气血记账，不改变团队试炼的个人首通规则。")
+        links.extend((
+            InlineCommand(4, "组队指南", TEAM_HELP),
+            InlineCommand(6, "师门共讨", "灵宠师门 共讨"),
+        ))
         return Reply(
             "灵宠团队试炼", tuple(lines), ("灵宠队伍", "灵宠秘境", TEAM_HELP),
-            (InlineCommand(4, "组队指南", TEAM_HELP),),
+            tuple(links),
         )
 
     rows = _members(ctx, member["team_id"], member["leader_id"])
@@ -204,6 +209,8 @@ def page(ctx: Context, arg: str) -> Reply:
     else:
         lines.append("仅队长可以发起团队试炼。")
     lines.append(f"下周：{upcoming.name}（回合上限 {upcoming.round_limit}）。")
+    lines.append("师门共讨另按本门共享气血记账，不改变团队试炼的个人首通规则。")
+    links.append(InlineCommand(len(lines) - 1, "师门共讨", "灵宠师门 共讨"))
     commands.extend(("灵宠队伍", "灵宠战报"))
     return Reply("灵宠团队试炼", tuple(lines), tuple(commands), tuple(links))
 

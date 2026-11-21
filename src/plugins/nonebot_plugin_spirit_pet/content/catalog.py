@@ -23,6 +23,7 @@ from ..domain.team_trial_content import TeamTrial
 from ..domain.cave_content import CaveFacility
 from ..domain.corridor_content import Corridor
 from ..domain.sect_content import Sect
+from ..domain.sect_boss_content import SectBoss
 from ..domain.sect_mission_content import SectMission
 from ..domain.sect_trial_content import SectTrial
 from ..domain.codex_trial_content import CodexTrial
@@ -192,6 +193,7 @@ class Catalog:
     cave: dict[str, CaveFacility]
     corridor: dict[str, Corridor]
     sects: dict[str, Sect]
+    sect_bosses: dict[str, SectBoss]
     sect_missions: dict[str, SectMission]
     sect_trials: dict[str, SectTrial]
     codex_trials: dict[str, CodexTrial]
@@ -315,6 +317,7 @@ class Catalog:
             cave=_index(directory / "cave.json", CaveFacility),
             corridor=_index(directory / "corridor.json", Corridor),
             sects=_index(directory / "sects.json", Sect),
+            sect_bosses=_index(directory / "sect_bosses.json", SectBoss),
             sect_missions=_index(directory / "sect_missions.json", SectMission),
             sect_trials=_index(directory / "sect_trials.json", SectTrial),
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
@@ -704,6 +707,7 @@ class Catalog:
         self._validate_farm_levels()
         self._validate_cave_offerings()
         self._validate_sect_content()
+        self._validate_sect_bosses()
         self._validate_convoy()
         self._validate_battle_supplies()
 
@@ -1185,6 +1189,60 @@ class Catalog:
             if trial.min_realm not in {realm.id for realm in self.realms}:
                 raise ValueError(f"sect trial {trial.id} names an unknown realm {trial.min_realm}")
             self._require(trial.reward.items, self.items, f"sect trial {trial.id} reward items")
+
+    def _validate_sect_bosses(self) -> None:
+        sect_ids = [boss.sect for boss in self.sect_bosses.values()]
+        if len(self.sect_bosses) != len(self.sects) or set(sect_ids) != set(self.sects):
+            raise ValueError("sect bosses must cover every sect exactly once")
+        by_sect: dict[str, SectBoss] = {}
+        for boss in self.sect_bosses.values():
+            if boss.sect not in self.sects or boss.sect in by_sect:
+                raise ValueError(f"sect boss {boss.id} names an unknown or duplicate sect")
+            by_sect[boss.sect] = boss
+            self._require([boss.enemy], self.enemies, f"sect boss {boss.id} enemy")
+            if boss.energy > 100:
+                raise ValueError(f"sect boss {boss.id} energy exceeds a pet's pool")
+            for label, tiers in (("milestone", boss.milestones), ("personal", boss.personal_tiers)):
+                if [tier.tier for tier in tiers] != list(range(1, len(tiers) + 1)):
+                    raise ValueError(f"sect boss {boss.id} {label} tiers must be contiguous from 1")
+                previous = 0
+                for tier in tiers:
+                    threshold = tier.total_damage if label == "milestone" else tier.damage
+                    if threshold <= previous or threshold > boss.max_hp:
+                        raise ValueError(f"sect boss {boss.id} {label} damage thresholds must ascend within max HP")
+                    previous = threshold
+                    if label == "milestone" and tier.member_damage > tier.total_damage:
+                        raise ValueError(f"sect boss {boss.id} milestone member damage exceeds its total")
+                    self._validate_sect_boss_reward(boss, tier.tier, label, tier.reward)
+
+    def _validate_sect_boss_reward(self, boss: SectBoss, tier: int, scope: str, reward) -> None:
+        if reward.exp.maximum:
+            raise ValueError(f"sect boss {boss.id} {scope} tier {tier} cannot grant experience")
+        if reward.stones.minimum != reward.stones.maximum or any(
+            bounds.minimum != bounds.maximum for bounds in reward.items.values()
+        ):
+            raise ValueError(f"sect boss {boss.id} {scope} tier {tier} rewards must be fixed")
+        if (
+            reward.stones.maximum > 10_000
+            or len(reward.items) > 4
+            or sum(bounds.maximum for bounds in reward.items.values()) > 20
+            or any(bounds.maximum > 20 for bounds in reward.items.values())
+        ):
+            raise ValueError(f"sect boss {boss.id} {scope} tier {tier} reward exceeds content limits")
+        if not reward.stones.maximum and not any(bounds.maximum > 0 for bounds in reward.items.values()):
+            raise ValueError(f"sect boss {boss.id} {scope} tier {tier} reward must not be empty")
+        self._require(reward.items, self.items, f"sect boss {boss.id} {scope} tier {tier} items")
+        if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in reward.items):
+            raise ValueError(f"sect boss {boss.id} {scope} tier {tier} items must be consumables or materials")
+        if tier > 1:
+            tiers = getattr(boss, "milestones" if scope == "milestone" else "personal_tiers")
+            previous = tiers[tier - 2].reward
+            if reward.stones.maximum <= previous.stones.maximum:
+                raise ValueError(f"sect boss {boss.id} {scope} rewards must increase by tier")
+            if sum(bounds.maximum for bounds in reward.items.values()) < sum(
+                bounds.maximum for bounds in previous.items.values()
+            ):
+                raise ValueError(f"sect boss {boss.id} {scope} item rewards must not decrease by tier")
 
     def _validate_farm_levels(self) -> None:
         levels = sorted(self.farm_levels)

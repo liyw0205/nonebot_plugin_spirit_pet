@@ -158,10 +158,19 @@ def legacy_schema28(current_schema: str) -> str:
 
 
 def legacy_schema29(current_schema: str) -> str:
-    schema = current_schema
+    schema = legacy_schema30(current_schema)
     for table in ("race_league_config", "race_track_bests", "race_league_claims"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     return re.sub(r"CREATE INDEX race_track_week_board[\s\S]*?;\n", "", schema, count=1)
+
+
+def legacy_schema30(current_schema: str) -> str:
+    schema = current_schema
+    for table in ("sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in ("sect_boss_attack_rank", "sect_boss_attack_history", "sect_boss_claim_history"):
+        schema = re.sub(rf"CREATE INDEX {index} [^;]*;\n", "", schema, count=1)
+    return schema
 
 
 def legacy_schema27(current_schema: str) -> str:
@@ -185,7 +194,11 @@ def validate_schema29(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def validate_schema30(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 30, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, legacy_schema30(current_schema), 30, optional_indexes=RUNTIME_INDEXES)
+
+
+def validate_schema31(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 31, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -198,6 +211,26 @@ def backup_schema28(path: Path) -> Path:
 
 def backup_schema29(path: Path) -> Path:
     return _backup_schema(path, 29)
+
+
+def backup_schema30(path: Path) -> Path:
+    return _backup_schema(path, 30)
+
+
+def migrate_sect_boss(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE sect_boss_weeks \([\s\S]*?\n\);",
+        r"CREATE TABLE sect_boss_attacks \([\s\S]*?\n\);",
+        r"CREATE INDEX sect_boss_attack_rank [^;]*;",
+        r"CREATE INDEX sect_boss_attack_history [^;]*;",
+        r"CREATE TABLE sect_boss_claims \([\s\S]*?\n\);",
+        r"CREATE INDEX sect_boss_claim_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing sect boss definitions")
+        conn.execute(match.group(0))
 
 
 def migrate_sect_week_contributions(conn: sqlite3.Connection) -> None:

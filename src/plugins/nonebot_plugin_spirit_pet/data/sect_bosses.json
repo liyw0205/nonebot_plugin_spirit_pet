@@ -1,0 +1,82 @@
+[
+  {
+    "id": "jian_ge_boss",
+    "sect": "jian_ge",
+    "name": "裂岳剑魁",
+    "description": "昔日剑首留下的剑魄镇守试剑台，唯有同门合力才能斩开山岳剑势。",
+    "enemy": "void_blade",
+    "max_hp": 9000,
+    "energy": 20,
+    "daily_attempts": 2,
+    "milestones": [
+      {"tier": 1, "total_damage": 2250, "member_damage": 300, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 120, "maximum": 120}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "total_damage": 4500, "member_damage": 900, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 220, "maximum": 220}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "total_damage": 6750, "member_damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 360, "maximum": 360}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ],
+    "personal_tiers": [
+      {"tier": 1, "damage": 600, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 80, "maximum": 80}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 150, "maximum": 150}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "damage": 3200, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 250, "maximum": 250}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ]
+  },
+  {
+    "id": "xuan_men_boss",
+    "sect": "xuan_men",
+    "name": "玄穹古卫",
+    "description": "玄门古阵中的守卫以厚重灵盾护体，门人须持续攻坚方能破阵。",
+    "enemy": "ancient_guard",
+    "max_hp": 10000,
+    "energy": 20,
+    "daily_attempts": 2,
+    "milestones": [
+      {"tier": 1, "total_damage": 2500, "member_damage": 300, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 120, "maximum": 120}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "total_damage": 5000, "member_damage": 900, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 220, "maximum": 220}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "total_damage": 7500, "member_damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 360, "maximum": 360}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ],
+    "personal_tiers": [
+      {"tier": 1, "damage": 600, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 80, "maximum": 80}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 150, "maximum": 150}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "damage": 3200, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 250, "maximum": 250}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ]
+  },
+  {
+    "id": "dan_ding_boss",
+    "sect": "dan_ding",
+    "name": "丹炉炎魁",
+    "description": "丹鼎地火凝成的炎魁不断吞吐炉焰，门人需在灼浪间积累有效伤害。",
+    "enemy": "ember_wraith",
+    "max_hp": 8000,
+    "energy": 20,
+    "daily_attempts": 2,
+    "milestones": [
+      {"tier": 1, "total_damage": 2000, "member_damage": 300, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 120, "maximum": 120}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "total_damage": 4000, "member_damage": 900, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 220, "maximum": 220}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "total_damage": 6000, "member_damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 360, "maximum": 360}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ],
+    "personal_tiers": [
+      {"tier": 1, "damage": 600, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 80, "maximum": 80}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 150, "maximum": 150}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "damage": 3200, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 250, "maximum": 250}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ]
+  },
+  {
+    "id": "yu_shou_boss",
+    "sect": "yu_shou",
+    "name": "驭兽月魁",
+    "description": "御兽古林中的月魁号令群兽，唯有门人各自携宠接战才能逐周平息兽潮。",
+    "enemy": "moon_wolf",
+    "max_hp": 8500,
+    "energy": 20,
+    "daily_attempts": 2,
+    "milestones": [
+      {"tier": 1, "total_damage": 2125, "member_damage": 300, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 120, "maximum": 120}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "total_damage": 4250, "member_damage": 900, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 220, "maximum": 220}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "total_damage": 6375, "member_damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 360, "maximum": 360}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ],
+    "personal_tiers": [
+      {"tier": 1, "damage": 600, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 80, "maximum": 80}, "items": {"spirit_food": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 2, "damage": 1800, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 150, "maximum": 150}, "items": {"forge_ore": {"minimum": 1, "maximum": 1}}}},
+      {"tier": 3, "damage": 3200, "reward": {"exp": {"minimum": 0, "maximum": 0}, "stones": {"minimum": 250, "maximum": 250}, "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}}}
+    ]
+  }
+]

@@ -334,6 +334,20 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
             pending.append(_entry(
                 TODO, f"{sect.name}试炼本周未过", f"{trial.name}，每周一次", "灵宠师门 试炼",
             ))
+        from . import sect_boss
+
+        boss_available = sect_boss.claimable(ctx, owner, sect.id)
+        if boss_available:
+            claimable.append(_entry(
+                CLAIM, f"{sect.name}共讨奖励可领 {len(boss_available)} 档",
+                "仅在活动结束后的下一个北京时间自然周领取", "灵宠师门 共讨 领奖",
+            ))
+        else:
+            boss_line = sect_boss.objective_line(ctx, owner)
+            if boss_line:
+                pending.append(_entry(
+                    TODO, boss_line, "查看共享首领进度与本周个人排名", "灵宠师门 共讨",
+                ))
 
     if race.remaining_today(ctx, owner):
         pending.append(_entry(
