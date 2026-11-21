@@ -4,13 +4,13 @@
 
 ## 当前唯一进度
 
-- 发布基线：正式 Release [v0.1.70](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.70) 已包含 `project.tar.gz`，tag 源码 SHA `e64d13e4123a8ec01d748608cd6d5351f885d476`，存档 schema 31。develop CI [44854975502](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44854975502)、main CI [44855923569](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44855923569) 与 tag/Release CI [44856651328](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44856651328) 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。Release 资产 SHA256 `6d772586f149149b2feb095cb4a0d23a0249c2d4572549378069c721aab4e0f7` 与该 tag 的本地 `git archive` 逐字节一致；发布与部署分开记录。
-- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复、v0.1.68 的好友换物/合膳/双人接力与师门共修、v0.1.69 的灵宠竞速四周联赛，以及 v0.1.70 的师门共讨首领。完整范围以变更记录为准。
-- 代码与验收依据：v0.1.70 新增 `sect_boss.py`、四派静态定义和 schema 30→31 迁移；按结构化战斗剩余 HP 原子计伤，保存逐次攻击/永久战报/操作回执，提供排名、个人战历、往期归档和限时一次领奖。受影响的首领、迁移、战斗、师门、全服首领及团队试炼定向测试共 255 项通过；develop/main/tag 精确 SHA 的全量 CI 与安装冒烟均通过。
+- 发布基线：正式 Release [v0.1.71](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.71) 已包含 `project.tar.gz`，tag 源码 SHA `c6bf1790446534d6a50d1d05ee4b63527fb2622f`，存档 schema 32。develop CI [44871777690](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44871777690)、main CI [44872630553](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44872630553) 与 tag/Release CI [44873549086](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44873549086) 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。Release 资产 SHA256 `9ab8b5ee0d6b67dd168a8588a138341cd4dfaafc833640d78518bf0edb9481d5` 与该 tag 的本地 `git archive` 逐字节一致；发布与部署分开记录。
+- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复、v0.1.68 的好友换物/合膳/双人接力与师门共修、v0.1.69 的灵宠竞速四周联赛、v0.1.70 的师门共讨首领，以及 v0.1.71 的灵宠野外收服。完整范围以变更记录为准。
+- 代码与验收依据：v0.1.71 新增 `wild_capture.py`、静态路线生态定义和 schema 31→32 备份迁移；真实历练战斗结算进入限时捕获，保存逐次尝试、保底与终态账本，提供收服图鉴、战历、目标和 QQ native / OneBot 共用入口。受影响定向合同 427 项通过；develop/main/tag 精确 SHA 的全量 CI 与安装冒烟均通过。
 - 部署：最近独立核验的 QQ 测试实例仍为 v0.1.2，SHA `8616455e6e1f5ec76d532d778d809133f8d9ef9f`、schema 20；本阶段未访问部署账号、更新实例或发送真实 QQ 消息。
 - 连接与呈现：旧实例 QQ 连接/鉴权已核验；QQ 客户端 Markdown、按钮、蓝字和 Termux 设备呈现仍需独立实测，不能由 CI 或 mock 替代。
-- 活动阶段：师门共讨以普通提交 `0784f7e`、`2c5aa6d`、`e64d13e` 推送 develop；实时 fetch 确认 main 没有独有提交后，普通快进 main 到 `e64d13e` 并发布 v0.1.70。main/develop 当前源码均为 `e64d13e4123a8ec01d748608cd6d5351f885d476`，未创建额外合并提交、未移动既有 tag。当前仅完成代码、CI 与 Release 验证，未部署、未访问真实存档或发送真实 QQ 消息。
-- 下一有限任务：完成「灵宠野外捕获」玩法闭环：玩家从现有历练路线触发可见的野外遭遇，按真实伙伴战斗与限定捕获道具尝试收服，结算加入名册的个体、保底/稀有度规则、图鉴/目标进度与永久战报；覆盖拒绝/逃脱/捕获失败、名册上限、同种类上限、时钟与操作重放、并发名额及奖励事务回滚。先审阅现有 `adventure.py`、`adventure_travel.py`、召唤/名册和 PVE 资源合同，只新增确有缺失的捕获流程，不复制召唤池或再造奇遇系统；完整数据、持久化、命令、测试和验收目标写入本地 `.codex-goal-next.md`，不得提交。
+- 活动阶段：野外收服以普通提交 `2654f71` 推送 develop，修复 CI 合同后 `c6bf179` 再推送 develop；实时 fetch 确认 main 无独有提交、分叉 `0/2` 后普通快进 main 至 `c6bf179`。main/develop/tag 当前源码均为 `c6bf1790446534d6a50d1d05ee4b63527fb2622f`，未创建额外合并提交或移动既有 tag。Release v0.1.71 已发布并核验资产哈希；未部署、未访问真实存档或发送真实 QQ 消息。
+- 下一有限任务：实现「灵宠野外栖地调查」：从真实 `wild_capture_runs` 按路线派生玩家实际见过的物种多样性，增加只读调查手册、路线调查档位与一次性奖励领取；静态内容定义调查门槛/奖励并严格校验，新增隔离 schema 33 领奖凭证和 32→33 可备份原子迁移。只认真实遭遇记录，不因查看或合成结果推进；不改野外概率、保底、捕获或终态，不重复建设图鉴/奇闻/成就，不暴露他人伙伴与私密遭遇；完整验收标准仅记在本地 `.codex-goal.md`，不得提交辅助文件。
 
 ## 道友协作阶段
 
