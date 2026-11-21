@@ -4,13 +4,13 @@
 
 ## 当前唯一进度
 
-- 发布基线：正式 Release [v0.1.77](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.77) 已包含 `project.tar.gz`，tag 源码 SHA `21933789f061a6071efdca0a6f25a5e1a92d32da`，schema 38。develop CI [44936383801](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44936383801)、main CI [44937344210](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44937344210) 与 tag/Release CI [44938295116](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44938295116) 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。下载的 Release `project.tar.gz` SHA256 `30c316dd15b7c90351e1e884d4fd6ceb1706a8d1a0d99bf6cc5d4604504ccb0b` 与 `git archive v0.1.77` 逐字节一致；发布与部署分开记录。
-- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复、v0.1.68 的好友换物/合膳/双人接力与师门共修、v0.1.69 的灵宠竞速四周联赛、v0.1.70 的师门共讨首领、v0.1.71 的灵宠野外收服、v0.1.72 的灵宠野外栖地调查、v0.1.73 的灵宠栖地共护、v0.1.74 的灵宠灵卵谱系、v0.1.75 的灵宠家族试炼、v0.1.76 的灵宠家族传习，以及 v0.1.77 的灵宠亲子伴游。完整范围以变更记录为准。
-- 代码与验收依据：v0.1.77 允许本人真实孵化凭证中的直接亲本与后代在溪畔、灵木林或山脊完成三段同行，按真实双宠精力/灵食成本作选择，末段原子结算原双宠有限羁绊经验并保留私有故事。schema 37→38 验证备份迁移不改既有谱系、传习、家族试炼、相伴、出游、羁绊或资产。新增及受影响定向测试 627 项通过；develop/main/tag 三个精确 SHA CI 的 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟均通过。
+- 发布基线：正式 Release [v0.1.78](https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/tag/v0.1.78) 已包含 `project.tar.gz`，tag 源码 SHA `4358c14574f19c5e2b9e8dcbf53147260e976eea`，schema 39。develop CI [44949347954](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44949347954)、main CI [44950445363](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44950445363) 与 tag/Release CI [44951453681](https://github.com/liyw0205/nonebot_plugin_spirit_pet/actions/runs/44951453681) 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。下载的 Release `project.tar.gz` SHA256 `af9b1d9199737013b9657f9c8d40993400e04800d1698d98330545c9394ed20a` 与 `git archive v0.1.78` 逐字节一致；发布与部署分开记录。
+- 已实现且已发布：v0.1.62 的复合秘境契约与课题七日连章、v0.1.63 的灵脉探勘、v0.1.64 的遗迹探秘、v0.1.65 的洞府共建、v0.1.66 的灵田轮作契约、v0.1.67 的 QQ 帮助与伙伴技能导航修复、v0.1.68 的好友换物/合膳/双人接力与师门共修、v0.1.69 的灵宠竞速四周联赛、v0.1.70 的师门共讨首领、v0.1.71 的灵宠野外收服、v0.1.72 的灵宠野外栖地调查、v0.1.73 的灵宠栖地共护、v0.1.74 的灵宠灵卵谱系、v0.1.75 的灵宠家族试炼、v0.1.76 的灵宠家族传习、v0.1.77 的灵宠亲子伴游，以及 v0.1.78 的灵宠亲子合战。完整范围以变更记录为准。
+- 代码与验收依据：v0.1.78 使用本人真实已孵化直接亲子凭证，让原亲本与后代以当前真实 loadout 同场参加周轮换双宠 PVE，并按结构化实战表现结算有限奖励与永久双宠战报。schema 38→39 验证备份迁移不改旧谱系、家族、伴游、羁绊、战报或资产；亲子合战及受影响定向测试 644 项通过，分页回归补充集合 27 项通过；develop/main/tag 三个精确 SHA CI 均通过 Python 3.10/3.13 全量测试、编译、shell 检查和安装冒烟。
 - 部署：最近独立核验的 QQ 测试实例仍为 v0.1.2，SHA `8616455e6e1f5ec76d532d778d809133f8d9ef9f`、schema 20；本阶段未访问部署账号、更新实例或发送真实 QQ 消息。
 - 连接与呈现：旧实例 QQ 连接/鉴权已核验；QQ 客户端 Markdown、按钮、蓝字和 Termux 设备呈现仍需独立实测，不能由 CI 或 mock 替代。
-- 活动阶段：灵宠亲子伴游已由普通提交 `21933789f061a6071efdca0a6f25a5e1a92d32da` 推送 develop，CI 全绿后实时核验 main 无独有提交并普通快进集成。v0.1.77 tag/Release CI、资产下载与 archive SHA256 均验收通过。完整玩法与迁移已覆盖真实培育孵化、三档收益、并发/重放/时钟/逐写入回滚、旧出游/羁绊/谱系/家族和命令消息；627 项综合定向测试及双版本全量 CI 通过。未部署、未访问真实存档或发送真实 QQ 消息。
-- 下一有限任务：选择并实现一项与已发布玩法不重复的完整玩法目标；先从现有实现和路线图验证边界，形成仅本地 `.codex-goal.md` 合同，完成真实闭环、迁移/内容/交互和受影响定向测试后再推送发布。
+- 活动阶段：灵宠亲子合战由普通提交 `90f5550` 与分页回归提交 `4358c14` 推送 develop；实时比较确认 main 无独有提交后普通快进到同一 SHA。develop/main/tag CI、v0.1.78 Release 与 `project.tar.gz`/tag archive SHA256 核验均通过。完整玩法、schema 39 兼容迁移、帮助/内容/命令、真实双宠战斗、结构化评级、永久战报及相关 644 项定向验收已完成；首次 CI 发现的今日摘要分页断言已修正为遍历完整分页。未部署、未访问真实存档或发送真实 QQ 消息。
+- 下一有限任务：新增灵宠亲子合战三周联赛，为已发布的真实亲子周合战提供锁定亲子组合、逐周积分、赛季榜与一次性结算；复用真实合战结果，不另造战斗引擎。先核对现有赛季/结果合同，形成仅本地 `.codex-goal.md` 完整验收标准，再实现数据、玩法和定向测试。
 
 ## 道友协作阶段
 
