@@ -50,6 +50,7 @@ from . import (
     cuisine_coop,
     friend_relay,
     wild_capture,
+    wild_habitat,
 )
 
 TITLE = "灵宠今日"
@@ -191,6 +192,12 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
         pending.append(_entry(
             TODO, wild_line, "沿既有历练路线寻找野生灵宠，或处理待收服遭遇", "灵宠野外",
         ))
+
+    habitat_claim, habitat_pending = wild_habitat.today_state(ctx, owner)
+    if habitat_claim:
+        claimable.append(_entry(CLAIM, habitat_claim, "查看并领取本周已解锁档位", wild_habitat.TITLE))
+    elif habitat_pending:
+        pending.append(_entry(TODO, habitat_pending, "到目标野外路线完成真实遭遇并贡献新物种", wild_habitat.TITLE))
 
     rows = expeditions.running_rows(ctx, owner)
     ready = [row for row in rows if row["finishes_at"] <= ctx.now]

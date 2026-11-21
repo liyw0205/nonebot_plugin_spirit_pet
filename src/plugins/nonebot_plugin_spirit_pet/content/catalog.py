@@ -75,6 +75,7 @@ from ..domain.daily_shop_reward_content import DailyShopReward
 from ..domain.world_boss_rank_reward_content import WorldBossRankReward
 from ..domain.wild_capture_content import WildCaptureRules
 from ..domain.wild_survey_content import WildSurveyRoute
+from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -149,6 +150,7 @@ class Catalog:
     exploration_routes: dict[str, ExplorationRoute]
     wild_capture: WildCaptureRules
     wild_surveys: dict[str, WildSurveyRoute]
+    wild_habitat_events: dict[str, WildHabitatEvent]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -275,6 +277,7 @@ class Catalog:
             exploration_routes=_index(directory / "exploration_routes.json", ExplorationRoute),
             wild_capture=WildCaptureRules.model_validate(_read(directory / "wild_captures.json")),
             wild_surveys=_index(directory / "wild_surveys.json", WildSurveyRoute, "route"),
+            wild_habitat_events=_index(directory / "wild_habitat_events.json", WildHabitatEvent),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -538,6 +541,7 @@ class Catalog:
         self._validate_shop_rotation()
         self._validate_wild_captures()
         self._validate_wild_surveys()
+        self._validate_wild_habitat_events()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -853,6 +857,35 @@ class Catalog:
                 for item_id in reward.items:
                     if self.items[item_id].kind not in {"consumable", "material"}:
                         raise ValueError(f"wild survey reward item {item_id} must be consumable or material")
+
+    def _validate_wild_habitat_events(self) -> None:
+        if not self.wild_habitat_events or len(self.wild_habitat_events) > 52:
+            raise ValueError("wild habitat rotation must contain 1-52 events")
+        routes = {route.route for route in self.wild_capture.routes}
+        for event in self.wild_habitat_events.values():
+            if event.route not in routes:
+                raise ValueError(f"wild habitat event {event.id} references an unknown wild route")
+            tier_ids = [tier.id for tier in event.tiers]
+            if len(tier_ids) != len(set(tier_ids)):
+                raise ValueError(f"wild habitat event {event.id} repeats a tier id")
+            previous_pairs = 0
+            for tier in event.tiers:
+                if tier.contribution_pairs <= previous_pairs or tier.contribution_pairs > event.goal_pairs:
+                    raise ValueError(f"wild habitat event {event.id} milestones must increase within its goal")
+                previous_pairs = tier.contribution_pairs
+                reward = tier.reward
+                if reward.stones == 0 and not reward.items:
+                    raise ValueError(f"wild habitat event {event.id} tier {tier.id} has an empty reward")
+                if reward.stones + sum(reward.items.values()) > 10_000:
+                    raise ValueError(f"wild habitat event {event.id} tier {tier.id} reward exceeds limit")
+                self._require(reward.items, self.items, f"wild habitat event {event.id} reward items")
+                for item_id in reward.items:
+                    if self.items[item_id].kind not in {"consumable", "material"}:
+                        raise ValueError(
+                            f"wild habitat event reward item {item_id} must be consumable or material"
+                        )
+            if previous_pairs != event.goal_pairs:
+                raise ValueError(f"wild habitat event {event.id} goal must equal its final milestone")
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

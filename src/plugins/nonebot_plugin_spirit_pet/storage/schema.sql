@@ -514,3 +514,31 @@ CREATE TABLE wild_survey_claims (
     PRIMARY KEY(user_id, route_id, tier_id)
 );
 CREATE INDEX wild_survey_claim_history ON wild_survey_claims(user_id, claimed_at DESC);
+CREATE TABLE wild_habitat_weeks (
+    week_start INTEGER PRIMARY KEY CHECK(week_start>=0),
+    event_id TEXT NOT NULL CHECK(length(event_id)>0),
+    route_id TEXT NOT NULL CHECK(length(route_id)>0),
+    event_snapshot TEXT NOT NULL,
+    opened_at INTEGER NOT NULL CHECK(opened_at>=week_start AND opened_at<week_start+604800)
+);
+CREATE TABLE wild_habitat_contributions (
+    contribution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    week_start INTEGER NOT NULL REFERENCES wild_habitat_weeks(week_start),
+    run_id INTEGER NOT NULL UNIQUE REFERENCES wild_capture_runs(run_id),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    species_id TEXT NOT NULL CHECK(length(species_id)>0),
+    contributed_at INTEGER NOT NULL CHECK(contributed_at>=week_start AND contributed_at<week_start+604800),
+    UNIQUE(week_start,user_id,species_id)
+);
+CREATE INDEX wild_habitat_contribution_progress ON wild_habitat_contributions(week_start,user_id,species_id);
+CREATE TABLE wild_habitat_claims (
+    week_start INTEGER NOT NULL REFERENCES wild_habitat_weeks(week_start),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    tier_id TEXT NOT NULL CHECK(length(tier_id)>0),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=week_start AND claimed_at<week_start+1209600),
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(week_start,user_id,tier_id)
+);
+CREATE INDEX wild_habitat_claim_history ON wild_habitat_claims(user_id,claimed_at DESC);

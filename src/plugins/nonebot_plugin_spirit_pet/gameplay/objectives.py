@@ -95,6 +95,7 @@ from . import realm_milestone_rewards
 from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
 from . import wild_capture
+from . import wild_habitat
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
@@ -697,6 +698,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (_echo_line(ctx, player.user_id), "灵宠回响"),
         (_adventure_collection_line(ctx, player.user_id), "灵宠奇闻奖励"),
         (wild_capture.objective_line(ctx, player.user_id), "灵宠野外"),
+        (wild_habitat.objective_line(ctx, player.user_id), wild_habitat.TITLE),
         (_season_line(ctx, player.user_id), "灵宠赛季任务"),
         (_assignment_line(ctx, player.user_id), "灵宠课题"),
         (_assignment_chain_line(ctx, player.user_id), "灵宠课题连章"),

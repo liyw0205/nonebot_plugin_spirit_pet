@@ -10,6 +10,7 @@
 - 元素与天赋、技能熟练度、三槽装备、强化、套装、打造和分解。
 - 一至三只不同种族的出战阵容；单人秘境、章节关卡、离线委托、收集和长期成就。
 - 灵田耕种与养苗、队友浇水、采药、寻踪、护航、连携演练和多种每日/每周玩法。
+- 灵宠野外收服、私人栖地调查与每周轮换的全服栖地共护。
 - 同族合修、双种族共鸣、组队 PVE、赛季论剑、无损切磋和永久战报。
 
 ## 安装
@@ -135,7 +136,7 @@ xiupet start
 
 `xiupet update` 下载最新正式 Release 的 `project.tar.gz`（`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`），只替换程序文件，保留 `.env` 和 `data/`。
 
-默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 33；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，随后按顺序迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）、28（斗法回合账本）、29（师门共修成员账本）、30（竞速联赛账本）、31（师门共讨首领账本）、32（野外遭遇/捕获尝试账本）和 33（栖地调查奖励凭证），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 33 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。每一步迁移使用 SQLite Online Backup API 创建一致性备份，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
+默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 34；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，随后按顺序迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）、28（斗法回合账本）、29（师门共修成员账本）、30（竞速联赛账本）、31（师门共讨首领账本）、32（野外遭遇/捕获尝试账本）、33（栖地调查奖励凭证）和 34（每周栖地共护周快照、贡献与领奖凭证），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 34 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。每一步迁移使用 SQLite Online Backup API 创建一致性备份，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
 
 ## 文档
 

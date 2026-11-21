@@ -1,0 +1,50 @@
+[
+  {
+    "id": "spring_recovery",
+    "name": "灵泉共护",
+    "description": "清理泉眼周边的灵息淤积，让栖地恢复生机。",
+    "route": "spirit_spring",
+    "goal_pairs": 6,
+    "tiers": [
+      {"id": "first_sign", "name": "初见生机", "contribution_pairs": 1, "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "shared_effort", "name": "众手护泉", "contribution_pairs": 3, "reward": {"stones": 45, "items": {"seed_ore_sprout": 2}}},
+      {"id": "habitat_restored", "name": "泉脉复苏", "contribution_pairs": 6, "reward": {"stones": 80, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "id": "valley_recovery",
+    "name": "星谷共护",
+    "description": "疏通谷地灵流，守护星陨之后仍在生长的草木。",
+    "route": "starfall_valley",
+    "goal_pairs": 6,
+    "tiers": [
+      {"id": "first_sign", "name": "初见生机", "contribution_pairs": 1, "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "shared_effort", "name": "众手护谷", "contribution_pairs": 3, "reward": {"stones": 45, "items": {"gem_swift": 2}}},
+      {"id": "habitat_restored", "name": "谷地复苏", "contribution_pairs": 6, "reward": {"stones": 80, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "id": "cave_recovery",
+    "name": "古窟共护",
+    "description": "稳固古窟深处的灵脉，减少野生灵宠迁徙的阻碍。",
+    "route": "ancient_cave",
+    "goal_pairs": 6,
+    "tiers": [
+      {"id": "first_sign", "name": "初见生机", "contribution_pairs": 1, "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "shared_effort", "name": "众手护窟", "contribution_pairs": 3, "reward": {"stones": 45, "items": {"gem_ward": 2}}},
+      {"id": "habitat_restored", "name": "窟脉复苏", "contribution_pairs": 6, "reward": {"stones": 80, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "id": "ember_recovery",
+    "name": "熔脉共护",
+    "description": "平息熔脉沿线的躁动灵息，为迁徙生灵留出通路。",
+    "route": "ember_vein",
+    "goal_pairs": 6,
+    "tiers": [
+      {"id": "first_sign", "name": "初见生机", "contribution_pairs": 1, "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "shared_effort", "name": "众手稳脉", "contribution_pairs": 3, "reward": {"stones": 45, "items": {"gem_flame": 2}}},
+      {"id": "habitat_restored", "name": "熔脉安定", "contribution_pairs": 6, "reward": {"stones": 80, "items": {"spirit_food": 2}}}
+    ]
+  }
+]

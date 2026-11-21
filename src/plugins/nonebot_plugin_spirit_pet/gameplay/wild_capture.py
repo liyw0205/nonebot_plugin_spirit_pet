@@ -188,7 +188,7 @@ def start_from_exploration(ctx: Context, route, selector: str = "") -> Reply:
             "same_species_limit": rules.same_species_limit,
         },
     }
-    ctx.repo.conn.execute(
+    cursor = ctx.repo.conn.execute(
         "INSERT INTO wild_capture_runs(operation_id,user_id,route_id,route_name,day_key,species_id,"
         "species_name,rarity,enemy_id,enemy_name,enemy_snapshot,capture_item_id,capture_item_name,"
         "capture_rate,max_attempts,same_species_limit,state,terminal_reason,battle_id,started_at,"
@@ -203,6 +203,8 @@ def start_from_exploration(ctx: Context, route, selector: str = "") -> Reply:
             ctx.now if state != "pending" else None,
         ),
     )
+    from . import wild_habitat
+    wild_habitat.record_encounter(ctx, cursor.lastrowid)
     return reply
 
 
@@ -242,9 +244,11 @@ def _pending_page(ctx: Context, *, expire: bool) -> Reply:
         f"收服图鉴：{found}/{total_species} 种 · 收服道具：{capture_name}。",
         _survey_progress_summary(ctx, player.user_id),
     ]
+    from . import wild_habitat
+    lines.append(wild_habitat.summary_line(ctx, player.user_id))
+    links = [InlineCommand(len(lines) - 1, "查看共护", "灵宠栖地共护")]
     if expired:
         lines.append("上一场野外遭遇已过期，野生灵宠逃脱。")
-    links = []
     if pending is not None:
         species = ctx.content.species[pending["species_id"]]
         lines.append(
