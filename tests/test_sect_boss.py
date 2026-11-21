@@ -370,6 +370,38 @@ def test_last_hit_closes_week_and_rewards_only_open_for_the_following_week(game,
         play("sect", "共讨 领奖", now=week_end + 7 * 86400, op="boss-claim-expired")
 
 
+def test_switching_sects_hides_old_personal_history_and_claim_until_return(game, play):
+    join(play)
+    sql(game[1], "UPDATE players SET stones=2500 WHERE user_id='u1'")
+    original = next(boss for boss in game[0].content.sect_bosses.values() if boss.sect == "jian_ge")
+    milestones = [tier.model_copy(update={"total_damage": 1, "member_damage": 1}) for tier in original.milestones]
+    personal_tiers = [
+        tier.model_copy(update={"damage": 1 if tier.tier == 1 else 999_999})
+        for tier in original.personal_tiers
+    ]
+    boss = original.model_copy(update={"max_hp": 1, "milestones": milestones, "personal_tiers": personal_tiers})
+    game[0].content.sect_bosses[boss.id] = boss
+    enemy = game[0].content.enemies[boss.enemy]
+    game[0].content.enemies[boss.enemy] = enemy.model_copy(update={
+        "stats": Stats(hp=1, attack=1, defense=0, speed=1),
+    })
+    play("sect", "共讨 挑战", now=NOW, op="switch-boss-hit")
+    week_end = beijing_week(NOW)[1]
+
+    play("sect", "拜入 玄门", now=week_end, op="switch-away")
+    assert "尚未拜入师门" not in play("sect", now=week_end).text()
+    hidden = play("sect", "共讨 个人战历", now=week_end)
+    assert "尚无个人共讨攻击记录" in hidden.text()
+    with pytest.raises(GameError, match="当前没有处于领取周"):
+        play("sect", "共讨 领奖", now=week_end + 1, op="switch-claim-away")
+
+    play("sect", "拜入 剑阁", now=week_end + 2, op="switch-back")
+    visible = play("sect", "共讨 个人战历", now=week_end + 3)
+    assert "个人共讨战历 1/1" in visible.text()
+    reward = play("sect", "共讨 领奖", now=week_end + 3, op="switch-claim-back")
+    assert "全门里程碑" in reward.text() and "个人伤害档 1" in reward.text()
+
+
 def test_week_boundary_expires_live_activity_and_clock_rollback_cannot_reopen_it(game, play):
     join(play)
     soften_enemy(game)
