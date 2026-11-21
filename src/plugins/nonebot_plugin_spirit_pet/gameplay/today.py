@@ -54,6 +54,7 @@ from . import (
     pedigree,
     family_trial,
     family_tutelage,
+    family_outing,
 )
 
 TITLE = "灵宠今日"
@@ -204,6 +205,9 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     habitat_claim, habitat_pending = wild_habitat.today_state(ctx, owner)
     family_pending = family_trial.today_state(ctx, owner)
     tutelage_pending = family_tutelage.today_state(ctx, owner)
+    outing_pending = family_outing.today_state(ctx, owner)
+    if outing_pending:
+        pending.append(_entry(TODO, outing_pending, "选择下一段同行，完程后原双宠获得有限羁绊经验", family_outing.TITLE))
     if tutelage_pending:
         pending.append(_entry(TODO, tutelage_pending, "由原亲子付费讲习，再由原后代完成目标术考核", family_tutelage.TITLE))
     if family_pending:

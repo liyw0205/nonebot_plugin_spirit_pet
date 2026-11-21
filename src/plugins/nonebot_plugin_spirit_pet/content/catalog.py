@@ -79,6 +79,7 @@ from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.pedigree_content import PedigreeMilestone
 from ..domain.family_trial_content import FamilyTrial, FamilyTrialCatalog
 from ..domain.family_tutelage_content import FamilyTutelageCatalog, FamilyTutelageCourse, FamilyTutelageRules
+from ..domain.family_outing_content import FamilyOutingCatalog
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -159,6 +160,7 @@ class Catalog:
     family_trial_rotation: tuple[str, ...]
     family_tutelage: dict[str, FamilyTutelageCourse]
     family_tutelage_rules: FamilyTutelageRules
+    family_outings: FamilyOutingCatalog
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -293,6 +295,7 @@ class Catalog:
             family_trial_rotation=tuple(family_trial_catalog.rotation),
             family_tutelage={course.id: course for course in tutelage.courses},
             family_tutelage_rules=tutelage.rules,
+            family_outings=FamilyOutingCatalog.model_validate(_read(directory / "family_outings.json")),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -727,6 +730,10 @@ class Catalog:
         self._validate_progression()
         validate_battle_content(self)
         self._validate_family_tutelage()
+        self._require([route.scene for route in self.family_outings.routes], self.outings, "family outing scenes")
+        self._require([self.family_outings.food_item], self.items, "family outing food")
+        if self.items[self.family_outings.food_item].kind != "consumable":
+            raise ValueError("family outing food must be consumable")
         self._validate_equipment_sets()
         self._validate_resonances()
         validate_crafting_content(self)

@@ -288,6 +288,7 @@ def validate_schema36(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def _without_family_tutelage(schema: str) -> str:
+    schema = _without_family_outings(schema)
     for table in ("courses", "lessons", "exams", "graduations"):
         schema = re.sub(rf"CREATE TABLE family_tutelage_{table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in ("one_active", "history", "weekly"):
@@ -298,7 +299,21 @@ def _without_family_tutelage(schema: str) -> str:
 
 
 def validate_schema37(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 37, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, _without_family_outings(current_schema), 37, optional_indexes=RUNTIME_INDEXES)
+
+
+def _without_family_outings(schema: str) -> str:
+    for table in ("runs", "steps", "rewards"):
+        schema = re.sub(rf"CREATE TABLE family_outing_{table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in ("one_active", "history", "weekly"):
+        schema = re.sub(rf"CREATE (?:UNIQUE )?INDEX family_outing_{index} [^;]*;\n", "", schema, count=1)
+    if "family_outing_" in schema:
+        raise RuntimeError("Could not reconstruct schema without family outings")
+    return schema
+
+
+def validate_schema38(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 38, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -339,6 +354,23 @@ def backup_schema35(path: Path) -> Path:
 
 def backup_schema36(path: Path) -> Path:
     return _backup_schema(path, 36)
+
+
+def backup_schema37(path: Path) -> Path:
+    return _backup_schema(path, 37)
+
+
+def migrate_family_outings(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    patterns = [
+        *(rf"CREATE TABLE family_outing_{table} \([\s\S]*?\n\);" for table in ("runs", "steps", "rewards")),
+        *(rf"CREATE (?:UNIQUE )?INDEX family_outing_{index} [^;]*;" for index in ("one_active", "history", "weekly")),
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing family outing definitions")
+        conn.execute(match.group(0))
 
 
 def migrate_family_tutelage(conn: sqlite3.Connection) -> None:

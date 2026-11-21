@@ -263,7 +263,7 @@ def route_catalog(ctx: Context, arg: str = "") -> Reply:
         lines.append(f"最近路迹：{scene_name} · {GRADE_NAMES.get(grade, '未知')} · {beijing_day(timestamp)}。")
     return Reply(
         "灵宠出游择景", tuple(lines),
-        ("灵宠游历赏", "灵宠帮助 成长", "我的灵宠"), tuple(links),
+        ("灵宠游历赏", "灵宠亲子伴游", "灵宠帮助 成长", "我的灵宠"), tuple(links),
     )
 
 

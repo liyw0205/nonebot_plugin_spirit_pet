@@ -1,0 +1,76 @@
+{
+  "rules": {"weekly_starts": 2, "duration": 86400},
+  "food_item": "spirit_food",
+  "choices": [
+    {"id": "guide", "name": "亲本引路", "parent_energy": 6, "child_energy": 2, "food": 0, "rapport": 2},
+    {"id": "explore", "name": "后代探路", "parent_energy": 2, "child_energy": 6, "food": 0, "rapport": 3},
+    {"id": "rest", "name": "分享灵食", "parent_energy": 1, "child_energy": 1, "food": 1, "rapport": 1}
+  ],
+  "tiers": [
+    {"name": "安心同行", "rapport": 0, "bond_exp": 8},
+    {"name": "默契渐生", "rapport": 5, "bond_exp": 12},
+    {"name": "心意相通", "rapport": 8, "bond_exp": 16}
+  ],
+  "routes": [
+    {
+      "id": "brook_walk", "name": "溪畔伴游", "scene": "brook",
+      "stages": [
+        {"name": "踏水石", "text": "溪水漫过几块平石，{child}望向对岸，又回头等着{parent}。", "outcomes": {
+          "guide": "{parent}踩稳第一块石头，停下来等{child}跟上，两道身影一前一后渡过浅水。",
+          "explore": "{child}试出一条浅滩，回头招呼{parent}，第一次走在了前面。",
+          "rest": "你取出灵食，{parent}与{child}在岸石边慢慢分享，看水波绕过脚边。"
+        }},
+        {"name": "芦苇回声", "text": "芦苇遮住了溪流转弯处，{parent}和{child}都听见了远处的水声。", "outcomes": {
+          "guide": "{parent}侧耳分辨水声，带{child}绕开密苇，转角处的溪面忽然开阔。",
+          "explore": "{child}循着回声找到苇间小路，{parent}放慢脚步，认真跟随这位小向导。",
+          "rest": "{parent}与{child}在芦苇间的空地分享灵食，风停时，一起听清了溪水的回声。"
+        }},
+        {"name": "归岸晚风", "text": "晚风拂过溪面，{child}挨着{parent}，开始寻找来时的路。", "outcomes": {
+          "guide": "{parent}认出岸边旧石，领{child}回到起点，脚步比出发时更加合拍。",
+          "explore": "{child}认出了来时留下的湿痕，带着{parent}走回岸边，临别又望了一眼溪水。",
+          "rest": "你把最后一份灵食放在落日中的岸边，{parent}和{child}并肩坐下，记住了这一程的晚风。"
+        }}
+      ]
+    },
+    {
+      "id": "grove_walk", "name": "灵木林伴游", "scene": "grove",
+      "stages": [
+        {"name": "晨雾岔路", "text": "薄雾笼着林间岔路，{child}停在树根旁，等{parent}一起选路。", "outcomes": {
+          "guide": "{parent}辨认树干上的旧痕，领{child}沿着熟悉的小路走入晨雾。",
+          "explore": "{child}顺着叶尖的露水找到明亮的一侧，{parent}跟上，轻轻碰了碰它的肩。",
+          "rest": "{parent}与{child}在大树根旁分享灵食，等薄雾散去后，岔路也清晰起来。"
+        }},
+        {"name": "风起落叶", "text": "一阵风卷起林叶，{parent}与{child}在细碎的沙沙声中抬起头。", "outcomes": {
+          "guide": "{parent}辨出落叶飘来的方向，带{child}找到一处避风的小径。",
+          "explore": "{child}追着旋转的叶子绕过树丛，又折返迎接{parent}，把新发现的小路带给它。",
+          "rest": "落叶铺成柔软的坐垫，{parent}与{child}分着灵食，一起等这阵风经过。"
+        }},
+        {"name": "林边归途", "text": "林缘透来暖光，{child}放慢了脚步，{parent}也停下来望向它。", "outcomes": {
+          "guide": "{parent}沿着来时留下的痕迹带{child}走出林子，回头确认它一直在身旁。",
+          "explore": "{child}认出林边斜斜的阳光，选准归路，{parent}这次安心地走在它后面。",
+          "rest": "两只伙伴在林边分享灵食，{child}把一片落叶推向{parent}，这段同行有了温柔的收尾。"
+        }}
+      ]
+    },
+    {
+      "id": "ridge_walk", "name": "山脊伴游", "scene": "ridge",
+      "stages": [
+        {"name": "碎石缓坡", "text": "山坡上的碎石微微滑动，{parent}和{child}并肩停在坡脚。", "outcomes": {
+          "guide": "{parent}示范如何踩稳石缝，等{child}一步步跟上，再一起走过缓坡。",
+          "explore": "{child}仔细挑出稳当的落脚处，走几步便回头，领着{parent}缓缓上坡。",
+          "rest": "你在坡侧铺好灵食，{parent}与{child}靠着山石歇脚，望见云影慢慢移过。"
+        }},
+        {"name": "山亭望远", "text": "山亭外群峰相连，{child}望向远方，{parent}安静地陪在一旁。", "outcomes": {
+          "guide": "{parent}沿着熟悉的山形辨出方向，带{child}看清了归路上的几个地标。",
+          "explore": "{child}发现远处独立的一株山树，指给{parent}看，把它记成了自己的路标。",
+          "rest": "{parent}与{child}在山亭中分享灵食，任风从身边穿过，谁也没有催促谁。"
+        }},
+        {"name": "归途岔口", "text": "下山路分作两条，{child}停住脚步，{parent}也回望了一眼山亭。", "outcomes": {
+          "guide": "{parent}认出转角的旧石阶，领{child}走回平缓的归路，两道脚步声渐渐重合。",
+          "explore": "{child}按记住的山树找到归路，{parent}跟在身旁，这次不再需要提醒。",
+          "rest": "你把灵食分在归路石旁，{parent}与{child}并肩歇下，等夕照把山径照得明亮再同行回去。"
+        }}
+      ]
+    }
+  ]
+}

@@ -33,6 +33,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "pedigree": 18,
     "family_trial": 15,
     "family_tutelage": 15,
+    "family_outing": 15,
 }
 
 

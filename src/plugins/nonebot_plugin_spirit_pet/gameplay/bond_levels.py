@@ -92,4 +92,4 @@ def catalog(ctx: Context, arg: str) -> Reply:
             lines.append(f"{pet.name}（编号 {pet.pet_id}）· 羁绊等级 MAX · 经验 {total}")
     if not lines:
         lines.append("尚无在册灵宠。")
-    return Reply("灵宠羁绊", tuple(lines), ("我的灵宠", "灵宠帮助"))
+    return Reply("灵宠羁绊", tuple(lines), ("灵宠亲子伴游", "我的灵宠", "灵宠帮助"))

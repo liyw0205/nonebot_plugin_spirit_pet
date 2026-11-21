@@ -702,3 +702,45 @@ CREATE TABLE family_tutelage_graduations (
     FOREIGN KEY(user_id,course_id) REFERENCES family_tutelage_courses(user_id,course_id),
     FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id)
 );
+CREATE TABLE family_outing_runs (
+    trip_id TEXT PRIMARY KEY CHECK(length(trip_id)>0),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    parent_id INTEGER NOT NULL,
+    child_id INTEGER NOT NULL CHECK(child_id<>parent_id),
+    egg_record_id INTEGER NOT NULL REFERENCES pet_lineage_eggs(egg_record_id),
+    route_id TEXT NOT NULL CHECK(length(route_id)>0),
+    week_start INTEGER NOT NULL CHECK(week_start>=0),
+    start_operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    status TEXT NOT NULL CHECK(status IN ('active','completed','cancelled','expired')),
+    steps_done INTEGER NOT NULL DEFAULT 0 CHECK(steps_done BETWEEN 0 AND 3),
+    rapport INTEGER NOT NULL DEFAULT 0 CHECK(rapport BETWEEN 0 AND 9),
+    started_at INTEGER NOT NULL CHECK(started_at>=week_start AND started_at<week_start+604800),
+    updated_at INTEGER NOT NULL CHECK(updated_at>=started_at),
+    expires_at INTEGER NOT NULL CHECK(expires_at=started_at+86400),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    UNIQUE(user_id,trip_id),
+    FOREIGN KEY(user_id,parent_id) REFERENCES pets(user_id,pet_id),
+    FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id),
+    CHECK((status='completed' AND steps_done=3) OR (status<>'completed' AND steps_done<3))
+);
+CREATE UNIQUE INDEX family_outing_one_active ON family_outing_runs(user_id) WHERE status='active';
+CREATE INDEX family_outing_history ON family_outing_runs(user_id,started_at DESC,trip_id);
+CREATE INDEX family_outing_weekly ON family_outing_runs(user_id,week_start);
+CREATE TABLE family_outing_steps (
+    trip_id TEXT NOT NULL REFERENCES family_outing_runs(trip_id),
+    step_no INTEGER NOT NULL CHECK(step_no BETWEEN 1 AND 3),
+    choice_id TEXT NOT NULL CHECK(choice_id IN ('guide','explore','rest')),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    acted_at INTEGER NOT NULL CHECK(acted_at>=0),
+    snapshot TEXT NOT NULL,
+    PRIMARY KEY(trip_id,step_no)
+);
+CREATE TABLE family_outing_rewards (
+    trip_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    granted_at INTEGER NOT NULL CHECK(granted_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    FOREIGN KEY(user_id,trip_id) REFERENCES family_outing_runs(user_id,trip_id)
+);

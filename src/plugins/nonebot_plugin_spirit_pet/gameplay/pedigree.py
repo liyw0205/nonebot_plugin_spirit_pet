@@ -172,6 +172,7 @@ def _overview(ctx: Context, arg: str = "1") -> Reply:
         known += item_known
     lines.append(f"背包灵卵来源：未知 {unknown} 枚 · 可追溯 {known} 枚。")
     links.append(InlineCommand(len(lines) - 1, "亲子传习", "灵宠家族传习"))
+    links.append(InlineCommand(len(lines) - 1, "亲子伴游", "灵宠亲子伴游"))
     commands = (*page.navigation, "灵宠家族试炼", "灵宠列表", "灵宠培育", "灵宠背包")
     return Reply(f"灵宠谱系 {page.number}/{page.total}", tuple(lines), commands, tuple(links))
 

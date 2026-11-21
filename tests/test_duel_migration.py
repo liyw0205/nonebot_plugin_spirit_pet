@@ -65,12 +65,14 @@ def test_migrate_preserves_all_rows_uid_order_and_private_backup(tmp_path):
     assert after.pop("family_trial_rewards") == []
     for table in ("courses", "lessons", "exams", "graduations"):
         assert after.pop("family_tutelage_" + table) == []
+    for table in ("runs", "steps", "rewards"):
+        assert after.pop("family_outing_" + table) == []
     assert after == before
     backups = list(tmp_path.glob("*.schema27-backup-*.db"))
     assert len(backups) == 1 and backups[0].stat().st_mode & 0o777 == 0o600
     assert snapshot(Store(backups[0])) == before
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
         assert [tuple(row) for row in conn.execute("SELECT id,user_id FROM player_identity ORDER BY id")] == [(8,"z-first"),(21,"a-next")]

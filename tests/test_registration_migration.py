@@ -171,7 +171,7 @@ def schema33_store(tmp_path):
     return store
 
 
-def test_empty_database_initializes_schema37_anchor(tmp_path, monkeypatch):
+def test_empty_database_initializes_schema38_anchor(tmp_path, monkeypatch):
     store = Store(tmp_path / "empty.db")
     activation = 1_800_000_000
     monkeypatch.setattr(database.time, "time", lambda: activation)
@@ -179,7 +179,7 @@ def test_empty_database_initializes_schema37_anchor(tmp_path, monkeypatch):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {
             "wild_capture_runs", "wild_capture_attempts", "wild_survey_claims",
@@ -187,6 +187,7 @@ def test_empty_database_initializes_schema37_anchor(tmp_path, monkeypatch):
             "pet_pedigree_operations", "pet_lineage_eggs", "pet_pedigree_claims",
             "family_trial_runs", "family_trial_members", "family_trial_stages", "family_trial_rewards",
             "family_tutelage_courses", "family_tutelage_lessons", "family_tutelage_exams", "family_tutelage_graduations",
+            "family_outing_runs", "family_outing_steps", "family_outing_rewards",
         } <= tables
         week_start, _ = beijing_week(activation)
         expected_first = week_start if activation == week_start else week_start + 7 * 86_400
@@ -228,7 +229,7 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 38
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -259,7 +260,7 @@ def test_schema29_migration_preserves_legacy_race_records_and_initializes_anchor
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         anchor = conn.execute(
             "SELECT enabled_at, first_week_start FROM race_league_config WHERE singleton=1"
         ).fetchone()
@@ -291,7 +292,7 @@ def test_schema30_migration_adds_isolated_ledgers_and_preserves_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -351,7 +352,7 @@ def test_schema31_migration_adds_wild_capture_ledgers_and_preserves_player_state
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 38
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -406,7 +407,7 @@ def test_schema32_migration_preserves_wild_evidence_and_creates_verified_backups
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         assert tuple(conn.execute("SELECT * FROM wild_capture_runs").fetchone()) == original_run
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert conn.execute("SELECT COUNT(*) FROM wild_survey_claims").fetchone()[0] == 0
@@ -469,7 +470,7 @@ def test_schema33_migration_adds_isolated_habitat_ledgers_and_backup(tmp_path):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 38
         assert tuple(conn.execute("SELECT * FROM wild_capture_runs").fetchone()) == original_run
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert not conn.execute("SELECT * FROM wild_habitat_weeks").fetchall()
@@ -592,7 +593,7 @@ def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_p
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 37
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         assert [tuple(row) for row in conn.execute(
             "SELECT rowid,user_id,stones,active_pet_id,registered_at FROM players ORDER BY rowid"
         )] == original_players
