@@ -559,7 +559,6 @@ class Catalog:
         self._validate_wild_habitat_events()
         self._validate_pedigree_milestones()
         self._validate_family_trials()
-        self._validate_family_tutelage()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -727,6 +726,7 @@ class Catalog:
             raise ValueError("spirit_food must be a consumable")
         self._validate_progression()
         validate_battle_content(self)
+        self._validate_family_tutelage()
         self._validate_equipment_sets()
         self._validate_resonances()
         validate_crafting_content(self)
