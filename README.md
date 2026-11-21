@@ -135,7 +135,7 @@ xiupet start
 
 `xiupet update` 下载最新正式 Release 的 `project.tar.gz`（`https://github.com/liyw0205/nonebot_plugin_spirit_pet/releases/latest/download/project.tar.gz`），只替换程序文件，保留 `.env` 和 `data/`。
 
-默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 28；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，随后按顺序迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）和 28（斗法回合账本），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 28 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。使用 SQLite Online Backup API 做一致性备份和恢复，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
+默认数据库为 `data/spirit_pet/spirit_pet.db`。当前 schema 为 31；schema 18 会备份后补齐注册时间迁移到 19，schema 19 会备份后建立稳定 UID 映射迁移到 20，随后按顺序迁移到 21（派遣双线）、22（玩家集市）、23（灵宠信箱）、24（灵宠好友）、25（战报分享）、26（集市求购）、27（永久鱼篓）、28（斗法回合账本）、29（师门共修成员账本）、30（竞速联赛账本）和 31（师门共讨首领账本），玩家、灵宠、资源和进度都会保留。schema 1-17、高于 31 的版本及结构不匹配的非空库会拒绝启动，不会清空原文件。每一步迁移使用 SQLite Online Backup API 创建一致性备份，详见[配置与排错](https://github.com/liyw0205/nonebot_plugin_spirit_pet/blob/main/docs/CONFIGURATION.md)。
 
 ## 文档
 
