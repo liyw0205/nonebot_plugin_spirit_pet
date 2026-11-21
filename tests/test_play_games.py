@@ -334,10 +334,28 @@ def test_sight_board_and_objectives(game, play):
 
 def test_today_lists_remaining_outings(game, play):
     play("adopt", "青鸾", now=NOW)
-    today = play("today", now=NOW)
-    assert "出游还剩 1 只" in today.text()
+
+    def today_text(now):
+        pages = []
+        page_number = 1
+        while True:
+            page = play("today", str(page_number), now=now)
+            pages.append(page.text())
+            page_commands = [
+                command for command in page.commands
+                if command.startswith("灵宠今日 ")
+            ]
+            if not page_commands:
+                break
+            next_page = int(page_commands[0].rsplit(" ", 1)[1])
+            if next_page <= page_number:
+                break
+            page_number = next_page
+        return "\n".join(pages)
+
+    assert "出游还剩 1 只" in today_text(NOW)
     play("pet_outing", now=NOW + 1, op="out-today")
-    assert "出游还剩 1 只" not in play("today", now=NOW + 2).text()
+    assert "出游还剩 1 只" not in today_text(NOW + 2)
 
 
 def test_native_keyboard_clean_and_parse(game, play):
