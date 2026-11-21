@@ -318,6 +318,7 @@ def validate_schema38(conn: sqlite3.Connection, current_schema: str) -> None:
 
 
 def _without_family_duels(schema: str) -> str:
+    schema = _without_family_duel_league(schema)
     for table in ("runs", "rewards"):
         schema = re.sub(rf"CREATE TABLE family_duel_{table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in ("history", "reward_history"):
@@ -328,7 +329,23 @@ def _without_family_duels(schema: str) -> str:
 
 
 def validate_schema39(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 39, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, _without_family_duel_league(current_schema), 39, optional_indexes=RUNTIME_INDEXES)
+
+
+def _without_family_duel_league(schema: str) -> str:
+    for table in ("seasons", "entries", "runs", "claims"):
+        schema = re.sub(rf"CREATE TABLE family_duel_league_{table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in ("run_week", "claim_history"):
+        schema = re.sub(rf"CREATE INDEX family_duel_league_{index} [^;]*;\n", "", schema, count=1)
+    for trigger in ("entry_lineage", "run_match"):
+        schema = re.sub(rf"CREATE TRIGGER family_duel_league_{trigger}\s+[\s\S]*?END;\n", "", schema, count=1)
+    if "family_duel_league_" in schema:
+        raise RuntimeError("Could not reconstruct schema without family duel league definitions")
+    return schema
+
+
+def validate_schema40(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 40, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -379,6 +396,10 @@ def backup_schema38(path: Path) -> Path:
     return _backup_schema(path, 38)
 
 
+def backup_schema39(path: Path) -> Path:
+    return _backup_schema(path, 39)
+
+
 def migrate_family_outings(conn: sqlite3.Connection) -> None:
     schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
     patterns = [
@@ -402,6 +423,22 @@ def migrate_family_duels(conn: sqlite3.Connection) -> None:
         match = re.search(pattern, schema)
         if match is None:
             raise RuntimeError("Current schema is missing family duel definitions")
+        conn.execute(match.group(0))
+
+
+def migrate_family_duel_league(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    patterns = [
+        *(rf"CREATE TABLE family_duel_league_{table} \([\s\S]*?\n\);" for table in
+          ("seasons", "entries", "runs", "claims")),
+        *(rf"CREATE INDEX family_duel_league_{index} [^;]*;" for index in ("run_week", "claim_history")),
+        *(rf"CREATE TRIGGER family_duel_league_{trigger}\s+[\s\S]*?END;" for trigger in
+          ("entry_lineage", "run_match")),
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing family duel league definitions")
         conn.execute(match.group(0))
 
 

@@ -22,6 +22,8 @@ def schema34_store(path):
         conn.execute("INSERT INTO inventory(user_id,item_id,quantity) VALUES ('legacy','egg_qingluan',4)")
         conn.execute("PRAGMA foreign_keys=OFF")
         for table in (
+            "family_duel_league_claims", "family_duel_league_runs",
+            "family_duel_league_entries", "family_duel_league_seasons",
             "family_duel_rewards", "family_duel_runs",
             "family_outing_rewards", "family_outing_steps", "family_outing_runs",
             "family_tutelage_graduations", "family_tutelage_exams", "family_tutelage_lessons", "family_tutelage_courses",
@@ -55,6 +57,9 @@ def test_schema34_migration_preserves_unknown_egg_stock_and_creates_verified_bac
         assert not conn.execute("SELECT * FROM pet_lineage_eggs").fetchall()
         assert not conn.execute("SELECT * FROM pet_pedigree_operations").fetchall()
         assert not conn.execute("SELECT * FROM pet_pedigree_claims").fetchall()
+        for table in ("family_duel_league_seasons", "family_duel_league_entries",
+                      "family_duel_league_runs", "family_duel_league_claims"):
+            assert not conn.execute(f"SELECT * FROM {table}").fetchall()
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
 
@@ -66,6 +71,8 @@ def test_schema34_migration_preserves_unknown_egg_stock_and_creates_verified_bac
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
         )}
         assert not {"pet_lineage_eggs", "pet_pedigree_operations", "pet_pedigree_claims"} & tables
+        assert not {"family_duel_league_seasons", "family_duel_league_entries",
+                    "family_duel_league_runs", "family_duel_league_claims"} & tables
         assert conn.execute("SELECT quantity FROM inventory WHERE item_id='egg_qingluan'").fetchone()[0] == 4
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()

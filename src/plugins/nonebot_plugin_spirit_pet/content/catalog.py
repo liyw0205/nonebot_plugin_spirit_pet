@@ -78,7 +78,7 @@ from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.pedigree_content import PedigreeMilestone
 from ..domain.family_trial_content import FamilyTrial, FamilyTrialCatalog
-from ..domain.family_duel_content import FamilyDuel, FamilyDuelCatalog
+from ..domain.family_duel_content import FamilyDuel, FamilyDuelCatalog, FamilyDuelLeague
 from ..domain.family_tutelage_content import FamilyTutelageCatalog, FamilyTutelageCourse, FamilyTutelageRules
 from ..domain.family_outing_content import FamilyOutingCatalog
 from ..domain.fishing_content import FishingBait, FishingSpot
@@ -164,6 +164,7 @@ class Catalog:
     family_outings: FamilyOutingCatalog
     family_duels: dict[str, FamilyDuel]
     family_duel_rotation: tuple[str, ...]
+    family_duel_league: FamilyDuelLeague
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -302,6 +303,7 @@ class Catalog:
             family_outings=FamilyOutingCatalog.model_validate(_read(directory / "family_outings.json")),
             family_duels={duel.id: duel for duel in family_duel_catalog.duels},
             family_duel_rotation=tuple(family_duel_catalog.rotation),
+            family_duel_league=FamilyDuelLeague.model_validate(_read(directory / "family_duel_league.json")),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -976,6 +978,8 @@ class Catalog:
         for duel in self.family_duels.values():
             self._require([duel.min_realm], realm_ids, f"family duel {duel.id} realm")
             self._require(duel.enemies, self.enemies, f"family duel {duel.id} enemies")
+            if [rating.id for rating in duel.ratings] != [rating.id for rating in self.family_duel_league.ratings]:
+                raise ValueError("family duel league ratings must match each duel in rating order")
             reward_values = []
             for rating in duel.ratings:
                 reward = rating.reward
@@ -998,6 +1002,10 @@ class Catalog:
                 )
             if reward_values[1] <= reward_values[0]:
                 raise ValueError(f"family duel {duel.id} stricter rating must have a larger reward")
+        for prize in self.family_duel_league.prizes:
+            self._require(prize.items, self.items, "family duel league prize items")
+            if any(self.items[key].kind not in {"consumable", "material"} for key in prize.items):
+                raise ValueError("family duel league prizes must use consumables or materials")
 
     def _validate_family_tutelage(self) -> None:
         for course in self.family_tutelage.values():

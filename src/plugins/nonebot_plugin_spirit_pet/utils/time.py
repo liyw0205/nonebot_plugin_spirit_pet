@@ -2,6 +2,8 @@ import re
 from datetime import datetime, timedelta, timezone
 
 BEIJING = timezone(timedelta(hours=8))
+WEEK_SECONDS = 7 * 86400
+BEIJING_WEEK_EPOCH = 316800  # 1970-01-05, Monday 00:00 in Beijing
 
 
 def beijing_day(timestamp: int) -> str:

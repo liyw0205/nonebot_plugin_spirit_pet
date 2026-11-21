@@ -215,7 +215,8 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     if family_pending:
         pending.append(_entry(TODO, family_pending, "同一家族阵容连续作战，逐阶保留剩余气血", family_trial.TITLE))
     if duel_pending:
-        pending.append(_entry(TODO, duel_pending, "以真实直接亲子参加本周双宠协力战，胜利后按实战评级", family_duel.TITLE))
+        command = f"{family_duel.TITLE} 联赛 报名" if "联赛报名周" in duel_pending else family_duel.TITLE
+        pending.append(_entry(TODO, duel_pending, "以锁定真实直接亲子完成本周协力战，赛季按真实评级计分", command))
     if habitat_claim:
         claimable.append(_entry(CLAIM, habitat_claim, "查看并领取本周已解锁档位", wild_habitat.TITLE))
     elif habitat_pending:

@@ -11,6 +11,7 @@ from ..utils.energy import restore_energy
 from ..utils.pagination import paginate
 from ..utils.time import BEIJING, beijing_week
 from . import battle_pass
+from . import family_duel_league
 from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
@@ -27,7 +28,11 @@ PAGE_SIZE = 6
 
 
 def read_only(argument: str) -> bool:
-    return not argument.split() or argument.split()[0] in {"亲子", "预览", "记录", "详情"}
+    if argument.split()[:1] == ["联赛"]:
+        return family_duel_league.read_only(argument)
+    return (
+        not argument.split() or argument.split()[0] in {"亲子", "预览", "记录", "详情"}
+    )
 
 
 def _json(value) -> str:
@@ -48,9 +53,11 @@ def _week_index(start: int) -> int:
 
 def current_duel(ctx: Context, start: int | None = None):
     begin = week_start(ctx) if start is None else start
-    return ctx.content.family_duels[
-        ctx.content.family_duel_rotation[_week_index(begin) % len(ctx.content.family_duel_rotation)]
+    league_duel = family_duel_league.duel_id_for_week(ctx, begin)
+    duel_id = league_duel or ctx.content.family_duel_rotation[
+        _week_index(begin) % len(ctx.content.family_duel_rotation)
     ]
+    return ctx.content.family_duels[duel_id]
 
 
 def _pet(ctx: Context, number: int, user_id: str):
@@ -133,7 +140,7 @@ def overview(ctx: Context) -> Reply:
     start = week_start(ctx)
     duel = current_duel(ctx, start)
     row = _run(ctx, ctx.user_id, start)
-    commands = (f"{TITLE} 亲子", f"{TITLE} 记录", "灵宠谱系", "灵宠帮助 对战与赛季")
+    commands = (f"{TITLE} 亲子", f"{TITLE} 记录", "灵宠谱系", f"{TITLE} 联赛")
     if row is not None:
         reward = ctx.repo.conn.execute(
             "SELECT rating_id FROM family_duel_rewards WHERE run_id=?", (row["run_id"],),
@@ -163,11 +170,18 @@ def overview(ctx: Context) -> Reply:
 def pairs(ctx: Context, argument: str) -> Reply:
     ctx.player()
     entries = []
+    locked = family_duel_league.entry_for_week(ctx, week_start(ctx))
     for egg in ctx.repo.lineage_eggs(ctx.user_id):
         for parent_id in (int(egg["parent_a_id"]), int(egg["parent_b_id"])):
             try:
-                parent, child, _ = _eligible(ctx, parent_id, int(egg["child_pet_id"]))
+                parent, child, lineage = _eligible(ctx, parent_id, int(egg["child_pet_id"]))
             except GameError:
+                continue
+            if locked is not None and (
+                parent.pet_id != int(locked["parent_id"])
+                or child.pet_id != int(locked["child_id"])
+                or int(lineage["egg_record_id"]) != int(locked["egg_record_id"])
+            ):
                 continue
             entries.append((parent, child))
     page = paginate(entries, argument or "1", TITLE, f"{TITLE} 亲子", PAGE_SIZE)
@@ -191,6 +205,13 @@ def preview(ctx: Context, parts: list[str]) -> Reply:
     if len(parts) == 3 and parts[2] != str(start):
         raise GameError("预览入口已跨周，请重新查看本周亲子合战。")
     parent, child, egg = _eligible(ctx, pet_id(parts[0]), pet_id(parts[1]))
+    league_entry = family_duel_league.entry_for_week(ctx, start)
+    if league_entry is not None and (
+        int(league_entry["parent_id"]) != parent.pet_id
+        or int(league_entry["child_id"]) != child.pet_id
+        or int(league_entry["egg_record_id"]) != int(egg["egg_record_id"])
+    ):
+        raise GameError("本赛季只能预览报名时锁定的亲子组合。")
     duel = current_duel(ctx, start)
     minimum = next(index for index, realm in enumerate(ctx.content.realms) if realm.id == duel.min_realm)
     lines = [f"{duel.name} · {parent.name}（#{parent.pet_id}）与{child.name}（#{child.pet_id}）",
@@ -220,7 +241,16 @@ def challenge(ctx: Context, parts: list[str]) -> Reply:
     if len(parts) != 3 or parts[0] != str(week_start(ctx)):
         raise GameError("挑战入口已过期，请重新预览本周亲子合战。")
     start = int(parts[0])
+    family_duel_league.finalize_ended(ctx)
     parent, child, egg = _eligible(ctx, pet_id(parts[1]), pet_id(parts[2]))
+    league_entry = family_duel_league.entry_for_week(ctx, start)
+    if league_entry is not None:
+        if ctx.now < int(league_entry["registered_at"]):
+            raise GameError("系统时间早于联赛报名，请等待时钟恢复。")
+        if (int(league_entry["parent_id"]), int(league_entry["child_id"])) != (
+            pet_id(parts[1]), pet_id(parts[2]),
+        ) or int(league_entry["egg_record_id"]) != int(egg["egg_record_id"]):
+            raise GameError("本赛季只能使用报名时锁定的亲子组合与孵化凭证。")
     if _run(ctx, ctx.user_id, start) is not None:
         raise GameError("本周亲子合战名额已使用；失败也不返还。")
     duel = current_duel(ctx, start)
@@ -313,6 +343,7 @@ def challenge(ctx: Context, parts: list[str]) -> Reply:
          ctx.operation_id, battle_id, outcome, rating.id if rating else None, battle.rounds,
          _json(battle.remaining_hp), _json(skill_uses), ctx.now, _json(snapshot), _json(asdict(reply))),
     )
+    family_duel_league.record_run(ctx, start, run_id)
     if rating is not None and reward_snapshot is not None:
         ctx.repo.conn.execute(
             "INSERT INTO family_duel_rewards(run_id,user_id,operation_id,rating_id,granted_at,reward_snapshot) "
@@ -368,6 +399,8 @@ def dispatch(ctx: Context, argument: str) -> Reply:
     parts = argument.split()
     if not parts:
         return overview(ctx)
+    if parts[0] == "联赛":
+        return family_duel_league.dispatch(ctx, " ".join(parts[1:]))
     if parts[0] == "亲子" and len(parts) <= 2:
         return pairs(ctx, parts[1] if len(parts) == 2 else "1")
     if parts[0] == "预览":
@@ -384,12 +417,12 @@ def dispatch(ctx: Context, argument: str) -> Reply:
 def objective_line(ctx: Context, user_id: str) -> str:
     row = _run(ctx, user_id, week_start(ctx))
     if row is not None:
-        return f"亲子合战：{_outcome_label(row['outcome'])} · 本周已参战"
-    return f"亲子合战：本周 {current_duel(ctx).name} 尚未参战"
+        return f"亲子合战：{_outcome_label(row['outcome'])} · 本周已参战；{family_duel_league.objective_line(ctx, user_id)}"
+    return f"亲子合战：本周 {current_duel(ctx).name} 尚未参战；{family_duel_league.objective_line(ctx, user_id)}"
 
 
 def today_state(ctx: Context, user_id: str) -> str | None:
     row = _run(ctx, user_id, week_start(ctx))
     if row is not None:
-        return None
-    return objective_line(ctx, user_id)
+        return family_duel_league.today_state(ctx, user_id)
+    return family_duel_league.today_state(ctx, user_id) or objective_line(ctx, user_id)

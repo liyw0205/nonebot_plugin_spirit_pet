@@ -88,6 +88,19 @@ def test_sect_community_thresholds_must_ascend(content_dir, field):
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("change", [
+    lambda data: data["ratings"].__setitem__(1, {"id": "concord", "points": 5}),
+    lambda data: data["ratings"][1].__setitem__("points", data["ratings"][0]["points"]),
+    lambda data: data["prizes"][0]["items"].__setitem__("ghost_item", 1),
+    lambda data: data.__setitem__("first_season_start", data["first_season_start"] + 604800),
+    lambda data: data["prizes"][0]["items"].__setitem__("exp_pill", 0),
+])
+def test_family_duel_league_rejects_invalid_rules_and_rewards(content_dir, change):
+    edit(content_dir, "family_duel_league.json", change)
+    with pytest.raises((ValidationError, ValueError)):
+        Catalog.load(content_dir)
+
+
 def test_sect_community_rewards_must_reference_real_items(content_dir):
     def change(data):
         data["sect"]["community_tiers"][0]["reward"]["items"]["missing_item"] = {

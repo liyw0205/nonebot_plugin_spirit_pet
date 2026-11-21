@@ -36,11 +36,12 @@ def test_schema38_backup_and_upgrade_add_only_isolated_duel_tables(tmp_path):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 39
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 40
         after = _old_data(conn)
         assert {key: after[key] for key in before} == before
         assert conn.execute("SELECT COUNT(*) FROM family_duel_runs").fetchone()[0] == 0
         assert conn.execute("SELECT COUNT(*) FROM family_duel_rewards").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM family_duel_league_seasons").fetchone()[0] == 0
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
     backups = list(tmp_path.glob("schema38.db.schema38-backup-*.db"))
@@ -48,6 +49,14 @@ def test_schema38_backup_and_upgrade_add_only_isolated_duel_tables(tmp_path):
     with closing(sqlite3.connect(backups[0])) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
         assert "family_duel_runs" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+    second_backups = list(tmp_path.glob("schema38.db.schema39-backup-*.db"))
+    assert len(second_backups) == 1
+    with closing(sqlite3.connect(second_backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 39
+        assert conn.execute("SELECT COUNT(*) FROM family_duel_runs").fetchone()[0] == 0
+        assert "family_duel_league_seasons" not in {
             row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
 

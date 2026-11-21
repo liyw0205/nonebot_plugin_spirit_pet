@@ -174,6 +174,7 @@ def _overview(ctx: Context, arg: str = "1") -> Reply:
     links.append(InlineCommand(len(lines) - 1, "亲子传习", "灵宠家族传习"))
     links.append(InlineCommand(len(lines) - 1, "亲子伴游", "灵宠亲子伴游"))
     links.append(InlineCommand(len(lines) - 1, "亲子合战", "灵宠亲子合战"))
+    links.append(InlineCommand(len(lines) - 1, "三周联赛", "灵宠亲子合战 联赛"))
     commands = (*page.navigation, "灵宠家族试炼", "灵宠列表", "灵宠培育", "灵宠背包")
     return Reply(f"灵宠谱系 {page.number}/{page.total}", tuple(lines), commands, tuple(links))
 

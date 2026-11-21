@@ -2,7 +2,15 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
+from ..utils.time import BEIJING_WEEK_EPOCH, WEEK_SECONDS, beijing_week
 from .content import Definition, Identifier, Name, Reward
+
+LEAGUE_SECONDS = 3 * WEEK_SECONDS
+
+
+def league_start(timestamp: int) -> int:
+    week = beijing_week(timestamp)[0]
+    return week - (week - BEIJING_WEEK_EPOCH) % LEAGUE_SECONDS
 
 
 class FamilyDuelRating(Definition):
@@ -58,4 +66,47 @@ class FamilyDuelCatalog(Definition):
             raise ValueError("family duels must have unique ids and names")
         if len(set(self.rotation)) != len(self.rotation) or set(self.rotation) != set(ids):
             raise ValueError("family duel rotation must cover every duel exactly once")
+        return self
+
+
+class LeagueRating(Definition):
+    id: Identifier
+    name: Name
+    points: Annotated[int, Field(ge=0, le=100)]
+
+
+class LeaguePrize(Definition):
+    rank: Annotated[int, Field(ge=1, le=3)]
+    stones: Annotated[int, Field(ge=0, le=2_000)]
+    items: dict[Identifier, Annotated[int, Field(ge=1, le=10)]] = Field(max_length=3)
+
+    @model_validator(mode="after")
+    def check_amount(self):
+        if not 0 < self.stones + sum(self.items.values()) <= 2_000:
+            raise ValueError("family duel league prize must be nonempty and within limits")
+        return self
+
+
+class FamilyDuelLeague(Definition):
+    first_season_start: Annotated[int, Field(ge=316800)]
+    weeks: Literal[3]
+    registration_weeks: Literal[1]
+    minimum_matches: Annotated[int, Field(ge=1, le=3)]
+    minimum_finishers: Literal[2]
+    claim_weeks: Literal[3]
+    tie_break: Literal["points_high_ratings_wins_matches_uid"]
+    ratings: list[LeagueRating] = Field(min_length=2, max_length=2)
+    prizes: list[LeaguePrize] = Field(min_length=3, max_length=3)
+
+    @model_validator(mode="after")
+    def check_rules(self):
+        low, high = self.ratings
+        if low.id == high.id or low.name == high.name or low.points >= high.points:
+            raise ValueError("family duel league rating ids must be unique and points increasing")
+        if [prize.rank for prize in self.prizes] != [1, 2, 3]:
+            raise ValueError("family duel league prizes must cover ranks 1, 2, 3 in order")
+        if self.first_season_start % WEEK_SECONDS != BEIJING_WEEK_EPOCH % WEEK_SECONDS or (
+            self.first_season_start - BEIJING_WEEK_EPOCH
+        ) % LEAGUE_SECONDS:
+            raise ValueError("family duel league first season must align to a three-week Beijing rotation")
         return self

@@ -778,3 +778,66 @@ CREATE TABLE family_duel_rewards (
     FOREIGN KEY(user_id,run_id) REFERENCES family_duel_runs(user_id,run_id) ON DELETE CASCADE
 );
 CREATE INDEX family_duel_reward_history ON family_duel_rewards(user_id,granted_at DESC);
+CREATE TABLE family_duel_league_seasons (
+    season_start INTEGER PRIMARY KEY CHECK(season_start>=316800 AND (season_start-316800)%1814400=0),
+    ends_at INTEGER NOT NULL CHECK(ends_at=season_start+1814400),
+    created_at INTEGER NOT NULL CHECK(created_at>=season_start AND created_at<season_start+604800),
+    snapshot TEXT NOT NULL,
+    finalized_at INTEGER CHECK(finalized_at IS NULL OR finalized_at>=ends_at)
+);
+CREATE TABLE family_duel_league_entries (
+    season_start INTEGER NOT NULL REFERENCES family_duel_league_seasons(season_start),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    parent_id INTEGER NOT NULL,
+    child_id INTEGER NOT NULL CHECK(child_id<>parent_id),
+    egg_record_id INTEGER NOT NULL REFERENCES pet_lineage_eggs(egg_record_id),
+    registered_at INTEGER NOT NULL CHECK(registered_at>=season_start AND registered_at<season_start+604800),
+    PRIMARY KEY(season_start,user_id),
+    FOREIGN KEY(user_id,parent_id) REFERENCES pets(user_id,pet_id),
+    FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id)
+);
+CREATE TABLE family_duel_league_runs (
+    season_start INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    week_start INTEGER NOT NULL CHECK(week_start>=season_start AND week_start<season_start+1814400),
+    run_id TEXT NOT NULL UNIQUE,
+    PRIMARY KEY(season_start,user_id,week_start),
+    FOREIGN KEY(season_start,user_id) REFERENCES family_duel_league_entries(season_start,user_id),
+    FOREIGN KEY(user_id,run_id) REFERENCES family_duel_runs(user_id,run_id)
+);
+CREATE INDEX family_duel_league_run_week ON family_duel_league_runs(season_start,week_start,user_id);
+CREATE TABLE family_duel_league_claims (
+    season_start INTEGER NOT NULL REFERENCES family_duel_league_seasons(season_start),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    rank INTEGER NOT NULL CHECK(rank BETWEEN 1 AND 3),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    PRIMARY KEY(season_start,user_id),
+    FOREIGN KEY(season_start,user_id) REFERENCES family_duel_league_entries(season_start,user_id)
+);
+CREATE INDEX family_duel_league_claim_history ON family_duel_league_claims(user_id,claimed_at DESC);
+CREATE TRIGGER family_duel_league_entry_lineage
+BEFORE INSERT ON family_duel_league_entries
+WHEN NOT EXISTS (
+    SELECT 1 FROM pet_lineage_eggs egg
+    WHERE egg.egg_record_id=NEW.egg_record_id AND egg.user_id=NEW.user_id
+        AND egg.status='hatched' AND egg.child_pet_id=NEW.child_id
+        AND (egg.parent_a_id=NEW.parent_id OR egg.parent_b_id=NEW.parent_id)
+)
+BEGIN
+    SELECT RAISE(ABORT,'invalid family duel league lineage');
+END;
+CREATE TRIGGER family_duel_league_run_match
+BEFORE INSERT ON family_duel_league_runs
+WHEN NOT EXISTS (
+    SELECT 1 FROM family_duel_runs run
+    JOIN family_duel_league_entries entry
+      ON entry.season_start=NEW.season_start AND entry.user_id=NEW.user_id
+    WHERE run.run_id=NEW.run_id AND run.user_id=NEW.user_id AND run.week_start=NEW.week_start
+        AND run.parent_id=entry.parent_id AND run.child_id=entry.child_id
+        AND run.egg_record_id=entry.egg_record_id
+)
+BEGIN
+    SELECT RAISE(ABORT,'family duel league run does not match locked entry');
+END;

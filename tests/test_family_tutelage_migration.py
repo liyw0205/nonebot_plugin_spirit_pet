@@ -39,6 +39,9 @@ def test_schema36_verified_backup_and_atomic_migration_preserve_every_old_value(
         assert after.pop("family_outing_" + name) == []
     assert after.pop("family_duel_runs") == []
     assert after.pop("family_duel_rewards") == []
+    for table in ("family_duel_league_seasons", "family_duel_league_entries",
+                  "family_duel_league_runs", "family_duel_league_claims"):
+        assert after.pop(table) == []
     assert before == after
     with closing(store.connect()) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION

@@ -1,0 +1,18 @@
+{
+  "first_season_start": 1796572800,
+  "weeks": 3,
+  "registration_weeks": 1,
+  "minimum_matches": 2,
+  "minimum_finishers": 2,
+  "claim_weeks": 3,
+  "tie_break": "points_high_ratings_wins_matches_uid",
+  "ratings": [
+    {"id": "concord", "name": "同心破阵", "points": 3},
+    {"id": "twin_star", "name": "双契凯旋", "points": 5}
+  ],
+  "prizes": [
+    {"rank": 1, "stones": 600, "items": {"exp_pill": 2}},
+    {"rank": 2, "stones": 400, "items": {"exp_pill": 1}},
+    {"rank": 3, "stones": 250, "items": {}}
+  ]
+}
