@@ -54,3 +54,28 @@ def test_public_numbered_exploration_uses_shared_settlement_and_replay(game, pla
         {"energy": 100, "exp": 0}, {"energy": 75, "exp": 25},
     ]
     assert len(sql(game[1], "SELECT * FROM battle_records")) == 1
+
+
+@pytest.mark.parametrize("adapter", ["QQ", "OneBot V11"])
+def test_pedigree_entry_runs_through_shared_adapter_handler(game, play, monkeypatch, adapter):
+    monkeypatch.setattr(handlers, "game", game[0])
+    monkeypatch.setattr(handlers, "config", Config(spirit_pet_command_prefix="!", spirit_pet_qq_mode="native"))
+    monkeypatch.setattr("nonebot_plugin_spirit_pet.application.game.time.time", lambda: NOW)
+    play("adopt", "青鸾", user="12345")
+    event = (
+        qq_event(text="!灵宠谱系", message_id=f"pedigree-{adapter}")
+        if adapter == "QQ" else onebot_event("!灵宠谱系")
+    )
+    bot = SimpleNamespace(
+        self_id="9000", adapter=SimpleNamespace(get_name=lambda: adapter), send=AsyncMock(),
+    )
+
+    asyncio.run(handlers.handle_command(bot, event, event.get_message()))
+
+    assert bot.send.await_count == 1
+    sent = bot.send.call_args.args[1]
+    if adapter == "QQ":
+        assert sent["markdown"][0].data["markdown"].content
+    else:
+        assert "【灵宠谱系 1/1】" in sent
+    assert handlers._parse("!灵宠谱系") == ("pedigree", "")

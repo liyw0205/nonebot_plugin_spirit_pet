@@ -51,6 +51,7 @@ from . import (
     friend_relay,
     wild_capture,
     wild_habitat,
+    pedigree,
 )
 
 TITLE = "灵宠今日"
@@ -76,6 +77,11 @@ def _milestones(ctx: Context, user_id: str) -> list[dict]:
             found.append(_entry(
                 CLAIM, f"{name}奖励 {len(rewards)} 项可领", "打开对应页面领取", command,
             ))
+    rewards = pedigree.claimable(ctx, user_id)
+    if rewards:
+        found.append(_entry(
+            CLAIM, f"家族里程碑 {len(rewards)} 项可领", "同一已知家族已达到成员和世代门槛", "灵宠谱系",
+        ))
     return found
 
 

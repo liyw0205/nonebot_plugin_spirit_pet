@@ -99,7 +99,10 @@ def status(ctx: Context, arg: str) -> Reply:
         "进阶",
         breakthrough, evolve_line,
     ]
-    return Reply(pet.name, tuple(lines), commands)
+    lines.append("家族：可查看该伙伴的双亲、祖辈与已知后代；无法证明的来源保持未知。")
+    return Reply(pet.name, tuple(lines), commands, (
+        InlineCommand(len(lines) - 1, "查看谱系", f"灵宠谱系 {pet.pet_id}"),
+    ))
 
 def catalog(ctx: Context, arg: str) -> Reply:
     parts = arg.split(maxsplit=1)

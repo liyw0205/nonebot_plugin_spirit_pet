@@ -235,7 +235,22 @@ def validate_schema33(conn: sqlite3.Connection, current_schema: str) -> None:
     _validate_schema(conn, _without_wild_habitat(current_schema), 33, optional_indexes=RUNTIME_INDEXES)
 
 
+def _without_pedigree(schema: str) -> str:
+    for table in ("pet_pedigree_operations", "pet_lineage_eggs", "pet_pedigree_claims"):
+        schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
+    for index in (
+        "pet_pedigree_operation_history", "pet_lineage_egg_inventory", "pet_lineage_egg_reservation",
+        "pet_lineage_child_unique",
+        "pet_lineage_parent_a", "pet_lineage_parent_b", "pet_pedigree_claim_history",
+    ):
+        schema = re.sub(rf"CREATE (?:UNIQUE )?INDEX {index} [^;]*;\n", "", schema, count=1)
+    if "pet_pedigree_" in schema or "pet_lineage_" in schema:
+        raise RuntimeError("Could not reconstruct schema without pedigree definitions")
+    return schema
+
+
 def _without_wild_habitat(schema: str) -> str:
+    schema = _without_pedigree(schema)
     for table in ("wild_habitat_weeks", "wild_habitat_contributions", "wild_habitat_claims"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in ("wild_habitat_contribution_progress", "wild_habitat_claim_history"):
@@ -246,7 +261,11 @@ def _without_wild_habitat(schema: str) -> str:
 
 
 def validate_schema34(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 34, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, _without_pedigree(current_schema), 34, optional_indexes=RUNTIME_INDEXES)
+
+
+def validate_schema35(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 35, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -277,6 +296,10 @@ def backup_schema33(path: Path) -> Path:
     return _backup_schema(path, 33)
 
 
+def backup_schema34(path: Path) -> Path:
+    return _backup_schema(path, 34)
+
+
 def migrate_wild_survey_claims(conn: sqlite3.Connection) -> None:
     schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
     for pattern in (
@@ -301,6 +324,26 @@ def migrate_wild_habitat(conn: sqlite3.Connection) -> None:
         match = re.search(pattern, schema)
         if match is None:
             raise RuntimeError("Current schema is missing wild habitat definitions")
+        conn.execute(match.group(0))
+
+
+def migrate_pedigree(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE pet_pedigree_operations \([\s\S]*?\n\);",
+        r"CREATE INDEX pet_pedigree_operation_history [^;]*;",
+        r"CREATE TABLE pet_lineage_eggs \([\s\S]*?\n\);",
+        r"CREATE INDEX pet_lineage_egg_inventory [^;]*;",
+        r"CREATE UNIQUE INDEX pet_lineage_egg_reservation [^;]*;",
+        r"CREATE UNIQUE INDEX pet_lineage_child_unique [^;]*;",
+        r"CREATE INDEX pet_lineage_parent_a [^;]*;",
+        r"CREATE INDEX pet_lineage_parent_b [^;]*;",
+        r"CREATE TABLE pet_pedigree_claims \([\s\S]*?\n\);",
+        r"CREATE INDEX pet_pedigree_claim_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing pedigree definitions")
         conn.execute(match.group(0))
 
 

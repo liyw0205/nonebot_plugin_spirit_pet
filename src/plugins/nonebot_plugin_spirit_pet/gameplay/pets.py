@@ -110,6 +110,7 @@ def pet_list(ctx: Context, arg: str) -> Reply:
             inline_commands.append(InlineCommand(len(lines) - 1, "切换领队", f"灵宠切换 {pet.pet_id}"))
         else:
             inline_commands.append(InlineCommand(len(lines) - 1, "查看整备", f"灵宠整备 {pet.pet_id}"))
+        inline_commands.append(InlineCommand(len(lines) - 1, "查看谱系", f"灵宠谱系 {pet.pet_id}"))
     co_training_partner = available_co_training_partner(ctx, expeditions, {pet.pet_id for pet in selected})
     if co_training_partner is not None:
         lines.append(f"同族合修可用：{co_training_partner.name}（编号 {co_training_partner.pet_id}）。")

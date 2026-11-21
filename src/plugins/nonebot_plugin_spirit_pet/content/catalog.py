@@ -76,6 +76,7 @@ from ..domain.world_boss_rank_reward_content import WorldBossRankReward
 from ..domain.wild_capture_content import WildCaptureRules
 from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.wild_habitat_content import WildHabitatEvent
+from ..domain.pedigree_content import PedigreeMilestone
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -151,6 +152,7 @@ class Catalog:
     wild_capture: WildCaptureRules
     wild_surveys: dict[str, WildSurveyRoute]
     wild_habitat_events: dict[str, WildHabitatEvent]
+    pedigree_milestones: dict[str, PedigreeMilestone]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -278,6 +280,7 @@ class Catalog:
             wild_capture=WildCaptureRules.model_validate(_read(directory / "wild_captures.json")),
             wild_surveys=_index(directory / "wild_surveys.json", WildSurveyRoute, "route"),
             wild_habitat_events=_index(directory / "wild_habitat_events.json", WildHabitatEvent),
+            pedigree_milestones=_index(directory / "pedigree_milestones.json", PedigreeMilestone),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -542,6 +545,7 @@ class Catalog:
         self._validate_wild_captures()
         self._validate_wild_surveys()
         self._validate_wild_habitat_events()
+        self._validate_pedigree_milestones()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -886,6 +890,28 @@ class Catalog:
                         )
             if previous_pairs != event.goal_pairs:
                 raise ValueError(f"wild habitat event {event.id} goal must equal its final milestone")
+
+    def _validate_pedigree_milestones(self) -> None:
+        if not self.pedigree_milestones or len(self.pedigree_milestones) > 10:
+            raise ValueError("pedigree milestones must contain 1-10 entries")
+        previous_generation = 0
+        previous_members = 2
+        for milestone in self.pedigree_milestones.values():
+            if (milestone.minimum_generation <= previous_generation
+                    or milestone.minimum_members <= previous_members
+                    or milestone.minimum_members < milestone.minimum_generation + 2):
+                raise ValueError("pedigree milestones must strictly increase")
+            previous_generation = milestone.minimum_generation
+            previous_members = milestone.minimum_members
+            reward = milestone.reward
+            if reward.stones == 0 and not reward.items:
+                raise ValueError(f"pedigree milestone {milestone.id} has an empty reward")
+            if reward.stones + sum(reward.items.values()) > 10_000:
+                raise ValueError(f"pedigree milestone {milestone.id} reward exceeds limit")
+            self._require(reward.items, self.items, f"pedigree milestone {milestone.id} reward items")
+            for item_id in reward.items:
+                if self.items[item_id].kind not in {"consumable", "material"}:
+                    raise ValueError(f"pedigree reward item {item_id} must be consumable or material")
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

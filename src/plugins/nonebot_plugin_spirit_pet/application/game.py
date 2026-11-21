@@ -8,6 +8,7 @@ from ..core.config import Config
 from ..domain.models import GameError, Reply
 from ..gameplay import wild_capture
 from ..gameplay import wild_habitat
+from ..gameplay import pedigree
 from ..storage.database import Store
 from ..storage.repository import Repository
 from .commands import ACTIONS
@@ -140,6 +141,8 @@ class Game:
             action == "wild_capture" and wild_capture.read_only(argument)
         ) or (
             action == "wild_habitat" and wild_habitat.read_only(argument)
+        ) or (
+            action == "pedigree" and pedigree.read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

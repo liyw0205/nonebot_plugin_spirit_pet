@@ -30,6 +30,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "cuisine_coop": 16,
     "friend_relay": 15,
     "wild_survey_claim": 17,
+    "pedigree": 18,
 }
 
 
@@ -124,6 +125,149 @@ class Repository:
             (user_id, species_id, name, affinity, now),
         )
         return self.pet(cursor.lastrowid)
+
+    def record_pedigree_operation(
+        self, operation_id: str, user_id: str, kind: str, created_at: int,
+        snapshot: dict, reply: Reply,
+    ) -> None:
+        if kind not in {"breed", "hatch", "milestone_claim"}:
+            raise ValueError("invalid pedigree operation kind")
+        self.conn.execute(
+            "INSERT INTO pet_pedigree_operations(operation_id,user_id,kind,created_at,snapshot,reply) "
+            "VALUES (?,?,?,?,?,?)",
+            (operation_id, user_id, kind, created_at, json.dumps(snapshot, ensure_ascii=False),
+             json.dumps(asdict(reply), ensure_ascii=False)),
+        )
+
+    def record_lineage_egg(
+        self, *, user_id: str, item_id: str, species_id: str, parent_a_id: int,
+        parent_a_name: str, parent_b_id: int, parent_b_name: str, operation_id: str,
+        created_at: int,
+    ) -> int:
+        parents = self.conn.execute(
+            "SELECT pet_id,user_id,species_id FROM pets WHERE pet_id IN (?,?)",
+            (parent_a_id, parent_b_id),
+        ).fetchall()
+        if len(parents) != 2 or any(
+            row["user_id"] != user_id or row["species_id"] != species_id for row in parents
+        ):
+            raise GameError("灵卵亲本凭证与当前灵宠不一致。")
+        cursor = self.conn.execute(
+            "INSERT INTO pet_lineage_eggs(user_id,item_id,species_id,parent_a_id,parent_a_name,"
+            "parent_a_species_id,parent_b_id,parent_b_name,parent_b_species_id,operation_id,status,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,'available',?)",
+            (user_id, item_id, species_id, parent_a_id, parent_a_name, species_id,
+             parent_b_id, parent_b_name, species_id, operation_id, created_at),
+        )
+        return int(cursor.lastrowid)
+
+    def _pet_egg_quantity(self, user_id: str, item_id: str) -> int:
+        row = self.conn.execute(
+            "SELECT quantity FROM inventory WHERE user_id=? AND item_id=?", (user_id, item_id),
+        ).fetchone()
+        return int(row["quantity"]) if row else 0
+
+    def consume_pet_eggs(self, user_id: str, item_id: str, amount: int, now: int) -> list[int | None]:
+        """Consume unknown-source eggs first, then known lineage eggs in FIFO order."""
+        if amount <= 0:
+            raise ValueError("pet egg amount must be positive")
+        quantity = self._pet_egg_quantity(user_id, item_id)
+        if quantity < amount:
+            raise GameError("道具数量不足。")
+        available = self.conn.execute(
+            "SELECT egg_record_id FROM pet_lineage_eggs "
+            "WHERE user_id=? AND item_id=? AND status='available' ORDER BY egg_record_id",
+            (user_id, item_id),
+        ).fetchall()
+        unknown = quantity - len(available)
+        if unknown < 0:
+            raise RuntimeError("available lineage eggs exceed inventory quantity")
+        unknown_to_consume = min(amount, unknown)
+        known_to_consume = amount - unknown_to_consume
+        selected = [int(row["egg_record_id"]) for row in available[:known_to_consume]]
+        if len(selected) != known_to_consume:
+            raise RuntimeError("lineage egg inventory is inconsistent")
+        self.consume_item(user_id, item_id, amount)
+        if selected:
+            updated = self.conn.execute(
+                "UPDATE pet_lineage_eggs SET status='consumed',finished_at=? "
+                "WHERE status='available' AND egg_record_id IN ("
+                + ",".join("?" for _ in selected) + ")",
+                (now, *selected),
+            )
+            if updated.rowcount != len(selected):
+                raise RuntimeError("lineage egg inventory changed during consumption")
+        return [None] * unknown_to_consume + selected
+
+    def reserve_pet_egg(self, user_id: str, item_id: str, reservation_id: str, now: int) -> int | None:
+        selected = self.consume_pet_eggs(user_id, item_id, 1, now)[0]
+        if selected is None:
+            return None
+        updated = self.conn.execute(
+            "UPDATE pet_lineage_eggs SET status='reserved',reservation_id=?,finished_at=NULL "
+            "WHERE egg_record_id=? AND user_id=? AND status='consumed'",
+            (reservation_id, selected, user_id),
+        )
+        if updated.rowcount != 1:
+            raise RuntimeError("could not reserve lineage egg")
+        return selected
+
+    def return_reserved_pet_egg(self, user_id: str, egg_record_id: int) -> None:
+        updated = self.conn.execute(
+            "UPDATE pet_lineage_eggs SET status='available',reservation_id=NULL "
+            "WHERE egg_record_id=? AND user_id=? AND status='reserved'",
+            (egg_record_id, user_id),
+        )
+        if updated.rowcount != 1:
+            raise RuntimeError("could not return reserved lineage egg")
+
+    def hatch_lineage_egg(
+        self, user_id: str, egg_record_id: int, child_pet_id: int, child_name: str,
+        finished_at: int, *, reservation_id: str | None = None,
+    ) -> None:
+        egg = self.conn.execute(
+            "SELECT species_id FROM pet_lineage_eggs WHERE egg_record_id=? AND user_id=?",
+            (egg_record_id, user_id),
+        ).fetchone()
+        child = self.conn.execute(
+            "SELECT user_id,species_id FROM pets WHERE pet_id=?", (child_pet_id,),
+        ).fetchone()
+        if egg is None or child is None or child["user_id"] != user_id or child["species_id"] != egg["species_id"]:
+            raise RuntimeError("lineage egg and child ownership or species mismatch")
+        if reservation_id is None:
+            updated = self.conn.execute(
+                "UPDATE pet_lineage_eggs SET status='hatched',child_pet_id=?,child_name=?,finished_at=? "
+                "WHERE egg_record_id=? AND user_id=? AND status='consumed'",
+                (child_pet_id, child_name, finished_at, egg_record_id, user_id),
+            )
+        else:
+            updated = self.conn.execute(
+                "UPDATE pet_lineage_eggs SET status='hatched',reservation_id=NULL,child_pet_id=?,"
+                "child_name=?,finished_at=? WHERE egg_record_id=? AND user_id=? AND status='reserved' "
+                "AND reservation_id=?",
+                (child_pet_id, child_name, finished_at, egg_record_id, user_id, reservation_id),
+            )
+        if updated.rowcount != 1:
+            raise RuntimeError("could not hatch lineage egg")
+
+    def egg_source_counts(self, user_id: str, item_id: str) -> tuple[int, int]:
+        quantity = self._pet_egg_quantity(user_id, item_id)
+        row = self.conn.execute(
+            "SELECT COUNT(*) FROM pet_lineage_eggs "
+            "WHERE user_id=? AND item_id=? AND status='available'",
+            (user_id, item_id),
+        ).fetchone()
+        known = int(row[0])
+        if known > quantity:
+            raise RuntimeError("available lineage eggs exceed inventory quantity")
+        return quantity - known, known
+
+    def lineage_eggs(self, user_id: str) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            "SELECT * FROM pet_lineage_eggs WHERE user_id=? AND status='hatched' "
+            "ORDER BY child_pet_id",
+            (user_id,),
+        ).fetchall()
 
     def active_pets(self, user_id: str) -> list[Pet]:
         """Return the persisted battle roster, with a safe legacy fallback."""
@@ -356,11 +500,11 @@ class Repository:
     def special_operation(self, operation_id: str) -> tuple[str, str, dict] | None:
         """Find a durable replay in one indexed round trip.
 
-        Special receipts historically lived in three tables and were checked
-        one by one by ``Game.execute``.  Keep that lookup order, including
+        Durable special receipts live in four tables and were checked one by
+        one by ``Game.execute``. Keep that lookup order, including
         collisions across tables, while fetching at most one row per table.
         ``operation_id`` is unique in each table, so the candidate set is
-        bounded to three rows.
+        bounded to four rows.
         """
         rows = self.conn.execute(
             "SELECT /* special-replay */ source, user_id, snapshot, reply FROM ("
@@ -370,9 +514,12 @@ class Repository:
             "FROM battle_records WHERE operation_id=? "
             "UNION ALL "
             "SELECT 'fishing' AS source, user_id, snapshot, reply "
-            "FROM fishing_casts WHERE operation_id=?"
+            "FROM fishing_casts WHERE operation_id=? "
+            "UNION ALL "
+            "SELECT 'pedigree' AS source, user_id, snapshot, reply "
+            "FROM pet_pedigree_operations WHERE operation_id=?"
             ")",
-            (operation_id, operation_id, operation_id),
+            (operation_id, operation_id, operation_id, operation_id),
         ).fetchall()
         if not rows:
             return None
@@ -386,6 +533,9 @@ class Repository:
             elif source == "fishing":
                 kind = "fishing"
                 priority = 17
+            elif source == "pedigree":
+                kind = "pedigree"
+                priority = _SPECIAL_REPLAY_PRIORITIES[kind]
             else:
                 snapshot = json.loads(row["snapshot"])
                 kind = snapshot.get("kind")

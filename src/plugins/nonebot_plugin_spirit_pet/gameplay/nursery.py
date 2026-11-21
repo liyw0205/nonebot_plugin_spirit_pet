@@ -106,11 +106,26 @@ def _nest_reply(ctx: Context, nest: dict, prefix: tuple[str, ...] = ()) -> Reply
     ready = max(0, nest["ready_at"] - ctx.now)
     wait = max(0, nest["next_lesson_at"] - ctx.now)
     lines = [*prefix,
-             f"巢中：{nest['egg_name']} · 护育伙伴 {nest['guardian_name']}（编号 {nest['guardian_id']}）。",
+             f"巢中：{nest['egg_name']} · 来源{'可追溯' if nest.get('lineage_egg_id') else '未知'}"
+             f" · 护育伙伴 {nest['guardian_name']}（编号 {nest['guardian_id']}）。",
              f"已照料 {count}/{rule['lessons']} 次 · 迎接等待 {ready} 秒 · 下一次照料等待 {wait} 秒。",
              f"待获成长：{_growth(nest['growth'])}；可重复同一方向，也可分配。",
              "成长只在迎接时落实；可以不补满照料次数。灵卵不会过期。"]
     links = []
+    if nest.get("lineage_egg_id") is not None:
+        lineage = ctx.repo.conn.execute(
+            "SELECT parent_a_id,parent_a_name,parent_b_id,parent_b_name FROM pet_lineage_eggs "
+            "WHERE egg_record_id=? AND user_id=?",
+            (nest["lineage_egg_id"], ctx.user_id),
+        ).fetchone()
+        if lineage is not None:
+            lines.append(
+                f"双亲凭证：{lineage['parent_a_name']}（编号 {lineage['parent_a_id']}）与 "
+                f"{lineage['parent_b_name']}（编号 {lineage['parent_b_id']}）。"
+            )
+            links.append(InlineCommand(
+                len(lines) - 1, "查看双亲谱系", f"灵宠谱系 {lineage['parent_a_id']}",
+            ))
     blocker = ""
     can_care = False
     try:
@@ -226,7 +241,8 @@ def start(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{egg.name}不足：当前持有 0，需要 1。")
     rule = ctx.content.nursery.model_dump()
     species = ctx.content.species[egg.species_id]
-    nest = {"status": "active", "nest_id": sha256(ctx.operation_id.encode()).hexdigest()[:16],
+    nest_id = sha256(ctx.operation_id.encode()).hexdigest()[:16]
+    nest = {"status": "active", "nest_id": nest_id,
             "egg_id": egg.id, "egg_name": egg.name, "species_id": species.id,
             "species_name": species.name, "initial_affinity": species.initial_affinity,
             "guardian_id": guardian.pet_id, "guardian_name": guardian.name,
@@ -234,7 +250,7 @@ def start(ctx: Context, arg: str) -> Reply:
             "started_at": ctx.now, "ready_at": ctx.now + rule["interval"] * rule["lessons"],
             "next_lesson_at": ctx.now + rule["interval"], "history": [],
             "growth": {"exp": 0, "affinity": 0, "bond": 0}}
-    ctx.repo.consume_item(ctx.user_id, egg.id, 1)
+    nest["lineage_egg_id"] = ctx.repo.reserve_pet_egg(ctx.user_id, egg.id, nest_id, ctx.now)
     ctx.repo.conn.execute("INSERT INTO quest_progress(user_id,quest_id,progress,claimed) VALUES (?,?,1,1)",
                           (ctx.user_id, DAY_PREFIX + beijing_day(ctx.now)))
     return _record(ctx, nest, _nest_reply(ctx, nest, (f"已将{egg.name}一枚放入灵巢，未消耗护育伙伴精力。",)))
@@ -303,6 +319,11 @@ def finish(ctx: Context, guard: list[str]) -> Reply:
         raise GameError("灵宠名册容量不足，灵卵与护育成长仍保留在巢中；先封存伙伴再迎接，或撤回灵卵。")
     baby = ctx.repo.create_pet(ctx.user_id, nest["species_id"], nest["species_name"],
                                nest["initial_affinity"], ctx.now)
+    if nest.get("lineage_egg_id") is not None:
+        ctx.repo.hatch_lineage_egg(
+            ctx.user_id, nest["lineage_egg_id"], baby.pet_id, baby.name, ctx.now,
+            reservation_id=nest["nest_id"],
+        )
     baby.exp += nest["growth"]["exp"]
     gained = min(100 - baby.affinity, nest["growth"]["affinity"])
     baby.affinity += gained
@@ -318,12 +339,15 @@ def finish(ctx: Context, guard: list[str]) -> Reply:
         f"护育选择：{' → '.join(nest['history']) or '自然等待，未照料'}。",
         f"新伙伴修为 +{baby.exp} · 亲密 +{gained} · 羁绊经验 +{nest['growth']['bond']}。",
         f"原伙伴{nest['guardian_name']}羁绊经验 +{guardian_gain}。",
-    ), ("灵宠列表", "灵宠羁绊", TITLE),
-        (InlineCommand(2, "查看新伙伴", f"灵宠整备 {baby.pet_id}"),)))
+    ), ("灵宠列表", "灵宠谱系", "灵宠羁绊", TITLE),
+        (InlineCommand(2, "查看新伙伴", f"灵宠整备 {baby.pet_id}"),
+         InlineCommand(2, "查看新伙伴谱系", f"灵宠谱系 {baby.pet_id}"))))
 
 
 def withdraw(ctx: Context, guard: list[str]) -> Reply:
     nest = _active(ctx, guard)
+    if nest.get("lineage_egg_id") is not None:
+        ctx.repo.return_reserved_pet_egg(ctx.user_id, nest["lineage_egg_id"])
     ctx.repo.add_item(ctx.user_id, nest["egg_id"], 1)
     nest["status"] = "withdrawn"
     return _record(ctx, nest, Reply(TITLE + " · 撤回", (

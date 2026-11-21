@@ -1,0 +1,39 @@
+[
+  {
+    "id": "first_branch",
+    "name": "初见枝叶",
+    "minimum_generation": 1,
+    "minimum_members": 3,
+    "reward": {
+      "stones": 200,
+      "items": {
+        "spirit_food": 1
+      }
+    }
+  },
+  {
+    "id": "deep_roots",
+    "name": "根脉绵延",
+    "minimum_generation": 2,
+    "minimum_members": 4,
+    "reward": {
+      "stones": 500,
+      "items": {
+        "bloodline_essence": 1
+      }
+    }
+  },
+  {
+    "id": "family_grove",
+    "name": "家族成林",
+    "minimum_generation": 3,
+    "minimum_members": 6,
+    "reward": {
+      "stones": 1000,
+      "items": {
+        "bloodline_essence": 2,
+        "spirit_food": 2
+      }
+    }
+  }
+]

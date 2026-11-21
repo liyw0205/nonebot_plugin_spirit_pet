@@ -127,7 +127,7 @@ def temper(ctx: Context, arg: str) -> Reply:
         raise GameError(f"{ctx.content.items[egg].name}不足：需要 {count} 枚，当前 {eggs} 枚。")
 
     player.stones -= stones
-    ctx.repo.consume_item(ctx.user_id, egg, count)
+    ctx.repo.consume_pet_eggs(ctx.user_id, egg, count, ctx.now)
     after = layers + count
     ctx.repo.conn.execute(
         "INSERT INTO quest_progress(user_id, quest_id, progress, claimed) VALUES (?, ?, ?, 1)"

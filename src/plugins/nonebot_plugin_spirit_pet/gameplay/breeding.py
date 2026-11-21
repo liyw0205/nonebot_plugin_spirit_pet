@@ -142,12 +142,24 @@ def breed(ctx: Context, arg: str) -> Reply:
     second.energy -= rule.energy
     ctx.repo.add_item(ctx.user_id, egg.id, 1)
     ctx.repo.invalidate_ready(ctx.user_id)
-    return Reply("灵宠培育成功", (
+    reply = Reply("灵宠培育成功", (
         f"{first.name}（编号 {first.pet_id}）与 {second.name}（编号 {second.pet_id}）同族相契。",
         f"灵石 -{rule.cost.stones}，双方各消耗 {rule.energy} 精力。",
         f"获得{egg.name} ×1。",
         "也可入巢护育，选择修行、亲和或默契后迎接新伙伴。",
-    ), ("灵宠培育", "灵宠背包", "灵宠列表"), (
+    ), ("灵宠培育", "灵宠背包", "灵宠谱系", "灵宠列表"), (
         InlineCommand(2, "孵化灵卵", f"灵宠使用 {egg.name}"),
         InlineCommand(3, "护育预览", f"灵宠护育 预览 {egg.name}"),
     ))
+    ctx.repo.record_pedigree_operation(
+        ctx.operation_id, ctx.user_id, "breed", ctx.now,
+        {"first_pet_id": first.pet_id, "second_pet_id": second.pet_id, "egg_id": egg.id},
+        reply,
+    )
+    ctx.repo.record_lineage_egg(
+        user_id=ctx.user_id, item_id=egg.id, species_id=first.species_id,
+        parent_a_id=first.pet_id, parent_a_name=first.name,
+        parent_b_id=second.pet_id, parent_b_name=second.name,
+        operation_id=ctx.operation_id, created_at=ctx.now,
+    )
+    return reply

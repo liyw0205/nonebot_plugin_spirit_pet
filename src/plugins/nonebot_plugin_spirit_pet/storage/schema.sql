@@ -542,3 +542,58 @@ CREATE TABLE wild_habitat_claims (
     PRIMARY KEY(week_start,user_id,tier_id)
 );
 CREATE INDEX wild_habitat_claim_history ON wild_habitat_claims(user_id,claimed_at DESC);
+CREATE TABLE pet_pedigree_operations (
+    operation_id TEXT PRIMARY KEY CHECK(length(operation_id)>0),
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    kind TEXT NOT NULL CHECK(kind IN ('breed', 'hatch', 'milestone_claim')),
+    created_at INTEGER NOT NULL CHECK(created_at>=0),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL
+);
+CREATE INDEX pet_pedigree_operation_history ON pet_pedigree_operations(user_id,created_at DESC);
+CREATE TABLE pet_lineage_eggs (
+    egg_record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    item_id TEXT NOT NULL CHECK(length(item_id)>0),
+    species_id TEXT NOT NULL CHECK(length(species_id)>0),
+    parent_a_id INTEGER NOT NULL CHECK(parent_a_id>0),
+    parent_a_name TEXT NOT NULL CHECK(length(parent_a_name)>0),
+    parent_a_species_id TEXT NOT NULL CHECK(parent_a_species_id=species_id),
+    parent_b_id INTEGER NOT NULL CHECK(parent_b_id>0 AND parent_b_id<>parent_a_id),
+    parent_b_name TEXT NOT NULL CHECK(length(parent_b_name)>0),
+    parent_b_species_id TEXT NOT NULL CHECK(parent_b_species_id=species_id),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES pet_pedigree_operations(operation_id),
+    status TEXT NOT NULL CHECK(status IN ('available', 'reserved', 'hatched', 'consumed')),
+    reservation_id TEXT,
+    child_pet_id INTEGER CHECK(child_pet_id>0),
+    child_name TEXT CHECK(child_name IS NULL OR length(child_name)>0),
+    created_at INTEGER NOT NULL CHECK(created_at>=0),
+    finished_at INTEGER,
+    FOREIGN KEY(parent_a_id) REFERENCES pets(pet_id),
+    FOREIGN KEY(parent_b_id) REFERENCES pets(pet_id),
+    FOREIGN KEY(child_pet_id) REFERENCES pets(pet_id),
+    CHECK((status='available' AND reservation_id IS NULL AND child_pet_id IS NULL
+            AND child_name IS NULL AND finished_at IS NULL)
+        OR (status='reserved' AND length(reservation_id)>0 AND child_pet_id IS NULL
+            AND child_name IS NULL AND finished_at IS NULL)
+        OR (status='hatched' AND reservation_id IS NULL AND child_pet_id IS NOT NULL
+            AND child_pet_id>parent_a_id AND child_pet_id>parent_b_id
+            AND child_name IS NOT NULL AND finished_at>=created_at)
+        OR (status='consumed' AND reservation_id IS NULL AND child_pet_id IS NULL
+            AND child_name IS NULL AND finished_at>=created_at))
+);
+CREATE INDEX pet_lineage_egg_inventory ON pet_lineage_eggs(user_id,item_id,status,egg_record_id);
+CREATE UNIQUE INDEX pet_lineage_egg_reservation ON pet_lineage_eggs(reservation_id) WHERE reservation_id IS NOT NULL;
+CREATE UNIQUE INDEX pet_lineage_child_unique ON pet_lineage_eggs(child_pet_id) WHERE child_pet_id IS NOT NULL;
+CREATE INDEX pet_lineage_parent_a ON pet_lineage_eggs(user_id,parent_a_id,status,child_pet_id);
+CREATE INDEX pet_lineage_parent_b ON pet_lineage_eggs(user_id,parent_b_id,status,child_pet_id);
+CREATE TABLE pet_pedigree_claims (
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    milestone_id TEXT NOT NULL CHECK(length(milestone_id)>0),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES pet_pedigree_operations(operation_id),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(user_id,milestone_id)
+);
+CREATE INDEX pet_pedigree_claim_history ON pet_pedigree_claims(user_id,claimed_at DESC);

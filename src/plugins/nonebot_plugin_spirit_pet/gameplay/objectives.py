@@ -96,6 +96,7 @@ from . import skill_mastery_rewards
 from .achievements import _metric as achievement_metric
 from . import wild_capture
 from . import wild_habitat
+from . import pedigree
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
@@ -106,6 +107,7 @@ HUB_PAGES = (
     "灵宠赛季征途",
     "灵宠排行奖励",
     "灵宠血脉赏",
+    "灵宠谱系",
     "灵宠分支赏",
     "灵宠套装",
     "灵宠灵术赏",
@@ -628,6 +630,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (sects.objective_line(ctx, player.user_id), "灵宠师门"),
         (codex_trials.objective_line(ctx, player.user_id), "灵宠图鉴试炼"),
         (tempering.objective_line(ctx, player.user_id), "灵宠淬魂"),
+        (pedigree.objective_line(ctx, player.user_id), "灵宠谱系"),
         (survival.objective_line(ctx, player.user_id), "灵宠守关"),
         (arcs.objective_line(ctx, player.user_id), "灵宠奇缘"),
         (support.objective_line(ctx, player.user_id), "灵宠助战"),

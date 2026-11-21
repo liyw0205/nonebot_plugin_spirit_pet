@@ -20,9 +20,10 @@ from .registration import (
     backup_schema30, migrate_sect_boss, validate_schema31, backup_schema31,
     migrate_wild_capture, validate_schema32, migrate_wild_survey_claims,
     validate_schema33, backup_schema32, migrate_wild_habitat, validate_schema34, backup_schema33,
+    validate_schema35, backup_schema34, migrate_pedigree,
 )
 
-SCHEMA_VERSION = 34
+SCHEMA_VERSION = 35
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -523,7 +524,32 @@ class Store:
                         raise RuntimeError("Wild habitat migration integrity check failed; database preserved")
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Wild habitat migration foreign key check failed; database preserved")
-                    conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                    conn.execute("PRAGMA user_version=34")
+                    self._ensure_performance_indexes(conn)
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 34
+            if version == 34:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 34:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema34(conn, schema)
+                    backup_schema34(self.path)
+                    migrate_pedigree(conn)
+                    validate_schema35(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Pedigree migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Pedigree migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=35")
                     self._ensure_performance_indexes(conn)
                     conn.commit()
                 except BaseException:
