@@ -124,6 +124,9 @@ def explore(ctx: Context, arg: str) -> Reply:
             links.append(InlineCommand(
                 route_line, "野外寻宠", f"灵宠历练 {route.name} 野外{suffix}",
             ))
+            links.append(InlineCommand(
+                route_line, "栖地调查", f"灵宠野外 调查 {route.name}",
+            ))
         return Reply(
             "山海历练路线", tuple(lines),
             tuple(f"灵宠历练 {route.name}{suffix}" for route in routes)

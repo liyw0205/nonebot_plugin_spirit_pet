@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 from ..application.context import Context
-from ..domain.content import Stats
+from ..domain.content import Range, Reward, Stats
 from ..domain.models import GameError, InlineCommand, Reply
 from ..utils.arguments import named, quantity
 from ..utils.randomness import weighted_choice
@@ -13,6 +13,7 @@ from .battle_records import capture_snapshot, record_battle
 from .combat import enemy_fighter, fight
 from .loadout import combatant
 from .mastery import award_mastery
+from .rewards import grant
 
 TITLE = "灵宠野外"
 PAGE_SIZE = 5
@@ -239,6 +240,7 @@ def _pending_page(ctx: Context, *, expire: bool) -> Reply:
     lines = [
         f"今日野外遭遇：{used}/{ctx.content.wild_capture.daily_encounters}。",
         f"收服图鉴：{found}/{total_species} 种 · 收服道具：{capture_name}。",
+        _survey_progress_summary(ctx, player.user_id),
     ]
     if expired:
         lines.append("上一场野外遭遇已过期，野生灵宠逃脱。")
@@ -267,7 +269,9 @@ def _pending_page(ctx: Context, *, expire: bool) -> Reply:
     else:
         lines.append("没有待处理遭遇；从历练路线页选择野外入口。")
         links.append(InlineCommand(len(lines) - 1, "查看历练路线", "灵宠历练"))
-    return Reply(TITLE, tuple(lines), (TITLE, f"{TITLE} 图鉴", f"{TITLE} 战历", "灵宠背包"), tuple(links))
+    return Reply(
+        TITLE, tuple(lines), (TITLE, f"{TITLE} 图鉴", f"{TITLE} 调查", f"{TITLE} 战历"), tuple(links),
+    )
 
 
 def _filtered_entries(ctx: Context, parts: list[str]):
@@ -379,6 +383,238 @@ def _history(ctx: Context, parts: list[str]) -> Reply:
         commands.append(f"{TITLE} 战历 {page + 1}")
     commands.append(f"{TITLE} 图鉴")
     return Reply(f"{TITLE}战历 {page}/{pages}", tuple(lines), tuple(commands[:4]), tuple(links))
+
+
+def _survey_evidence(ctx: Context, user_id: str, route_id: str) -> dict[str, dict]:
+    evidence: dict[str, dict] = {}
+    rows = ctx.repo.conn.execute(
+        "SELECT species_id,species_name,rarity FROM wild_capture_runs "
+        "WHERE user_id=? AND route_id=? ORDER BY run_id",
+        (user_id, route_id),
+    )
+    for row in rows:
+        entry = evidence.setdefault(row["species_id"], {
+            "name": row["species_name"], "rarities": set(),
+        })
+        entry["rarities"].add(row["rarity"])
+    return evidence
+
+
+def _survey_claims(ctx: Context, user_id: str, route_id: str | None = None) -> set[tuple[str, str]]:
+    query = "SELECT route_id,tier_id FROM wild_survey_claims WHERE user_id=?"
+    parameters: tuple = (user_id,)
+    if route_id is not None:
+        query += " AND route_id=?"
+        parameters += (route_id,)
+    return {
+        (row["route_id"], row["tier_id"])
+        for row in ctx.repo.conn.execute(query, parameters)
+    }
+
+
+def _survey_progress_summary(ctx: Context, user_id: str) -> str:
+    claims = _survey_claims(ctx, user_id)
+    found_count = 0
+    total_count = 0
+    claimable_count = 0
+    next_target = None
+    for route_rules in ctx.content.wild_capture.routes:
+        route = ctx.content.exploration_routes[route_rules.route]
+        survey = ctx.content.wild_surveys[route.id]
+        evidence = _survey_evidence(ctx, user_id, route.id)
+        route_species = {entry.species for entry in route_rules.entries}
+        seen = set(evidence) & route_species
+        rarities = {rarity for entry in evidence.values() for rarity in entry["rarities"]}
+        found_count += len(seen)
+        total_count += len(route_species)
+        for tier in survey.tiers:
+            met = _survey_tier_met(tier, seen, rarities)
+            claimed = (route.id, tier.id) in claims
+            if met and not claimed:
+                claimable_count += 1
+            elif not claimed and next_target is None:
+                next_target = (survey.title, tier.name)
+    if claimable_count:
+        return f"栖地调查：已见 {found_count}/{total_count} 种 · 可领奖 {claimable_count} 档。"
+    if next_target:
+        return f"栖地调查：已见 {found_count}/{total_count} 种 · 下一档 {next_target[0]}·{next_target[1]}。"
+    return f"栖地调查：全路线档位已领 · {found_count}/{total_count} 种。"
+
+
+def _survey_tier_met(tier, species_ids: set[str], rarities: set[str]) -> bool:
+    return len(species_ids) >= tier.species_count and set(tier.required_rarities) <= rarities
+
+
+def _survey_reward_label(ctx: Context, tier) -> str:
+    reward = tier.reward
+    values = [f"灵石 {reward.stones}"] if reward.stones else []
+    values.extend(f"{ctx.content.items[item_id].name} {amount}" for item_id, amount in reward.items.items())
+    return "、".join(values)
+
+
+def _survey_tier_state(tier, route_id: str, seen: set[str], rarities: set[str], claims: set[tuple[str, str]]) -> str:
+    if (route_id, tier.id) in claims:
+        return "已领取"
+    if _survey_tier_met(tier, seen, rarities):
+        return "可领取"
+    requirements = [f"物种 {len(seen)}/{tier.species_count}"]
+    missing_rarities = set(tier.required_rarities) - rarities
+    if missing_rarities:
+        requirements.append("待见 " + "、".join(RARITY_NAMES[item] for item in sorted(missing_rarities)))
+    return "待完成：" + " · ".join(requirements)
+
+
+def _survey_overview(ctx: Context, page: int) -> Reply:
+    routes = [ctx.content.exploration_routes[route.route] for route in ctx.content.wild_capture.routes]
+    pages = max(1, (len(routes) + PAGE_SIZE - 1) // PAGE_SIZE)
+    if page > pages:
+        raise GameError(f"栖地调查共 {pages} 页。")
+    claims = _survey_claims(ctx, ctx.user_id)
+    selected = routes[(page - 1) * PAGE_SIZE:page * PAGE_SIZE]
+    lines = ["调查只统计真实野外遭遇；同一路线内重复遇见同一物种只计一次。"]
+    links = []
+    for route in selected:
+        survey = ctx.content.wild_surveys[route.id]
+        evidence = _survey_evidence(ctx, ctx.user_id, route.id)
+        species = {entry.species for entry in _route_rules(ctx, route.id).entries}
+        seen = species & evidence.keys()
+        rarities = {rarity for entry in evidence.values() for rarity in entry["rarities"]}
+        claimable = sum(
+            _survey_tier_met(tier, seen, rarities) and (route.id, tier.id) not in claims
+            for tier in survey.tiers
+        )
+        next_tier = next((tier for tier in survey.tiers if (route.id, tier.id) not in claims), None)
+        if next_tier is None:
+            progress = "全部档位已领"
+        else:
+            progress = _survey_tier_state(next_tier, route.id, seen, rarities, claims)
+        suffix = f" · 可领奖 {claimable} 档" if claimable else ""
+        lines.append(f"{survey.title} · 物种 {len(seen)}/{len(species)} · {progress}{suffix}")
+        links.append(InlineCommand(len(lines) - 1, "查看栖地", f"{TITLE} 调查 {route.name}"))
+    commands = [TITLE]
+    if page > 1:
+        commands.append(f"{TITLE} 调查 {page - 1}")
+    if page < pages:
+        commands.append(f"{TITLE} 调查 {page + 1}")
+    commands.extend((f"{TITLE} 图鉴", "灵宠历练"))
+    return Reply(f"{TITLE}栖地调查 {page}/{pages}", tuple(lines), tuple(commands[:4]), tuple(links))
+
+
+def _survey_route(ctx: Context, route, page: int = 1) -> Reply:
+    survey = ctx.content.wild_surveys[route.id]
+    entries = _route_rules(ctx, route.id).entries
+    pages = max(1, (len(entries) + PAGE_SIZE - 1) // PAGE_SIZE)
+    if page > pages:
+        raise GameError(f"{survey.title}物种记录共 {pages} 页。")
+    evidence = _survey_evidence(ctx, ctx.user_id, route.id)
+    species_ids = set(evidence) & {entry.species for entry in entries}
+    rarities = {rarity for entry in evidence.values() for rarity in entry["rarities"]}
+    claims = _survey_claims(ctx, ctx.user_id, route.id)
+    lines = [survey.description, f"已观察 {len(species_ids)}/{len(entries)} 种 · 稀有发现："]
+    observed_rarities = sorted(rarities, key=("common", "uncommon", "rare").index)
+    lines[-1] += "、".join(RARITY_NAMES[item] for item in observed_rarities) if observed_rarities else "暂无"
+    links = []
+    for entry in entries[(page - 1) * PAGE_SIZE:page * PAGE_SIZE]:
+        species = ctx.content.species[entry.species]
+        record = evidence.get(entry.species)
+        if record:
+            rarity_text = "、".join(
+                RARITY_NAMES[item] for item in sorted(record["rarities"], key=("common", "uncommon", "rare").index)
+            )
+            lines.append(f"[已见] {species.name} · {rarity_text}")
+        else:
+            lines.append(f"[未见] {species.name} · {RARITY_NAMES[entry.rarity]}")
+    for tier in survey.tiers:
+        state = _survey_tier_state(tier, route.id, species_ids, rarities, claims)
+        lines.append(f"{tier.name}（{tier.id}）· {_survey_reward_label(ctx, tier)} · {state}")
+        if state == "可领取":
+            links.append(InlineCommand(
+                len(lines) - 1, "领取调查奖励", f"{TITLE} 调查领奖 {route.name} {tier.id}",
+            ))
+    commands = [TITLE, f"{TITLE} 调查"]
+    if page > 1:
+        commands.append(f"{TITLE} 调查 {route.name} {page - 1}")
+    if page < pages:
+        commands.append(f"{TITLE} 调查 {route.name} {page + 1}")
+    commands.append(f"灵宠历练 {route.name}")
+    return Reply(f"{survey.title}调查 {page}/{pages}", tuple(lines), tuple(commands[:4]), tuple(links))
+
+
+def _survey(ctx: Context, parts: list[str]) -> Reply:
+    if not parts:
+        return _survey_overview(ctx, 1)
+    if len(parts) == 1 and parts[0] in {"页", "路线"}:
+        raise GameError(f"格式：{TITLE} 调查 [页码|路线名 [页码]]。")
+    if len(parts) == 1 and parts[0].isascii() and parts[0].isdecimal():
+        return _survey_overview(ctx, quantity(parts[0], 999))
+    if len(parts) == 2 and parts[0] == "页":
+        return _survey_overview(ctx, quantity(parts[1], 999))
+    route_arg = parts[0]
+    route = named(ctx.content.exploration_routes, route_arg)
+    page = 1
+    if len(parts) == 2:
+        page = quantity(parts[1], 999)
+    elif len(parts) == 3 and parts[1] == "页":
+        page = quantity(parts[2], 999)
+    elif len(parts) != 1:
+        raise GameError(f"格式：{TITLE} 调查 [页码|路线名 [页码]]。")
+    return _survey_route(ctx, route, page)
+
+
+def _survey_claim(ctx: Context, parts: list[str]) -> Reply:
+    if len(parts) != 2:
+        raise GameError(f"格式：{TITLE} 调查领奖 路线名 档位ID。")
+    player = ctx.player()
+    route = named(ctx.content.exploration_routes, parts[0])
+    survey = ctx.content.wild_surveys[route.id]
+    tier = next((entry for entry in survey.tiers if entry.id == parts[1]), None)
+    if tier is None:
+        raise GameError("未找到该栖地调查档位。")
+    prior = ctx.repo.conn.execute(
+        "SELECT user_id,reply FROM wild_survey_claims WHERE operation_id=?", (ctx.operation_id,),
+    ).fetchone()
+    if prior is not None:
+        if prior["user_id"] != player.user_id:
+            raise GameError("该调查领奖操作已由其他身份处理，不能复用。")
+        return Reply.from_data(json.loads(prior["reply"]))
+    if ctx.repo.conn.execute(
+        "SELECT 1 FROM wild_survey_claims WHERE user_id=? AND route_id=? AND tier_id=?",
+        (player.user_id, route.id, tier.id),
+    ).fetchone() is not None:
+        raise GameError("该栖地调查档位已经领取。")
+    evidence = _survey_evidence(ctx, player.user_id, route.id)
+    route_species = {entry.species for entry in _route_rules(ctx, route.id).entries}
+    seen = set(evidence) & route_species
+    rarities = {rarity for entry in evidence.values() for rarity in entry["rarities"]}
+    if not _survey_tier_met(tier, seen, rarities):
+        raise GameError("真实野外观察尚未达到该调查档位。")
+    reward = Reward(
+        exp=Range(minimum=0, maximum=0),
+        stones=Range(minimum=tier.reward.stones, maximum=tier.reward.stones),
+        items={item_id: Range(minimum=amount, maximum=amount) for item_id, amount in tier.reward.items.items()},
+    )
+    granted = grant(ctx, reward, player.user_id)
+    reply = Reply(
+        "栖地调查奖励", (f"{survey.title}·{tier.name}已领取。", *granted),
+        (f"{TITLE} 调查 {route.name}", f"{TITLE} 调查", "灵宠目标"),
+    )
+    reward_snapshot = json.dumps(tier.reward.model_dump(mode="json"), ensure_ascii=False, separators=(",", ":"))
+    reply_data = json.dumps({
+        "title": reply.title,
+        "lines": reply.lines,
+        "commands": reply.commands,
+        "inline_commands": reply.inline_commands,
+    }, ensure_ascii=False)
+    ctx.repo.record_duel_action(ctx.operation_id, player.user_id, ctx.now, {
+        "kind": "wild_survey_claim", "route_id": route.id, "tier_id": tier.id,
+        "reward": json.loads(reward_snapshot),
+    }, reply)
+    ctx.repo.conn.execute(
+        "INSERT INTO wild_survey_claims(user_id,route_id,tier_id,operation_id,claimed_at,reward_snapshot,reply) "
+        "VALUES (?,?,?,?,?,?,?)",
+        (player.user_id, route.id, tier.id, ctx.operation_id, ctx.now, reward_snapshot, reply_data),
+    )
+    return reply
 
 
 def _attempt(ctx: Context, run_id: int, attempt_no: int) -> Reply:
@@ -537,6 +773,10 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         if ctx.repo.player(ctx.user_id) is None:
             return Reply(TITLE + "图鉴", ("尚未结契。",), ("灵宠帮助",))
         return _codex(ctx, rest)
+    if action == "调查":
+        return _survey(ctx, rest)
+    if action == "调查领奖":
+        return _survey_claim(ctx, rest)
     if action == "战历":
         if ctx.repo.player(ctx.user_id) is None:
             return Reply(TITLE + "战历", ("尚未结契。",), ("灵宠帮助",))
@@ -546,13 +786,13 @@ def dispatch(ctx: Context, arg: str) -> Reply:
     if action == "放归" and len(rest) == 2:
         return _release(ctx, _number(rest[0], "遭遇"), quantity(rest[1], 5) if rest[1] != "0" else 0)
     raise GameError(
-        f"格式：{TITLE} [当前|图鉴 [页码|路线 路线名|稀有度 常见|少见|稀有]|战历 [页码]|尝试 遭遇编号 次数|放归 遭遇编号 已尝试次数]。"
+        f"格式：{TITLE} [当前|图鉴 [页码|路线 路线名|稀有度 常见|少见|稀有]|调查 [路线名 [页码]]|调查领奖 路线名 档位ID|战历 [页码]|尝试 遭遇编号 次数|放归 遭遇编号 已尝试次数]。"
     )
 
 
 def read_only(argument: str) -> bool:
     parts = argument.split()
-    return bool(parts and parts[0] in {"图鉴", "战历"})
+    return bool(parts and parts[0] in {"图鉴", "战历", "调查"})
 
 
 def today_line(ctx: Context, user_id: str) -> str:
@@ -569,9 +809,12 @@ def today_line(ctx: Context, user_id: str) -> str:
     ).fetchone()
     if pending:
         detail = "期限已过，请打开野外页结算逃脱" if ctx.now >= pending["expires_at"] else f"{pending['species_name']}待收服"
-        return f"野外遭遇：{detail} · 局号 {pending['run_id']}"
+        return f"野外遭遇：{detail} · 局号 {pending['run_id']} · {_survey_progress_summary(ctx, user_id)}"
     remaining = max(0, ctx.content.wild_capture.daily_encounters - used)
-    return f"野外遭遇：今日还可寻找 {remaining} 次" if remaining else ""
+    if remaining:
+        return f"野外遭遇：今日还可寻找 {remaining} 次 · {_survey_progress_summary(ctx, user_id)}"
+    summary = _survey_progress_summary(ctx, user_id)
+    return "" if summary.startswith("栖地调查：全路线档位已领") else summary
 
 
 def objective_line(ctx: Context, user_id: str) -> str:
@@ -584,4 +827,4 @@ def objective_line(ctx: Context, user_id: str) -> str:
         "SELECT progress FROM quest_progress WHERE user_id=? AND quest_id='wild_capture_codex'", (user_id,),
     ).fetchone()
     progress = int(row["progress"]) if row else 0
-    return f"野外收服：图鉴 {found}/{total} 种 · 新物种目标进度 {progress}。"
+    return f"野外收服：图鉴 {found}/{total} 种 · 新物种目标进度 {progress}。 {_survey_progress_summary(ctx, user_id)}"

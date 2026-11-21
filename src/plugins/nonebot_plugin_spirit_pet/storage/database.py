@@ -18,10 +18,11 @@ from .registration import (
     migrate_sect_week_contributions, validate_schema29,
     backup_schema29, migrate_race_league, validate_schema30, initialize_race_league,
     backup_schema30, migrate_sect_boss, validate_schema31, backup_schema31,
-    migrate_wild_capture, validate_schema32,
+    migrate_wild_capture, validate_schema32, migrate_wild_survey_claims,
+    validate_schema33, backup_schema32,
 )
 
-SCHEMA_VERSION = 32
+SCHEMA_VERSION = 33
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -472,6 +473,31 @@ class Store:
                         raise RuntimeError("Wild capture migration integrity check failed; database preserved")
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Wild capture migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=32")
+                    self._ensure_performance_indexes(conn)
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 32
+            if version == 32:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 32:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema32(conn, schema)
+                    backup_schema32(self.path)
+                    migrate_wild_survey_claims(conn)
+                    validate_schema33(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Wild survey migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Wild survey migration foreign key check failed; database preserved")
                     conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                     self._ensure_performance_indexes(conn)
                     conn.commit()

@@ -29,6 +29,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "item_trade": 16,
     "cuisine_coop": 16,
     "friend_relay": 15,
+    "wild_survey_claim": 17,
 }
 
 

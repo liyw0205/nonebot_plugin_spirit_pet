@@ -203,6 +203,8 @@ def validate_schema31(conn: sqlite3.Connection, current_schema: str) -> None:
 
 def legacy_schema31(current_schema: str) -> str:
     schema = current_schema
+    schema = re.sub(r"CREATE TABLE wild_survey_claims \([\s\S]*?\n\);\n", "", schema, count=1)
+    schema = re.sub(r"CREATE INDEX wild_survey_claim_history [^;]*;\n", "", schema, count=1)
     for table in ("wild_capture_runs", "wild_capture_attempts"):
         schema = re.sub(rf"CREATE TABLE {table} \([\s\S]*?\n\);\n", "", schema, count=1)
     for index in (
@@ -216,7 +218,19 @@ def legacy_schema31(current_schema: str) -> str:
 
 
 def validate_schema32(conn: sqlite3.Connection, current_schema: str) -> None:
-    _validate_schema(conn, current_schema, 32, optional_indexes=RUNTIME_INDEXES)
+    _validate_schema(conn, legacy_schema32(current_schema), 32, optional_indexes=RUNTIME_INDEXES)
+
+
+def legacy_schema32(current_schema: str) -> str:
+    schema = re.sub(r"CREATE TABLE wild_survey_claims \([\s\S]*?\n\);\n", "", current_schema, count=1)
+    schema = re.sub(r"CREATE INDEX wild_survey_claim_history [^;]*;\n", "", schema, count=1)
+    if "wild_survey_claim" in schema:
+        raise RuntimeError("Current schema still carries wild survey claim definitions")
+    return schema
+
+
+def validate_schema33(conn: sqlite3.Connection, current_schema: str) -> None:
+    _validate_schema(conn, current_schema, 33, optional_indexes=RUNTIME_INDEXES)
 
 
 def backup_schema27(path: Path) -> Path:
@@ -237,6 +251,22 @@ def backup_schema30(path: Path) -> Path:
 
 def backup_schema31(path: Path) -> Path:
     return _backup_schema(path, 31)
+
+
+def backup_schema32(path: Path) -> Path:
+    return _backup_schema(path, 32)
+
+
+def migrate_wild_survey_claims(conn: sqlite3.Connection) -> None:
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    for pattern in (
+        r"CREATE TABLE wild_survey_claims \([\s\S]*?\n\);",
+        r"CREATE INDEX wild_survey_claim_history [^;]*;",
+    ):
+        match = re.search(pattern, schema)
+        if match is None:
+            raise RuntimeError("Current schema is missing wild survey claim definitions")
+        conn.execute(match.group(0))
 
 
 def migrate_wild_capture(conn: sqlite3.Connection) -> None:

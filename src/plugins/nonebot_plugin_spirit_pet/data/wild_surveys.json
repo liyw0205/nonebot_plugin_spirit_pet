@@ -1,0 +1,72 @@
+[
+  {
+    "route": "spirit_spring",
+    "title": "灵泉栖地",
+    "description": "记录灵泉周边出现的林灵、冰灵与雪狐踪迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"seed_ore_sprout": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "starfall_valley",
+    "title": "星陨栖地",
+    "description": "记录星陨谷地的寒影、碧竹与金羽活动痕迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"gem_swift": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "ancient_cave",
+    "title": "古窟栖地",
+    "description": "记录古窟深处的赤焰、铁鳞与石偶活动痕迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"gem_ward": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "ember_vein",
+    "title": "熔脉栖地",
+    "description": "记录熔脉沿线的熔岩甲、雷泽与墨莲踪迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"gem_flame": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "primordial_ruins",
+    "title": "太初栖地",
+    "description": "记录太初遗迹的藤灵、毒蔓与玄武踪迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"seed_ancient_root": 2}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"gem_vital": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "void_frontier",
+    "title": "虚界栖地",
+    "description": "记录虚界边境的道螳、魔核与风狐踪迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"seed_void_lotus": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  },
+  {
+    "route": "tribulation_clouds",
+    "title": "劫云栖地",
+    "description": "记录劫云间的雷鹰、碧竹与白泽踪迹。",
+    "tiers": [
+      {"id": "first_trace", "name": "初访留痕", "species_count": 1, "required_rarities": [], "reward": {"stones": 20, "items": {"spirit_food": 1}}},
+      {"id": "mixed_tracks", "name": "辨识群踪", "species_count": 2, "required_rarities": ["uncommon"], "reward": {"stones": 35, "items": {"bloodline_essence": 2}}},
+      {"id": "rare_trace", "name": "稀踪复核", "species_count": 3, "required_rarities": ["rare"], "reward": {"stones": 60, "items": {"spirit_food": 2}}}
+    ]
+  }
+]

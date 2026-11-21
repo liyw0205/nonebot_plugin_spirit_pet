@@ -74,6 +74,7 @@ from ..domain.cooking_reward_content import CookingReward
 from ..domain.daily_shop_reward_content import DailyShopReward
 from ..domain.world_boss_rank_reward_content import WorldBossRankReward
 from ..domain.wild_capture_content import WildCaptureRules
+from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.fishing_content import FishingBait, FishingSpot
 from ..domain.angling_content import AnglingCourse
 from ..domain.battle_supply_content import BattleSupply
@@ -147,6 +148,7 @@ class Catalog:
     encounters: dict[str, Encounter]
     exploration_routes: dict[str, ExplorationRoute]
     wild_capture: WildCaptureRules
+    wild_surveys: dict[str, WildSurveyRoute]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -272,6 +274,7 @@ class Catalog:
             encounters=_index(directory / "adventures.json", Encounter),
             exploration_routes=_index(directory / "exploration_routes.json", ExplorationRoute),
             wild_capture=WildCaptureRules.model_validate(_read(directory / "wild_captures.json")),
+            wild_surveys=_index(directory / "wild_surveys.json", WildSurveyRoute, "route"),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -534,6 +537,7 @@ class Catalog:
             raise ValueError("each exploration encounter must belong to exactly one route")
         self._validate_shop_rotation()
         self._validate_wild_captures()
+        self._validate_wild_surveys()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -816,6 +820,39 @@ class Catalog:
                 [entry.enemy for entry in route.entries], self.enemies,
                 f"wild capture route {route.route} enemies",
             )
+
+    def _validate_wild_surveys(self) -> None:
+        routes = {route.route: route for route in self.wild_capture.routes}
+        survey_ids = list(self.wild_surveys)
+        if set(survey_ids) != set(routes) or len(survey_ids) != len(set(survey_ids)):
+            raise ValueError("wild surveys must cover each wild capture route exactly once")
+        for route_id, survey in self.wild_surveys.items():
+            route = routes[route_id]
+            species_ids = {entry.species for entry in route.entries}
+            available_rarities = {entry.rarity for entry in route.entries}
+            previous_count = 0
+            tier_ids = [tier.id for tier in survey.tiers]
+            if len(tier_ids) != len(set(tier_ids)):
+                raise ValueError(f"wild survey {route_id} repeats a tier id")
+            for tier in survey.tiers:
+                if tier.species_count > len(species_ids):
+                    raise ValueError(f"wild survey {route_id} has an unreachable species threshold")
+                if tier.species_count <= previous_count:
+                    raise ValueError(f"wild survey {route_id} thresholds must strictly increase")
+                previous_count = tier.species_count
+                if len(tier.required_rarities) != len(set(tier.required_rarities)):
+                    raise ValueError(f"wild survey {route_id} tier {tier.id} repeats a rarity")
+                if not set(tier.required_rarities) <= available_rarities:
+                    raise ValueError(f"wild survey {route_id} tier {tier.id} requires an unavailable rarity")
+                reward = tier.reward
+                if reward.stones == 0 and not reward.items:
+                    raise ValueError(f"wild survey {route_id} tier {tier.id} has an empty reward")
+                if reward.stones + sum(reward.items.values()) > 10_000:
+                    raise ValueError(f"wild survey {route_id} tier {tier.id} reward exceeds limit")
+                self._require(reward.items, self.items, f"wild survey {route_id} reward items")
+                for item_id in reward.items:
+                    if self.items[item_id].kind not in {"consumable", "material"}:
+                        raise ValueError(f"wild survey reward item {item_id} must be consumable or material")
 
     def _validate_titles(self) -> None:
         titles = sorted(self.titles.values(), key=lambda title: title.order)

@@ -228,6 +228,36 @@ def test_wild_capture_supply_requires_a_daily_limited_offer(content_dir):
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("change,error", [
+    (lambda data: data.pop(), "cover each wild capture route exactly once"),
+    (lambda data: data[0].update(route="missing_route"), "cover each wild capture route exactly once"),
+    (lambda data: data[0]["tiers"][1].update(id=data[0]["tiers"][0]["id"]), "repeats a tier id"),
+    (lambda data: data[0]["tiers"][1].update(species_count=1), "thresholds must strictly increase"),
+    (lambda data: data[0]["tiers"][2].update(species_count=4), "unreachable species threshold"),
+    (lambda data: data[0]["tiers"][1].update(required_rarities=["uncommon", "uncommon"]), "repeats a rarity"),
+    (lambda data: data[0]["tiers"][0].update(reward={"stones": 0, "items": {}}), "empty reward"),
+    (lambda data: data[0]["tiers"][0].update(reward={"stones": 10, "items": {"missing_item": 1}}), "unknown wild survey"),
+    (lambda data: data[0]["tiers"][0].update(reward={"stones": 10, "items": {"egg_qingluan": 1}}), "must be consumable or material"),
+    (lambda data: data[0]["tiers"][0].update(reward={"stones": 10_000, "items": {"spirit_food": 1}}), "reward exceeds limit"),
+])
+def test_wild_survey_content_rejects_invalid_routes_tiers_and_rewards(content_dir, change, error):
+    edit(content_dir, "wild_surveys.json", change)
+    with pytest.raises(ValueError, match=error):
+        Catalog.load(content_dir)
+
+
+def test_wild_survey_content_rejects_invalid_rarity_and_reward_quantity(content_dir):
+    edit(content_dir, "wild_surveys.json", lambda data: data[0]["tiers"][0].update(required_rarities=["mythic"]))
+    with pytest.raises(ValidationError):
+        Catalog.load(content_dir)
+
+    edit(content_dir, "wild_surveys.json", lambda data: data[0]["tiers"][0].update(
+        required_rarities=[], reward={"stones": 10, "items": {"spirit_food": 100}},
+    ))
+    with pytest.raises(ValidationError):
+        Catalog.load(content_dir)
+
+
 def test_exploration_route_rejects_unknown_realm(content_dir):
     edit(content_dir, "exploration_routes.json", lambda data: data[0].update({"min_realm": "unknown"}))
     with pytest.raises(ValueError, match="unknown exploration route realm"):

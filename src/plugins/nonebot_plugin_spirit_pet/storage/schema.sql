@@ -503,3 +503,14 @@ CREATE TABLE wild_capture_attempts (
     UNIQUE(run_id, attempt_no)
 );
 CREATE INDEX wild_capture_attempt_history ON wild_capture_attempts(run_id, attempt_no);
+CREATE TABLE wild_survey_claims (
+    user_id TEXT NOT NULL REFERENCES players(user_id),
+    route_id TEXT NOT NULL CHECK(length(route_id)>0),
+    tier_id TEXT NOT NULL CHECK(length(tier_id)>0),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(user_id, route_id, tier_id)
+);
+CREATE INDEX wild_survey_claim_history ON wild_survey_claims(user_id, claimed_at DESC);

@@ -9,7 +9,7 @@ from nonebot_plugin_spirit_pet.domain.models import Reply
 from nonebot_plugin_spirit_pet.storage import database
 from nonebot_plugin_spirit_pet.storage.database import SCHEMA_VERSION, Store
 from nonebot_plugin_spirit_pet.storage.registration import (
-    _legacy_schema, legacy_schema28, legacy_schema29, legacy_schema30, legacy_schema31,
+    _legacy_schema, legacy_schema28, legacy_schema29, legacy_schema30, legacy_schema31, legacy_schema32,
 )
 from nonebot_plugin_spirit_pet.utils.time import BEIJING, beijing_week
 
@@ -129,7 +129,39 @@ def schema31_store(tmp_path):
     return store
 
 
-def test_empty_database_initializes_schema32_anchor(tmp_path, monkeypatch):
+def schema32_store(tmp_path):
+    store = Store(tmp_path / "schema32.db")
+    schema = legacy_schema32(database.SCHEMA_PATH.read_text(encoding="utf-8"))
+    now = 1_800_000_000
+    with closing(sqlite3.connect(store.path)) as conn:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript(schema)
+        conn.execute("PRAGMA user_version=32")
+        conn.execute("INSERT INTO players(user_id, stones) VALUES ('old-user', 321)")
+        conn.execute("INSERT INTO player_identity(user_id, legacy_dao_name) VALUES ('old-user', '旧道号')")
+        conn.execute("INSERT INTO inventory(user_id,item_id,quantity) VALUES ('old-user','spirit_food',7)")
+        conn.execute(
+            "INSERT INTO duel_actions(operation_id,user_id,created_at,snapshot,reply) VALUES (?,?,?,?,?)",
+            ("wild-action", "old-user", now, "{}", '{"title":"遭遇","lines":[],"commands":[]}'),
+        )
+        battle_id = conn.execute(
+            "INSERT INTO battle_records(operation_id,initiator_id,kind,battle_key,title,winner_side,rounds,played_at,reply,snapshot,battle_log) "
+            "VALUES ('wild-battle','old-user','pve','wild_spirit_spring','遭遇',1,1,?,?,?,?)",
+            (now, '{"title":"遭遇","lines":[],"commands":[]}', "{}", "[]"),
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO wild_capture_runs(operation_id,user_id,route_id,route_name,day_key,species_id,species_name,rarity,"
+            "enemy_id,enemy_name,enemy_snapshot,capture_item_id,capture_item_name,capture_rate,max_attempts,same_species_limit,"
+            "state,terminal_reason,attempt_count,battle_id,started_at,expires_at,finished_at) "
+            "VALUES ('wild-action','old-user','spirit_spring','灵泉修行','2026-11-21','sanlinglu','三灵鹿','common',"
+            "'wood_guard','木卫','{}','spirit_snare','缚灵索',0.8,3,3,'escaped','battle_lost',0,?,?,?,?)",
+            (battle_id, now, now + 21_600, now),
+        )
+        conn.commit()
+    return store
+
+
+def test_empty_database_initializes_schema33_anchor(tmp_path, monkeypatch):
     store = Store(tmp_path / "empty.db")
     activation = 1_800_000_000
     monkeypatch.setattr(database.time, "time", lambda: activation)
@@ -137,9 +169,9 @@ def test_empty_database_initializes_schema32_anchor(tmp_path, monkeypatch):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 33
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert {"wild_capture_runs", "wild_capture_attempts"} <= tables
+        assert {"wild_capture_runs", "wild_capture_attempts", "wild_survey_claims"} <= tables
         week_start, _ = beijing_week(activation)
         expected_first = week_start if activation == week_start else week_start + 7 * 86_400
         assert tuple(conn.execute(
@@ -180,7 +212,7 @@ def test_schema28_migration_adds_weekly_ledger_without_changing_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 33
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
@@ -211,7 +243,7 @@ def test_schema29_migration_preserves_legacy_race_records_and_initializes_anchor
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 33
         anchor = conn.execute(
             "SELECT enabled_at, first_week_start FROM race_league_config WHERE singleton=1"
         ).fetchone()
@@ -243,14 +275,14 @@ def test_schema30_migration_adds_isolated_ledgers_and_preserves_player_state(tmp
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 33
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {
             "sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims",
-            "wild_capture_runs", "wild_capture_attempts",
+            "wild_capture_runs", "wild_capture_attempts", "wild_survey_claims",
         } <= tables
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
@@ -303,13 +335,13 @@ def test_schema31_migration_adds_wild_capture_ledgers_and_preserves_player_state
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION == 33
         assert [tuple(row) for row in conn.execute("SELECT * FROM players")] == original_players
         assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
         assert [tuple(row) for row in conn.execute("SELECT * FROM quest_progress")] == original_progress
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert {"sect_boss_weeks", "sect_boss_attacks", "sect_boss_claims"} <= tables
-        assert {"wild_capture_runs", "wild_capture_attempts"} <= tables
+        assert {"wild_capture_runs", "wild_capture_attempts", "wild_survey_claims"} <= tables
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
 
@@ -347,6 +379,60 @@ def test_failed_schema32_migration_rolls_back_new_tables_and_version(tmp_path, m
         assert "wild_capture_runs" not in {
             row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
+
+
+def test_schema32_migration_preserves_wild_evidence_and_creates_verified_backup(tmp_path):
+    store = schema32_store(tmp_path)
+    with closing(store.connect()) as conn:
+        original_run = tuple(conn.execute("SELECT * FROM wild_capture_runs").fetchone())
+        original_inventory = [tuple(row) for row in conn.execute("SELECT * FROM inventory")]
+
+    store.initialize()
+
+    with closing(store.connect()) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 33
+        assert tuple(conn.execute("SELECT * FROM wild_capture_runs").fetchone()) == original_run
+        assert [tuple(row) for row in conn.execute("SELECT * FROM inventory")] == original_inventory
+        assert conn.execute("SELECT COUNT(*) FROM wild_survey_claims").fetchone()[0] == 0
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+    backups = list(tmp_path.glob("schema32.db.schema32-backup-*.db"))
+    assert len(backups) == 1
+    with closing(sqlite3.connect(backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert tuple(conn.execute("SELECT * FROM wild_capture_runs").fetchone()) == original_run
+        assert "wild_survey_claims" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("PRAGMA foreign_key_check").fetchall()
+
+
+def test_failed_schema33_migration_rolls_back_and_keeps_schema32_backup(tmp_path, monkeypatch):
+    store = schema32_store(tmp_path)
+    original_migration = database.migrate_wild_survey_claims
+
+    def fail_after_create(conn):
+        original_migration(conn)
+        raise RuntimeError("injected schema 33 failure")
+
+    monkeypatch.setattr(database, "migrate_wild_survey_claims", fail_after_create)
+    with pytest.raises(RuntimeError, match="injected schema 33 failure"):
+        store.initialize()
+
+    with closing(sqlite3.connect(store.path)) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert "wild_survey_claims" not in {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        assert conn.execute("SELECT stones FROM players WHERE user_id='old-user'").fetchone()[0] == 321
+        assert conn.execute("SELECT COUNT(*) FROM wild_capture_runs").fetchone()[0] == 1
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    backups = list(tmp_path.glob("schema32.db.schema32-backup-*.db"))
+    assert len(backups) == 1
+    with closing(sqlite3.connect(backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
 
 
 def test_failed_schema30_migration_rolls_back_new_tables_and_anchor(tmp_path, monkeypatch):
@@ -403,7 +489,7 @@ def test_schema19_migration_preserves_players_order_saves_cache_and_backup(tmp_p
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 32
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 33
         assert [tuple(row) for row in conn.execute(
             "SELECT rowid,user_id,stones,active_pet_id,registered_at FROM players ORDER BY rowid"
         )] == original_players
