@@ -744,3 +744,37 @@ CREATE TABLE family_outing_rewards (
     reward_snapshot TEXT NOT NULL,
     FOREIGN KEY(user_id,trip_id) REFERENCES family_outing_runs(user_id,trip_id)
 );
+CREATE TABLE family_duel_runs (
+    run_id TEXT PRIMARY KEY CHECK(length(run_id)=16),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    week_start INTEGER NOT NULL CHECK(week_start>=0),
+    duel_id TEXT NOT NULL CHECK(length(duel_id)>0),
+    parent_id INTEGER NOT NULL,
+    child_id INTEGER NOT NULL CHECK(child_id<>parent_id),
+    egg_record_id INTEGER NOT NULL REFERENCES pet_lineage_eggs(egg_record_id),
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    battle_id INTEGER NOT NULL UNIQUE REFERENCES battle_records(battle_id),
+    outcome TEXT NOT NULL CHECK(outcome IN ('won','lost','draw','timeout')),
+    rating_id TEXT CHECK(rating_id IS NULL OR length(rating_id)>0),
+    rounds INTEGER NOT NULL CHECK(rounds BETWEEN 1 AND 40),
+    remaining_hp TEXT NOT NULL,
+    skill_uses TEXT NOT NULL,
+    started_at INTEGER NOT NULL CHECK(started_at>=week_start AND started_at<week_start+604800),
+    snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    UNIQUE(user_id,week_start),
+    UNIQUE(user_id,run_id),
+    FOREIGN KEY(user_id,parent_id) REFERENCES pets(user_id,pet_id),
+    FOREIGN KEY(user_id,child_id) REFERENCES pets(user_id,pet_id)
+);
+CREATE INDEX family_duel_history ON family_duel_runs(user_id,week_start DESC,run_id DESC);
+CREATE TABLE family_duel_rewards (
+    run_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    operation_id TEXT NOT NULL UNIQUE REFERENCES duel_actions(operation_id),
+    rating_id TEXT NOT NULL CHECK(length(rating_id)>0),
+    granted_at INTEGER NOT NULL CHECK(granted_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    FOREIGN KEY(user_id,run_id) REFERENCES family_duel_runs(user_id,run_id) ON DELETE CASCADE
+);
+CREATE INDEX family_duel_reward_history ON family_duel_rewards(user_id,granted_at DESC);

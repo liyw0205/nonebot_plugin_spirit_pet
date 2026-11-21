@@ -219,7 +219,7 @@ def overview(ctx: Context, selector: str = "") -> Reply:
         lines.append(f"{course.name} · 亲本灵术至少 {course.parent_level} 级 · 结业额外熟练度最多 {course.proficiency}。")
         suffix = f" {chosen.pet_id}" if chosen else ""
         links.append(InlineCommand(len(lines) - 1, "选择亲子", f"{TITLE} 亲子 {course.id} 1{suffix}"))
-    return Reply(TITLE, tuple(lines), (f"{TITLE} 记录", "灵宠谱系", "灵宠技能图鉴"), tuple(links))
+    return Reply(TITLE, tuple(lines), (f"{TITLE} 记录", "灵宠谱系", "灵宠技能图鉴", "灵宠亲子合战"), tuple(links))
 
 
 def pairs(ctx: Context, parts: list[str]) -> Reply:

@@ -78,6 +78,7 @@ from ..domain.wild_survey_content import WildSurveyRoute
 from ..domain.wild_habitat_content import WildHabitatEvent
 from ..domain.pedigree_content import PedigreeMilestone
 from ..domain.family_trial_content import FamilyTrial, FamilyTrialCatalog
+from ..domain.family_duel_content import FamilyDuel, FamilyDuelCatalog
 from ..domain.family_tutelage_content import FamilyTutelageCatalog, FamilyTutelageCourse, FamilyTutelageRules
 from ..domain.family_outing_content import FamilyOutingCatalog
 from ..domain.fishing_content import FishingBait, FishingSpot
@@ -161,6 +162,8 @@ class Catalog:
     family_tutelage: dict[str, FamilyTutelageCourse]
     family_tutelage_rules: FamilyTutelageRules
     family_outings: FamilyOutingCatalog
+    family_duels: dict[str, FamilyDuel]
+    family_duel_rotation: tuple[str, ...]
     enemies: dict[str, Enemy]
     dungeons: dict[str, Dungeon]
     quests: dict[str, Quest]
@@ -279,6 +282,7 @@ class Catalog:
     def load(cls, directory: Path = DATA_DIR) -> "Catalog":
         family_trial_catalog = FamilyTrialCatalog.model_validate(_read(directory / "family_trials.json"))
         tutelage = FamilyTutelageCatalog.model_validate(_read(directory / "family_tutelage.json"))
+        family_duel_catalog = FamilyDuelCatalog.model_validate(_read(directory / "family_duels.json"))
         catalog = cls(
             species=_index(directory / "pets.json", Species),
             realms=tuple(_index(directory / "realms.json", Realm).values()),
@@ -296,6 +300,8 @@ class Catalog:
             family_tutelage={course.id: course for course in tutelage.courses},
             family_tutelage_rules=tutelage.rules,
             family_outings=FamilyOutingCatalog.model_validate(_read(directory / "family_outings.json")),
+            family_duels={duel.id: duel for duel in family_duel_catalog.duels},
+            family_duel_rotation=tuple(family_duel_catalog.rotation),
             enemies=_index(directory / "enemies.json", Enemy),
             dungeons=_index(directory / "dungeons.json", Dungeon),
             quests=_index(directory / "quests.json", Quest),
@@ -562,6 +568,7 @@ class Catalog:
         self._validate_wild_habitat_events()
         self._validate_pedigree_milestones()
         self._validate_family_trials()
+        self._validate_family_duels()
         realm_ids = {realm.id for realm in self.realms}
         for route in self.exploration_routes.values():
             self._require([route.min_realm], realm_ids, "exploration route realm")
@@ -961,6 +968,36 @@ class Catalog:
                         raise ValueError(
                             f"family trial {trial.id} reward item {item_id} must be consumable or material"
                         )
+
+    def _validate_family_duels(self) -> None:
+        realm_ids = {realm.id for realm in self.realms}
+        if set(self.family_duel_rotation) != set(self.family_duels):
+            raise ValueError("family duel rotation must reference every duel")
+        for duel in self.family_duels.values():
+            self._require([duel.min_realm], realm_ids, f"family duel {duel.id} realm")
+            self._require(duel.enemies, self.enemies, f"family duel {duel.id} enemies")
+            reward_values = []
+            for rating in duel.ratings:
+                reward = rating.reward
+                self._require(reward.items, self.items, f"family duel {duel.id} reward items")
+                if reward.exp.maximum + reward.stones.maximum + sum(
+                    bounds.maximum for bounds in reward.items.values()
+                ) > 2_000:
+                    raise ValueError(f"family duel {duel.id} rating reward exceeds limit")
+                if reward.exp.maximum + reward.stones.maximum + sum(
+                    bounds.maximum for bounds in reward.items.values()
+                ) <= 0:
+                    raise ValueError(f"family duel {duel.id} rating reward must not be empty")
+                if any(self.items[item_id].kind not in {"consumable", "material"}
+                       for item_id in reward.items):
+                    raise ValueError(f"family duel {duel.id} rewards must be consumables or materials")
+                reward_values.append(
+                    reward.exp.maximum + reward.stones.maximum + sum(
+                        bounds.maximum for bounds in reward.items.values()
+                    )
+                )
+            if reward_values[1] <= reward_values[0]:
+                raise ValueError(f"family duel {duel.id} stricter rating must have a larger reward")
 
     def _validate_family_tutelage(self) -> None:
         for course in self.family_tutelage.values():

@@ -55,6 +55,7 @@ from . import (
     family_trial,
     family_tutelage,
     family_outing,
+    family_duel,
 )
 
 TITLE = "灵宠今日"
@@ -206,12 +207,15 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     family_pending = family_trial.today_state(ctx, owner)
     tutelage_pending = family_tutelage.today_state(ctx, owner)
     outing_pending = family_outing.today_state(ctx, owner)
+    duel_pending = family_duel.today_state(ctx, owner)
     if outing_pending:
         pending.append(_entry(TODO, outing_pending, "选择下一段同行，完程后原双宠获得有限羁绊经验", family_outing.TITLE))
     if tutelage_pending:
         pending.append(_entry(TODO, tutelage_pending, "由原亲子付费讲习，再由原后代完成目标术考核", family_tutelage.TITLE))
     if family_pending:
         pending.append(_entry(TODO, family_pending, "同一家族阵容连续作战，逐阶保留剩余气血", family_trial.TITLE))
+    if duel_pending:
+        pending.append(_entry(TODO, duel_pending, "以真实直接亲子参加本周双宠协力战，胜利后按实战评级", family_duel.TITLE))
     if habitat_claim:
         claimable.append(_entry(CLAIM, habitat_claim, "查看并领取本周已解锁档位", wild_habitat.TITLE))
     elif habitat_pending:

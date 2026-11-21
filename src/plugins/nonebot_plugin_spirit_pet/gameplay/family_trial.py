@@ -217,7 +217,7 @@ def _render(ctx: Context, run: dict) -> Reply:
         lines.append(f"本轮{labels.get(run['status'], run['status'])}。")
     if "full_clear" in rewards:
         lines.append("家族全通奖励已发放。")
-    commands = ("灵宠家族试炼 战历", "灵宠谱系", "灵宠战报", "灵宠列表")
+    commands = ("灵宠家族试炼 战历", "灵宠谱系", "灵宠战报", "灵宠亲子合战")
     return Reply(f"{TITLE} · {trial.name}", tuple(lines), commands, tuple(links))
 
 
@@ -282,7 +282,7 @@ def _overview(ctx: Context, page_arg: str = "1") -> Reply:
     if not eligible:
         lines.append("尚无在册人数足够的可验证家族；真实培育灵卵孵化后建立亲缘，封存或归灵成员不可出战。")
     lines.append("开始格式：灵宠家族试炼 开始 编号 编号 [第三位编号]。查看只读，不占本周名额。")
-    return Reply(TITLE, tuple(lines), (*page.navigation, "灵宠谱系", "灵宠列表", "灵宠家族试炼 战历")[:4], tuple(links))
+    return Reply(TITLE, tuple(lines), (*page.navigation, "灵宠谱系", "灵宠家族试炼 战历", "灵宠亲子合战")[:4], tuple(links))
 
 
 def start(ctx: Context, parts: list[str]) -> Reply:

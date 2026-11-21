@@ -1,0 +1,110 @@
+{
+  "rotation": ["root_echo", "branch_guard", "ancestral_rift"],
+  "duels": [
+    {
+      "id": "root_echo",
+      "name": "初枝合战",
+      "description": "守住祖庭新枝，在根影汇合前击退来犯灵兽。",
+      "min_realm": "ningqi",
+      "enemies": ["wood_guard"],
+      "energy": 12,
+      "max_rounds": 30,
+      "ratings": [
+        {
+          "id": "concord",
+          "name": "同心破阵",
+          "max_rounds": 30,
+          "require_both_alive": false,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 55, "maximum": 70},
+            "stones": {"minimum": 75, "maximum": 95},
+            "items": {"forge_ore": {"minimum": 1, "maximum": 1}}
+          }
+        },
+        {
+          "id": "twin_star",
+          "name": "双契凯旋",
+          "max_rounds": 18,
+          "require_both_alive": true,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 95, "maximum": 115},
+            "stones": {"minimum": 135, "maximum": 160},
+            "items": {"forge_ore": {"minimum": 2, "maximum": 2}}
+          }
+        }
+      ]
+    },
+    {
+      "id": "branch_guard",
+      "name": "枝脉守望",
+      "description": "穿过寒枝阵线，亲本与后代合力击退守望者。",
+      "min_realm": "zhuji",
+      "enemies": ["ice_guard"],
+      "energy": 15,
+      "max_rounds": 26,
+      "ratings": [
+        {
+          "id": "concord",
+          "name": "同心破阵",
+          "max_rounds": 26,
+          "require_both_alive": false,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 75, "maximum": 90},
+            "stones": {"minimum": 105, "maximum": 125},
+            "items": {"bloodline_essence": {"minimum": 1, "maximum": 1}}
+          }
+        },
+        {
+          "id": "twin_star",
+          "name": "双契凯旋",
+          "max_rounds": 16,
+          "require_both_alive": true,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 125, "maximum": 145},
+            "stones": {"minimum": 175, "maximum": 200},
+            "items": {"bloodline_essence": {"minimum": 2, "maximum": 2}}
+          }
+        }
+      ]
+    },
+    {
+      "id": "ancestral_rift",
+      "name": "祖庭裂隙",
+      "description": "在祖庭裂隙合守阵眼，迎战两道失序灵息。",
+      "min_realm": "jindan",
+      "enemies": ["void_blade", "wood_colossus"],
+      "energy": 18,
+      "max_rounds": 24,
+      "ratings": [
+        {
+          "id": "concord",
+          "name": "同心破阵",
+          "max_rounds": 24,
+          "require_both_alive": false,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 100, "maximum": 120},
+            "stones": {"minimum": 140, "maximum": 165},
+            "items": {"exp_pill": {"minimum": 1, "maximum": 1}}
+          }
+        },
+        {
+          "id": "twin_star",
+          "name": "双契凯旋",
+          "max_rounds": 14,
+          "require_both_alive": true,
+          "require_both_skills": true,
+          "reward": {
+            "exp": {"minimum": 160, "maximum": 185},
+            "stones": {"minimum": 220, "maximum": 250},
+            "items": {"exp_pill": {"minimum": 2, "maximum": 2}}
+          }
+        }
+      ]
+    }
+  ]
+}

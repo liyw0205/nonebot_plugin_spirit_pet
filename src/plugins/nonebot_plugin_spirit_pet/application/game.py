@@ -12,6 +12,7 @@ from ..gameplay import pedigree
 from ..gameplay import family_trial
 from ..gameplay import family_tutelage
 from ..gameplay import family_outing
+from ..gameplay import family_duel
 from ..storage.database import Store
 from ..storage.repository import Repository
 from .commands import ACTIONS
@@ -152,6 +153,8 @@ class Game:
             action == "family_tutelage" and family_tutelage.read_only(argument)
         ) or (
             action == "family_outing" and family_outing.read_only(argument)
+        ) or (
+            action == "family_duel" and family_duel.read_only(argument)
         )
         market_initial_version = self._market_data_version() if action == "market" else None
         def run(conn):

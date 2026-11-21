@@ -37,9 +37,11 @@ def test_schema36_verified_backup_and_atomic_migration_preserve_every_old_value(
         assert after.pop("family_tutelage_" + name) == []
     for name in ("runs", "steps", "rewards"):
         assert after.pop("family_outing_" + name) == []
+    assert after.pop("family_duel_runs") == []
+    assert after.pop("family_duel_rewards") == []
     assert before == after
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
     backups = list(tmp_path.glob("schema36.db.schema36-backup-*.db"))

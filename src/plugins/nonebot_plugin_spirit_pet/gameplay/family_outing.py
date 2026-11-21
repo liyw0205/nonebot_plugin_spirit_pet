@@ -159,7 +159,7 @@ def overview(ctx: Context, *, routes: bool = False) -> Reply:
         lines.append(f"{route.name} · " + " → ".join(stage.name for stage in route.stages))
         links.append(InlineCommand(len(lines) - 1, "选择亲子", f"{TITLE} 亲子 {route.id}"))
     lines.append("伴游不增加单宠出游的游历值、特产或见闻，也不占每日相伴次数。")
-    return Reply(TITLE, tuple(lines), (f"{TITLE} 记录", "灵宠谱系", "灵宠羁绊"), tuple(links))
+    return Reply(TITLE, tuple(lines), (f"{TITLE} 记录", "灵宠谱系", "灵宠羁绊", "灵宠亲子合战"), tuple(links))
 
 
 def pairs(ctx: Context, parts: list[str]) -> Reply:

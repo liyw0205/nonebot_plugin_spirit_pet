@@ -41,9 +41,11 @@ def test_schema35_migration_preserves_every_existing_row_and_verified_backup(tmp
                   "family_tutelage_courses", "family_tutelage_lessons", "family_tutelage_exams", "family_tutelage_graduations",
                   "family_outing_runs", "family_outing_steps", "family_outing_rewards"):
         assert after.pop(table) == []
+    assert after.pop("family_duel_runs") == []
+    assert after.pop("family_duel_rewards") == []
     assert before == after
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 38
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
     backups = list(tmp_path.glob("schema35.db.schema35-backup-*.db"))

@@ -12,6 +12,7 @@ from ..gameplay import pedigree
 from ..gameplay import family_trial
 from ..gameplay import family_tutelage
 from ..gameplay import family_outing
+from ..gameplay import family_duel
 from ..gameplay import nursery
 from ..gameplay import play_courses
 from ..gameplay import training
@@ -193,6 +194,7 @@ ACTIONS = {
     "family_trial": Command(family_trial.dispatch, True, registered=False),
     "family_tutelage": Command(family_tutelage.dispatch, True, registered=False),
     "family_outing": Command(family_outing.dispatch, True, registered=False),
+    "family_duel": Command(family_duel.dispatch, True, registered=False),
     "nursery": Command(nursery.dispatch, True, registered=False),
     "play_course": Command(play_courses.dispatch, True, registered=False),
     "training": Command(training.dispatch, True, registered=False),
@@ -476,6 +478,7 @@ COMMANDS = {
     "灵宠家族试炼": "family_trial",
     "灵宠家族传习": "family_tutelage",
     "灵宠亲子伴游": "family_outing",
+    "灵宠亲子合战": "family_duel",
     "灵宠主线": "main_quests", "灵宠主线领奖": "main_quest_claim",
     "灵宠今日秘境": "daily_dungeon", "灵宠今日秘境领奖": "daily_dungeon_claim",
     "灵宠首领": "world_boss", "灵宠挑战首领": "world_boss_challenge", "灵宠首领领奖": "world_boss_claim",

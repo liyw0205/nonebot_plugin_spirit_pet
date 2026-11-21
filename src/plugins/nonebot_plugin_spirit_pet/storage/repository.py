@@ -34,6 +34,7 @@ _SPECIAL_REPLAY_PRIORITIES = {
     "family_trial": 15,
     "family_tutelage": 15,
     "family_outing": 15,
+    "family_duel": 15,
 }
 
 
