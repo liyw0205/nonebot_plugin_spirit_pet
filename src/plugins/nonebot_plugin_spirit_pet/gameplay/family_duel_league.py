@@ -54,6 +54,12 @@ def finalize_ended(ctx: Context) -> None:
     )
 
 
+def ensure_open(ctx: Context, start: int) -> None:
+    season = _season(ctx, start)
+    if season is not None and season["finalized_at"] is not None:
+        raise GameError("该联赛赛季已结算，不能再报名或追加周战。")
+
+
 def _rules(ctx: Context, start: int) -> dict:
     row = _season(ctx, start)
     if row is not None:
@@ -345,6 +351,7 @@ def register(ctx: Context, parts: list[str]) -> Reply:
     week = beijing_week(ctx.now)[0]
     if current is None or current != week or parts[0] != str(current):
         raise GameError("仅赛季首周可报名；赛季中不能补报。")
+    ensure_open(ctx, current)
     from .family_duel import _eligible, _run
     if _run(ctx, ctx.user_id, week) is not None:
         raise GameError("你已参加本周亲子合战，不能补报名本赛季。")

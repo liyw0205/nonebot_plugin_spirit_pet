@@ -141,6 +141,39 @@ def test_same_week_battle_blocks_late_signup_and_no_old_run_is_backfilled(game, 
     assert not sql(game[1], "SELECT * FROM family_duel_league_runs")
 
 
+def test_finalized_season_rejects_backdated_challenge_and_signup(game, play, monkeypatch):
+    activate_season(game)
+    ids_by_user = {user: prepare(game, play, user) for user in ("u1", "u2", "u3")}
+    for user in ("u1", "u2"):
+        ids = ids_by_user[user]
+        play("family_duel", f"联赛 报名 {SEASON} {ids[0]} {ids[2]}",
+             now=SEASON + 100, user=user)
+    monkeypatch.setattr(family_duel, "fight", scripted())
+    for week_index in (0, 1):
+        at = SEASON + week_index * 604800 + 1000
+        week = beijing_week(at)[0]
+        for user in ("u1", "u2"):
+            ids = ids_by_user[user]
+            play("family_duel", f"挑战 {week} {ids[0]} {ids[2]}", now=at, user=user,
+                 op=f"finalized-season-{user}-{week_index}")
+
+    end = SEASON + LEAGUE_SECONDS
+    play("family_duel", "联赛 领奖 2027-01-18", now=end + 100, user="u1",
+         op="finalize-league-season")
+
+    week_three = beijing_week(SEASON + 2 * 604800 + 1000)[0]
+    late_battler = ids_by_user["u2"]
+    with pytest.raises(GameError, match="已结算"):
+        play("family_duel", f"挑战 {week_three} {late_battler[0]} {late_battler[2]}",
+             now=SEASON + 2 * 604800 + 1000, user="u2", op="backdated-league-battle")
+    late_signup = ids_by_user["u3"]
+    with pytest.raises(GameError, match="已结算"):
+        play("family_duel", f"联赛 报名 {SEASON} {late_signup[0]} {late_signup[2]}",
+             now=SEASON + 100, user="u3", op="backdated-league-signup")
+    assert sql(game[1], "SELECT COUNT(*) AS n FROM family_duel_league_runs")[0]["n"] == 4
+    assert not sql(game[1], "SELECT * FROM family_duel_league_entries WHERE user_id='u3'")
+
+
 def test_three_week_schedule_is_contiguous_across_year_boundary():
     anchor = int(datetime(2026, 12, 7, tzinfo=BEIJING).timestamp())
     start = anchor + LEAGUE_SECONDS

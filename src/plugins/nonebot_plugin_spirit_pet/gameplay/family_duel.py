@@ -242,6 +242,7 @@ def challenge(ctx: Context, parts: list[str]) -> Reply:
         raise GameError("挑战入口已过期，请重新预览本周亲子合战。")
     start = int(parts[0])
     family_duel_league.finalize_ended(ctx)
+    family_duel_league.ensure_open(ctx, family_duel_league.league_start(start))
     parent, child, egg = _eligible(ctx, pet_id(parts[1]), pet_id(parts[2]))
     league_entry = family_duel_league.entry_for_week(ctx, start)
     if league_entry is not None:
