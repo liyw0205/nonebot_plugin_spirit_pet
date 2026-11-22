@@ -354,6 +354,13 @@ def test_cross_breeding_help_objectives_and_today_are_actionable(game, play):
     assert "还没有异族共育记录" in play("cross_breeding", "记录").text()
 
 
+def test_cross_breeding_help_renders_in_qq_native_mode(game, play):
+    reply = play("help", "成长")
+    fallback, message = _qq_segments(reply, Config(spirit_pet_qq_mode="native"))
+    assert fallback
+    assert message["markdown"][0].data["markdown"].content
+
+
 @pytest.mark.parametrize("adapter", ["QQ", "OneBot V11"])
 def test_cross_breeding_command_uses_shared_adapter_handler(game, play, monkeypatch, adapter):
     play("adopt", "青鸾", user="12345")
