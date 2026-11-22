@@ -35,6 +35,8 @@ def test_verified_schema37_backup_and_migration_preserve_all_old_data(tmp_path):
     for table in ("family_duel_league_seasons", "family_duel_league_entries",
                   "family_duel_league_runs", "family_duel_league_claims"):
         assert after.pop(table) == []
+    for table in ("sect_boss_league_seasons", "sect_boss_league_entries", "sect_boss_league_claims"):
+        assert after.pop(table) == []
     assert after == before
     with closing(store.connect()) as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == database.SCHEMA_VERSION

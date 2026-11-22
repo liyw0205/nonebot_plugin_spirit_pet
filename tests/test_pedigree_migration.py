@@ -24,6 +24,7 @@ def schema34_store(path):
         for table in (
             "family_duel_league_claims", "family_duel_league_runs",
             "family_duel_league_entries", "family_duel_league_seasons",
+            "sect_boss_league_claims", "sect_boss_league_entries", "sect_boss_league_seasons",
             "family_duel_rewards", "family_duel_runs",
             "family_outing_rewards", "family_outing_steps", "family_outing_runs",
             "family_tutelage_graduations", "family_tutelage_exams", "family_tutelage_lessons", "family_tutelage_courses",

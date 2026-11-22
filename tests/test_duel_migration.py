@@ -72,6 +72,8 @@ def test_migrate_preserves_all_rows_uid_order_and_private_backup(tmp_path):
     for table in ("family_duel_league_seasons", "family_duel_league_entries",
                   "family_duel_league_runs", "family_duel_league_claims"):
         assert after.pop(table) == []
+    for table in ("sect_boss_league_seasons", "sect_boss_league_entries", "sect_boss_league_claims"):
+        assert after.pop(table) == []
     assert after == before
     backups = list(tmp_path.glob("*.schema27-backup-*.db"))
     assert len(backups) == 1 and backups[0].stat().st_mode & 0o777 == 0o600
