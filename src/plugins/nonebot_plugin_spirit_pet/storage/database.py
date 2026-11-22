@@ -25,10 +25,11 @@ from .registration import (
     validate_schema37, backup_schema36, migrate_family_tutelage,
     validate_schema38, backup_schema37, migrate_family_outings,
     validate_schema39, backup_schema38, backup_schema39, migrate_family_duels,
-    validate_schema40, migrate_family_duel_league,
+    validate_schema40, migrate_family_duel_league, backup_schema40,
+    migrate_sect_boss_league, validate_schema41,
 )
 
-SCHEMA_VERSION = 40
+SCHEMA_VERSION = 41
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
@@ -680,6 +681,31 @@ class Store:
                     if conn.execute("PRAGMA foreign_key_check").fetchone():
                         raise RuntimeError("Family duel league migration foreign key check failed; database preserved")
                     conn.execute("PRAGMA user_version=40")
+                    self._ensure_performance_indexes(conn)
+                    conn.commit()
+                except BaseException:
+                    conn.rollback()
+                    raise
+                version = 40
+            if version == 40:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    version = conn.execute("PRAGMA user_version").fetchone()[0]
+                    if version == SCHEMA_VERSION:
+                        conn.commit()
+                        return
+                    if version != 40:
+                        raise RuntimeError(f"Database changed during migration (schema {version})")
+                    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+                    validate_schema40(conn, schema)
+                    backup_schema40(self.path)
+                    migrate_sect_boss_league(conn)
+                    validate_schema41(conn, schema)
+                    if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                        raise RuntimeError("Sect boss league migration integrity check failed; database preserved")
+                    if conn.execute("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Sect boss league migration foreign key check failed; database preserved")
+                    conn.execute("PRAGMA user_version=41")
                     self._ensure_performance_indexes(conn)
                     conn.commit()
                 except BaseException:

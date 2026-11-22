@@ -37,12 +37,13 @@ def test_schema39_backup_and_upgrade_preserve_all_existing_rows(tmp_path):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 40
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 41
         after = all_rows(conn)
         assert {name: after[name] for name in before} == before
         assert not conn.execute("SELECT * FROM family_duel_league_seasons").fetchall()
         assert not conn.execute("PRAGMA foreign_key_check").fetchall()
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert not conn.execute("SELECT * FROM sect_boss_league_seasons").fetchall()
     backups = list(tmp_path.glob("schema39.db.schema39-backup-*.db"))
     assert len(backups) == 1
     with closing(sqlite3.connect(backups[0])) as conn:
@@ -50,6 +51,10 @@ def test_schema39_backup_and_upgrade_preserve_all_existing_rows(tmp_path):
         assert "family_duel_league_seasons" not in {
             row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
+    league_backups = list(tmp_path.glob("schema39.db.schema40-backup-*.db"))
+    assert len(league_backups) == 1
+    with closing(sqlite3.connect(league_backups[0])) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 40
 
 
 @pytest.mark.parametrize("boundary", [

@@ -199,6 +199,12 @@ def page(ctx: Context, arg: str) -> Reply:
 
     lines.append(f"师门共讨：{sect_boss.objective_line(ctx, ctx.user_id) or '本周未开启'}。")
     links.append(InlineCommand(len(lines) - 1, "查看共讨", "灵宠师门 共讨"))
+    from . import sect_boss_league
+
+    league_line = sect_boss_league.objective_line(ctx, ctx.user_id)
+    if league_line:
+        lines.append(f"{league_line}。")
+        links.append(InlineCommand(len(lines) - 1, "查看三周联赛", "灵宠师门 共讨 联赛"))
     return Reply("灵宠师门", tuple(lines), ("灵宠师门", "我的灵宠", "灵宠目标"), tuple(links))
 
 
@@ -590,6 +596,11 @@ def objective_line(ctx: Context, user_id: str) -> str:
     boss_line = sect_boss.objective_line(ctx, user_id)
     if boss_line:
         extra += f" · {boss_line}"
+    from . import sect_boss_league
+
+    league_line = sect_boss_league.objective_line(ctx, user_id)
+    if league_line:
+        extra += f" · {league_line}"
     return (
         f"师门：{sect.name} {entry.rank} 阶"
         f" · {_progress_text(sect, entry, contribution(ctx, sect, user_id))}{extra}"

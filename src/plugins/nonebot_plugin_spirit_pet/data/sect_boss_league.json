@@ -1,0 +1,16 @@
+{
+  "first_season_start": 1796572800,
+  "weeks": 3,
+  "registration_weeks": 1,
+  "minimum_weeks": 2,
+  "minimum_entrants": 2,
+  "claim_weeks": 3,
+  "points_per_week": 10000,
+  "tie_break": "points_weeks_best_damage_uid",
+  "sect_tie_break": "defeats_progress_id",
+  "prizes": [
+    {"rank": 1, "stones": 600, "items": {"exp_pill": 2}},
+    {"rank": 2, "stones": 400, "items": {"exp_pill": 1}},
+    {"rank": 3, "stones": 250, "items": {}}
+  ]
+}

@@ -251,6 +251,8 @@ def page(ctx: Context, arg: str = "") -> Reply:
     links.append(InlineCommand(len(lines) - 1, "个人战历", "灵宠师门 共讨 个人战历 1"))
     lines.append("查看已结束周的门派进度与公开 UID 排名。")
     links.append(InlineCommand(len(lines) - 1, "往期战历", "灵宠师门 共讨 战历 1"))
+    lines.append("查看三周共讨联赛、锁定门派报名与跨周排名。")
+    links.append(InlineCommand(len(lines) - 1, "三周联赛", "灵宠师门 共讨 联赛"))
 
     previous = _week_row(ctx, sect.id, start - WEEK)
     if previous is not None and _claimable(ctx, previous, sect.id, ctx.user_id):
@@ -288,6 +290,9 @@ def challenge(ctx: Context, arg: str = "") -> Reply:
     start, _ = beijing_week(ctx.now)
     if binding and (int(binding[0]) != start or binding[1] != sect.id):
         raise GameError("共讨入口已过期或门派已变化，请重新打开本周共讨页面。")
+    from . import sect_boss_league
+
+    sect_boss_league.before_challenge(ctx, start, sect.id)
     row = _week_row(ctx, sect.id, start)
     if row is not None:
         boss = _week_boss(ctx, row, boss)
@@ -658,4 +663,7 @@ def dispatch(ctx: Context, arg: str) -> Reply:
         return past(ctx, rest)
     if head == "领奖":
         return claim(ctx, rest)
+    if head == "联赛":
+        from . import sect_boss_league
+        return sect_boss_league.dispatch(ctx, rest)
     raise GameError("格式：灵宠师门 共讨 [挑战 [周起点 门派]|榜 [页码]|个人战历 [页码]|战历 [页码]|往期 [门派名] YYYY-MM-DD [页码]|领奖]。")

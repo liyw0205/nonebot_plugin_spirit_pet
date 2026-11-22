@@ -36,7 +36,7 @@ def test_schema38_backup_and_upgrade_add_only_isolated_duel_tables(tmp_path):
     store.initialize()
 
     with closing(store.connect()) as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 40
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 41
         after = _old_data(conn)
         assert {key: after[key] for key in before} == before
         assert conn.execute("SELECT COUNT(*) FROM family_duel_runs").fetchone()[0] == 0

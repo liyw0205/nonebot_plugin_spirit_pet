@@ -24,6 +24,7 @@ from ..domain.cave_content import CaveFacility
 from ..domain.corridor_content import Corridor
 from ..domain.sect_content import Sect
 from ..domain.sect_boss_content import SectBoss
+from ..domain.sect_boss_league_content import SectBossLeague
 from ..domain.sect_mission_content import SectMission
 from ..domain.sect_trial_content import SectTrial
 from ..domain.codex_trial_content import CodexTrial
@@ -214,6 +215,7 @@ class Catalog:
     corridor: dict[str, Corridor]
     sects: dict[str, Sect]
     sect_bosses: dict[str, SectBoss]
+    sect_boss_league: SectBossLeague
     sect_missions: dict[str, SectMission]
     sect_trials: dict[str, SectTrial]
     codex_trials: dict[str, CodexTrial]
@@ -353,6 +355,7 @@ class Catalog:
             corridor=_index(directory / "corridor.json", Corridor),
             sects=_index(directory / "sects.json", Sect),
             sect_bosses=_index(directory / "sect_bosses.json", SectBoss),
+            sect_boss_league=SectBossLeague.model_validate(_read(directory / "sect_boss_league.json")),
             sect_missions=_index(directory / "sect_missions.json", SectMission),
             sect_trials=_index(directory / "sect_trials.json", SectTrial),
             codex_trials=_index(directory / "codex_trials.json", CodexTrial),
@@ -754,6 +757,7 @@ class Catalog:
         self._validate_cave_offerings()
         self._validate_sect_content()
         self._validate_sect_bosses()
+        self._validate_sect_boss_league()
         self._validate_convoy()
         self._validate_battle_supplies()
 
@@ -1487,6 +1491,12 @@ class Catalog:
                 bounds.maximum for bounds in previous.items.values()
             ):
                 raise ValueError(f"sect boss {boss.id} {scope} item rewards must not decrease by tier")
+
+    def _validate_sect_boss_league(self) -> None:
+        for prize in self.sect_boss_league.prizes:
+            self._require(prize.items, self.items, "sect boss league prize items")
+            if any(self.items[item_id].kind not in {"consumable", "material"} for item_id in prize.items):
+                raise ValueError("sect boss league prizes must use consumables or materials")
 
     def _validate_farm_levels(self) -> None:
         levels = sorted(self.farm_levels)

@@ -841,3 +841,37 @@ WHEN NOT EXISTS (
 BEGIN
     SELECT RAISE(ABORT,'family duel league run does not match locked entry');
 END;
+CREATE TABLE sect_boss_league_seasons (
+    season_start INTEGER PRIMARY KEY CHECK(season_start>=316800 AND (season_start-316800)%1814400=0),
+    ends_at INTEGER NOT NULL CHECK(ends_at=season_start+1814400),
+    created_at INTEGER NOT NULL CHECK(created_at>=season_start AND created_at<season_start+604800),
+    snapshot TEXT NOT NULL,
+    finalized_at INTEGER CHECK(finalized_at IS NULL OR finalized_at>=ends_at)
+);
+CREATE TABLE sect_boss_league_entries (
+    season_start INTEGER NOT NULL REFERENCES sect_boss_league_seasons(season_start),
+    user_id TEXT NOT NULL REFERENCES players(user_id) ON DELETE CASCADE,
+    sect_id TEXT NOT NULL CHECK(sect_id IN ('jian_ge','xuan_men','dan_ding','yu_shou')),
+    public_uid INTEGER NOT NULL REFERENCES player_identity(id) ON DELETE CASCADE CHECK(public_uid>=0),
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    registered_at INTEGER NOT NULL CHECK(registered_at>=season_start AND registered_at<season_start+604800),
+    PRIMARY KEY(season_start,user_id),
+    UNIQUE(season_start,user_id,sect_id)
+);
+CREATE INDEX sect_boss_league_entry_sect
+    ON sect_boss_league_entries(season_start,sect_id,registered_at,user_id);
+CREATE TABLE sect_boss_league_claims (
+    season_start INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    sect_id TEXT NOT NULL,
+    rank INTEGER NOT NULL CHECK(rank BETWEEN 1 AND 3),
+    operation_id TEXT NOT NULL UNIQUE CHECK(length(operation_id)>0),
+    claimed_at INTEGER NOT NULL CHECK(claimed_at>=0),
+    reward_snapshot TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    PRIMARY KEY(season_start,user_id),
+    FOREIGN KEY(season_start,user_id,sect_id)
+        REFERENCES sect_boss_league_entries(season_start,user_id,sect_id)
+);
+CREATE INDEX sect_boss_league_claim_history
+    ON sect_boss_league_claims(user_id,claimed_at DESC);

@@ -101,6 +101,19 @@ def test_family_duel_league_rejects_invalid_rules_and_rewards(content_dir, chang
         Catalog.load(content_dir)
 
 
+@pytest.mark.parametrize("change", [
+    lambda data: data["prizes"][0]["items"].__setitem__("ghost_item", 1),
+    lambda data: data["prizes"][0]["items"].__setitem__("egg_qingluan", 1),
+    lambda data: data["prizes"][0].__setitem__("rank", 2),
+    lambda data: data.__setitem__("first_season_start", data["first_season_start"] + 604800),
+    lambda data: data["prizes"][0].__setitem__("stones", 0),
+])
+def test_sect_boss_league_rejects_invalid_schedule_and_rewards(content_dir, change):
+    edit(content_dir, "sect_boss_league.json", change)
+    with pytest.raises((ValidationError, ValueError)):
+        Catalog.load(content_dir)
+
+
 def test_sect_community_rewards_must_reference_real_items(content_dir):
     def change(data):
         data["sect"]["community_tiers"][0]["reward"]["items"]["missing_item"] = {
@@ -149,6 +162,16 @@ def test_sect_boss_rewards_must_increase_by_tier(content_dir, scope):
 
     edit(content_dir, "sect_bosses.json", change)
     with pytest.raises(ValueError, match="rewards must increase by tier"):
+        Catalog.load(content_dir)
+
+
+@pytest.mark.parametrize("scope", ["milestones", "personal_tiers"])
+def test_sect_boss_item_rewards_must_not_decrease_by_tier(content_dir, scope):
+    def change(data):
+        data[0][scope][1]["reward"]["items"] = {}
+
+    edit(content_dir, "sect_bosses.json", change)
+    with pytest.raises(ValueError, match="item rewards must not decrease by tier"):
         Catalog.load(content_dir)
 
 

@@ -385,6 +385,23 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
                 pending.append(_entry(
                     TODO, boss_line, "查看共享首领进度与本周个人排名", "灵宠师门 共讨",
                 ))
+        from . import sect_boss_league
+
+        league_rank = sect_boss_league.claimable(ctx, owner)
+        if league_rank is not None:
+            previous = sect_boss_league._start_for(ctx, ctx.now) - sect_boss_league.SEASON_SECONDS
+            claimable.append(_entry(
+                CLAIM, f"师门共讨联赛第 {league_rank} 名奖励可领",
+                "当前仍须属于赛季锁定门派",
+                f"灵宠师门 共讨 联赛 领奖 {previous} {league_rank}",
+            ))
+        else:
+            league_line = sect_boss_league.objective_line(ctx, owner)
+            if league_line:
+                pending.append(_entry(
+                    TODO, league_line, "按真实共讨伤害积累三周联赛积分",
+                    "灵宠师门 共讨 联赛",
+                ))
 
     if race.remaining_today(ctx, owner):
         pending.append(_entry(
