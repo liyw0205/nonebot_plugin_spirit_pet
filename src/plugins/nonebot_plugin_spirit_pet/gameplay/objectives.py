@@ -101,6 +101,7 @@ from . import family_trial
 from . import family_tutelage
 from . import family_outing
 from . import family_duel
+from . import cross_breeding
 
 HUB_PAGES = (
     "灵宠签到奖励", "灵宠陪伴奖励", "灵宠任务", "灵宠今日秘境", "灵宠灵田", "灵宠首领", "灵宠周常", "灵宠主线", "灵宠成就", "灵宠称号", "灵宠秘境首通",
@@ -635,6 +636,7 @@ def objectives(ctx: Context, arg: str) -> Reply:
         (codex_trials.objective_line(ctx, player.user_id), "灵宠图鉴试炼"),
         (tempering.objective_line(ctx, player.user_id), "灵宠淬魂"),
         (pedigree.objective_line(ctx, player.user_id), "灵宠谱系"),
+        (cross_breeding.objective_line(ctx, player.user_id), "灵宠异族共育"),
         (family_trial.objective_line(ctx, player.user_id), family_trial.TITLE),
         (family_tutelage.objective_line(ctx, player.user_id), family_tutelage.TITLE),
         (family_outing.objective_line(ctx, player.user_id), family_outing.TITLE),

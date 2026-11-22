@@ -56,6 +56,7 @@ from . import (
     family_tutelage,
     family_outing,
     family_duel,
+    cross_breeding,
 )
 
 TITLE = "灵宠今日"
@@ -217,6 +218,11 @@ def collect(ctx: Context, user_id: str | None = None) -> tuple[list[dict], list[
     if duel_pending:
         command = f"{family_duel.TITLE} 联赛 报名" if "联赛报名周" in duel_pending else family_duel.TITLE
         pending.append(_entry(TODO, duel_pending, "以锁定真实直接亲子完成本周协力战，赛季按真实评级计分", command))
+    cross_breeding_pending = cross_breeding.today_state(ctx, owner)
+    if cross_breeding_pending:
+        pending.append(_entry(
+            TODO, cross_breeding_pending, "查看固定异种亲本配方与本人可用资源", cross_breeding.TITLE,
+        ))
     if habitat_claim:
         claimable.append(_entry(CLAIM, habitat_claim, "查看并领取本周已解锁档位", wild_habitat.TITLE))
     elif habitat_pending:

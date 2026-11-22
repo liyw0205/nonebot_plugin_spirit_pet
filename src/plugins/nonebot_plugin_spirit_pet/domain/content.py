@@ -232,6 +232,27 @@ class BreedingRule(Definition):
     cost: ResourceCost
 
 
+class CrossBreedingRecipe(Definition):
+    id: Identifier
+    parent_a_species: Identifier
+    parent_b_species: Identifier
+    offspring_species: Identifier
+    minimum_affinity: Annotated[int, Field(ge=1, le=100)]
+    minimum_realm: Identifier
+    energy: Annotated[int, Field(gt=0, le=100)]
+    stones: Positive
+    items: dict[Identifier, Annotated[int, Field(gt=0, le=20)]] = Field(min_length=1, max_length=3)
+    text: Annotated[str, Field(min_length=8, max_length=120)]
+
+    @model_validator(mode="after")
+    def check_parents(self):
+        if self.parent_a_species == self.parent_b_species:
+            raise ValueError("cross breeding requires two different parent species")
+        if sum(self.items.values()) > 6:
+            raise ValueError("cross breeding material budget exceeds limit")
+        return self
+
+
 class StageStarRule(Definition):
     """Rounds allowed per enemy for a stage clear rating.
 

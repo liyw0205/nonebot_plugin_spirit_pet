@@ -143,19 +143,42 @@ class Repository:
              json.dumps(asdict(reply), ensure_ascii=False)),
         )
 
+    def pedigree_operation_reply(
+        self, operation_id: str, user_id: str, *, kind: str, snapshot_flag: str | None = None,
+    ) -> Reply | None:
+        row = self.conn.execute(
+            "SELECT user_id,kind,snapshot,reply FROM pet_pedigree_operations WHERE operation_id=?",
+            (operation_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["user_id"] != user_id:
+            raise GameError("operation ID reused by a different user")
+        snapshot = json.loads(row["snapshot"])
+        if row["kind"] != kind or (snapshot_flag is not None and not snapshot.get(snapshot_flag)):
+            raise GameError("operation ID reused by a different action")
+        return Reply.from_data(json.loads(row["reply"]))
+
     def record_lineage_egg(
         self, *, user_id: str, item_id: str, species_id: str, parent_a_id: int,
         parent_a_name: str, parent_b_id: int, parent_b_name: str, operation_id: str,
         created_at: int,
     ) -> int:
         parents = self.conn.execute(
-            "SELECT pet_id,user_id,species_id FROM pets WHERE pet_id IN (?,?)",
+            "SELECT pet_id,user_id,species_id,name FROM pets WHERE pet_id IN (?,?)",
             (parent_a_id, parent_b_id),
         ).fetchall()
-        if len(parents) != 2 or any(
-            row["user_id"] != user_id or row["species_id"] != species_id for row in parents
+        by_id = {int(row["pet_id"]): row for row in parents}
+        if (
+            len(by_id) != 2
+            or any(row["user_id"] != user_id for row in by_id.values())
+            or by_id[parent_a_id]["name"] != parent_a_name
+            or by_id[parent_b_id]["name"] != parent_b_name
         ):
             raise GameError("灵卵亲本凭证与当前灵宠不一致。")
+        # Schema 35 predates cross-species breeding and constrains both legacy
+        # species snapshots to the egg species. The permanent operation snapshot
+        # and the referenced pets retain the actual parent species.
         cursor = self.conn.execute(
             "INSERT INTO pet_lineage_eggs(user_id,item_id,species_id,parent_a_id,parent_a_name,"
             "parent_a_species_id,parent_b_id,parent_b_name,parent_b_species_id,operation_id,status,created_at) "

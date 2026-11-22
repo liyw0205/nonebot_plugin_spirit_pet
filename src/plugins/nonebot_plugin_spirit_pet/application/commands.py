@@ -8,6 +8,7 @@ from ..gameplay import wild_habitat
 from ..gameplay import companionship, crafting, expeditions, lineage, pve_stages, stage_tactics, tower
 from ..gameplay import companionship_rewards
 from ..gameplay import breeding
+from ..gameplay import cross_breeding
 from ..gameplay import pedigree
 from ..gameplay import family_trial
 from ..gameplay import family_tutelage
@@ -190,6 +191,7 @@ ACTIONS = {
     "train": Command(cultivation.train, True),
     "co_train": Command(cultivation.co_train, True),
     "breeding": Command(breeding.breeding, True, registered=False),
+    "cross_breeding": Command(cross_breeding.dispatch, True, registered=False),
     "pedigree": Command(pedigree.dispatch, True, registered=False),
     "family_trial": Command(family_trial.dispatch, True, registered=False),
     "family_tutelage": Command(family_tutelage.dispatch, True, registered=False),
@@ -474,6 +476,7 @@ COMMANDS = {
     "灵宠陪伴奖励": "bond_rewards", "灵宠陪伴领奖": "bond_reward_claim", "灵宠修炼": "train", "灵宠回收": "recycle",
     "灵宠合修": "co_train",
     "灵宠培育": "breeding",
+    "灵宠异族共育": "cross_breeding",
     "灵宠谱系": "pedigree",
     "灵宠家族试炼": "family_trial",
     "灵宠家族传习": "family_tutelage",

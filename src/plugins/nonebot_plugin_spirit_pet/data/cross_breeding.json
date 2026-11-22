@@ -1,0 +1,38 @@
+[
+  {
+    "id": "wind_flame_to_baize",
+    "parent_a_species": "qingluan",
+    "parent_b_species": "xuanhu",
+    "offspring_species": "baize",
+    "minimum_affinity": 60,
+    "minimum_realm": "ningqi",
+    "energy": 20,
+    "stones": 1000,
+    "items": {"forge_ore": 1},
+    "text": "青羽引风、赤焰守炉，灵息凝作白泽灵卵。"
+  },
+  {
+    "id": "dragon_wood_to_baize",
+    "parent_a_species": "jiaolong",
+    "parent_b_species": "qingluan",
+    "offspring_species": "baize",
+    "minimum_affinity": 70,
+    "minimum_realm": "ningqi",
+    "energy": 25,
+    "stones": 1200,
+    "items": {"bloodline_essence": 1},
+    "text": "蛟息润泽青枝，木灵与水脉共育白泽灵卵。"
+  },
+  {
+    "id": "fox_dragon_to_jiaolong",
+    "parent_a_species": "xuanhu",
+    "parent_b_species": "jiaolong",
+    "offspring_species": "jiaolong",
+    "minimum_affinity": 75,
+    "minimum_realm": "ningqi",
+    "energy": 30,
+    "stones": 1500,
+    "items": {"gem_vital": 1, "forge_ore": 1},
+    "text": "玄狐引火、蛟龙蓄水，阴阳相济护成蛟龙灵卵。"
+  }
+]

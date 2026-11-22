@@ -9,6 +9,7 @@ from ..domain.models import GameError, Reply
 from ..gameplay import wild_capture
 from ..gameplay import wild_habitat
 from ..gameplay import pedigree
+from ..gameplay import cross_breeding
 from ..gameplay import family_trial
 from ..gameplay import family_tutelage
 from ..gameplay import family_outing
@@ -147,6 +148,8 @@ class Game:
             action == "wild_habitat" and wild_habitat.read_only(argument)
         ) or (
             action == "pedigree" and pedigree.read_only(argument)
+        ) or (
+            action == "cross_breeding" and cross_breeding.read_only(argument)
         ) or (
             action == "family_trial" and family_trial.read_only(argument)
         ) or (

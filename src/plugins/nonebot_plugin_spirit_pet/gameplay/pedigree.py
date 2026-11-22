@@ -21,13 +21,32 @@ def _families(ctx: Context, user_id: str) -> dict:
     children: dict[int, list[dict]] = {}
     details: dict[int, tuple[str, str]] = {}
     neighbors: dict[int, set[int]] = {}
+    parent_ids = {
+        int(parent_id)
+        for row in rows
+        for parent_id in (row["parent_a_id"], row["parent_b_id"])
+    }
+    parent_species = {}
+    if parent_ids:
+        placeholders = ",".join("?" for _ in parent_ids)
+        parent_species = {
+            int(row["pet_id"]): str(row["species_id"])
+            for row in ctx.repo.conn.execute(
+                f"SELECT pet_id,species_id FROM pets WHERE user_id=? AND pet_id IN ({placeholders})",
+                (user_id, *sorted(parent_ids)),
+            )
+        }
     for row in rows:
         child = int(row["child_pet_id"])
         parent_ids = (int(row["parent_a_id"]), int(row["parent_b_id"]))
         parents[child] = parent_ids
         details.setdefault(child, (str(row["child_name"]), str(row["species_id"])))
-        details.setdefault(parent_ids[0], (str(row["parent_a_name"]), str(row["parent_a_species_id"])))
-        details.setdefault(parent_ids[1], (str(row["parent_b_name"]), str(row["parent_b_species_id"])))
+        details.setdefault(parent_ids[0], (
+            str(row["parent_a_name"]), parent_species.get(parent_ids[0], str(row["parent_a_species_id"])),
+        ))
+        details.setdefault(parent_ids[1], (
+            str(row["parent_b_name"]), parent_species.get(parent_ids[1], str(row["parent_b_species_id"])),
+        ))
         for parent in parent_ids:
             children.setdefault(parent, []).append(dict(row))
             neighbors.setdefault(parent, set()).update((parent_ids[1] if parent == parent_ids[0] else parent_ids[0], child))
@@ -267,9 +286,13 @@ def _pet_view(ctx: Context, parts: list[str]) -> Reply:
     parents = graph["parents"].get(target)
     if parents:
         row = next(row for row in graph["rows"] if int(row["child_pet_id"]) == target)
+        first_species = graph["details"].get(parents[0], ("", ""))[1]
+        second_species = graph["details"].get(parents[1], ("", ""))[1]
+        first_species_name = ctx.content.species[first_species].name if first_species in ctx.content.species else first_species
+        second_species_name = ctx.content.species[second_species].name if second_species in ctx.content.species else second_species
         lines.append(
-            f"双亲：{row['parent_a_name']}（编号 {parents[0]}）与 "
-            f"{row['parent_b_name']}（编号 {parents[1]}）。"
+            f"双亲：{row['parent_a_name']}（{first_species_name}，编号 {parents[0]}）与 "
+            f"{row['parent_b_name']}（{second_species_name}，编号 {parents[1]}）。"
         )
     else:
         lines.append("这是当前凭证图中的最早可验证一代；其更早来源未知。")

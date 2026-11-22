@@ -36,6 +36,7 @@
 | wild_surveys.json | 各野外路线的观察档位、稀有度门槛与一次性奖励 |
 | wild_habitat_events.json | 每周轮换的栖地共护路线、全服贡献门槛和个人领奖内容 |
 | pedigree_milestones.json | 私人谱系家族的世代/成员门槛与一次性既有资源奖励 |
+| cross_breeding.json | 固定异种亲本种族对、指定既有后代种族、门槛、成本与叙事；每种族对只能定义一次 |
 | family_trials.json | 家族试炼的周轮换、阵容人数、阶段敌手、精力与有限奖励 |
 | family_tutelage.json | 直接亲子灵术课程、付费讲习、考核规则与有限熟练度 |
 | family_outings.json | 直接亲子三段伴游故事、选择成本、本程默契与有限羁绊经验 |
@@ -86,6 +87,12 @@
 除 `rules.json`、`arena.json`、`nursery.json`、`training_rule.json` 等规则对象外，目录文件为对象数组。不要往这些文件写 `created_at`、`last_train`、`sign_day`、`expires_at`、`timestamp`、`cooldown`、玩家 ID 或库存数量。
 
 `weekly_quests.json` 的 `metric` 由 `WeeklyMetric` 严格限定。膳房相关目标按已有成功记录派生：`weekly_cuisine_orders` 只计本周有效订单目录中的已交付回执；`weekly_cuisine_practice` 只计 `duel_actions` 中本周 `kind=cuisine_practice` 且 `status=finished` 的终态记录；`weekly_banquets` 只认 `banquet_<本周起点>` 开席凭证。不得把烹制、研修中间步骤、放弃或失败请求当作完成。`weekly_rewards.json` 的累计门槛固定为 2/4/6/9，统计本周已领取的周常目标数；领取与该周凭证、奖励同事务保存。
+
+## 异族共育内容合同
+
+`cross_breeding.json` 使用严格配方数组，定义唯一 recipe ID、唯一无序异种亲本组合、已有后代种族、双方亲密/境界门槛、双方精力、灵石、1-3 种既有 `material` 和非空叙事。种族与境界必须存在，产物必须对应既有 `egg_<species>`；成本与数量有上限。未知引用、重复或反向重复的种族组合、同族亲本、非材料成本、缺少对应灵卵或空文本均在启动校验时拒绝。
+
+运行状态不增加 schema：北京时间自然周名额和永久无序亲本对凭证保存在 `quest_progress`，操作回执复用 `pet_pedigree_operations`。灵卵复用 `pet_lineage_eggs` 的库存凭证、孵化和家族谱系图；该表随 schema 35 约束亲本种族快照等于产物种族，因此异族实际种族以永久共育操作快照和亲本宠物记录为准，不伪造或回填旧亲缘。资源、双亲精力、灵卵、周名额、永久回执和谱系凭证在一个事务提交；读取配方和历史不创建状态或占用名额。
 
 冷却间隔、精力恢复间隔属于运行配置，放在 `.env`；某玩家的最后修炼时间、准备状态属于 SQLite。静态的“进化需要 3 个血脉精华”是成本，不是库存。
 

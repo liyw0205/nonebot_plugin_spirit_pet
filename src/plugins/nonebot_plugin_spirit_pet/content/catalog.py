@@ -114,7 +114,8 @@ from ..domain.gear_word_content import GearWord
 from ..utils.elements import element_ancestors, expand_elements
 
 from ..domain.content import (
-    Bloodline, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm, Rules, Species,
+    Bloodline, CrossBreedingRecipe, Dungeon, Encounter, Enemy, ExplorationRoute, Item, Layer, Pool, Quest, Realm,
+    Rules, Species,
 )
 from ..domain.vein_content import VeinRoute
 from ..domain.ruin_content import RuinSite
@@ -158,6 +159,7 @@ class Catalog:
     wild_surveys: dict[str, WildSurveyRoute]
     wild_habitat_events: dict[str, WildHabitatEvent]
     pedigree_milestones: dict[str, PedigreeMilestone]
+    cross_breeding: dict[str, CrossBreedingRecipe]
     family_trials: dict[str, FamilyTrial]
     family_trial_rotation: tuple[str, ...]
     family_tutelage: dict[str, FamilyTutelageCourse]
@@ -298,6 +300,7 @@ class Catalog:
             wild_surveys=_index(directory / "wild_surveys.json", WildSurveyRoute, "route"),
             wild_habitat_events=_index(directory / "wild_habitat_events.json", WildHabitatEvent),
             pedigree_milestones=_index(directory / "pedigree_milestones.json", PedigreeMilestone),
+            cross_breeding=_index(directory / "cross_breeding.json", CrossBreedingRecipe),
             family_trials={trial.id: trial for trial in family_trial_catalog.trials},
             family_trial_rotation=tuple(family_trial_catalog.rotation),
             family_tutelage={course.id: course for course in tutelage.courses},
@@ -752,6 +755,7 @@ class Catalog:
         validate_lineages(self)
         self._validate_achievements()
         self._validate_breeding()
+        self._validate_cross_breeding()
         self._validate_titles()
         self._validate_farm_levels()
         self._validate_cave_offerings()
@@ -1050,6 +1054,34 @@ class Catalog:
         missing = set(self.species) - eggs
         if missing:
             raise ValueError(f"missing pet eggs for species: {sorted(missing)}")
+
+    def _validate_cross_breeding(self) -> None:
+        if not 2 <= len(self.cross_breeding) <= 8:
+            raise ValueError("cross breeding must define between 2 and 8 recipes")
+        realm_ids = {realm.id for realm in self.realms}
+        parent_pairs = set()
+        for recipe in self.cross_breeding.values():
+            self._require(
+                (recipe.parent_a_species, recipe.parent_b_species, recipe.offspring_species),
+                self.species, f"cross breeding {recipe.id} species",
+            )
+            if recipe.minimum_realm not in realm_ids:
+                raise ValueError(f"cross breeding {recipe.id} has an unknown minimum realm")
+            pair = tuple(sorted((recipe.parent_a_species, recipe.parent_b_species)))
+            if pair in parent_pairs:
+                raise ValueError("cross breeding parent species pairs must be unique")
+            parent_pairs.add(pair)
+            egg_id = f"egg_{recipe.offspring_species}"
+            egg = self.items.get(egg_id)
+            if egg is None or egg.kind != "pet_egg" or egg.species_id != recipe.offspring_species:
+                raise ValueError(f"cross breeding {recipe.id} must produce its matching pet egg")
+            self._require(recipe.items, self.items, f"cross breeding {recipe.id} materials")
+            if any(self.items[item_id].kind != "material" for item_id in recipe.items):
+                raise ValueError(f"cross breeding {recipe.id} costs must use materials")
+            if recipe.stones > 10_000 or sum(recipe.items.values()) > 6:
+                raise ValueError(f"cross breeding {recipe.id} cost exceeds the content limit")
+            if not recipe.text.strip():
+                raise ValueError(f"cross breeding {recipe.id} requires narrative text")
 
     def _validate_progression(self):
         if set(self.skill_levels) != set(range(1, len(self.skill_levels) + 1)):
