@@ -8,9 +8,9 @@ Stat = Literal["hp", "attack", "defense", "speed"]
 
 
 class SectRank(Definition):
-    rank: Annotated[int, Field(ge=1, le=5)]
+    rank: Annotated[int, Field(ge=1, le=8)]
     contribution: NonNegative
-    rate: Annotated[float, Field(gt=0, le=0.5)]
+    rate: Annotated[float, Field(gt=0, le=0.16)]
     stones: NonNegative
     items: dict[Identifier, Positive] = {}
 
@@ -22,7 +22,7 @@ class Sect(Definition):
     name: Name
     description: str
     stat: Stat
-    ranks: list[SectRank] = Field(min_length=2, max_length=5)
+    ranks: list[SectRank] = Field(min_length=2, max_length=8)
 
     @model_validator(mode="after")
     def _ladder(self):

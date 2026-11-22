@@ -116,6 +116,15 @@ def _progress_text(sect: Sect, entry: SectRank, points: int) -> str:
     return f"贡献 {points}/{following.contribution}"
 
 
+def _all_sect_progress(ctx: Context, user_id: str | None = None) -> str:
+    rows = []
+    for sect in sects(ctx):
+        points = contribution(ctx, sect, user_id)
+        entry = sect.rank_at(points)
+        rows.append(f"{sect.name} {entry.rank} 阶 {_progress_text(sect, entry, points)}")
+    return "各派贡献：" + "；".join(rows)
+
+
 def page(ctx: Context, arg: str) -> Reply:
     if arg.strip():
         raise GameError("格式：灵宠师门 [拜入|修行|领赏] [门派]。")
@@ -151,6 +160,7 @@ def page(ctx: Context, arg: str) -> Reply:
     )
     lines.append(member.description)
     lines.append(f"阶位加成：{_ladder_text(member)}（随贡献提升）。")
+    lines.append(_all_sect_progress(ctx))
     try:
         from .sect_exchange import balance as _balance
 
@@ -165,6 +175,13 @@ def page(ctx: Context, arg: str) -> Reply:
     )
     if pending:
         lines.append(f"可领阶位奖励：{'、'.join(str(item.rank) for item in pending)} 阶。")
+        for entry in pending:
+            rewards = [f"灵石 {entry.stones}"] if entry.stones else []
+            rewards.extend(
+                f"{ctx.content.items[item_id].name} {amount}"
+                for item_id, amount in entry.items.items()
+            )
+            lines.append(f"{entry.rank} 阶真传：" + " · ".join(rewards))
         links.append(InlineCommand(len(lines) - 1, "领赏", "灵宠师门 领赏"))
     else:
         lines.append("暂无可领阶位奖励。")
@@ -302,6 +319,7 @@ def claim(ctx: Context, arg: str) -> Reply:
         _set(ctx, f"{CLAIM}{sect.id}_{entry.rank}", 1)
         lines.append(f"{entry.rank} 阶：" + "，".join(parts) + f"（{_passive_text(sect, entry)}）。")
     lines.append(f"贡献 {contribution(ctx, sect)} · 阶位 {rank_of(ctx, sect).rank}。")
+    lines.append(_all_sect_progress(ctx))
     return Reply("灵宠师门", tuple(lines), ("灵宠师门", "灵宠目标", "我的灵宠"))
 
 
@@ -575,6 +593,9 @@ def objective_line(ctx: Context, user_id: str) -> str:
     extra = f" · 任务 {done}/{len(offers)}"
     if pending:
         extra += f" · 周俸可领 {len(pending)} 档"
+    rank_rewards = claimable(ctx, sect, user_id)
+    if rank_rewards:
+        extra += f" · 真传可领 {len(rank_rewards)} 阶"
     from . import sect_trial
 
     trial = sect_trial.trial_for(ctx, sect)

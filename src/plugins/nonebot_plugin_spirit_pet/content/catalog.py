@@ -1258,12 +1258,42 @@ class Catalog:
     def _validate_sects(self):
         if not self.sects:
             raise ValueError("sects must not be empty")
+        expected_stats = {
+            "dan_ding": "defense",
+            "jian_ge": "attack",
+            "xuan_men": "hp",
+            "yu_shou": "speed",
+        }
+        if set(self.sects) != set(expected_stats):
+            raise ValueError("sect catalog must define the four supported sects")
         stats = {"hp", "attack", "defense", "speed"}
         for sect in self.sects.values():
             if sect.stat not in stats:
                 raise ValueError(f"sect {sect.id} has an unknown stat")
+            if sect.stat != expected_stats[sect.id]:
+                raise ValueError(f"sect {sect.id} must retain its core passive stat")
+            if sect.max_rank != 8:
+                raise ValueError(f"sect {sect.id} must define ranks 1 through 8")
+            if [entry.contribution for entry in sect.ranks[5:]] != [900, 1400, 2000]:
+                raise ValueError(f"sect {sect.id} true-disciple contribution thresholds must be 900/1400/2000")
             for entry in sect.ranks:
                 self._require(entry.items, self.items, "sect rank items")
+                if (
+                    entry.stones > 10_000
+                    or len(entry.items) > 4
+                    or sum(entry.items.values()) > 20
+                    or any(amount > 20 for amount in entry.items.values())
+                ):
+                    raise ValueError(f"sect {sect.id} rank {entry.rank} reward exceeds content limits")
+                if entry.stones == 0 and not entry.items:
+                    raise ValueError(f"sect {sect.id} rank {entry.rank} reward must not be empty")
+                if entry.rank >= 6 and any(
+                    self.items[item_id].kind not in {"consumable", "material"}
+                    for item_id in entry.items
+                ):
+                    raise ValueError(
+                        f"sect {sect.id} true-disciple rewards must use consumables or materials"
+                    )
 
     def _validate_codex_trials(self):
         if not self.codex_trials:

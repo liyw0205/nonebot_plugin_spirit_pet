@@ -9,7 +9,10 @@
       {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"forge_ore": 2}},
       {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"forge_ore": 3}},
       {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"forge_ore": 5}},
-      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"forge_ore": 8}}
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"forge_ore": 8}},
+      {"rank": 6, "contribution": 900, "rate": 0.12, "stones": 2200, "items": {"forge_ore": 10}},
+      {"rank": 7, "contribution": 1400, "rate": 0.14, "stones": 3000, "items": {"forge_ore": 12}},
+      {"rank": 8, "contribution": 2000, "rate": 0.16, "stones": 4000, "items": {"forge_ore": 15}}
     ]
   },
   {
@@ -22,7 +25,10 @@
       {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"spirit_food": 4}},
       {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"spirit_food": 6}},
       {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"spirit_food": 8}},
-      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"spirit_food": 12}}
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"spirit_food": 12}},
+      {"rank": 6, "contribution": 900, "rate": 0.12, "stones": 2200, "items": {"spirit_food": 14}},
+      {"rank": 7, "contribution": 1400, "rate": 0.14, "stones": 3000, "items": {"spirit_food": 16}},
+      {"rank": 8, "contribution": 2000, "rate": 0.16, "stones": 4000, "items": {"spirit_food": 18}}
     ]
   },
   {
@@ -35,7 +41,10 @@
       {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"exp_pill": 2}},
       {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"exp_pill": 3}},
       {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"exp_pill": 4}},
-      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"exp_pill": 6}}
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"exp_pill": 6}},
+      {"rank": 6, "contribution": 900, "rate": 0.12, "stones": 2200, "items": {"exp_pill": 8}},
+      {"rank": 7, "contribution": 1400, "rate": 0.14, "stones": 3000, "items": {"exp_pill": 10}},
+      {"rank": 8, "contribution": 2000, "rate": 0.16, "stones": 4000, "items": {"exp_pill": 12}}
     ]
   },
   {
@@ -48,7 +57,10 @@
       {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"bloodline_essence": 2}},
       {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"bloodline_essence": 3}},
       {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"bloodline_essence": 4}},
-      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"bloodline_essence": 6}}
+      {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"bloodline_essence": 6}},
+      {"rank": 6, "contribution": 900, "rate": 0.12, "stones": 2200, "items": {"bloodline_essence": 8}},
+      {"rank": 7, "contribution": 1400, "rate": 0.14, "stones": 3000, "items": {"bloodline_essence": 10}},
+      {"rank": 8, "contribution": 2000, "rate": 0.16, "stones": 4000, "items": {"bloodline_essence": 12}}
     ]
   }
 ]

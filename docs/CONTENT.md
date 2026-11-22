@@ -1024,7 +1024,7 @@ schema 29→30 在验证并备份后只创建空表、索引和启用锚点，�
 
 ## 师门定义
 
-`sects.json` 是门派对象数组，由 `domain/sect_content.py` 校验。每个门派定义 `id`、`name`、`description`、`stat`（`hp` / `attack` / `defense` / `speed`）与 `ranks`（2-5 阶，必须从 1 连续）。每阶含 `rank`、`contribution`、`rate`、`stones` 与固定数量的 `items`。
+`sects.json` 是四门派对象数组，由 `domain/sect_content.py` 和 `Catalog._validate_sects` 校验。门派 ID 固定为 `jian_ge`、`xuan_men`、`dan_ding`、`yu_shou`，分别加成攻击、气血、防御和速度；每派必须定义完整 1-8 阶。每阶含 `rank`、`contribution`、`rate`、`stones` 与固定数量的 `items`。
 
 ```json
 {
@@ -1034,14 +1034,20 @@ schema 29→30 在验证并备份后只创建空表、索引和启用锚点，�
   "stat": "attack",
   "ranks": [
     {"rank": 1, "contribution": 0, "rate": 0.02, "stones": 120, "items": {"forge_ore": 1}},
-    {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"forge_ore": 2}}
+    {"rank": 2, "contribution": 60, "rate": 0.04, "stones": 240, "items": {"forge_ore": 2}},
+    {"rank": 3, "contribution": 160, "rate": 0.06, "stones": 480, "items": {"forge_ore": 3}},
+    {"rank": 4, "contribution": 320, "rate": 0.08, "stones": 900, "items": {"forge_ore": 5}},
+    {"rank": 5, "contribution": 560, "rate": 0.10, "stones": 1600, "items": {"forge_ore": 8}},
+    {"rank": 6, "contribution": 900, "rate": 0.12, "stones": 2200, "items": {"forge_ore": 10}},
+    {"rank": 7, "contribution": 1400, "rate": 0.14, "stones": 3000, "items": {"forge_ore": 12}},
+    {"rank": 8, "contribution": 2000, "rate": 0.16, "stones": 4000, "items": {"forge_ore": 15}}
   ]
 }
 ```
 
-校验规则：阶位号从 1 连续、第一阶贡献必须为 0、贡献阈值严格递增、被动比率严格递增且不超过 50%、奖励物品必须存在。当前四派共用 0/60/160/320/560 的阶位曲线，加成 2%→10%，奖励灵石 120/240/480/900/1600 与各派材料 1/2/3/5/8 份。
+校验规则：四派及 1-8 阶不得缺失或重复；阶位号连续、第一阶贡献为 0、贡献阈值严格递增、被动严格递增且不超过 16%。四派共用 0/60/160/320/560/900/1400/2000 贡献曲线、2%→16% 被动。1-5 阶奖励保持旧值；6-8 阶灵石为 2200/3000/4000，材料数量分别为剑阁 10/12/15、玄门 14/16/18、丹鼎门 8/10/12、御兽宗 8/10/12。所有档位奖励必须非空、灵石不超过 10000、至多 4 种物品且总数不超过 20；6-8 阶物品必须是已定义的 `consumable` 或 `material`。
 
-每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。个人运行状态使用 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与阶位领赏（`sect_claim_<id>_<阶位>`）；被动由「当前门派 + 贡献推导阶位」实时计算，不单独存档。
+每日修行、转投花费与修为收益不写死在前端，统一放在 `rules.json` 的 `sect`：`daily_contribution` 10、`practice_energy` 20、`practice_exp` 30、`switch_stones` 500。个人运行状态使用 `quest_progress`，包括加入（`sect_member_<id>`）、当前门派（`sect_current_<id>`）、各派贡献（`sect_contrib_<id>`）、当日修行（`sect_day_<北京日期>`）与逐阶领奖（`sect_claim_<id>_<阶位>`）；被动由「当前门派 + 对应门派贡献推导阶位」实时计算，不单独存档。扩阶不新增 schema，也不回填或转换既有贡献和领奖凭证。
 
 师门共修规则在 `rules.json.sect` 中定义标题、说明及至少三档共享里程碑。档位从 1 连续，门派总贡献阈值和个人参与阈值分别为正且严格递增，个人阈值不能超过门派阈值；奖励必须非空且引用已有物品。四派共用同一组档位以保持公平。
 

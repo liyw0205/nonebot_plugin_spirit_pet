@@ -1,6 +1,10 @@
 """Spirit sects: join/switch, daily practice, contribution ranks, rewards and passive."""
 
+import json
 import re
+import shutil
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from urllib.parse import parse_qs, urlparse
 
@@ -11,9 +15,11 @@ from nonebot_plugin_spirit_pet.adapters import handlers
 from nonebot_plugin_spirit_pet.adapters.messaging import _qq_segments
 from nonebot_plugin_spirit_pet.application.context import Context
 from nonebot_plugin_spirit_pet.application.game import Game
+from nonebot_plugin_spirit_pet.content.catalog import DATA_DIR, Catalog
 from nonebot_plugin_spirit_pet.core.config import Config
 from nonebot_plugin_spirit_pet.domain.models import GameError
 from nonebot_plugin_spirit_pet.domain.sect_content import Sect
+from nonebot_plugin_spirit_pet.gameplay import defense
 from nonebot_plugin_spirit_pet.gameplay.loadout import combatant
 from nonebot_plugin_spirit_pet.storage.database import Store
 from nonebot_plugin_spirit_pet.storage.repository import Repository
@@ -35,6 +41,13 @@ def stats(game, user="u1"):
         return combatant(ctx)
 
 
+def defense_stats(game, owner):
+    service, store = game
+    with closing(store.connect()) as conn:
+        ctx = Context(Repository(conn), service.content, service.config, service.rng, "u1", NOW, "sect-defense")
+        return defense.fighters(ctx, owner)[0]
+
+
 def seed_contribution(game, sect_id, points, user="u1"):
     sql(
         game[1],
@@ -53,15 +66,25 @@ def contribution(game, sect_id, user="u1"):
     return rows[0]["progress"] if rows else 0
 
 
-def test_content_defines_four_sects_with_five_ranks(game):
+def test_content_defines_four_eight_rank_sects_and_preserves_legacy_ranks(game):
     entries = sects(game)
     assert [sect.id for sect in entries] == ["dan_ding", "jian_ge", "xuan_men", "yu_shou"]
-    assert {sect.stat for sect in entries} == {"hp", "attack", "defense", "speed"}
+    assert {sect.id: sect.stat for sect in entries} == {
+        "dan_ding": "defense", "jian_ge": "attack", "xuan_men": "hp", "yu_shou": "speed",
+    }
     for sect in entries:
-        assert [entry.rank for entry in sect.ranks] == [1, 2, 3, 4, 5]
-        assert [entry.contribution for entry in sect.ranks] == [0, 60, 160, 320, 560]
-        assert [entry.rate for entry in sect.ranks] == [0.02, 0.04, 0.06, 0.08, 0.10]
+        assert [entry.rank for entry in sect.ranks] == list(range(1, 9))
+        assert [entry.contribution for entry in sect.ranks[:5]] == [0, 60, 160, 320, 560]
+        assert [entry.rate for entry in sect.ranks[:5]] == [0.02, 0.04, 0.06, 0.08, 0.10]
+        assert [entry.stones for entry in sect.ranks[:5]] == [120, 240, 480, 900, 1600]
+        assert [entry.contribution for entry in sect.ranks[5:]] == [900, 1400, 2000]
+        assert [entry.rate for entry in sect.ranks[5:]] == [0.12, 0.14, 0.16]
+        assert all(entry.stones > 0 and entry.items for entry in sect.ranks)
         assert all(item in game[0].content.items for entry in sect.ranks for item in entry.items)
+    assert [entry.items["forge_ore"] for entry in game[0].content.sects["jian_ge"].ranks[:5]] == [1, 2, 3, 5, 8]
+    assert [entry.items["spirit_food"] for entry in game[0].content.sects["xuan_men"].ranks[:5]] == [2, 4, 6, 8, 12]
+    assert [entry.items["exp_pill"] for entry in game[0].content.sects["dan_ding"].ranks[:5]] == [1, 2, 3, 4, 6]
+    assert [entry.items["bloodline_essence"] for entry in game[0].content.sects["yu_shou"].ranks[:5]] == [1, 2, 3, 4, 6]
 
 
 def test_content_validation_rejects_broken_ladders():
@@ -79,6 +102,75 @@ def test_content_validation_rejects_broken_ladders():
         Sect.model_validate({**base, "ranks": [base["ranks"][0], {**base["ranks"][1], "contribution": 0}]})
     with pytest.raises(ValidationError, match="must ascend"):
         Sect.model_validate({**base, "ranks": [base["ranks"][0], {**base["ranks"][1], "rate": 0.01}]})
+
+
+@pytest.fixture
+def sect_content_dir(tmp_path):
+    target = tmp_path / "content"
+    shutil.copytree(DATA_DIR, target)
+    return target
+
+
+def edit_sect_content(content_dir, change):
+    path = content_dir / "sects.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    change(data)
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+
+def test_catalog_rejects_missing_sect_or_rank(sect_content_dir):
+    edit_sect_content(sect_content_dir, lambda data: data.pop())
+    with pytest.raises(ValueError, match="four supported sects"):
+        Catalog.load(sect_content_dir)
+
+
+def test_catalog_rejects_missing_rank(sect_content_dir):
+    edit_sect_content(sect_content_dir, lambda data: data[0]["ranks"].pop())
+    with pytest.raises(ValueError, match="ranks 1 through 8"):
+        Catalog.load(sect_content_dir)
+
+
+def test_catalog_rejects_duplicate_rank_and_wrong_true_disciple_threshold(sect_content_dir):
+    edit_sect_content(sect_content_dir, lambda data: data[0]["ranks"][6].update({"rank": 6}))
+    with pytest.raises(ValidationError, match="contiguous"):
+        Catalog.load(sect_content_dir)
+
+
+def test_catalog_rejects_wrong_true_disciple_threshold(sect_content_dir):
+    edit_sect_content(
+        sect_content_dir,
+        lambda data: data[0]["ranks"][7].update({"contribution": 1999}),
+    )
+    with pytest.raises(ValueError, match="900/1400/2000"):
+        Catalog.load(sect_content_dir)
+
+
+def test_catalog_rejects_true_disciple_passive_above_cap(sect_content_dir):
+    edit_sect_content(sect_content_dir, lambda data: data[0]["ranks"][7].update({"rate": 0.18}))
+    with pytest.raises(ValidationError, match="0.16"):
+        Catalog.load(sect_content_dir)
+
+
+def test_catalog_rejects_changed_sect_core_passive(sect_content_dir):
+    edit_sect_content(sect_content_dir, lambda data: data[0].update({"stat": "defense"}))
+    with pytest.raises(ValueError, match="retain its core passive"):
+        Catalog.load(sect_content_dir)
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (lambda data: data[0]["ranks"][5].update({"stones": 0, "items": {}}), "must not be empty"),
+        (lambda data: data[0]["ranks"][5].update({"stones": 10001}), "exceeds content limits"),
+        (lambda data: data[0]["ranks"][5].update({"items": {"forge_ore": 21}}), "exceeds content limits"),
+        (lambda data: data[0]["ranks"][5].update({"items": {"wind_feather": 1}}), "consumables or materials"),
+        (lambda data: data[0]["ranks"][5].update({"items": {"unknown_item": 1}}), "unknown sect rank items"),
+    ],
+)
+def test_catalog_rejects_invalid_true_disciple_rewards(sect_content_dir, change, message):
+    edit_sect_content(sect_content_dir, change)
+    with pytest.raises(ValueError, match=message):
+        Catalog.load(sect_content_dir)
 
 
 def test_page_without_a_pet_is_read_only(game, play):
@@ -207,9 +299,166 @@ def test_claim_pays_each_reached_rank_once(game, play):
     seed_contribution(game, "jian_ge", 60)
     second = play("sect", "领赏")
     assert "2 阶：灵石 +240" in second.text()
-    assert "1 阶" not in second.text()
+    assert "1 阶：" not in second.text()
     assert player(game[1])["stones"] == before + 360
     assert items(game[1])["forge_ore"] == 3
+
+
+@pytest.mark.parametrize(
+    ("sect_id", "sect_name", "stat", "stat_label"),
+    [
+        ("jian_ge", "剑阁", "attack", "攻击"),
+        ("xuan_men", "玄门", "hp", "气血"),
+        ("dan_ding", "丹鼎门", "defense", "防御"),
+        ("yu_shou", "御兽宗", "speed", "速度"),
+    ],
+)
+def test_all_sects_reach_true_disciple_passives_in_real_combatants(
+    game, play, sect_id, sect_name, stat, stat_label,
+):
+    play("adopt", "青鸾")
+    base = getattr(stats(game).stats, stat)
+    play("sect", f"拜入 {sect_name}")
+    for points, rank, rate in ((560, 5, 0.10), (900, 6, 0.12), (1400, 7, 0.14), (2000, 8, 0.16)):
+        seed_contribution(game, sect_id, points)
+        page = play("sect")
+        assert f"当前：{sect_name} · {rank} 阶 · {stat_label} +{rate:.0%}" in page.text()
+        assert f"{sect_name} {rank} 阶" in page.text()
+        assert getattr(stats(game).stats, stat) == int(base * (1 + rate) + 0.5)
+        assert f"师门：{sect_name} {rank} 阶" in play("objectives").text()
+
+
+def test_true_disciple_claim_preserves_old_receipts_and_pays_once(game, play):
+    play("adopt", "青鸾")
+    play("sect", "拜入 剑阁")
+    before_stones = player(game[1])["stones"]
+    seed_contribution(game, "jian_ge", 560)
+    play("sect", "领赏", op="claim-old-ranks")
+    seed_contribution(game, "jian_ge", 2000)
+    before_items = items(game[1]).get("forge_ore", 0)
+    first = play("sect", "领赏", op="claim-true-disciple")
+    assert "6 阶：灵石 +2200" in first.text()
+    assert "7 阶：灵石 +3000" in first.text()
+    assert "8 阶：灵石 +4000" in first.text()
+    assert player(game[1])["stones"] == before_stones + sum((120, 240, 480, 900, 1600, 2200, 3000, 4000))
+    assert items(game[1])["forge_ore"] == before_items + 37
+    assert [row["progress"] for row in sql(
+        game[1],
+        "SELECT progress FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'sect_claim_jian_ge_%' ORDER BY quest_id",
+    )] == [1] * 8
+    assert play("sect", "anything", op="claim-true-disciple") == first
+    with pytest.raises(GameError, match="暂无可领"):
+        play("sect", "领赏", op="claim-true-disciple-again")
+
+
+def test_sect_home_and_objectives_show_claimable_true_disciple_without_writing_progress(game, play):
+    play("adopt", "青鸾")
+    play("sect", "拜入 剑阁")
+    seed_contribution(game, "jian_ge", 900)
+    before = sql(game[1], "SELECT quest_id, progress, claimed FROM quest_progress WHERE user_id='u1' ORDER BY quest_id")
+    page = play("sect")
+    objective = play("objectives")
+    assert "可领阶位奖励：1、2、3、4、5、6 阶" in page.text()
+    assert "6 阶真传：灵石 2200 · 锻灵矿 10" in page.text()
+    assert "真传可领 6 阶" in objective.text()
+    assert sql(game[1], "SELECT quest_id, progress, claimed FROM quest_progress WHERE user_id='u1' ORDER BY quest_id") == before
+
+
+def test_switching_sects_keeps_high_rank_claims_with_their_original_sect(game, play):
+    play("adopt", "青鸾")
+    sql(game[1], "UPDATE players SET stones=10000 WHERE user_id='u1'")
+    play("sect", "拜入 剑阁")
+    seed_contribution(game, "jian_ge", 900)
+    play("sect", "领赏")
+    seed_contribution(game, "jian_ge", 1400)
+    play("sect", "拜入 玄门")
+    page = play("sect")
+    assert "各派贡献：丹鼎门 1 阶 贡献 0/60；剑阁 7 阶 贡献 1400/2000" in page.text()
+    assert "当前：玄门 · 1 阶" in page.text()
+    switched_claim = play("sect", "领赏")
+    assert "玄门阶位奖励" in switched_claim.text()
+    assert sql(game[1], "SELECT 1 FROM quest_progress WHERE user_id='u1' AND quest_id='sect_claim_jian_ge_7'") == []
+    play("sect", "拜入 剑阁")
+    assert "7 阶：灵石 +3000" in play("sect", "领赏").text()
+    assert sql(game[1], "SELECT progress FROM quest_progress WHERE user_id='u1' AND quest_id='sect_claim_jian_ge_6'")[0]["progress"] == 1
+
+
+def test_true_disciple_progress_and_claims_survive_restart(game, play):
+    play("adopt", "青鸾")
+    play("sect", "拜入 剑阁")
+    seed_contribution(game, "jian_ge", 2000)
+    play("sect", "领赏", op="restart-true-disciple-claim")
+    before = sql(game[1], "SELECT quest_id, progress, claimed FROM quest_progress WHERE user_id='u1' ORDER BY quest_id")
+
+    reopened = Store(game[1].path)
+    reopened.initialize()
+    restarted = Game(reopened, game[0].config, game[0].rng, content=game[0].content)
+    page = restarted.execute("u1", "sect", "", "restart-true-disciple-page", NOW)
+    assert "当前：剑阁 · 8 阶 · 攻击 +16%" in page.text()
+    with pytest.raises(GameError, match="暂无可领"):
+        restarted.execute("u1", "sect", "领赏", "restart-true-disciple-duplicate", NOW)
+    assert sql(reopened, "SELECT quest_id, progress, claimed FROM quest_progress WHERE user_id='u1' ORDER BY quest_id") == before
+
+
+def test_defense_mirror_uses_the_defended_owners_true_disciple_passive(game, play):
+    play("adopt", "青鸾")
+    base_u1 = stats(game, "u1").stats.attack
+    play("adopt", "玄狐", user="u2")
+    base_u2 = stats(game, "u2").stats.hp
+    play("sect", "拜入 剑阁", user="u1")
+    play("sect", "拜入 玄门", user="u2")
+    seed_contribution(game, "jian_ge", 2000, user="u1")
+    seed_contribution(game, "xuan_men", 2000, user="u2")
+
+    assert defense_stats(game, "u1").stats.attack == int(base_u1 * 1.16 + 0.5)
+    assert defense_stats(game, "u2").stats.hp == int(base_u2 * 1.16 + 0.5)
+
+
+def test_true_disciple_claim_rolls_back_as_one_transaction_and_retries(game, play):
+    play("adopt", "青鸾")
+    play("sect", "拜入 剑阁")
+    seed_contribution(game, "jian_ge", 2000)
+    stones_before = player(game[1])["stones"]
+    items_before = items(game[1])
+    with game[1].connect() as conn:
+        conn.execute(
+            "CREATE TRIGGER fail_sect_rank_claim BEFORE INSERT ON quest_progress "
+            "WHEN NEW.quest_id='sect_claim_jian_ge_6' "
+            "BEGIN SELECT RAISE(ABORT,'injected sect reward failure'); END"
+        )
+    with pytest.raises(sqlite3.IntegrityError, match="injected sect reward failure"):
+        play("sect", "领赏", op="rollback-sect-claim")
+    assert player(game[1])["stones"] == stones_before
+    assert items(game[1]) == items_before
+    assert sql(game[1], "SELECT 1 FROM quest_progress WHERE user_id='u1' AND quest_id LIKE 'sect_claim_jian_ge_%'") == []
+
+    with game[1].connect() as conn:
+        conn.execute("DROP TRIGGER fail_sect_rank_claim")
+
+    reply = play("sect", "领赏", op="rollback-sect-claim")
+    assert "8 阶：灵石 +4000" in reply.text()
+    assert player(game[1])["stones"] == stones_before + sum((120, 240, 480, 900, 1600, 2200, 3000, 4000))
+    assert items(game[1])["forge_ore"] == 56
+
+
+def test_true_disciple_claim_is_concurrent_and_grants_once(game, play):
+    play("adopt", "玄狐", user="u2")
+    play("sect", "拜入 剑阁", user="u2")
+    seed_contribution(game, "jian_ge", 2000, user="u2")
+    stones_before = player(game[1], "u2")["stones"]
+
+    def claim(index):
+        try:
+            return play("sect", "领赏", user="u2", op=f"parallel-sect-claim-{index}")
+        except GameError:
+            return None
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        replies = list(pool.map(claim, range(2)))
+    assert sum(reply is not None for reply in replies) == 1
+    assert player(game[1], "u2")["stones"] == stones_before + sum((120, 240, 480, 900, 1600, 2200, 3000, 4000))
+    assert items(game[1], "u2")["forge_ore"] == 56
+    assert len(sql(game[1], "SELECT 1 FROM quest_progress WHERE user_id='u2' AND quest_id LIKE 'sect_claim_jian_ge_%'")) == 8
 
 
 def test_claim_never_pays_a_rank_above_the_current_one(game, play):
